@@ -69,3 +69,7 @@ estructura base y no deben resolverse con credenciales o escenarios inventados.
 - [README.md](README.md): instalación, comandos y límites actuales.
 - [AGENTS.md](AGENTS.md): convenciones de desarrollo y verificaciones.
 - [CHALLENGE.md](CHALLENGE.md): requisitos originales del reto.
+- [docs/input-architecture.md](docs/input-architecture.md): diseño y guía de
+  implementación de la ingesta de eventos (Hito A síncrono con procesamiento de
+  lotes concurrente; Hito B async/topic aplazado). Empezar por el Hito A para
+  las tareas de ingesta de la Fase 3 (persistir y deduplicar eventos).

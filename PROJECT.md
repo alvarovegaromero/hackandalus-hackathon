@@ -53,6 +53,8 @@ do not treat them as blockers for this milestone. Track follow-up work in TASKS.
 - `src/lib/supabase`: server/browser clients and Realtime subscription helper.
 - `src/lib/integrations`: HappyRobot boundary, explicitly blocked until implemented.
 - `supabase/migrations`: initial PostgreSQL schema with deny-by-default RLS.
+- `docs/`: design and implementation guides; `docs/input-architecture.md` covers
+  event ingestion (synchronous batch intake now; async/topic fan-out deferred).
 - `README.md`, `.env.example`: local setup, credentials and integration limitations.
 - `.husky`, `scripts`, `lint-staged.config.mjs`: local quality and branch/credential guards.
 - `.secretlintrc.json`: Secretlint recommended rules; `.secretlintignore` excludes generated output.
@@ -203,3 +205,11 @@ When extending the scaffolding:
   newly invented application test suite.
 - Report what changed, what was verified, and any failures or skipped checks.
   Keep this file aligned with the actual code and runnable commands.
+- Docs are self-updating: as each PR lands, update the docs to match the new
+  reality in the same PR. When a change alters behavior, structure, status, or
+  commands, refresh `PROJECT.md`, `AGENTS.md`, `CLAUDE.md`, `README.md`,
+  `TASKS.md`, and the relevant files under `docs/`, and **delete guidance that
+  no longer applies** (move completed items out of "deferred", drop stubs and
+  one-off exceptions once implemented, remove "not yet connected" caveats that
+  the change resolved). Docs describe what the code _is_, not what it was; do
+  not let stale scaffolding notes outlive the change that made them obsolete.
