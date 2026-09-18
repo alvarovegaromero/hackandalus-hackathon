@@ -19,7 +19,6 @@ de ese trabajo a la base definitiva.
 | [domain-learnings.md](domain-learnings.md) | Los once fallos medidos y sus arreglos, las invariantes que no hay que romper y las trampas concretas | Vas a escribir lógica de dominio, sea cual sea |
 | [decisions.md](decisions.md) | Cada decisión de arquitectura con su porqué y su coste, y las que se descartaron | Quieres cambiar algo de fondo |
 | [branch-comparison.md](branch-comparison.md) | Qué conservar de la rama de dominio y qué del andamiaje, y en qué orden fusionar | Vas a hacer la fusión |
-| [demo-script.md](demo-script.md) | Guion minuto a minuto, botones de caos, preguntas del jurado | Preparas o ensayas la demo |
 | [open-questions.md](open-questions.md) | Lo que nadie ha decidido todavía, ordenado por lo que bloquea | Quieres saber qué falta por acordar |
 
 El documento fuente del proyecto está en la raíz del repositorio:
