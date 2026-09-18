@@ -182,6 +182,36 @@ When extending the scaffolding:
 
 ## Coding agents and models
 
+### Shared stack skills
+
+The repository vendors four skills under `.agents/skills/`. Use the relevant
+skill by reading its `SKILL.md` before the corresponding task; load supporting
+references only as needed. These explicit paths also work with agents that do
+not automatically discover this directory:
+
+- React/Next.js components, data fetching and performance:
+  [.agents/skills/vercel-react-best-practices/SKILL.md](.agents/skills/vercel-react-best-practices/SKILL.md).
+- PostgreSQL schemas, migrations, queries and RLS:
+  [.agents/skills/supabase-postgres-best-practices/SKILL.md](.agents/skills/supabase-postgres-best-practices/SKILL.md).
+- UI accessibility and interaction reviews:
+  [.agents/skills/web-design-guidelines/SKILL.md](.agents/skills/web-design-guidelines/SKILL.md).
+- Visual design and dashboard presentation:
+  [.agents/skills/frontend-design/SKILL.md](.agents/skills/frontend-design/SKILL.md).
+
+Skills supplement this file; project stack, permissions and challenge requirements
+take precedence. Apply examples to installed dependency versions; do not add
+dependencies just because an example uses them. These skills do not cover the
+AI SDK, Workflow, Zod or HappyRobot contracts: consult their applicable official
+documentation and the project's integration guides when working on those parts.
+
+Cloning the repository includes the skills; no global installation or symlinks
+are required. See [docs/agent-skills.md](docs/agent-skills.md) for onboarding,
+source revisions, limitations and updates. Preserve upstream files and licenses;
+record changes to snapshots in `skills-sources.json`. Prettier excludes the
+vendored directory to preserve source bytes; secret detection still covers it.
+
+### Common agent rules
+
 - The team uses Codex, Claude Code, Cursor, Gemini, Antigravity and other models.
   All tools follow this same file; rules do not depend on the model/provider.
 - `AGENTS.md` is the generic entry point. `CLAUDE.md`, `GEMINI.md`, and editor

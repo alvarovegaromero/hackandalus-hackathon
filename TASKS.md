@@ -36,6 +36,12 @@ probado llamadas a modelos ni comunicaciones reales.
 - [x] Guía CONTRIBUTING.md, plantilla de PR y configuración compartida de editor.
 - [x] Referencias a PROJECT.md desde Codex/AGENTS, Claude, Cursor y otros agentes.
 
+## Skills de desarrollo compartidas
+
+- [x] Incluir las cuatro skills de React/Next.js, Postgres/Supabase, revisión de UI y diseño visual.
+- [x] Registrar revisiones upstream, referencias, licencias y guía de uso para el equipo.
+- [x] Enlazar las skills desde PROJECT.md para agentes sin descubrimiento automático.
+
 ## Fase 2 · Decisiones y configuración, para más adelante
 
 - [x] Elegir el escenario de crisis y los cambios que se inyectarán durante la demo:

@@ -17,6 +17,8 @@ abiertas y las ya confirmadas.
 Las convenciones de desarrollo y los permisos están en [PROJECT.md](PROJECT.md).
 `AGENTS.md` y `CLAUDE.md` apuntan allí para evitar reglas duplicadas.
 Para incorporarte al equipo, sigue [CONTRIBUTING.md](CONTRIBUTING.md).
+El repositorio incluye [skills compartidas](docs/agent-skills.md) para React/Next.js,
+Postgres/Supabase, accesibilidad y diseño visual; no requieren instalación global.
 
 ## Arranque local
 
