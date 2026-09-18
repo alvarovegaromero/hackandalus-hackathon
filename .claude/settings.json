@@ -9,12 +9,7 @@
       "Bash(git log *)",
       "Bash(git show *)"
     ],
-    "ask": [
-      "Bash(git push *)"
-    ],
-    "deny": [
-      "Bash(gh pr merge *)",
-      "Bash(glab mr merge *)"
-    ]
+    "ask": ["Bash(git push *)"],
+    "deny": ["Bash(gh pr merge *)", "Bash(glab mr merge *)"]
   }
 }

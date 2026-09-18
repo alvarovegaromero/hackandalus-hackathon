@@ -14,8 +14,15 @@ export function createBrowserSupabase() {
 // Requires an authenticated operator and matching RLS policies before use.
 export function subscribeToIncident(incidentId: string, onChange: () => void) {
   const supabase = createBrowserSupabase();
-  const channel = supabase.channel(`incident:${incidentId}`)
-    .on("postgres_changes", { event: "*", schema: "public", table: "events", filter: `incident_id=eq.${incidentId}` }, onChange)
+  const channel = supabase
+    .channel(`incident:${incidentId}`)
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "events", filter: `incident_id=eq.${incidentId}` },
+      onChange,
+    )
     .subscribe();
-  return () => { void supabase.removeChannel(channel); };
+  return () => {
+    void supabase.removeChannel(channel);
+  };
 }

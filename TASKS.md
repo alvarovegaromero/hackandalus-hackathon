@@ -22,6 +22,20 @@ workflow. La migración está escrita, pero no aplicada; los clientes Supabase y
 el helper Realtime están preparados, pero no conectados al panel. No se han
 probado llamadas a modelos ni comunicaciones reales.
 
+## Preparación local del código
+
+- [x] Prettier compartido, EditorConfig y finales LF en Git para macOS, Windows y Linux.
+- [x] Husky instalado automáticamente al instalar dependencias de desarrollo.
+- [x] Pre-commit con Secretlint, Prettier y ESLint sobre archivos staged, más TypeScript y tests.
+- [x] Pre-push con verificación completa y build.
+- [x] Bloqueo de archivos privados y detección de formatos conocidos de claves/tokens.
+- [x] PROJECT.md como fuente de verdad, referenciada por AGENTS.md y CLAUDE.md.
+- [x] Bloqueo local de commits y pushes a ramas protegidas.
+- [x] Documentar nomenclatura y comandos de formato y verificación.
+- [x] Unificar ramas y PR hacia main, con merge final del propietario.
+- [x] Guía CONTRIBUTING.md, plantilla de PR y configuración compartida de editor.
+- [x] Referencias a PROJECT.md desde Codex/AGENTS, Claude, Cursor y otros agentes.
+
 ## Fase 2 · Decisiones y configuración, para más adelante
 
 - [ ] Elegir el escenario de crisis y los cambios que se inyectarán durante la demo.
