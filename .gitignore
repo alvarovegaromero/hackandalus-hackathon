@@ -12,3 +12,15 @@
 /graft/
 .DS_Store
 Thumbs.db
+
+# Next.js, npm, Workflow and local tooling.
+/node_modules/
+/.next/
+/out/
+/.vercel/
+/.workflow-data/
+/src/app/.well-known/workflow/
+/coverage/
+*.tsbuildinfo
+npm-debug.log*
+/.swc
