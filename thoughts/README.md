@@ -1,44 +1,47 @@
 # thoughts/
 
-Contexto de diseño para las personas y los agentes que trabajan en FARO.
-Aquí no hay código: hay lo que se pensó, lo que se midió y lo que se decidió,
-para que nadie tenga que redescubrirlo.
+Design context for the people and agents working on FARO. There is no code
+here: this is what was thought through, what was measured and what was
+decided, so nobody has to rediscover it.
 
-Está escrito sobre la base que hay en `main`: Next 16, Supabase con RLS,
-Vercel Workflow, AI SDK y Zod. Gran parte del contenido viene de una rama
-paralela (`feat/crisis-command-center`) donde se construyó y verificó el
-dominio completo con estado en memoria; estos documentos son la transferencia
-de ese trabajo a la base definitiva.
+It is written against the base in `main`: Next.js, Supabase with RLS, Vercel
+Workflow, AI SDK and Zod. Much of the content comes from a parallel branch
+(`feat/crisis-command-center`) where the full domain was built and verified
+with in-memory state; these documents transfer that work to the definitive
+base.
 
-## Qué hay
+## What is here
 
-| Documento | Para qué sirve | Léelo si… |
+| Document | What it is for | Read it if… |
 | --- | --- | --- |
-| [data-model.md](data-model.md) | Modelo de datos completo sobre Supabase: 31 tablas con DDL y motivo campo a campo, contrato Zod, flujos, RLS, Realtime, escalabilidad y plan de migración | Vas a tocar el esquema, un repositorio o un esquema Zod |
-| [features.md](features.md) | Qué se construyó, módulo a módulo: funciones, fórmulas, verificación y qué falta por enchufar | Vas a reimplementar o trasladar un módulo |
-| [open-questions.md](open-questions.md) | Lo que nadie ha decidido todavía, ordenado por lo que bloquea | Quieres saber qué falta por acordar |
+| [data-model.md](data-model.md) | Full data model on Supabase: 31 tables with DDL and per-field rationale, the Zod contract, flows, RLS, Realtime, scalability and the migration plan | You are going to touch the schema, a repository or a Zod schema |
+| [features.md](features.md) | What was built, module by module: functions, formulas, verification and what is still unwired | You are going to reimplement or port a module |
+| [open-questions.md](open-questions.md) | What nobody has decided yet, ordered by the phase it blocks | You want to know what still needs agreement |
 
-El documento fuente del proyecto está en la raíz del repositorio:
-`HackSpain 2026 · Source of Truth del proyecto.md`. Estos documentos lo
-desarrollan; si discrepan, manda el documento fuente y hay que actualizar esto.
+The project's source-of-truth document is at the repository root:
+`HackSpain 2026 · Source of Truth del proyecto.md`. These documents build on
+it; if they disagree, the source of truth wins and this folder gets updated.
 
-## Cómo usarlo si eres un agente
+## How to use it if you are an agent
 
-1. Lee `AGENTS.md` y `CHALLENGE.md` primero, como siempre.
-2. Antes de tocar el esquema, lee la sección 2 de `data-model.md`
-   (principios) y la tabla de tu módulo. Cada módulo escribe solo sus tablas.
-3. Si tu tarea es trasladar un módulo, `features.md` tiene sus funciones,
-   sus fórmulas y sus cifras de referencia para comprobar que el traslado no
-   cambió el comportamiento.
-4. Si algo de aquí te parece mal, cámbialo, pero deja escrito el nuevo porqué
-   en el mismo fichero.
+1. Read `AGENTS.md` and `CHALLENGE.md` first, as always.
+2. Before touching the schema, read section 2 of `data-model.md`
+   (principles) and your module's table. Each module writes only its own
+   tables.
+3. If your task is to port a module, `features.md` has its functions, its
+   formulas and its reference figures, so you can check the port did not
+   change behavior.
+4. If something here looks wrong to you, change it, but write the new
+   rationale in the same file.
 
-## Cómo mantenerlo
+## How to maintain it
 
-- Un documento por tema. Sin duplicar lo que ya dice `README.md`, `AGENTS.md`
-  o `TASKS.md`.
-- Cuando algo de aquí se implemente, se actualiza el estado en `features.md`
-  y se tacha en `open-questions.md`. No se borra: el porqué sigue valiendo.
-- Cifras solo si se midieron. Si es una estimación, se dice.
-- En español con acentos, como el resto del producto. Identificadores de código
-  y SQL en inglés.
+- One document per topic. Do not duplicate what `README.md`, `AGENTS.md` or
+  `TASKS.md` already say.
+- When something here gets implemented, update its status in `features.md`
+  and tick it off in `open-questions.md`. Do not delete: the rationale still
+  holds.
+- Figures only if they were measured. If it is an estimate, say so.
+- Prose in English. Code and SQL identifiers in English. Product-facing copy
+  (what the operator reads on screen) stays in Spanish, because the product is
+  in Spanish; quote it as such.
