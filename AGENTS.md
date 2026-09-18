@@ -21,3 +21,5 @@ Do not leave stale instructions for the next agent to rediscover.
 
 For stack-specific work, use the shared skill paths listed in
 [PROJECT.md](PROJECT.md#shared-stack-skills).
+For code navigation, follow [the Graft workflow](PROJECT.md#code-index-with-graft)
+before broad searches.

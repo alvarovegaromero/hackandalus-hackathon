@@ -62,6 +62,17 @@ instrucciones, pídele que lea AGENTS.md y PROJECT.md antes de empezar.
 No subas preferencias personales ni claves de las herramientas. Coordina los
 archivos que modifica cada persona o agente para evitar pisar cambios.
 
+## Índice local de código
+
+Graft se instala con las dependencias de desarrollo de `npm ci`. En cada clon
+o worktree, ejecuta `npm run index:build` y después `npm run index:map`.
+Para buscar una tarea: `npm run graft -- ask "event validation"`.
+Los agentes encuentran estas instrucciones a través de PROJECT.md.
+
+El índice `graft/` es local y está ignorado por Git; cada persona genera el suyo.
+No hacen falta claves ni instalación global. Usa la
+[guía de Graft](docs/code-index.md) para consultas, actualización y límites.
+
 ## Skills compartidas
 
 Las cuatro skills del equipo están versionadas en `.agents/skills/` y llegan

@@ -27,8 +27,10 @@ do not treat them as blockers for this milestone. Track follow-up work in TASKS.
 - Check `git status -s` and the current branch; preserve existing user changes.
 - Read any nested `AGENTS.md` / `CLAUDE.md` / `GEMINI.md` before editing that
   directory.
-- If `graft/` exists, use `graft ask` or `graft map` to orient before broad
-  searches. Otherwise use `rg` with scoped paths and compact output.
+- After installing development dependencies, run `npm run index:build` if
+  `graft/` is missing. Use `npm run index:map` or
+  `npm run graft -- ask "<task>"` to orient before broad searches. If Graft is
+  unavailable or results are incomplete, use `rg` with scoped paths.
 
 ## Repository map
 
@@ -167,6 +169,30 @@ When extending the scaffolding:
   for file operations; do not assume Unix utilities are installed.
 
 ## Coding agents and models
+
+### Code index with Graft
+
+Graft 0.10.1 is pinned as a development dependency and installed by `npm ci`.
+Run `npm run index:build` once per checkout. Query through `npm run graft --`
+to use the project version rather than a potentially different global CLI:
+
+- `npm run index:map`: repository overview.
+- `npm run graft -- ask "event validation"`: ranked source locations.
+- `npm run graft -- skeleton src/lib/domain.ts`: file signatures.
+- `npm run graft -- callers simulatePlan`: incoming references.
+- `npm run graft -- grep "crisisEventSchema"`: occurrences in indexed files.
+- `npm run index:check`: report whether the local index is current.
+
+Queries refresh the structural graph by default. Rebuild explicitly after
+changing branches or when freshness checks fail. Keep `graft/` out of Git;
+each teammate generates it locally. Structural indexing needs no model key.
+Use plain `build`, not `--deep`, for this setup. No indexing runs during app
+builds, commits or deployment, and no global agent settings are changed.
+
+The index is a navigation aid, not proof that every reference is found. Read
+source before changing it; use scoped `rg` for SQL migrations, docs, CSS,
+dynamic references or missing results. See [docs/code-index.md](docs/code-index.md)
+for setup, supported workflows and verified limits.
 
 ### Shared stack skills
 

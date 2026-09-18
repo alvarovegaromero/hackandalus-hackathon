@@ -11,6 +11,8 @@ La fuente de verdad del proyecto y sus convenciones es [PROJECT.md](PROJECT.md).
 Para incorporarte al equipo, sigue [CONTRIBUTING.md](CONTRIBUTING.md).
 El repositorio incluye [skills compartidas](docs/agent-skills.md) para React/Next.js,
 Postgres/Supabase, accesibilidad y diseño visual; no requieren instalación global.
+Para indexar el código tras `npm ci`, ejecuta `npm run index:build` y consulta
+el mapa con `npm run index:map`. Consulta la [guía de Graft](docs/code-index.md).
 
 ## Arranque local
 
