@@ -56,6 +56,7 @@ do not treat them as blockers for this milestone. Track follow-up work in TASKS.
 - `README.md`, `.env.example`: local setup, credentials and integration limitations.
 - `.husky`, `scripts`, `lint-staged.config.mjs`: local quality and branch/credential guards.
 - `.secretlintrc.json`: Secretlint recommended rules; `.secretlintignore` excludes generated output.
+- `scripts/setup-env.mjs`: creates an ignored local environment template without overwriting files.
 
 ## Setup / Build / Test / Run
 
@@ -79,6 +80,13 @@ remote enforcement; no paid GitHub features or Actions are needed to run them.
 The local browser demo requires no credentials. See README.md for the protected
 workflow API and optional environment variables. Do not apply migrations or
 invoke live communications without authorization for the specific action.
+`npm run env:setup` creates `.env.local` from `.env.example` only if absent.
+Commit only empty/harmless templates. Share actual development credentials through
+a team password manager or expiring private link, never GitHub files/issues/PRs.
+Deployment secrets belong in Vercel environment settings, separated by environment.
+GitHub Actions Secrets are only for Actions jobs, not a team credential download.
+Never put secret values in `NEXT_PUBLIC_*` variables. Revoke/rotate exposed keys;
+removing them from the latest file alone does not undo disclosure.
 
 When extending the scaffolding:
 

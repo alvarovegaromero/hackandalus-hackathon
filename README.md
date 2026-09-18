@@ -106,8 +106,10 @@ para arrancar. No hay workers separados, Convex, Python ni Supabase Queues.
 
 ## Configuración opcional
 
-Copia `.env.example` a `.env.local` y completa únicamente lo que vayas a usar.
-Nunca subas claves al repositorio.
+Ejecuta `npm run env:setup` para crear `.env.local` sin sobrescribir archivos
+existentes y completa únicamente lo que vayas a usar. Nunca subas claves al
+repositorio; consulta [CONTRIBUTING.md](CONTRIBUTING.md) para compartirlas y
+configurarlas por entorno.
 
 | Variable                                       | Uso                                                      |
 | ---------------------------------------------- | -------------------------------------------------------- |

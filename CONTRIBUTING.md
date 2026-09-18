@@ -64,9 +64,26 @@ archivos que modifica cada persona o agente para evitar pisar cambios.
 
 ## Claves y servicios
 
-Copia `.env.example` a `.env.local` solo cuando necesites integrar servicios;
-no sobrescribas un archivo local existente. Comparte secretos mediante un canal
-privado acordado, nunca en commits, PRs, chats de agentes o capturas.
+Ejecuta `npm run env:setup` para copiar `.env.example` a `.env.local` con valores
+vacíos. El comando conserva el archivo si ya existe, sin leerlo ni sobrescribirlo.
+Rellena los valores localmente cuando necesites integrar servicios.
+
+- **GitHub:** solo `.env.example`, con nombres de variables y valores vacíos.
+  Nunca subas `.env`, `.env.local` o claves reales, aunque el repositorio sea privado.
+- **Equipo:** comparte credenciales de desarrollo mediante un gestor de contraseñas
+  compartido o un enlace privado con caducidad. No uses issues, PRs, comentarios,
+  chats de agentes ni capturas para transmitirlas.
+- **Vercel:** configura las variables en el proyecto, separadas por Development,
+  Preview y Production. Evita usar claves de producción en desarrollo o previews.
+- **GitHub Actions Secrets:** resérvalos para workflows de Actions si se incorporan
+  más adelante; no son un mecanismo para repartir archivos `.env` al equipo.
+- **Exposición accidental:** revoca o rota la clave en su proveedor inmediatamente;
+  borrarla del último archivo o commit no elimina las copias ni el historial.
+
+Solo las variables `NEXT_PUBLIC_*` pueden llegar al navegador y deben contener
+datos públicos. Nunca pongas ahí `SUPABASE_SECRET_KEY`, `AI_GATEWAY_API_KEY`,
+`CRISIS_API_TOKEN` ni credenciales de HappyRobot. Los hooks reducen errores, pero
+no sustituyen esta separación.
 
 | Funcionalidad          | Configuración necesaria                                                                                  |
 | ---------------------- | -------------------------------------------------------------------------------------------------------- |

@@ -18,7 +18,8 @@
     "format:check": "prettier . --check",
     "check": "npm run secrets:check && npm run format:check && npm run lint && npm run typecheck && npm test && npm run build",
     "lint:staged": "lint-staged --concurrent false",
-    "secrets:check": "node scripts/check-secrets.mjs"
+    "secrets:check": "node scripts/check-secrets.mjs",
+    "env:setup": "node scripts/setup-env.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
