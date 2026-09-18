@@ -1,6 +1,6 @@
 import { executeHappyRobotAction, getExecutionMode, isHappyRobotConfigured } from "./happyrobot";
 import { buildDedupeKey, buildPlan } from "./priority";
-import { seedActions, seedEvents, seedPlan, seedResources, seedZones } from "./seed";
+import { seedActions, seedEvents, seedResources, seedZones } from "./seed";
 import type {
   Action,
   ActionStatus,
@@ -27,12 +27,17 @@ function uid(prefix: string) {
 }
 
 function createInitialState(): MutableState {
+  const events = clone(seedEvents);
+  const zones = clone(seedZones);
+  const resources = clone(seedResources);
+  const actions = clone(seedActions);
+
   return {
-    events: clone(seedEvents),
-    zones: clone(seedZones),
-    resources: clone(seedResources),
-    actions: clone(seedActions),
-    plan: clone(seedPlan),
+    events,
+    zones,
+    resources,
+    actions,
+    plan: buildPlan(1, zones, events, resources, actions),
     integration: {
       mode: getExecutionMode(),
       happyRobotConfigured: isHappyRobotConfigured(),
@@ -73,8 +78,8 @@ function normalizeIncomingEvent(payload: IncomingEventPayload): CrisisEvent {
   return {
     id: uid("evt"),
     source: payload.source ?? "happyrobot",
-    title: payload.title ?? "Incoming crisis signal",
-    description: payload.description ?? "Unstructured inbound signal received and normalized.",
+    title: payload.title ?? "Nueva senal de crisis",
+    description: payload.description ?? "Entrada no estructurada recibida y normalizada.",
     zoneId,
     category,
     severity,
@@ -118,10 +123,10 @@ function proposeActionForEvent(event: CrisisEvent) {
   const action: Action = {
     id: uid("act"),
     channel: event.severity === "critical" ? "call" : "ticket",
-    target: `${zone.name} response lead`,
-    objective: `Coordinate ${event.category} response for ${zone.name}.`,
+    target: `Responsable de ${zone.name}`,
+    objective: `Coordinar respuesta de ${event.category} en ${zone.name}.`,
     status: "pending",
-    reason: `${event.title} raised ${zone.name} priority with ${event.severity} severity and ${event.confidence} confidence.`,
+    reason: `${event.title} elevo la prioridad de ${zone.name} con severidad ${event.severity} y confianza ${event.confidence}.`,
     zoneId: zone.id,
     resourceId: resource?.id,
     executionMode: getExecutionMode(),
@@ -156,7 +161,7 @@ export function addEvent(payload: IncomingEventPayload) {
   );
 
   if (duplicate) {
-    duplicate.description = `${duplicate.description}\nDuplicate signal: ${event.description}`;
+    duplicate.description = `${duplicate.description}\nSenal duplicada: ${event.description}`;
     duplicate.confidence = duplicate.confidence === "high" ? "high" : event.confidence;
     duplicate.createdAt = event.createdAt;
   } else {
@@ -262,14 +267,14 @@ export function injectDemo(kind: "incident" | "resource-down" | "route-blocked" 
         .filter((action) => action.resourceId === resource.id && ["pending", "approved", "running"].includes(action.status))
         .map((action) => {
           action.status = "blocked";
-          action.error = `${resource.name} became unavailable.`;
+          action.error = `${resource.name} queda no disponible.`;
           action.updatedAt = new Date().toISOString();
           return action.id;
         });
       addEvent({
         source: "demo",
-        title: `${resource.name} became unavailable`,
-        description: "Resource availability changed mid-run; the plan must be rebuilt.",
+        title: `${resource.name} queda no disponible`,
+        description: "La disponibilidad de recursos cambio durante la ejecucion regional; el plan debe rehacerse.",
         zoneId: resource.zoneId ?? defaultZoneId(),
         category: "resource-shortage",
         severity: "high",
@@ -284,8 +289,8 @@ export function injectDemo(kind: "incident" | "resource-down" | "route-blocked" 
   if (kind === "route-blocked") {
     addEvent({
       source: "demo",
-      title: "Access route blocked",
-      description: "Primary route is blocked and assigned resources may need rerouting.",
+      title: "Ruta de acceso bloqueada",
+      description: "La ruta principal entre Granada y Almeria queda bloqueada y los recursos asignados pueden necesitar desvio.",
       zoneId: "zone-east",
       category: "route-blocked",
       severity: "critical",
@@ -297,14 +302,14 @@ export function injectDemo(kind: "incident" | "resource-down" | "route-blocked" 
 
   if (kind === "integration-failure") {
     const action = current.actions.find((candidate) => candidate.status !== "cancelled");
-    if (action) setActionStatus(action.id, "failed", action.externalActionId, "Simulated HappyRobot callback failure.");
+    if (action) setActionStatus(action.id, "failed", action.externalActionId, "Fallo simulado de callback HappyRobot.");
     return getSituation();
   }
 
   addEvent({
     source: "demo",
-    title: "New high-priority incident",
-    description: "Fresh inbound signal indicates a rapidly changing operational need.",
+    title: "Nuevo incidente de alta prioridad",
+    description: "Una nueva senal desde Sierra Morena indica una necesidad operativa que cambia rapido.",
     zoneId: "zone-north",
     category: "evacuation-support",
     severity: "critical",

@@ -202,10 +202,12 @@ h1 {
 .map {
   aspect-ratio: 16 / 9;
   background:
+    linear-gradient(180deg, rgba(237, 243, 239, 0) 0 58%, rgba(160, 210, 223, 0.42) 58% 100%),
+    radial-gradient(circle at 78% 66%, rgba(13, 118, 110, 0.16), transparent 20%),
     linear-gradient(90deg, rgba(31, 95, 153, 0.1) 1px, transparent 1px),
     linear-gradient(rgba(31, 95, 153, 0.1) 1px, transparent 1px),
-    linear-gradient(135deg, #dbe9e3, #f7ead1 48%, #d8e7ef);
-  background-size: 11% 11%, 11% 11%, 100% 100%;
+    linear-gradient(135deg, #d7e9ee, #edf3ef 48%, #d9e8f4);
+  background-size: 100% 100%, 100% 100%, 10% 10%, 10% 10%, 100% 100%;
   border: 1px solid var(--line);
   border-radius: 8px;
   min-height: 20rem;
@@ -213,13 +215,68 @@ h1 {
   position: relative;
 }
 
+.map-label {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(102, 112, 133, 0.22);
+  border-radius: 999px;
+  color: #344054;
+  font-size: 0.78rem;
+  font-weight: 800;
+  left: 0.75rem;
+  padding: 0.36rem 0.6rem;
+  position: absolute;
+  top: 0.75rem;
+  z-index: 3;
+}
+
+.region-shape {
+  height: 100%;
+  inset: 0;
+  position: absolute;
+  width: 100%;
+  z-index: 1;
+}
+
+.map-land {
+  fill: rgba(250, 247, 238, 0.92);
+  stroke: rgba(52, 64, 84, 0.45);
+  stroke-width: 3;
+}
+
+.map-land.andalucia {
+  fill: rgba(250, 247, 238, 0.96);
+  stroke: rgba(23, 26, 31, 0.52);
+}
+
+.map-land.border-context {
+  fill: rgba(214, 219, 223, 0.62);
+  stroke-dasharray: 8 6;
+}
+
+.map-land.sea-context {
+  fill: rgba(141, 200, 216, 0.38);
+  stroke: rgba(31, 95, 153, 0.26);
+  stroke-width: 2;
+}
+
+.map-line {
+  fill: none;
+  opacity: 0.28;
+  stroke: #1f5f99;
+  stroke-dasharray: 10 10;
+  stroke-width: 2;
+}
+
 .zone-marker {
+  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.88);
   flex-direction: column;
   min-height: 4.4rem;
-  min-width: 8.6rem;
+  min-width: 8.9rem;
   padding: 0.55rem 0.75rem;
   position: absolute;
   transform: translate(-50%, -50%);
+  z-index: 4;
 }
 
 .zone-marker span {
@@ -232,18 +289,22 @@ h1 {
 }
 
 .zone-marker.stable {
+  background: rgba(236, 253, 243, 0.9);
   border-color: rgba(31, 122, 77, 0.5);
 }
 
 .zone-marker.watch {
+  background: rgba(239, 248, 255, 0.9);
   border-color: rgba(31, 95, 153, 0.55);
 }
 
 .zone-marker.active {
+  background: rgba(255, 246, 237, 0.92);
   border-color: rgba(182, 93, 24, 0.65);
 }
 
 .zone-marker.critical {
+  background: rgba(254, 228, 226, 0.92);
   border-color: rgba(180, 35, 24, 0.75);
   color: var(--red);
 }

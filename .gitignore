@@ -11,6 +11,7 @@
 # Regenerable code graph and OS metadata.
 /graft/
 .next/
+.next.broken-*/
 node_modules/
 coverage/
 .DS_Store

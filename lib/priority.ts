@@ -51,8 +51,8 @@ export function buildPlan(
         zoneId: zone.id,
         score,
         reason: latestEvent
-          ? `${latestEvent.severity} ${latestEvent.category} report with ${latestEvent.confidence} confidence, ${zone.populationAtRisk} people at risk, and ${zone.needs.length} open needs.`
-          : `${zone.populationAtRisk} people at risk and ${zone.needs.length} open needs.`
+          ? `Senal ${latestEvent.severity} de ${latestEvent.category}, confianza ${latestEvent.confidence}, ${zone.populationAtRisk} personas en riesgo y ${zone.needs.length} necesidades abiertas.`
+          : `${zone.populationAtRisk} personas en riesgo y ${zone.needs.length} necesidades abiertas.`
       };
     })
     .sort((a, b) => b.score - a.score);
@@ -68,8 +68,8 @@ export function buildPlan(
     version,
     generatedAt: new Date().toISOString(),
     summary: topZone
-      ? `${topZone.name} is the current priority with score ${topPriority.score}. ${topPriority.reason}`
-      : "No active zones require action.",
+      ? `${topZone.name} es la prioridad actual con puntuacion ${topPriority.score}. ${topPriority.reason}`
+      : "No hay zonas activas que requieran accion.",
     priorities,
     proposedActionIds: openActionIds,
     invalidatedActionIds

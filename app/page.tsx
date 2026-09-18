@@ -22,13 +22,13 @@ import { useEffect, useMemo, useState } from "react";
 import type { Action, CrisisEvent, CrisisZone, Resource, SituationState } from "@/lib/types";
 
 const statusLabels: Record<Action["status"], string> = {
-  pending: "Pending",
-  approved: "Approved",
-  running: "Running",
-  succeeded: "Succeeded",
-  failed: "Failed",
-  blocked: "Blocked",
-  cancelled: "Cancelled"
+  pending: "Pendiente",
+  approved: "Aprobada",
+  running: "En curso",
+  succeeded: "Completada",
+  failed: "Fallida",
+  blocked: "Bloqueada",
+  cancelled: "Cancelada"
 };
 
 const severityRank: Record<CrisisEvent["severity"], number> = {
@@ -39,7 +39,7 @@ const severityRank: Record<CrisisEvent["severity"], number> = {
 };
 
 function timeLabel(value: string) {
-  return new Intl.DateTimeFormat("en", {
+  return new Intl.DateTimeFormat("es-ES", {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit"
@@ -112,7 +112,7 @@ export default function Home() {
     return (
       <main className="shell center">
         <Loader2 className="spin" size={24} />
-        <span>Loading command center</span>
+        <span>Cargando centro de mando</span>
       </main>
     );
   }
@@ -127,12 +127,12 @@ export default function Home() {
     <main className="shell">
       <header className="topbar">
         <div>
-          <p className="eyebrow">HappyRobot Crisis Command</p>
-          <h1>Live response plan v{situation.plan.version}</h1>
+          <p className="eyebrow">HappyRobot Crisis Command · Andalucia</p>
+          <h1>Plan vivo de respuesta v{situation.plan.version}</h1>
         </div>
         <div className="top-actions">
           <button
-            title="Refresh situation"
+            title="Actualizar situacion"
             className="icon-button"
             onClick={() => run("refresh", refresh)}
             disabled={busy !== null}
@@ -140,7 +140,7 @@ export default function Home() {
             <RefreshCw size={18} />
           </button>
           <button
-            title="Reset demo"
+            title="Reiniciar demo"
             className="icon-button danger-light"
             onClick={() => run("reset", () => requestJson("/api/demo/reset", { method: "POST", body: "{}" }))}
             disabled={busy !== null}
@@ -157,39 +157,39 @@ export default function Home() {
 
       <section className="metrics">
         <article>
-          <span>Top priority</span>
-          <strong>{topPriority?.zone.name ?? "None"}</strong>
+          <span>Prioridad actual</span>
+          <strong>{topPriority?.zone.name ?? "Ninguna"}</strong>
         </article>
         <article>
-          <span>Critical signals</span>
+          <span>Senales criticas</span>
           <strong>{criticalEvents}</strong>
         </article>
         <article>
-          <span>Open actions</span>
+          <span>Acciones abiertas</span>
           <strong>{openActions}</strong>
         </article>
         <article>
-          <span>Available resources</span>
+          <span>Recursos libres</span>
           <strong>{availableResources}</strong>
         </article>
         <article>
-          <span>Execution mode</span>
+          <span>Modo ejecucion</span>
           <strong>{situation.integration.mode}</strong>
         </article>
       </section>
 
-      <section className="demo-strip" aria-label="Demo event injectors">
+      <section className="demo-strip" aria-label="Inyectores de eventos demo">
         <button onClick={() => run("incident", () => requestJson("/api/demo/inject", { method: "POST", body: JSON.stringify({ kind: "incident" }) }))}>
-          <Siren size={16} /> New incident
+          <Siren size={16} /> Nuevo incidente
         </button>
         <button onClick={() => run("resource", () => requestJson("/api/demo/inject", { method: "POST", body: JSON.stringify({ kind: "resource-down" }) }))}>
-          <ShieldAlert size={16} /> Resource down
+          <ShieldAlert size={16} /> Recurso caido
         </button>
         <button onClick={() => run("route", () => requestJson("/api/demo/inject", { method: "POST", body: JSON.stringify({ kind: "route-blocked" }) }))}>
-          <Route size={16} /> Route blocked
+          <Route size={16} /> Ruta bloqueada
         </button>
         <button onClick={() => run("failure", () => requestJson("/api/demo/inject", { method: "POST", body: JSON.stringify({ kind: "integration-failure" }) }))}>
-          <AlertTriangle size={16} /> Integration failure
+          <AlertTriangle size={16} /> Fallo integracion
         </button>
       </section>
 
@@ -197,9 +197,19 @@ export default function Home() {
         <section className="panel map-panel">
           <div className="panel-title">
             <Crosshair size={18} />
-            <h2>Situation Map</h2>
+            <h2>Mapa operativo de Andalucia</h2>
           </div>
           <div className="map">
+            <div className="map-label">Andalucia · cobertura demo regional</div>
+            <svg className="region-shape" viewBox="0 0 760 520" role="img" aria-label="Mapa esquematico de Andalucia">
+              <path
+                className="map-land andalucia"
+                d="M94 285 L126 226 L185 206 L238 165 L314 152 L371 178 L431 143 L510 157 L574 188 L647 197 L694 235 L676 291 L628 328 L590 383 L506 389 L437 365 L374 386 L301 369 L248 397 L174 374 L121 335 Z"
+              />
+              <path className="map-land border-context" d="M86 214 L126 226 L94 285 L121 335 L83 354 L55 296 Z" />
+              <path className="map-land sea-context" d="M148 408 L249 421 L354 406 L451 421 L571 411 L650 374 L691 395 L632 461 L423 479 L238 459 Z" />
+              <path className="map-line" d="M185 206 L174 374 M314 152 L301 369 M431 143 L437 365 M574 188 L590 383 M121 335 L676 291 M126 226 L628 328" />
+            </svg>
             {situation.zones.map((zone) => {
               const priority = priorityFor(zone, situation);
               return (
@@ -221,7 +231,7 @@ export default function Home() {
         <section className="panel">
           <div className="panel-title">
             <AlertTriangle size={18} />
-            <h2>Priorities</h2>
+            <h2>Prioridades</h2>
           </div>
           <div className="priority-list">
             {situation.plan.priorities.map((priority, index) => {
@@ -244,7 +254,7 @@ export default function Home() {
         <section className="panel wide">
           <div className="panel-title">
             <Radio size={18} />
-            <h2>Action Queue</h2>
+            <h2>Cola de acciones</h2>
           </div>
           <div className="action-list">
             {situation.actions.map((action) => (
@@ -264,14 +274,14 @@ export default function Home() {
                 </div>
                 <div className="row-actions">
                   <button
-                    title="Approve action"
+                    title="Aprobar accion"
                     onClick={() => run(action.id, () => requestJson(`/api/actions/${action.id}/approve`, { method: "POST", body: "{}" }))}
                     disabled={busy !== null || !["pending", "failed", "blocked"].includes(action.status)}
                   >
-                    <Check size={15} /> Approve
+                    <Check size={15} /> Aprobar
                   </button>
                   <button
-                    title="Retry action"
+                    title="Reintentar accion"
                     onClick={() =>
                       run(`${action.id}-retry`, () =>
                         requestJson(`/api/actions/${action.id}/status`, {
@@ -282,10 +292,10 @@ export default function Home() {
                     }
                     disabled={busy !== null || !["failed", "blocked", "cancelled"].includes(action.status)}
                   >
-                    <RefreshCw size={15} /> Retry
+                    <RefreshCw size={15} /> Reintentar
                   </button>
                   <button
-                    title="Cancel action"
+                    title="Cancelar accion"
                     className="danger-light"
                     onClick={() =>
                       run(`${action.id}-cancel`, () =>
@@ -297,7 +307,7 @@ export default function Home() {
                     }
                     disabled={busy !== null || ["succeeded", "cancelled"].includes(action.status)}
                   >
-                    <X size={15} /> Cancel
+                    <X size={15} /> Cancelar
                   </button>
                 </div>
               </article>
@@ -308,7 +318,7 @@ export default function Home() {
         <section className="panel">
           <div className="panel-title">
             <Clock3 size={18} />
-            <h2>Event Timeline</h2>
+            <h2>Linea temporal</h2>
           </div>
           <div className="timeline">
             {situation.events.map((event) => (
@@ -320,7 +330,7 @@ export default function Home() {
                 </div>
                 <div className="event-actions">
                   <button
-                    title="Confirm event"
+                    title="Confirmar evento"
                     onClick={() =>
                       run(`${event.id}-confirm`, () =>
                         requestJson(`/api/events/${event.id}/mark`, {
@@ -334,7 +344,7 @@ export default function Home() {
                     <Check size={15} />
                   </button>
                   <button
-                    title="Discard event"
+                    title="Descartar evento"
                     className="danger-light"
                     onClick={() =>
                       run(`${event.id}-discard`, () =>
@@ -357,7 +367,7 @@ export default function Home() {
         <section className="panel">
           <div className="panel-title">
             <ShieldAlert size={18} />
-            <h2>Resources</h2>
+            <h2>Recursos</h2>
           </div>
           <div className="resource-list">
             {situation.resources.map((resource: Resource) => {
@@ -366,10 +376,10 @@ export default function Home() {
                 <article key={resource.id} className={`resource ${resource.status}`}>
                   <div>
                     <h3>{resource.name}</h3>
-                    <p>{resource.type} · capacity {resource.capacity}</p>
+                    <p>{resource.type} · capacidad {resource.capacity}</p>
                   </div>
                   <span>{resource.status}</span>
-                  <small>{zone?.name ?? "mobile"}</small>
+                  <small>{zone?.name ?? "movil"}</small>
                 </article>
               );
             })}
