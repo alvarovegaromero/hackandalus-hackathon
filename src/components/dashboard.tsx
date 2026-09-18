@@ -8,6 +8,7 @@ import {
   type Plan,
   type ActionStatus,
 } from "@/lib/domain";
+import { ScenarioPanel } from "./scenario-panel";
 
 type Entry = { event: CrisisEvent; plan: Plan; status: ActionStatus };
 const incidentId = "11111111-1111-4111-8111-111111111111";
@@ -62,7 +63,7 @@ export function Dashboard() {
       </header>
       <aside>
         Sin conexiones externas: datos temporales en este navegador, decisiones deterministas y
-        acciones simuladas. El escenario de crisis está pendiente de definir.
+        acciones simuladas. El escenario de incendio en Sierra Bermeja genera avisos simulados.
       </aside>
       <section className="metrics" aria-label="Estado de la simulación">
         <article>
@@ -149,6 +150,7 @@ export function Dashboard() {
           ))}
         </section>
       </div>
+      <ScenarioPanel />
       <footer>
         AI SDK · Workflow · Supabase · HappyRobot — conexiones reales pendientes de configurar
       </footer>

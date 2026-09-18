@@ -92,6 +92,29 @@ describe("manual injection", () => {
   it("rejects unknown events", () => {
     expect(() => fire(pack, createState(pack, 1), "nope")).toThrow();
   });
+
+  it("fires an improvised event once and rejects invalid ones", () => {
+    const improvised = {
+      id: "live-1",
+      atMin: 0,
+      kind: "chaos" as const,
+      label: "Corte de la MA-8301",
+      effects: [
+        { type: "set_fact" as const, factId: "road-ma8301", value: "cortada" },
+        { type: "witness" as const, factId: "road-ma8301", count: 2, sourceIds: ["road-api"] },
+      ],
+    };
+    const step = fire(pack, createState(pack, 1), improvised, 10);
+    expect(step.fired).toEqual(["live-1"]);
+    expect(factValue(step.state, "road-ma8301", 10)).toBe("cortada");
+    expect(step.state.pending).toHaveLength(2);
+    expect(fire(pack, step.state, improvised, 11).fired).toEqual([]);
+
+    const start = createState(pack, 1);
+    expect(() => fire(pack, start, { ...improvised, id: "chaos-wind-sw" })).toThrow();
+    const dangling = { type: "set_fact" as const, factId: "nope", value: 1 };
+    expect(() => fire(pack, start, { ...improvised, effects: [dangling] })).toThrow();
+  });
 });
 
 describe("probe", () => {

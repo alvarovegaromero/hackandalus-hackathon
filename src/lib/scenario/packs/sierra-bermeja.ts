@@ -36,7 +36,7 @@ export const sierraBermeja = scenarioPackSchema.parse({
     {
       id: "fire-camping",
       kind: "fire_activity",
-      entityLabel: "el camping",
+      entityLabel: "Camping Sierra Bermeja",
       location: camping,
       initial: "activo",
       alternatives: ["extinguido"],
@@ -76,7 +76,7 @@ export const sierraBermeja = scenarioPackSchema.parse({
     {
       id: "camping-headcount",
       kind: "headcount",
-      entityLabel: "el camping",
+      entityLabel: "Camping Sierra Bermeja",
       location: camping,
       initial: 120,
       alternatives: [100, 150],

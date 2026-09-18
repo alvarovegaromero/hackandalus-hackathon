@@ -1,7 +1,7 @@
 import type { Signal } from "../signals/schema";
 import type { Effect, ScenarioEvent } from "./events";
 import { between, chooseValue, hashSeed, jitter, pick, render, rng } from "./noise";
-import type { ScenarioPack, Source } from "./pack";
+import { scenarioPackSchema, type ScenarioPack, type Source } from "./pack";
 import {
   valueAt,
   withKeyframe,
@@ -157,17 +157,21 @@ export function advance(pack: ScenarioPack, state: EngineState, toMin: number): 
 }
 
 // Manual injection (chaos button): same mechanism as a scheduled event, at most once.
+// Takes a pack event id, or an improvised event that must be valid against the pack.
 export function fire(
   pack: ScenarioPack,
   state: EngineState,
-  eventId: string,
+  eventOrId: string | ScenarioEvent,
   atMin = state.nowMin,
 ): Step {
-  const event = pack.events.find((e) => e.id === eventId);
-  if (!event) throw new Error(`unknown event ${eventId}`);
-  if (state.fired.includes(eventId)) return { state, emitted: [], fired: [] };
+  const event =
+    typeof eventOrId === "string"
+      ? pack.events.find((e) => e.id === eventOrId)
+      : scenarioPackSchema.parse({ ...pack, events: [...pack.events, eventOrId] }).events.at(-1);
+  if (!event) throw new Error(`unknown event ${eventOrId}`);
+  if (state.fired.includes(event.id)) return { state, emitted: [], fired: [] };
   const { state: settled, emitted } = flush(runEvent(pack, state, event, atMin));
-  return { state: settled, emitted, fired: [eventId] };
+  return { state: settled, emitted, fired: [event.id] };
 }
 
 // FARO asks a responder about one fact; the answer comes from the hidden truth, with source noise.
