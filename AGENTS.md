@@ -12,3 +12,12 @@ Read [CHALLENGE.md](CHALLENGE.md) before designing features and check
 [TASKS.md](TASKS.md) for completed and deferred work. Read nested agent files
 before editing their directories. Update shared rules in PROJECT.md rather
 than duplicating them here.
+
+Keep documentation updated as you work. When a change alters setup,
+architecture, data contracts, workflows, API behavior, operational limits or
+project decisions, update the relevant shared docs in the same change
+(`README.md`, `TASKS.md`, `docs/`, `thoughts/`, `PROJECT.md` or this file).
+Do not leave stale instructions for the next agent to rediscover.
+
+For stack-specific work, use the shared skill paths listed in
+[PROJECT.md](PROJECT.md#shared-stack-skills).
