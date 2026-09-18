@@ -203,8 +203,15 @@ const riskDeltaBySeverity: Record<CrisisEvent["severity"], number> = {
 };
 
 /**
- * Aplica el efecto de una senal sobre su zona y anota en la propia senal que
- * cambio provoco, de forma que descartarla pueda revertirlo exactamente.
+ * Aplica el efecto de una señal sobre su zona y anota en la propia señal qué
+ * cambio provocó, de forma que descartarla pueda revertirlo exactamente.
+ *
+ * INVARIANTE COMPARTIDA CON lib/priority.ts. Esta función sube zone.riskScore
+ * y puede añadir una necesidad. El motor de prioridad DESCUENTA esos mismos
+ * appliedRiskDelta y appliedNeed para volver a contarlos con credibilidad y
+ * decaimiento temporal propios. Si cambias cómo se calcula o se anota el
+ * delta, el motor contará la señal dos veces y ninguna señal envejecerá.
+ * Cualquier cambio aquí exige revisar liveEventsForZone en lib/priority.ts.
  */
 function applyEventToZone(zone: CrisisZone, event: CrisisEvent): CrisisZone {
   const statusBySeverity: Record<CrisisEvent["severity"], CrisisZone["status"]> = {
@@ -214,7 +221,7 @@ function applyEventToZone(zone: CrisisZone, event: CrisisEvent): CrisisZone {
     critical: "critical"
   };
 
-  const need = event.category.replace(/-/g, " ");
+  const need = needOfEvent(event);
   const rawDelta = riskDeltaBySeverity[event.severity];
   const appliedDelta = Math.min(rawDelta, 100 - zone.riskScore);
   const addsNeed = !zone.needs.includes(need);
@@ -232,14 +239,23 @@ function applyEventToZone(zone: CrisisZone, event: CrisisEvent): CrisisZone {
   };
 }
 
-/** Deshace el efecto de una senal descartada sobre su zona. */
+/** Necesidad que una señal implica para su zona. */
+function needOfEvent(event: CrisisEvent) {
+  return event.category.replace(/-/g, " ");
+}
+
+/** Deshace el efecto de una señal descartada sobre su zona. */
 function revertEventFromZone(zone: CrisisZone, event: CrisisEvent): CrisisZone {
+  // La necesidad solo la registra la PRIMERA señal que la introduce, así que
+  // no basta con mirar appliedNeed de las demás: hay que comprobar si alguna
+  // otra señal viva de la zona implica esa misma necesidad. Si no, descartar
+  // la primera borraría una necesidad que otra señal sigue pidiendo.
   const stillNeeded = state().events.some(
     (other) =>
       other.id !== event.id &&
       other.zoneId === event.zoneId &&
       other.confirmed !== false &&
-      other.appliedNeed === event.appliedNeed
+      needOfEvent(other) === event.appliedNeed
   );
 
   return {
@@ -467,7 +483,24 @@ export async function approveAction(actionId: string, actor: Actor = "operator")
   action.updatedAt = action.approvedAt;
   action.stalledAfter = new Date(Date.now() + STALL_SECONDS * 1000).toISOString();
   action.idempotencyKey = `${action.id}:${action.attempt}`;
-  if (action.resourceId) assignResource(current.resources, action.resourceId, action.id, action.approvedAt);
+
+  // Si el recurso ya no está disponible hay que parar AQUÍ, antes de lanzar la
+  // llamada externa: de lo contrario se avisaría a alguien de que va en camino
+  // un recurso que no existe, y la acción acabaría marcada como completada.
+  if (action.resourceId) {
+    const asignado = assignResource(current.resources, action.resourceId, action.id, action.approvedAt);
+    if (!asignado) {
+      const recurso = current.resources.find((candidate) => candidate.id === action.resourceId);
+      action.status = "blocked";
+      action.error = `${recurso?.name ?? action.resourceId} no está disponible: la acción no se ejecuta.`;
+      action.updatedAt = nowIso();
+      action.stalledAfter = null;
+      audit(actor, "action-blocked", `Acción bloqueada por falta de recurso: ${action.objective}`, action.id);
+      replan("se intentó aprobar una acción sin recurso disponible");
+      return action;
+    }
+  }
+
   audit(actor, "action-approved", `Acción aprobada: ${action.objective}`, action.id);
 
   const attemptAtDispatch = action.attempt;
@@ -661,11 +694,22 @@ export function injectDemo(kind: DemoKind, actor: Actor = "operator") {
     );
     for (const move of reassignments) {
       const action = current.actions.find((candidate) => candidate.id === move.actionId);
-      if (!action || !move.toResourceId) continue;
+      if (!action) continue;
+
+      if (!move.toResourceId) {
+        // Sin sustituto posible. Se deja visible por qué esa zona espera, en
+        // lugar de que la acción se quede bloqueada sin explicación.
+        action.error = move.reason;
+        action.updatedAt = nowIso();
+        continue;
+      }
+
       action.resourceId = move.toResourceId;
       action.status = "pending";
       action.error = undefined;
-      action.reason = `${action.reason} ${move.reason}`;
+      // El motivo anterior hablaba del recurso caído, así que se sustituye en
+      // lugar de concatenarse: si no, el texto se contradice a sí mismo.
+      action.reason = move.reason;
       action.updatedAt = nowIso();
     }
 
