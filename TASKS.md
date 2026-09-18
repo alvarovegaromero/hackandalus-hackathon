@@ -38,6 +38,9 @@ probado llamadas a modelos ni comunicaciones reales.
 
 ## Skills de desarrollo compartidas
 
+- [x] Fijar Graft como dependencia de desarrollo y documentar el índice local y sus consultas.
+- [x] Exigir Graft en las instrucciones de agentes y el checklist de PR; generar y verificar el índice en los hooks de commit y push.
+
 - [x] Incluir las cuatro skills de React/Next.js, Postgres/Supabase, revisión de UI y diseño visual.
 - [x] Registrar revisiones upstream, referencias, licencias y guía de uso para el equipo.
 - [x] Enlazar las skills desde PROJECT.md para agentes sin descubrimiento automático.

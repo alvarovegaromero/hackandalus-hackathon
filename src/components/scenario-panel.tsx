@@ -5,6 +5,8 @@ import { z } from "zod";
 import { crisisEventSchema, planSchema } from "@/lib/domain";
 import { MAX_BATCH } from "@/lib/ingest";
 import { channelLabels, type Signal } from "@/lib/signals/schema";
+import { useEffect, useReducer, useState } from "react";
+import type { Channel, Signal } from "@/lib/signals/schema";
 import { crisisMinutes } from "@/lib/scenario/clock";
 import { advance, createState, factValue, fire, type EngineState } from "@/lib/scenario/engine";
 import type { Effect, ScenarioEvent } from "@/lib/scenario/events";
@@ -15,6 +17,12 @@ import type { Entry } from "./dashboard";
 const SEED = 2026;
 const TICK_MS = 1000;
 
+const channelNames: Record<Channel, string> = {
+  citizen_call: "Llamada",
+  sms: "SMS",
+  sensor: "Sensor",
+  verification: "Verificación",
+};
 const reportingSources = pack.sources.filter((s) => s.channel !== "verification");
 
 type LogEntry = { id: string; label: string; atMin: number; manual: boolean };
@@ -36,6 +44,10 @@ type Action =
 // Each run of the scenario is a separate incident, so rehearsals are not deduplicated away.
 const initial = (incidentId: string): Sim => ({
   incidentId,
+  | { type: "reset" }
+  | { type: "fire"; event: string | ScenarioEvent };
+
+const initial = (): Sim => ({
   engine: createState(pack, SEED),
   elapsedMs: 0,
   running: false,
@@ -49,6 +61,7 @@ const labelOf = (id: string) => pack.events.find((e) => e.id === id)?.label ?? i
 function reduce(sim: Sim, action: Action): Sim {
   if (action.type === "toggle") return { ...sim, running: !sim.running };
   if (action.type === "reset") return initial(action.incidentId);
+  if (action.type === "reset") return initial();
   if (action.type === "tick") {
     const elapsedMs = sim.elapsedMs + TICK_MS;
     const step = advance(pack, sim.engine, crisisMinutes(elapsedMs));
@@ -127,6 +140,8 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
   const [stats, setStats] = useState(noStats);
   const [agentError, setAgentError] = useState("");
   const sent = useRef(0);
+export function ScenarioPanel() {
+  const [sim, dispatch] = useReducer(reduce, undefined, initial);
   const [improvised, setImprovised] = useState(0);
   const [factId, setFactId] = useState(pack.facts[0].id);
   const [value, setValue] = useState(String(pack.facts[0].alternatives[0] ?? ""));
@@ -298,6 +313,10 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
         {stats.pending > 0 && ` · ${stats.pending} en curso`}
       </p>
       {agentError && <p role="alert">{agentError}</p>}
+        <button className="secondary" onClick={() => dispatch({ type: "reset" })}>
+          Reiniciar
+        </button>
+      </div>
 
       <div className="grid">
         <div>
@@ -354,6 +373,7 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
               {reportingSources.map((s) => (
                 <option key={s.id} value={s.id}>
                   {channelLabels[s.channel]} · {s.id}
+                  {channelNames[s.channel]} · {s.id}
                 </option>
               ))}
             </select>
@@ -397,6 +417,7 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
               <li key={s.id}>
                 <small>
                   {minute(s.receivedAtMin)} · {channelLabels[s.channel]} · {s.location.placeName}
+                  {minute(s.receivedAtMin)} · {channelNames[s.channel]} · {s.location.placeName}
                 </small>
                 <p>{describe(s)}</p>
               </li>
