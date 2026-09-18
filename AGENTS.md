@@ -94,6 +94,13 @@ When extending the scaffolding:
   This is an authorized exception to the integration-branch default below.
   At PR creation, `integration` existed locally but was not published on origin;
   verify remote branches before relying on stale remote-tracking refs.
+- `main` must only change through pull requests. Never commit or push directly
+  to `main`, including `git push origin HEAD:main`, API file writes, or force
+  pushes. The one-off direct push used during setup is no longer authorized.
+  Do not disable or bypass branch protection to publish changes. GitHub protection
+  requires PRs, applies to administrators, and blocks force pushes and deletion.
+  It does not require reviewer approvals or CI checks yet. The user merges PRs;
+  agents must never merge them, even when asked to "merge it".
 - The integration branch is `integration`; branch new work from it and target
   PRs at it. It was bootstrapped locally from `main` for initial setup; publishing
   it requires explicit permission. If missing in another clone, resolve the
