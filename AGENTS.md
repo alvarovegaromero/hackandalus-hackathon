@@ -12,8 +12,14 @@ system that manages a crisis (wildfire, blackout, flood, or similar) that
 changes while the system runs. See `CHALLENGE.md` for the full brief and
 scoring criteria.
 
-Status: Next.js + TypeScript prototype with in-memory crisis state, dashboard,
-API routes, deterministic replanning, tests, and HappyRobot adapter scaffold.
+Status: working Next.js + TypeScript vertical slice. In-memory crisis state and
+orchestration in `lib/store.ts`; decisions split into owned modules (priority,
+resources, contacts, escalation, scenario, history, learning, persistence);
+zod-validated API routes with a single error shape; operator dashboard with
+human approval, cancel, retry and signal confirmation; scripted scenarios that
+advance on their own; and a HappyRobot adapter with timeout, classified retries
+and idempotency, plus an inbound webhook that turns call outcomes into new
+signals. Persistence and cross-run learning are contract-only stubs so far.
 
 ## Start here
 
@@ -33,10 +39,36 @@ API routes, deterministic replanning, tests, and HappyRobot adapter scaffold.
 - `GEMINI.md`: imports these instructions for Gemini CLI.
 - `.agents/rules/project.md`: always-on Antigravity rule referencing this file.
 - `.gitignore`: local credentials, personal agent settings, and generated caches.
-- `README.md`: developer setup, demo flow, API surface, and HappyRobot env vars.
-- `app/`: Next.js App Router dashboard and API routes.
-- `lib/`: crisis domain types, seed data, priority engine, store, and HappyRobot
-  adapter.
+- `.editorconfig`, `.prettierrc`, `.prettierignore`: shared formatting. Double
+  quotes, semicolons, two-space indent, 110-column lines, no trailing commas.
+- `.github/workflows/ci.yml`: types, lint, tests and build on every push and PR,
+  plus a non-blocking `npm audit`.
+- `.github/pull_request_template.md`, `.github/ISSUE_TEMPLATE/`: PR and issue
+  templates aligned with the workflow below.
+- `README.md`: what the system solves, how to run it, the demo script, the full
+  API surface, env vars, and how live HappyRobot execution is gated.
+- `docs/architecture.md`: the design decisions and what each one costs.
+- `docs/security.md`: credentials, webhook secret, demo recipients, and the
+  security properties this prototype deliberately lacks.
+- `docs/happyDocumentation.md`: HappyRobot platform notes; flags which parts of
+  the integration contract are still unverified.
+- `LICENSE`: MIT (proposed; confirm before publishing).
+- `app/page.tsx`, `app/components/`: operator dashboard (polls `/api/situation`).
+- `app/api/`: HTTP surface — situation, events, actions, scenario control, demo
+  injectors, and the HappyRobot webhook.
+- `lib/`: the domain. Each file declares its owner on line one
+  (`// PROPIETARIO: …`); do not edit a module you do not own.
+  - `types.ts`: shared types, the contract between modules.
+  - `store.ts`: state and orchestration. Holds state, delegates every decision.
+  - `validation.ts`: zod schemas, demo-route authorization, uniform API errors.
+  - `priority.ts`: deterministic zone scoring and plan construction.
+  - `resources.ts`, `contacts.ts`, `escalation.ts`: who goes where, who is
+    called, on which channel, and what happens when nobody answers.
+  - `happyrobot.ts`: the only module that talks to the outside world.
+  - `scenario.ts`, `seed.ts`: initial situation and the scripts that make the
+    crisis change on its own.
+  - `history.ts`, `learning.ts`, `persistence.ts`: plan history and audit trail,
+    cross-run weights, optional JSON persistence.
 - `tests/`: Vitest coverage for priority logic and API route behavior.
 
 Add each major component's location and purpose here when it is introduced.
@@ -45,7 +77,7 @@ Add each major component's location and purpose here when it is introduced.
 
 Prerequisites:
 
-- Node.js 18.19+
+- Node.js 20+ (18.19 still works today; CI runs 20.x and 22.x)
 - npm 9+
 
 Commands:
@@ -55,6 +87,10 @@ Commands:
 - Build: `npm run build`
 - Lint: `npm run lint`
 - Test: `npm test`
+- Types: `npx tsc --noEmit` (no dedicated script yet)
+
+CI (`.github/workflows/ci.yml`) runs types, lint, tests and build on every push
+and pull request, plus a non-blocking `npm audit --omit=dev`.
 
 Environment:
 
@@ -89,10 +125,14 @@ When implementing the first runnable slice:
 
 ## Working with this repo
 
-- The integration branch is `integration`; branch new work from it and target
-  PRs at it. It was bootstrapped locally from `main` for initial setup; publishing
-  it requires explicit permission. If missing in another clone, resolve the
-  integration base before making commits; do not silently use `main` for PRs.
+- There is no `integration` branch. The branches that exist are `main` (the
+  default branch and the base for PRs) and the active feature branch
+  `feat/crisis-command-center`, where the hackathon work is happening. An earlier
+  version of this file described an `integration` branch that was never created;
+  if you were told to branch from it, use `main` instead.
+- Before branching, confirm the base with `git branch -a`. If the team later
+  introduces a long-lived integration branch, update this section first, in the
+  same PR that creates it.
 - Work on a feature branch such as `feat/<topic>`, `fix/<topic>`, or
   `chore/<topic>`. Never commit directly to `main`, `master`, or `develop`.
 - Local commits are permitted. Never push without explicit user permission

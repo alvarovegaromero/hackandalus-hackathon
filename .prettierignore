@@ -1,0 +1,15 @@
+# Generado o ajeno: no lo formateamos.
+node_modules/
+.next/
+.next.broken-*/
+coverage/
+.data/
+*.tsbuildinfo
+next-env.d.ts
+
+# npm gestiona el formato de estos ficheros.
+package-lock.json
+
+# Documentos con formato propio que no queremos que Prettier reflow-ee.
+CHALLENGE.md
+docs/happyDocumentation.md

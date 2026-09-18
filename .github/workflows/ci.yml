@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+# Una rama solo necesita el resultado de su ultimo push: cancelamos los
+# anteriores para no hacer cola durante el hackathon.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # La CI nunca debe poder disparar acciones reales contra HappyRobot.
+  ACTION_EXECUTION_MODE: mock
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  verify:
+    name: Verificar (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      # Si una version de Node falla queremos ver igualmente el resultado de
+      # la otra: suele distinguir "mi codigo esta roto" de "esta Node no vale".
+      fail-fast: false
+      matrix:
+        node-version: ["20.x", "22.x"]
+
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      # npm ci respeta package-lock.json al pie de la letra: la CI instala
+      # exactamente lo mismo que el equipo, y falla si el lockfile no cuadra
+      # con package.json en vez de "arreglarlo" por su cuenta.
+      - name: Instalar dependencias
+        run: npm ci
+
+      # Los pasos van de mas barato a mas caro para que un error tipico
+      # (un tipo mal, un lint) se vea en menos de un minuto.
+      - name: Comprobar tipos
+        run: npx --no-install tsc --noEmit
+
+      # El script "lint" puede cambiar de nombre o desaparecer con la
+      # migracion de Next (en Next 16 ya no existe `next lint`). Si no esta,
+      # avisamos en el resumen del run en vez de romper la CI entera.
+      - name: Lint
+        run: |
+          if [ "$(npm pkg get scripts.lint)" = "{}" ]; then
+            echo "::warning title=Sin script de lint::package.json no define \"lint\"; se omite el paso. Anadelo o actualiza este workflow."
+          else
+            npm run lint
+          fi
+
+      - name: Tests
+        run: |
+          if [ "$(npm pkg get scripts.test)" = "{}" ]; then
+            echo "::error title=Sin script de test::package.json no define \"test\". La CI no puede verificar nada."
+            exit 1
+          fi
+          npm test
+
+      - name: Build de produccion
+        run: npm run build
+
+  # Informativo: un aviso nuevo en una dependencia transitiva no puede
+  # bloquear una demo de hackathon, pero queremos verlo.
+  audit:
+    name: Auditoria de dependencias (informativa)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: npm audit (solo dependencias de produccion)
+        continue-on-error: true
+        run: |
+          npm audit --omit=dev || echo "::warning title=Vulnerabilidades detectadas::npm audit --omit=dev ha encontrado avisos. Revisalos, pero no bloquean el pull request."
