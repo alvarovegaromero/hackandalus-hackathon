@@ -7,6 +7,8 @@ and shared rules, including English commits, naming, hooks, secret detection
 and protected branches. Keep this file limited to Claude Code-specific notes.
 The team also uses Codex, Cursor and other models; use the same PROJECT.md rules
 when handing work between tools.
+Development spans Linux, macOS and Windows: follow PROJECT.md's portability
+rules, use the active shell's syntax, and state which OS was actually tested.
 
 ## Claude Code specifics
 

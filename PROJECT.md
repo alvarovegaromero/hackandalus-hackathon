@@ -100,6 +100,13 @@ When extending the scaffolding:
 
 ## Conventions
 
+- Linux, macOS and Windows are equally supported team development platforms.
+  Keep scripts portable: prefer Node.js filesystem/process APIs, avoid absolute
+  machine paths and OS-specific utilities, and use path helpers for filesystem
+  paths. Quote paths with spaces. Husky scripts must remain POSIX-compatible;
+  Git for Windows provides their shell. Document shell-specific alternatives
+  when necessary. A check on one OS is not proof it passes on the other two;
+  report which platforms were actually tested.
 - Use the committed Prettier configuration: UTF-8, LF, two-space indentation,
   double quotes, semicolons and trailing commas. `.editorconfig` configures
   editors and `.gitattributes` normalizes Git text files across macOS, Windows
@@ -163,6 +170,8 @@ When extending the scaffolding:
   All tools follow this same file; rules do not depend on the model/provider.
 - `AGENTS.md` is the generic entry point. `CLAUDE.md`, `GEMINI.md`, and editor
   rule files reference this document rather than copying shared policy.
+- Next.js agent-rule generation is disabled with `agentRules: false` in
+  `next.config.ts` so starting development does not rewrite `AGENTS.md`.
 - For tools that do not automatically load repository instructions, explicitly
   provide `AGENTS.md` and `PROJECT.md` at the start of the session.
 - Keep personal model choices, subscriptions, API keys and editor accounts local.
