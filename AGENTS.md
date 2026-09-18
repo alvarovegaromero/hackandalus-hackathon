@@ -18,3 +18,6 @@ architecture, data contracts, workflows, API behavior, operational limits or
 project decisions, update the relevant shared docs in the same change
 (`README.md`, `TASKS.md`, `docs/`, `thoughts/`, `PROJECT.md` or this file).
 Do not leave stale instructions for the next agent to rediscover.
+
+For stack-specific work, use the shared skill paths listed in
+[PROJECT.md](PROJECT.md#shared-stack-skills).
