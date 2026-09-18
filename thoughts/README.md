@@ -12,11 +12,11 @@ base.
 
 ## What is here
 
-| Document | What it is for | Read it if… |
-| --- | --- | --- |
-| [data-model.md](data-model.md) | Full data model on Supabase: 31 tables with DDL and per-field rationale, the Zod contract, flows, RLS, Realtime, scalability and the migration plan | You are going to touch the schema, a repository or a Zod schema |
-| [features.md](features.md) | What was built, module by module: functions, formulas, verification and what is still unwired | You are going to reimplement or port a module |
-| [open-questions.md](open-questions.md) | What nobody has decided yet, ordered by the phase it blocks | You want to know what still needs agreement |
+| Document                               | What it is for                                                                                                                                      | Read it if…                                                     |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| [data-model.md](data-model.md)         | Full data model on Supabase: 29 tables with DDL and per-field rationale, the Zod contract, flows, RLS, Realtime, scalability and the migration plan | You are going to touch the schema, a repository or a Zod schema |
+| [features.md](features.md)             | What was built, module by module: functions, formulas, verification and what is still unwired                                                       | You are going to reimplement or port a module                   |
+| [open-questions.md](open-questions.md) | What nobody has decided yet, ordered by the phase it blocks                                                                                         | You want to know what still needs agreement                     |
 
 The project's source-of-truth document is at the repository root:
 `HackSpain 2026 · Source of Truth del proyecto.md`. These documents build on

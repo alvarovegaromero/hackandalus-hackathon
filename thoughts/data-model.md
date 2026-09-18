@@ -351,13 +351,8 @@ export const worldStateSchema = z
       whatsapp: z.boolean(),
       email: z.boolean(),
     }),
-    hospitals: z.record(
-      z.string(),
-      z.object({ beds: z.number().int().min(0) }),
-    ),
-    frontline: z
-      .object({ x: z.number(), y: z.number(), headingDeg: z.number() })
-      .optional(),
+    hospitals: z.record(z.string(), z.object({ beds: z.number().int().min(0) })),
+    frontline: z.object({ x: z.number(), y: z.number(), headingDeg: z.number() }).optional(),
   })
   .strict();
 ```
@@ -1400,7 +1395,7 @@ opening the database to the browser before having authentication.
 
 ```sql
 alter table public.runs enable row level security;
--- … same for the remaining 30 tables …
+-- … same for the remaining 28 tables …
 revoke all on all tables in schema public from anon, authenticated;
 grant all on all tables in schema public to service_role;
 revoke update, delete on public.domain_events from service_role;
@@ -1490,7 +1485,7 @@ old code:
 | Proposed work order:                                                              |
 
 1. `src/lib/domain/*.ts` with the Zod schemas from section 6 and their tests.
-2. The migration with the 31 tables, cross-table constraints, RLS and publication.
+2. The migration with the 29 tables, cross-table constraints, RLS and publication.
 3. `supabase gen types` and `rowTo*` / `*ToRow` functions.
 4. Sierra Bermeja Seeds (`areas`, `vulnerable_sites`, `resources`,
    `contacts` without personal `address` values, `autonomy_rules`, `scenario_beats`).
