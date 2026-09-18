@@ -85,6 +85,15 @@ When extending the scaffolding:
 
 ## Working with this repo
 
+- GitHub repository: `alvarovegaromero/hackandalus-hackathon`
+  (https://github.com/alvarovegaromero/hackandalus-hackathon). The local
+  application/package name is `butterfish`; use the GitHub repository name
+  explicitly in `gh --repo` commands when needed.
+- The owner explicitly requested `main` as the target for the base scaffolding
+  delivery: https://github.com/alvarovegaromero/hackandalus-hackathon/pull/2.
+  This is an authorized exception to the integration-branch default below.
+  At PR creation, `integration` existed locally but was not published on origin;
+  verify remote branches before relying on stale remote-tracking refs.
 - The integration branch is `integration`; branch new work from it and target
   PRs at it. It was bootstrapped locally from `main` for initial setup; publishing
   it requires explicit permission. If missing in another clone, resolve the
@@ -98,6 +107,11 @@ When extending the scaffolding:
   does not authorize a new action.
 - Keep commits small and scoped; this repo is actively being built out
   during the hackathon.
+- Write all commit messages in English, including the subject and body,
+  regardless of the conversation language. Prefer concise Conventional Commit
+  subjects such as `feat: add crisis event ingestion` or
+  `docs: clarify scaffolding setup`. This also applies to suggested squash
+  commit messages; merges remain the user's responsibility.
 - Keep output compact: `git status -s`, `git diff --stat`, and
   `git log --oneline -n 10`; expand only the relevant details.
 - Use the active shell's syntax. On Windows, use PowerShell and literal paths

@@ -7,6 +7,11 @@ Keep this file limited to Claude Code-specific notes.
 
 ## Claude Code specifics
 
+- Write commit subjects and bodies in English, even when the user communicates
+  in Spanish. Follow the shared commit convention in `AGENTS.md`.
+- Repository: `alvarovegaromero/hackandalus-hackathon`; the local app is named
+  `butterfish`. Read `AGENTS.md` for branch rules and the owner's explicit
+  `main` target exception for the scaffolding PR (#2).
 - Project settings/permissions live in `.claude/settings.json`.
 - Put personal overrides in `.claude/settings.local.json` and personal notes
   in `CLAUDE.local.md`; both are ignored by Git. Never put secrets in shared
