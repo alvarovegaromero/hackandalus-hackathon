@@ -109,6 +109,7 @@ vistazo dónde tocar algo.
 | `lib/resources.ts` | Elección, asignación y liberación de recursos. |
 | `lib/contacts.ts` | A quién se avisa, por qué canal y con qué briefing. |
 | `lib/escalation.ts` | Cadenas de escalado cuando el primer contacto no responde. |
+| `lib/digitalTwin.ts` | Gemelo digital: reconstruye el mundo percibido desde señales y mide precisión contra la verdad simulada. |
 | `lib/happyrobot.ts` | Adaptador a HappyRobot. Lo único que habla con el exterior. |
 | `lib/scenario.ts` | Los guiones que hacen que la crisis cambie sola. |
 | `lib/history.ts` | Historial de planes, diferencias entre versiones y auditoría. |
@@ -176,7 +177,7 @@ método no soportado responde `405` con la cabecera `Allow`.
 
 | Endpoint | Qué hace |
 |---|---|
-| `GET /api/situation` | Devuelve el `SituationState` completo: señales, zonas, recursos, contactos, cadenas, acciones, plan vivo, historial de planes, auditoría, escenario, aprendizaje e integración. Es lo que sondea el panel cada 4 segundos, y de paso hace avanzar el guion y barre las acciones atascadas. |
+| `GET /api/situation` | Devuelve el `SituationState` completo: señales, zonas, recursos, contactos, cadenas, acciones, plan vivo, historial de planes, auditoría, escenario, mundo simulado, gemelo digital, aprendizaje e integración. Es lo que sondea el panel cada 4 segundos, y de paso hace avanzar el guion y barre las acciones atascadas. |
 
 ### Señales
 

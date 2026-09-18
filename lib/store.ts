@@ -4,6 +4,8 @@
 // history, learning, persistence y scenario.
 
 import { selectChannel, selectContact } from "./contacts";
+import { applyEventToWorld } from "./assumptions";
+import { buildDigitalTwin } from "./digitalTwin";
 import { buildEscalationChain } from "./escalation";
 import { executeHappyRobotAction, getExecutionMode, isHappyRobotConfigured } from "./happyrobot";
 import { appendAudit, diffPlans, pushPlanHistory } from "./history";
@@ -33,7 +35,8 @@ import type {
   IncomingEventPayload,
   IntegrationState,
   Resource,
-  SituationState
+  SituationState,
+  WorldState
 } from "./types";
 
 type MutableState = SituationState & { nextVersion: number };
@@ -68,7 +71,8 @@ function createInitialState(): MutableState {
   const contacts = clone(seedContacts);
   const actions = clone(seedActions);
 
-  return {
+  const world = clone(seedWorld);
+  const initial: MutableState = {
     events,
     zones,
     resources,
@@ -87,7 +91,8 @@ function createInitialState(): MutableState {
       liveActionsExecuted: 0,
       mockActionsExecuted: 0
     },
-    world: clone(seedWorld),
+    world,
+    digitalTwin: buildDigitalTwin(world, events),
     autonomyRules: clone(seedAutonomyRules),
     autonomyPaused: false,
     waiting: [],
@@ -95,6 +100,7 @@ function createInitialState(): MutableState {
     lessons: [],
     nextVersion: 2
   };
+  return initial;
 }
 
 /**
@@ -106,6 +112,7 @@ function withDefaults(restored: SituationState): SituationState {
   return {
     ...restored,
     world: restored.world ?? clone(seedWorld),
+    digitalTwin: restored.digitalTwin ?? buildDigitalTwin(restored.world ?? clone(seedWorld), restored.events ?? []),
     autonomyRules: restored.autonomyRules ?? clone(seedAutonomyRules),
     autonomyPaused: restored.autonomyPaused ?? false,
     waiting: restored.waiting ?? [],
@@ -127,7 +134,12 @@ function state() {
   const current = globalThis.crisisState;
   current.integration.mode = getExecutionMode();
   current.integration.happyRobotConfigured = isHappyRobotConfigured();
+  refreshDigitalTwin(current);
   return current;
+}
+
+function refreshDigitalTwin(current: SituationState & { world: WorldState }) {
+  current.digitalTwin = buildDigitalTwin(current.world, current.events);
 }
 
 function persist() {
@@ -299,6 +311,15 @@ function applyEventToZone(zone: CrisisZone, event: CrisisEvent): CrisisZone {
   };
 }
 
+function applyEventToWorldState(event: CrisisEvent) {
+  const current = state();
+  const nextWorld = applyEventToWorld(current.world, event);
+  if (nextWorld === current.world) return false;
+  current.world = nextWorld;
+  refreshDigitalTwin(current);
+  return true;
+}
+
 /** Necesidad que una señal implica para su zona. */
 function needOfEvent(event: CrisisEvent) {
   return event.category.replace(/-/g, " ");
@@ -413,6 +434,7 @@ export function getSituation(): SituationState {
     learning: current.learning,
     integration: current.integration,
     world: current.world,
+    digitalTwin: current.digitalTwin,
     autonomyRules: current.autonomyRules,
     autonomyPaused: current.autonomyPaused,
     waiting: current.waiting,
@@ -469,7 +491,11 @@ export function addEvent(payload: IncomingEventPayload, actor: Actor = "system")
     current.zones = current.zones.map((zone) =>
       zone.id === event.zoneId ? applyEventToZone(zone, event) : zone
     );
+    const worldChanged = applyEventToWorldState(event);
     audit(actor, "event-ingested", `Nueva señal: ${event.title}`, event.id);
+    if (worldChanged) {
+      audit(actor, "world-updated", `El gemelo digital incorporó evidencia: ${event.title}`, event.id);
+    }
     proposeActionForEvent(event);
   }
 

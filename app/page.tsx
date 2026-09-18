@@ -22,6 +22,7 @@ import type { CreateActionPayload, SituationState } from "@/lib/types";
 import ActionQueue from "./components/ActionQueue";
 import AuditPanel from "./components/AuditPanel";
 import ContactsPanel from "./components/ContactsPanel";
+import DigitalTwinPanel from "./components/DigitalTwinPanel";
 import HeroSummary from "./components/HeroSummary";
 import OperationsMap from "./components/OperationsMap";
 import PlanChanges from "./components/PlanChanges";
@@ -389,6 +390,8 @@ export default function Home() {
         onStop={() => scenarioCall("stop")}
         onSpeed={(speed) => scenarioCall("start", { speed })}
       />
+
+      <DigitalTwinPanel twin={maybe(situation, "digitalTwin")} nowMs={nowMs} />
 
       <section className="demo-strip" aria-label="Inyectar cambios a mano">
         <span className="strip-label">Inyectar un cambio</span>

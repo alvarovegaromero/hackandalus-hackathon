@@ -64,6 +64,8 @@ signals. Persistence and cross-run learning are contract-only stubs so far.
   - `priority.ts`: deterministic zone scoring and plan construction.
   - `resources.ts`, `contacts.ts`, `escalation.ts`: who goes where, who is
     called, on which channel, and what happens when nobody answers.
+  - `digitalTwin.ts`: perceived world rebuilt from signals, compared against the
+    simulated ground truth for uncertainty and accuracy metrics.
   - `happyrobot.ts`: the only module that talks to the outside world.
   - `scenario.ts`, `seed.ts`: initial situation and the scripts that make the
     crisis change on its own.

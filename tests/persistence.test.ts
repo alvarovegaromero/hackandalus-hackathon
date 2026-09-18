@@ -11,6 +11,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { buildDigitalTwin } from "@/lib/digitalTwin";
 import { diffPlans } from "@/lib/history";
 import {
   MIN_RUNS_TO_LEARN,
@@ -217,6 +218,19 @@ function makeState(overrides: Partial<SituationState> = {}): SituationState {
       hospitalBeds: {},
       updatedAt: "2026-02-01T10:00:00.000Z"
     },
+    digitalTwin: buildDigitalTwin(
+      {
+        windDirection: "NE",
+        windSpeedKmh: 22,
+        blockedRoads: [],
+        smsOperational: true,
+        voiceOperational: true,
+        hospitalBeds: {},
+        updatedAt: "2026-02-01T10:00:00.000Z"
+      },
+      [],
+      { now: "2026-02-01T10:00:00.000Z" }
+    ),
     autonomyRules: [],
     autonomyPaused: false,
     waiting: [],

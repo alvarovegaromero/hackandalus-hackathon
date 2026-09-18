@@ -179,6 +179,7 @@ primera línea:
 | `resources.ts` | Elegir, asignar y liberar recursos. |
 | `contacts.ts` | A quién se avisa, por qué canal y con qué briefing. |
 | `escalation.ts` | Cadenas de escalado: qué pasa si el primero no contesta. |
+| `digitalTwin.ts` | Gemelo digital: estado percibido desde señales, divergencias y precisión frente a la verdad simulada. |
 | `happyrobot.ts` | Único punto de salida al exterior. |
 | `scenario.ts` | El guion que hace que la situación cambie sola. |
 | `history.ts` | Historial de planes, diferencias entre versiones y auditoría. |
@@ -255,5 +256,6 @@ reproducible y demo interactiva con el mismo motor detrás.
 | Aprobación humana y cola de acciones | Implementado |
 | Validación de entrada y errores homogéneos en toda la API | Implementado |
 | Guion que avanza solo, con tres escenarios y velocidad ajustable | Implementado |
+| Gemelo digital con métricas de precisión, divergencia e incertidumbre | Implementado |
 | Persistencia en JSON | Contrato definido, implementación pendiente |
 | Aprendizaje entre ejecuciones | Contrato definido, acumula estadísticas en memoria; no influye todavía en la puntuación |

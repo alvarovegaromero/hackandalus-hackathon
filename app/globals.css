@@ -1843,7 +1843,8 @@ h1 .mode.mock {
 
   .kpi-grid,
   .zone-stats,
-  .field-grid {
+  .field-grid,
+  .twin-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -2014,6 +2015,85 @@ button.active {
   flex-wrap: wrap;
   gap: 0.35rem;
   margin-bottom: 0.6rem;
+}
+
+.digital-twin {
+  margin-bottom: 0.9rem;
+}
+
+.digital-twin.has-mismatch {
+  border-color: rgba(161, 27, 18, 0.38);
+}
+
+.twin-summary {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 0.65rem;
+}
+
+.twin-summary article {
+  background: #f7f7f9;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  min-width: 0;
+  padding: 0.55rem 0.65rem;
+}
+
+.twin-summary article.alarm {
+  background: var(--red-soft);
+  border-color: rgba(161, 27, 18, 0.25);
+}
+
+.twin-summary span {
+  color: var(--muted);
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.twin-summary strong {
+  display: block;
+  font-size: 1.25rem;
+  line-height: 1.15;
+  margin-top: 0.15rem;
+}
+
+.twin-facts {
+  margin-top: 0.65rem;
+}
+
+.mini-row.twin-fact {
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.mini-row.twin-fact > svg {
+  flex: 0 0 auto;
+  margin-top: 0.1rem;
+}
+
+.mini-row.twin-fact.confirmed {
+  border-left: 4px solid var(--green);
+}
+
+.mini-row.twin-fact.inferred,
+.mini-row.twin-fact.stale {
+  border-left: 4px solid var(--blue);
+}
+
+.mini-row.twin-fact.unknown {
+  border-left: 4px solid var(--line);
+}
+
+.mini-row.twin-fact.mismatch {
+  border-left: 4px solid var(--red);
+}
+
+.twin-impact {
+  display: block;
+  margin-top: 0.22rem;
 }
 
 .assessment {

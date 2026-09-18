@@ -414,6 +414,42 @@ export interface WorldState {
 }
 
 // ---------------------------------------------------------------------------
+// Gemelo digital
+//
+// El escenario mantiene una verdad simulada, pero FARO no debe actuar como si
+// la conociera por magia. El gemelo digital es la foto que FARO reconstruye a
+// partir de señales y evidencia, más métricas de cuánto se parece a la verdad
+// oculta de la demo.
+// ---------------------------------------------------------------------------
+
+export type DigitalTwinFactStatus = "confirmed" | "inferred" | "unknown" | "stale" | "mismatch";
+
+export interface DigitalTwinFact {
+  id: string;
+  label: string;
+  variable: string;
+  perceived: string;
+  truth: string;
+  confidence: number;
+  status: DigitalTwinFactStatus;
+  evidenceEventIds: string[];
+  updatedAt: string | null;
+  impact: string;
+}
+
+export interface DigitalTwinState {
+  updatedAt: string;
+  perceivedWorld: WorldState;
+  facts: DigitalTwinFact[];
+  accuracy: number;
+  confirmedFacts: number;
+  unknownFacts: number;
+  staleFacts: number;
+  mismatches: number;
+  summary: string;
+}
+
+// ---------------------------------------------------------------------------
 // Autonomía graduada
 //
 // Un sistema que pide permiso para todo no es agéntico, y uno que no lo pide
@@ -494,6 +530,8 @@ export interface SituationState {
   integration: IntegrationState;
   /** Estado del mundo simulado que rompe los supuestos del plan. */
   world: WorldState;
+  /** Gemelo digital reconstruido desde señales y comparado con el mundo simulado. */
+  digitalTwin: DigitalTwinState;
   /** Reglas de autonomía vigentes. */
   autonomyRules: AutonomyRule[];
   /** Interruptor general: una persona puede parar la autonomía en caliente. */
