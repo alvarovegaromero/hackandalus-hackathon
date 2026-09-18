@@ -19,3 +19,6 @@ node_modules/
 coverage/
 .DS_Store
 Thumbs.db
+
+# Directorio de compilacion del segundo servidor dev (NEXT_DIST_DIR).
+.next-dev/
