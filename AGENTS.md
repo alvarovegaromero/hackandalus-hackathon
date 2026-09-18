@@ -137,5 +137,10 @@ When extending the scaffolding:
   decisions, re-planning, resource constraints, and integration failure paths.
   Documentation-only edits need link/configuration and diff checks, not a
   newly invented application test suite.
+- Keep documentation updated as you work. When a change alters setup,
+  architecture, data contracts, workflows, API behavior, operational limits, or
+  project decisions, update the relevant shared docs in the same change
+  (`README.md`, `TASKS.md`, `docs/`, `thoughts/`, or this file). Do not leave
+  stale instructions for the next agent to rediscover.
 - Report what changed, what was verified, and any failures or skipped checks.
   Keep this file aligned with the actual code and runnable commands.
