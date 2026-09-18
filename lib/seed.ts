@@ -1,4 +1,14 @@
-import type { Action, Contact, CrisisEvent, CrisisZone, Resource, ScenarioBeat } from "./types";
+import type {
+  Action,
+  AutonomyRule,
+  Contact,
+  CrisisEvent,
+  CrisisZone,
+  Resource,
+  ScenarioBeat,
+  SourceReliability,
+  WorldState
+} from "./types";
 
 const now = new Date().toISOString();
 
@@ -310,4 +320,81 @@ export const seedScenarioBeats: ScenarioBeat[] = [
     label: "Caída de la integración de mensajería",
     demoKind: "integration-failure"
   }
+];
+
+/**
+ * Estado inicial del mundo simulado. Es lo que el motor de escenario mueve y
+ * lo que, al cambiar, rompe los supuestos que el plan declaró.
+ */
+export const seedWorld: WorldState = {
+  windDirection: "NE",
+  windSpeedKmh: 22,
+  blockedRoads: [],
+  smsOperational: true,
+  voiceOperational: true,
+  hospitalBeds: {
+    "hospital-costa-del-sol": 14,
+    "hospital-serrania": 8
+  },
+  updatedAt: now
+};
+
+/**
+ * Autonomía graduada. El criterio es la reversibilidad: lo que se puede
+ * deshacer lo hace el sistema solo, lo que no siempre pasa por una persona.
+ * Un sistema que pide permiso para todo no es agéntico; uno que no lo pide
+ * para nada no es supervisable.
+ */
+export const seedAutonomyRules: AutonomyRule[] = [
+  {
+    actionKind: "verificar",
+    reversibility: "reversible",
+    level: "auto",
+    rationale: "Llamar para comprobar un dato no compromete nada y reduce la incertidumbre."
+  },
+  {
+    actionKind: "avisar",
+    reversibility: "reversible",
+    level: "auto-notify",
+    rationale: "Informar a un responsable es reversible; queda anotado para que se pueda revisar."
+  },
+  {
+    actionKind: "asignar-recurso",
+    reversibility: "reversible",
+    level: "auto-notify",
+    rationale: "Mover un medio se puede deshacer, y esperar aprobación cuesta minutos que no hay."
+  },
+  {
+    actionKind: "aviso-masivo",
+    reversibility: "partial",
+    level: "approval",
+    confidenceThreshold: 0.9,
+    rationale:
+      "Un aviso a la población no se puede retirar. Se automatiza solo con confianza muy alta; por debajo, lo aprueba una persona."
+  },
+  {
+    actionKind: "evacuar",
+    reversibility: "irreversible",
+    level: "approval",
+    rationale: "Ordenar una evacuación mueve a personas vulnerables. Siempre lo decide una persona."
+  },
+  {
+    actionKind: "escalar",
+    reversibility: "irreversible",
+    level: "approval",
+    rationale: "Pedir refuerzos externos compromete recursos ajenos y no se deshace."
+  }
+];
+
+/**
+ * Fiabilidad de partida por fuente. El aprendizaje la corrige con lo observado
+ * en ejecuciones anteriores.
+ */
+export const seedSourceReliability: SourceReliability[] = [
+  { source: "sensor", reliability: 0.9, observations: 0, confirmed: 0 },
+  { source: "operator", reliability: 0.95, observations: 0, confirmed: 0 },
+  { source: "happyrobot", reliability: 0.85, observations: 0, confirmed: 0 },
+  { source: "public", reliability: 0.55, observations: 0, confirmed: 0 },
+  { source: "demo", reliability: 0.8, observations: 0, confirmed: 0 },
+  { source: "scenario", reliability: 0.9, observations: 0, confirmed: 0 }
 ];

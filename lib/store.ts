@@ -7,12 +7,21 @@ import { selectChannel, selectContact } from "./contacts";
 import { buildEscalationChain } from "./escalation";
 import { executeHappyRobotAction, getExecutionMode, isHappyRobotConfigured } from "./happyrobot";
 import { appendAudit, diffPlans, pushPlanHistory } from "./history";
-import { emptyWeights, recordActionOutcome } from "./learning";
-import { isPersistenceEnabled, loadState, loadWeights, saveState } from "./persistence";
+import { buildRunRecord, emptyWeights, recordActionOutcome, weightsFromRuns } from "./learning";
+import { isPersistenceEnabled, loadRuns, loadState, loadWeights, saveRun, saveState, saveWeights } from "./persistence";
 import { buildDedupeKey, buildPlan } from "./priority";
 import { assignResource, reassignAffectedActions, releaseResource, selectResourceForAction } from "./resources";
 import { createScenarioState, dueBeats, startScenario, stopScenario } from "./scenario";
-import { seedActions, seedContacts, seedEvents, seedResources, seedZones } from "./seed";
+import {
+  seedActions,
+  seedAutonomyRules,
+  seedContacts,
+  seedEvents,
+  seedResources,
+  seedSourceReliability,
+  seedWorld,
+  seedZones
+} from "./seed";
 import type {
   Action,
   ActionStatus,
@@ -22,6 +31,7 @@ import type {
   CrisisZone,
   DemoKind,
   IncomingEventPayload,
+  IntegrationState,
   Resource,
   SituationState
 } from "./types";
@@ -77,15 +87,39 @@ function createInitialState(): MutableState {
       liveActionsExecuted: 0,
       mockActionsExecuted: 0
     },
+    world: clone(seedWorld),
+    autonomyRules: clone(seedAutonomyRules),
+    autonomyPaused: false,
+    waiting: [],
+    sourceReliability: clone(seedSourceReliability),
+    lessons: [],
     nextVersion: 2
+  };
+}
+
+/**
+ * Un estado restaurado de disco puede venir de una versión anterior del
+ * esquema y no traer los campos nuevos. Rellenarlos aquí evita que el resto
+ * del sistema tenga que defenderse de undefined en cada lectura.
+ */
+function withDefaults(restored: SituationState): SituationState {
+  return {
+    ...restored,
+    world: restored.world ?? clone(seedWorld),
+    autonomyRules: restored.autonomyRules ?? clone(seedAutonomyRules),
+    autonomyPaused: restored.autonomyPaused ?? false,
+    waiting: restored.waiting ?? [],
+    sourceReliability: restored.sourceReliability ?? clone(seedSourceReliability),
+    lessons: restored.lessons ?? []
   };
 }
 
 function restoreOrCreate(): MutableState {
   if (!isPersistenceEnabled()) return createInitialState();
   const restored = loadState();
-  if (!restored) return createInitialState();
-  return { ...restored, nextVersion: restored.plan.version + 1 };
+  if (!restored?.plan) return createInitialState();
+  const completo = withDefaults(restored);
+  return { ...completo, nextVersion: completo.plan.version + 1 };
 }
 
 function state() {
@@ -122,6 +156,23 @@ function audit(actor: Actor, kind: string, summary: string, ref?: string) {
   });
 }
 
+/** Foto de lo que hay que comparar para explicar qué cambió entre planes. */
+let planContext: {
+  zones: CrisisZone[];
+  resources: Resource[];
+  integration: IntegrationState;
+} | null = null;
+
+/** Se llama ANTES de mutar, para que diffPlans pueda comparar contra el antes. */
+function capturePlanContext() {
+  const current = state();
+  planContext = {
+    zones: clone(current.zones),
+    resources: clone(current.resources),
+    integration: clone(current.integration)
+  };
+}
+
 function replan(trigger: string, invalidatedActionIds: string[] = []) {
   const current = state();
   const previous = current.plan;
@@ -134,7 +185,16 @@ function replan(trigger: string, invalidatedActionIds: string[] = []) {
     invalidatedActionIds
   );
   next.trigger = trigger;
-  next.changes = diffPlans(previous, next);
+  next.changes = diffPlans(previous, next, {
+    previousZones: planContext?.zones ?? current.zones,
+    nextZones: current.zones,
+    previousResources: planContext?.resources ?? current.resources,
+    nextResources: current.resources,
+    actions: current.actions,
+    previousIntegration: planContext?.integration ?? current.integration,
+    nextIntegration: current.integration
+  });
+  planContext = null;
   current.planHistory = pushPlanHistory(current.planHistory, previous);
   current.plan = next;
   persist();
@@ -284,7 +344,7 @@ function proposeActionForEvent(event: CrisisEvent) {
   if (existingOpen) return;
 
   const urgent = event.severity === "critical" || event.severity === "high";
-  const contact = selectContact(current.contacts, zone.id, event.category);
+  const contact = selectContact(current.contacts, zone.id, event.category, current.learning);
   const channel = contact ? selectChannel(contact, urgent, current.learning) : urgent ? "call" : "ticket";
   const at = nowIso();
   const id = uid("act");
@@ -351,7 +411,13 @@ export function getSituation(): SituationState {
     audit: current.audit,
     scenario: current.scenario,
     learning: current.learning,
-    integration: current.integration
+    integration: current.integration,
+    world: current.world,
+    autonomyRules: current.autonomyRules,
+    autonomyPaused: current.autonomyPaused,
+    waiting: current.waiting,
+    sourceReliability: current.sourceReliability,
+    lessons: current.lessons
   });
 }
 
@@ -362,7 +428,21 @@ export function pollSituation(): SituationState {
   return getSituation();
 }
 
+/** Cierra la ejecución en curso y deja su lección disponible para la siguiente. */
+function closeRun() {
+  if (!globalThis.crisisState) return;
+  try {
+    saveRun(buildRunRecord(getSituation()));
+    saveWeights(weightsFromRuns(loadRuns()));
+  } catch {
+    // Aprender es opcional; nunca puede impedir reiniciar la demo.
+  }
+}
+
 export function resetSituation() {
+  // Se cierra ANTES de sustituir el estado: reiniciar es lo que más se pulsa
+  // en una demo, y sin esto se perdería el aprendizaje de toda la partida.
+  closeRun();
   globalThis.crisisState = createInitialState();
   audit("operator", "reset", "La demo se reinició al estado inicial.");
   return getSituation();
@@ -506,7 +586,8 @@ export async function approveAction(actionId: string, actor: Actor = "operator")
   const attemptAtDispatch = action.attempt;
 
   try {
-    const result = await executeHappyRobotAction(action);
+    const contacto = current.contacts.find((candidate) => candidate.id === action.contactId) ?? null;
+    const result = await executeHappyRobotAction(action, contacto);
 
     // El operador puede haber cancelado o reintentado mientras la llamada
     // estaba en vuelo: en ese caso la respuesta tardia no puede pisar el estado.
@@ -633,6 +714,7 @@ export function stopScenarioRun() {
   const current = state();
   stopScenario(current.scenario);
   audit("operator", "scenario-stopped", "Escenario detenido.");
+  closeRun();
   return getSituation();
 }
 

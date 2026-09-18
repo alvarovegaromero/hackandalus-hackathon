@@ -1,55 +1,92 @@
-import { NextResponse } from "next/server";
-import { validateWebhookSecret } from "@/lib/happyrobot";
-import { cancelAction, retryAction, setActionStatus } from "@/lib/store";
-import type { ActionStatus } from "@/lib/types";
+// PROPIETARIO: agente de endurecimiento de la API y validacion de entrada.
+//
+// Ruta de INTERFAZ para operar sobre una accion: cancelar, reintentar o fijar
+// su estado a mano. NO es el callback de HappyRobot.
+//
+// Antes esta ruta mezclaba las dos responsabilidades y exigia el secreto del
+// webhook: con `HAPPYROBOT_WEBHOOK_SECRET` definido, como recomienda
+// `.env.example`, los botones de cancelar y reintentar devolvian 401 y la
+// interfaz quedaba inservible. El callback externo vive ahora en
+// `app/api/webhooks/happyrobot`, con su propio secreto, y aqui no se pide
+// ninguno: son operaciones humanas desde el panel.
+
+import { cancelAction, getSituation, retryAction, setActionStatus } from "@/lib/store";
+import type { Action } from "@/lib/types";
+import { actionStatusSchema, apiError, apiErrorFromThrown, apiOk, methodNotAllowed, parseJsonBody } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
-const allowedStatuses: ActionStatus[] = [
-  "pending",
-  "approved",
-  "running",
-  "succeeded",
-  "failed",
-  "blocked",
-  "cancelled"
-];
+/** Busca por id local o por id externo, igual que hace el store. */
+function findAction(actionId: string): Action | undefined {
+  return getSituation().actions.find(
+    (candidate) => candidate.id === actionId || candidate.externalActionId === actionId
+  );
+}
 
-const externalStatusMap: Record<string, ActionStatus> = {
-  completed: "succeeded",
-  complete: "succeeded",
-  success: "succeeded",
-  in_progress: "running",
-  needs_human: "blocked",
-  error: "failed"
-};
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const parsed = await parseJsonBody(request, actionStatusSchema, { permitirVacio: false });
+  if (!parsed.ok) return parsed.response;
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
-  if (!validateWebhookSecret(request)) {
-    return NextResponse.json({ error: "Invalid HappyRobot webhook secret" }, { status: 401 });
+  const payload = parsed.data;
+  const actionId = payload.localActionId ?? id;
+  const action = findAction(actionId);
+  if (!action) {
+    return apiError("no_encontrado", `No existe ninguna acción con identificador "${actionId}".`, 404);
   }
 
-  const payload = (await request.json()) as {
-    status?: ActionStatus | "completed" | "complete" | "success" | "in_progress" | "needs_human" | "error";
-    operation?: "cancel" | "retry";
-    externalActionId?: string;
-    localActionId?: string;
-    error?: string;
-  };
+  const operation = payload.operation ?? "set-status";
 
   try {
-    const localActionId = payload.localActionId ?? params.id;
-    if (payload.operation === "cancel") return NextResponse.json({ action: cancelAction(localActionId) });
-    if (payload.operation === "retry") return NextResponse.json({ action: retryAction(localActionId) });
-
-    const status = payload.status ? externalStatusMap[payload.status] ?? payload.status : undefined;
-    if (!status || !allowedStatuses.includes(status)) {
-      return NextResponse.json({ error: "Unsupported action status" }, { status: 400 });
+    if (operation === "cancel") {
+      // Cancelar algo ya terminado o ya cancelado no es un error del servidor:
+      // es un conflicto de estado y se responde 409.
+      if (action.status === "succeeded" || action.status === "cancelled") {
+        return apiError(
+          "conflicto",
+          `La acción ya está en estado "${action.status}" y no se puede cancelar.`,
+          409
+        );
+      }
+      return apiOk({ action: cancelAction(action.id) });
     }
 
-    const action = setActionStatus(localActionId, status, payload.externalActionId, payload.error);
-    return NextResponse.json({ action });
+    if (operation === "retry") {
+      if (action.status === "running") {
+        return apiError("conflicto", "La acción está en curso: cancélala antes de reintentarla.", 409);
+      }
+      if (action.status === "succeeded") {
+        return apiError("conflicto", "La acción ya terminó con éxito: no tiene sentido reintentarla.", 409);
+      }
+      return apiOk({ action: retryAction(action.id) });
+    }
+
+    if (!payload.status) {
+      return apiError(
+        "cuerpo_invalido",
+        "Para fijar el estado hay que indicar el campo status.",
+        400,
+        [{ campo: "status", mensaje: "Campo obligatorio con la operación set-status." }]
+      );
+    }
+
+    // Cambio de estado iniciado por el operador: el actor es "operator", no
+    // "happyrobot", para que la auditoria no atribuya a la integracion algo
+    // que hizo una persona.
+    const updated = setActionStatus(
+      action.id,
+      payload.status,
+      payload.externalActionId,
+      payload.error,
+      "operator"
+    );
+    return apiOk({ action: updated });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Unknown error" }, { status: 404 });
+    return apiErrorFromThrown(error, "No se pudo actualizar la acción");
   }
 }
+
+export const GET = methodNotAllowed(["POST"]);
+export const PUT = methodNotAllowed(["POST"]);
+export const PATCH = methodNotAllowed(["POST"]);
+export const DELETE = methodNotAllowed(["POST"]);

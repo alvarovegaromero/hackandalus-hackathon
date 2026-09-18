@@ -8,6 +8,9 @@
 **/.claude/settings.local.json
 **/CLAUDE.local.md
 
+# Estado persistido en local (CRISIS_PERSISTENCE=on). Nunca se versiona.
+.data/
+
 # Regenerable code graph and OS metadata.
 /graft/
 .next/

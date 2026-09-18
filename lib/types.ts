@@ -43,8 +43,12 @@ export interface CrisisEvent {
   appliedRiskDelta: number;
   /** Necesidad que esta senal anadio a la zona, o null si no anadio ninguna. */
   appliedNeed: string | null;
-  /** Estado de la zona antes de que esta senal la modificase. */
+  /** Estado de la zona antes de que esta señal la modificase. */
   previousZoneStatus: ZoneStatus | null;
+  /** Triaje calibrado. Opcional: las señales antiguas no lo llevan. */
+  assessment?: SignalAssessment;
+  /** Acción de verificación abierta para resolver la duda sobre esta señal. */
+  verificationActionId?: string;
 }
 
 export interface CrisisZone {
@@ -57,6 +61,10 @@ export interface CrisisZone {
   needs: string[];
   coordinates: { x: number; y: number };
   lastUpdatedAt: string;
+  /** Puntos vulnerables de la zona: residencias, colegios, campings. */
+  vulnerableSites?: VulnerableSite[];
+  /** Minutos estimados hasta que el daño alcance la zona. null = desconocido. */
+  minutesToImpact?: number | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -158,6 +166,12 @@ export interface Action {
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Tipo de acción a efectos de autonomía, p. ej. "verificar" o "evacuar". */
+  actionKind?: ActionKind;
+  /** Nivel de autonomía con el que se despachó o se despachará. */
+  autonomy?: AutonomyLevel;
+  /** Señal cuya duda pretende resolver esta acción de verificación. */
+  verifiesEventId?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -203,8 +217,14 @@ export interface Plan {
   invalidatedActionIds: string[];
   /** Diferencias respecto a la version anterior del plan. */
   changes: PlanChange[];
-  /** Por que se replanifico. */
+  /** Por qué se replanificó. */
   trigger: string;
+  /** De qué depende este plan para seguir siendo válido. */
+  assumptions?: Assumption[];
+  /** false cuando un supuesto se ha roto y el plan aún no se ha rehecho. */
+  valid?: boolean;
+  /** Qué supuesto lo invalidó. */
+  invalidatedReason?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -292,6 +312,168 @@ export interface IntegrationState {
   mockActionsExecuted: number;
 }
 
+
+// ---------------------------------------------------------------------------
+// Triaje calibrado
+//
+// El reto premia decidir sin tener todos los datos. En vez de una etiqueta de
+// confianza, cada señal sale del triaje con probabilidades y una decisión de
+// tres salidas. La banda intermedia no se queda esperando: genera una acción
+// de verificación, porque comprobar también es actuar.
+// ---------------------------------------------------------------------------
+
+export type TriageDecision = "act" | "verify" | "discard";
+export type Assessor = "deterministic" | "jev" | "llm" | "operator";
+
+export interface SignalAssessment {
+  /** Probabilidad de que la señal sea relevante para la crisis. */
+  pRelevant: number;
+  /** Probabilidad de que lo que cuenta sea cierto. */
+  pTruthful: number;
+  /** Urgencia estimada, 0 a 1. */
+  urgency: number;
+  /** Confianza fusionada, ya combinando fuentes independientes. */
+  confidence: number;
+  decision: TriageDecision;
+  /** Por qué se decidió así, en una línea legible. */
+  rationale: string;
+  /** Quién evaluó. El motor determinista es el respaldo siempre disponible. */
+  assessedBy: Assessor;
+  /** Fiabilidad de la fuente aplicada al evaluar, 0 a 1. */
+  sourceReliability: number;
+  assessedAt: string;
+}
+
+/** Fiabilidad aprendida por fuente, base de la fusión de confianza. */
+export interface SourceReliability {
+  source: EventSource;
+  reliability: number;
+  observations: number;
+  confirmed: number;
+}
+
+// ---------------------------------------------------------------------------
+// Vulnerabilidad
+// ---------------------------------------------------------------------------
+
+export type VulnerabilityKind =
+  | "residencia"
+  | "colegio"
+  | "camping"
+  | "hospital"
+  | "urbanizacion"
+  | "nucleo";
+
+export interface VulnerableSite {
+  id: string;
+  name: string;
+  kind: VulnerabilityKind;
+  people: number;
+  /** Multiplicador de prioridad: una residencia pesa más que una urbanización. */
+  multiplier: number;
+  evacuated: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Supuestos vivos
+//
+// Cada plan declara de qué depende. Cuando el mundo cambia y rompe un supuesto,
+// el plan deja de ser válido y hay que rehacerlo. Esta es la respuesta directa
+// a la pregunta del reto sobre cuándo tirar el plan.
+// ---------------------------------------------------------------------------
+
+export type AssumptionStatus = "ok" | "broken" | "unknown";
+
+export interface Assumption {
+  id: string;
+  /** Texto legible: "El viento sigue soplando del nordeste". */
+  text: string;
+  /** Variable del mundo que vigila, p. ej. "wind.direction". */
+  variable: string;
+  /** Condición que debe cumplirse para que el supuesto se sostenga. */
+  condition: string;
+  status: AssumptionStatus;
+  brokenByEventId: string | null;
+  brokenAt: string | null;
+  /** Versión del plan que lo declaró. */
+  planVersion: number;
+}
+
+/**
+ * Estado del mundo simulado contra el que se contrastan los supuestos.
+ * Es lo que el motor de escenario mueve y lo que rompe los planes.
+ */
+export interface WorldState {
+  windDirection: string;
+  windSpeedKmh: number;
+  blockedRoads: string[];
+  smsOperational: boolean;
+  voiceOperational: boolean;
+  hospitalBeds: Record<string, number>;
+  updatedAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Autonomía graduada
+//
+// Un sistema que pide permiso para todo no es agéntico, y uno que no lo pide
+// para nada no es supervisable. El nivel depende de si la acción se puede
+// deshacer.
+// ---------------------------------------------------------------------------
+
+export type AutonomyLevel = "auto" | "auto-notify" | "approval";
+export type Reversibility = "reversible" | "partial" | "irreversible";
+export type ActionKind =
+  | "verificar"
+  | "avisar"
+  | "asignar-recurso"
+  | "aviso-masivo"
+  | "evacuar"
+  | "escalar";
+
+export interface AutonomyRule {
+  actionKind: ActionKind;
+  reversibility: Reversibility;
+  level: AutonomyLevel;
+  /** Confianza mínima para automatizar. Por debajo, pide aprobación. */
+  confidenceThreshold?: number;
+  rationale: string;
+}
+
+// ---------------------------------------------------------------------------
+// Coste de oportunidad
+//
+// Repartir recursos escasos deja a alguien esperando. Enseñar a quién, cuánto
+// y por qué es lo que convierte una asignación en una decisión defendible.
+// ---------------------------------------------------------------------------
+
+export interface WaitingDemand {
+  actionId: string;
+  zoneId: string;
+  wantedResourceId: string | null;
+  blockedByActionId: string | null;
+  estimatedWaitMinutes: number | null;
+  reason: string;
+}
+
+// ---------------------------------------------------------------------------
+// Lecciones entre ejecuciones
+// ---------------------------------------------------------------------------
+
+export interface Lesson {
+  id: string;
+  runId: string;
+  /** Patrón observado en la ejecución anterior. */
+  pattern: string;
+  /** Cambio de comportamiento que propone. */
+  change: string;
+  /** Métrica que lo justifica. Sin métrica no hay lección. */
+  metric: string;
+  /** Las lecciones las valida una persona antes de aplicarse. */
+  status: "proposed" | "accepted" | "rejected";
+  createdAt: string;
+}
+
 // ---------------------------------------------------------------------------
 // Estado completo
 // ---------------------------------------------------------------------------
@@ -310,6 +492,18 @@ export interface SituationState {
   scenario: ScenarioState;
   learning: LearnedWeights;
   integration: IntegrationState;
+  /** Estado del mundo simulado que rompe los supuestos del plan. */
+  world: WorldState;
+  /** Reglas de autonomía vigentes. */
+  autonomyRules: AutonomyRule[];
+  /** Interruptor general: una persona puede parar la autonomía en caliente. */
+  autonomyPaused: boolean;
+  /** Quién se queda esperando un recurso y por qué. */
+  waiting: WaitingDemand[];
+  /** Fiabilidad aprendida por fuente de información. */
+  sourceReliability: SourceReliability[];
+  /** Lecciones propuestas por ejecuciones anteriores, pendientes de validar. */
+  lessons: Lesson[];
 }
 
 // ---------------------------------------------------------------------------
