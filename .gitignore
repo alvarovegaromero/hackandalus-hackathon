@@ -1,0 +1,14 @@
+# Local credentials; commit only sanitized templates.
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Personal agent settings and notes.
+**/.claude/settings.local.json
+**/CLAUDE.local.md
+
+# Regenerable code graph and OS metadata.
+/graft/
+.DS_Store
+Thumbs.db
