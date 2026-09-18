@@ -257,3 +257,7 @@ label.check {
   justify-content: space-between;
   text-align: left;
 }
+.activity {
+  max-height: 760px;
+  overflow-y: auto;
+}

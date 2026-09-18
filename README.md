@@ -38,6 +38,16 @@ acciones simuladas. Los datos viven en memoria del navegador y se pierden al
 recargar. Cada evento sustituye las propuestas pendientes. No es todavía un
 planificador de crisis real ni ejecuta comunicaciones.
 
+El panel **Escenario** simula el incendio de Sierra Bermeja con el motor de
+`src/lib/scenario`: reloj comprimido (1 minuto real = 10 de crisis), semilla
+fija, botones para lanzar los eventos del guion antes de tiempo y un formulario
+para improvisar cambios o bulos. Todos los avisos se marcan como datos
+simulados. Con "Enviar los avisos nuevos al agente" activado, cada aviso nuevo
+se envía a `POST /api/scenario/signals`, que lo convierte en evento, inicia el
+workflow del agente y muestra el plan resultante en "Actividad y decisiones".
+Cada ejecución del escenario es un incidente nuevo, así que los ensayos no se
+descartan como duplicados.
+
 ```powershell
 npm run lint
 npm run typecheck
@@ -110,9 +120,10 @@ comprueba los archivos versionados; los `.env.local` privados no se publican.
 | `supabase/migrations`                | Esquema inicial de incidentes, eventos, recursos, planes, acciones y resultados |
 | `src/lib/integrations/happyrobot.ts` | Límite de integración: devuelve `blocked` hasta concretar la API                |
 
-El panel funciona como una demo independiente: **no llama al workflow ni a
-Supabase**. El workflow es un ejemplo ejecutable de planificación por evento;
-no carga todavía el contexto histórico, asigna recursos ni guarda en Supabase.
+El formulario "Nuevo evento" del panel sigue siendo local. Los avisos del
+escenario sí llegan al workflow a través de `/api/scenario/signals`. El workflow
+planifica por evento; no carga todavía el contexto histórico ni asigna recursos.
+La ingesta guarda los eventos en Supabase si está configurado (ver abajo).
 La separación permite desarrollar las conexiones sin necesitar credenciales
 para arrancar. No hay workers separados, Convex, Python ni Supabase Queues.
 
@@ -131,6 +142,7 @@ configurarlas por entorno.
 | `NEXT_PUBLIC_SUPABASE_URL`                     | URL del proyecto Supabase                                |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`         | Clave pública del proyecto                               |
 | `SUPABASE_SECRET_KEY`                          | Clave secreta, solo servidor                             |
+| `SCENARIO_AGENT_ENABLED`                       | `true` habilita `/api/scenario/signals` en producción    |
 | `HAPPYROBOT_API_KEY`, `HAPPYROBOT_WORKFLOW_ID` | Reservadas; aún no habilitan comunicaciones              |
 
 Las claves de Supabase se obtienen en la configuración API del proyecto.
@@ -147,7 +159,8 @@ casos: no se presenta una propuesta como una comunicación enviada.
 Configura `CRISIS_API_TOKEN`, reinicia `npm run dev` y usa el mismo token en
 `Authorization: Bearer …`. No lo incluyas en código del navegador.
 
-`POST /api/events` acepta este cuerpo:
+`POST /api/events` acepta un evento, un array o `{ "events": [...] }` (hasta 50).
+Un evento tiene esta forma:
 
 ```json
 {
@@ -159,13 +172,25 @@ Configura `CRISIS_API_TOKEN`, reinicia `npm run dev` y usa el mismo token en
 }
 ```
 
-Devuelve `202` y `{ "runId": "…" }`. Consulta `GET /api/runs/<runId>` con
-la misma autorización para obtener estado y resultado al completar. Sin token
-configurado la API responde `503`; una credencial incorrecta obtiene `401`.
-Cada POST inicia un workflow nuevo: la deduplicación de eventos y de acciones
-externas debe conectarse a PostgreSQL antes de habilitar comunicaciones reales.
-Workflow administra la persistencia de sus pasos localmente y en Vercel;
-no representa todavía la persistencia de negocio en Supabase.
+Responde con `{ accepted, duplicates, rejected, errors }`, cada entrada con su
+`index` en el lote; `accepted` incluye el `runId`. Estados: `202` si se acepta
+alguno, `200` si todos eran duplicados, `400` si el cuerpo no sirve o se rechazan
+todos, `413` si hay más de 50 y `500` si todos fallan al guardar o arrancar.
+Con `?wait=1` espera a los workflows y añade `result` a cada aceptado (`200`).
+Consulta `GET /api/runs/<runId>` con la misma autorización para obtener estado
+y resultado. Sin token configurado la API responde `503`; una credencial
+incorrecta obtiene `401`. Diseño completo en
+[docs/input-architecture.md](docs/input-architecture.md).
+
+Un evento con un `id` ya recibido no inicia otro workflow. Con Supabase
+configurado, la deduplicación usa la tabla `events` y crea bajo demanda la fila
+de `incidents`; sin Supabase se hace en memoria del proceso y se pierde al
+reiniciar. La deduplicación de acciones externas sigue pendiente.
+
+`POST /api/scenario/signals` recibe `{ incidentId, signals }` desde el panel sin
+token. Está abierto en desarrollo y responde `503` en producción salvo con
+`SCENARIO_AGENT_ENABLED=true`. Solo acepta avisos con el formato del motor de
+escenarios y espera a los workflows antes de responder.
 
 ## Supabase y Realtime
 

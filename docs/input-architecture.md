@@ -7,7 +7,7 @@ design.
 
 Scope of this document:
 
-- **Milestone A (implement now):** a **synchronous** ingestion endpoint that
+- **Milestone A (implemented):** a **synchronous** ingestion endpoint that
   accepts **many events in one request** and processes them **concurrently**.
 - **Milestone B (documented, deferred):** the **async / topic** evolution
   (Supabase Realtime fan-out to the dashboard). Section at the end. Do not
@@ -20,35 +20,26 @@ verification").
 
 ---
 
-## 1. What exists today (baseline)
+## 1. What exists today
 
-The current path is a thin synchronous slice. One event per request:
-
-- `POST /api/events` — `src/app/api/events/route.ts:6-14`. Authorizes, validates
-  a **single** event with `crisisEventSchema.safeParse`, calls
-  `start(crisisWorkflow, [event])`, returns `202 { runId }` (`:12-13`).
-  Fire-and-forget: the durable Vercel Workflow runtime runs the workflow in the
-  background.
-- `GET /api/runs/[runId]` — `src/app/api/runs/[runId]/route.ts:4-15`. Polls run
-  status; returns `result` only once `status === "completed"`.
-- `crisisEventSchema` — `src/lib/domain.ts:3-11`. `.strict()` object:
-  `id` (uuid), `incidentId` (uuid), `summary`, `severity`, `source`.
-- `crisisWorkflow(event)` — `src/workflows/crisis.ts:5-11`. `plan → prepare
-actions`, straight through, no waits. Push-invoked per event.
-- Auth — `src/lib/api-auth.ts:4-16`. Static bearer token `CRISIS_API_TOKEN`
-  (503 if unset, 401 on mismatch, constant-time compare).
-- DB schema — `supabase/migrations/202609180001_initial_schema.sql`. Tables
-  `incidents, events, plans, actions, results` exist. **Nothing writes to them
-  yet.** RLS is deny-by-default; only `service_role` has access (`:58-59`).
-- Dashboard — `src/components/dashboard.tsx`. Fully local: `injectEvent`
-  (`:22-43`) builds an event client-side, runs `simulatePlan` in the browser,
-  and stores it in React state. It does **not** POST to `/api/events` or touch
-  Supabase (badge: "SIMULACIÓN LOCAL").
-
-**Gap this doc closes:** the endpoint takes one event, does not persist, and has
-no concurrency or dedup story. Milestone A adds batch intake, per-event
-concurrency, idempotent dedup, and persistence — while keeping the durable
-async execution the workflow already gives us.
+- `POST /api/events` - `src/app/api/events/route.ts`. Authorizes with the
+  static bearer token `CRISIS_API_TOKEN` (`src/lib/api-auth.ts`), normalizes one
+  event, an array or `{ events }`, and delegates to `ingestBatch`.
+- `ingestBatch` - `src/lib/ingest-server.ts`. Size checks (`400`/`413`),
+  persistence (Supabase or in-memory fallback), `start(crisisWorkflow, [event])`
+  per new event, optional `wait` mode.
+- `ingest` - `src/lib/ingest.ts`. Framework-free pipeline: validate, in-batch
+  dedup, persist, bounded concurrent starts, per-event partition. Unit tests in
+  `src/lib/ingest.test.ts`.
+- `POST /api/scenario/signals` - `src/app/api/scenario/signals/route.ts`. Demo
+  bridge with no token: the dashboard's scenario panel sends simulated `Signal`s,
+  which `signalToEvent` (`src/lib/signals/to-event.ts`) maps to `CrisisEvent`s
+  with stable ids, then calls `ingestBatch` in wait mode. Open in development;
+  in production it answers `503` unless `SCENARIO_AGENT_ENABLED=true`.
+- `GET /api/runs/[runId]` - polls a run's status and result.
+- DB schema - `supabase/migrations/202609180001_initial_schema.sql`. Ingestion
+  writes `incidents` (on demand) and `events`. `plans`, `actions` and `results`
+  are not written yet.
 
 ---
 
@@ -213,38 +204,33 @@ endpoint stays usable without Supabase, matching today's credential-free demo.
 - Do not mark an event `accepted` until its `start()` resolves with a `runId`
   (`PROJECT.md`: don't report success the result doesn't support).
 
-### 3.7 Implementation checklist
+### 3.7 Implementation notes
 
-Files to touch:
+Implemented as designed, with these decisions:
 
-- [ ] `src/lib/domain.ts` — export a `crisisEventBatchSchema` (or a helper that
-      normalizes single | array | `{ events }` → `CrisisEvent[]`). Keep the
-      single-event schema intact.
-- [ ] `src/lib/ingest.ts` _(new)_ — pure ingest logic: normalize → validate →
-      dedup → persist(upsert) → return `{ accepted, duplicates, rejected }`.
-      Keep it framework-free and unit-testable (no `Request`/`Response`).
-- [ ] `src/app/api/events/route.ts` — thin controller: `authorize` → read body →
-      call ingest → map to the response shape + status code. Preserve the
-      single-event and existing `202` behavior as a subset.
-- [ ] `src/lib/supabase/server.ts` — reuse as-is; the `service_role` client
-      bypasses RLS, so no policy work needed for Milestone A.
-- [ ] `README.md` — document the batch contract, the incident-seed step, and the
-      degraded (no-DB) behavior.
-- [ ] `TASKS.md` — check off "batch ingestion + dedup"; leave Realtime unchecked.
+- The body normalizer lives in `src/lib/ingest.ts` (`normalizeBatch`), not in
+  `src/lib/domain.ts`; the single-event schema is unchanged.
+- Status mapping (`ingestStatus`): `202` if any event is accepted, `400` if all
+  are rejected, `500` if none is accepted and some failed to persist or start,
+  `200` if all were duplicates. Wait mode answers `200` instead of `202`.
+- If persistence fails, every event in the batch is an `error` and no run starts.
+- Without Supabase, dedup falls back to an in-process set (lost on restart and
+  not shared across serverless instances), with a one-time warning.
+- With Supabase, the ingest upserts one `incidents` row per new `incidentId`
+  (title `Incidente <id prefix>`), so no manual seed step is needed.
+- Scenario signals have no severity: `signalToEvent` sends `medium` and leaves
+  triage to the agent. Each scenario run uses a fresh `incidentId`, so rehearsals
+  are not deduplicated away; resending a signal within a run is.
 
-Tests (Vitest — focus on decisions and failure paths per `PROJECT.md`):
-
-- [ ] mixed batch → correct `accepted` / `duplicates` / `rejected` partition.
-- [ ] same `id` twice **in one batch** → one accepted, one duplicate.
-- [ ] same `id` across two requests → second request all-duplicate, **no new run**
-      (mock the DB upsert to return no inserted rows).
-- [ ] one `start()` rejects → that event is `error`, others still `accepted`.
-- [ ] batch > `MAX_BATCH` → `413`. Empty / all-invalid batch → `400`.
+Tests cover the mixed-batch partition, in-batch and cross-request duplicates,
+isolated `start()` failures, persistence failure and the all-rejected `400`.
+The `413` and empty-body `400` checks live in `ingestBatch` and were verified
+manually (3.8).
 
 ### 3.8 Manual verification
 
 ```bash
-# single event still works (backwards compatible)
+# a single event is still accepted
 curl -sS -X POST localhost:3000/api/events \
   -H "Authorization: Bearer $CRISIS_API_TOKEN" -H "Content-Type: application/json" \
   -d '{"id":"…uuid…","incidentId":"…uuid…","summary":"Smoke plume N sector","severity":"high","source":"sensor"}'
@@ -261,7 +247,7 @@ curl -sS -X POST localhost:3000/api/events \
 
 ## 4. Milestone B — async / topic evolution (deferred)
 
-Do **not** build this until Milestone A ships. It is the "more interesting"
+Milestone A has shipped; this is the next step. It is the "more interesting"
 event-driven design and the piece that makes the **dashboard react live** to a
 changing scenario (the CHALLENGE's core requirement). It is cheap because
 Supabase Realtime does the fan-out — **no broker, no queue, no worker process.**
@@ -302,16 +288,15 @@ Fase 3).
 
 ## 5. Summary
 
-| Concern     | Milestone A (now)                          | Milestone B (later)                        |
+| Concern     | Milestone A (implemented)                  | Milestone B (later)                        |
 | ----------- | ------------------------------------------ | ------------------------------------------ |
 | Intake      | `POST /api/events`, single **or batch**    | same producer                              |
 | Concurrency | `Promise.allSettled` + `MAX_CONCURRENT`    | unchanged                                  |
 | Execution   | durable async (`202 { runId }`)            | unchanged                                  |
 | Dedup       | event `id` upsert + action idempotency key | unchanged                                  |
 | Persistence | insert `events`                            | + `plans`/`actions`/`results` writeback    |
-| Dashboard   | still local (unchanged)                    | Realtime fan-out via `subscribeToIncident` |
+| Dashboard   | scenario panel posts, reads wait results   | Realtime fan-out via `subscribeToIncident` |
 | New infra   | none                                       | RLS read policy + operator auth            |
 
-Ship A first: it is real, testable, backwards-compatible, and handles many
-events at once without any new infrastructure. B layers the live fan-out on top
-without changing the producer.
+A is real, testable and handles many events at once without new
+infrastructure. B layers the live fan-out on top without changing the producer.

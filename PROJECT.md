@@ -21,8 +21,10 @@ root; `thoughts/` holds the data model proposal, the inventory of features
 built on the `feat/crisis-command-center` branch, and the open decisions.
 
 Status: runnable TypeScript scaffolding with Next.js/React, Vercel AI SDK,
-Vercel Workflow, Supabase clients/schema, and Zod. The browser demo is local
-and deterministic. Supabase persistence, operator authentication, and actual
+Vercel Workflow, Supabase clients/schema, and Zod. The dashboard runs the
+Sierra Bermeja scenario engine in the browser and sends its simulated signals
+to the agent workflow through batch ingestion with event dedup (Supabase when
+configured, in memory otherwise). Operator authentication, Realtime, and actual
 HappyRobot communications are not connected yet; see README.md.
 The base scaffolding milestone is complete. Scenario and product name are
 confirmed (see `thoughts/open-questions.md`, "Confirmed, do not reopen").
@@ -60,8 +62,12 @@ resolve them with invented values. Track follow-up work in TASKS.md.
 
 - `src/app`, `src/components`: Next.js endpoints and local demo dashboard.
 - `src/lib/domain.ts`: shared Zod schemas and domain types.
+- `src/lib/scenario`, `src/lib/signals`: scenario engine, signal model and the
+  signal-to-event bridge used by the demo.
+- `src/lib/ingest.ts`, `src/lib/ingest-server.ts`: batch event ingestion
+  (validation, dedup, persistence, workflow start).
 - `src/lib/agents`: AI SDK coordinator (model configured through environment).
-- `src/workflows`: durable Workflow example, separate from the browser demo.
+- `src/workflows`: durable Workflow started per ingested event, including scenario signals.
 - `src/lib/supabase`: server/browser clients and Realtime subscription helper.
 - `src/lib/integrations`: HappyRobot boundary, explicitly blocked until implemented.
 - `supabase/migrations`: initial PostgreSQL schema with deny-by-default RLS.

@@ -36,3 +36,10 @@ export const signalSchema = z
 export type Location = z.infer<typeof locationSchema>;
 export type Channel = z.infer<typeof channelSchema>;
 export type Signal = z.infer<typeof signalSchema>;
+
+export const channelLabels: Record<Channel, string> = {
+  citizen_call: "Llamada",
+  sms: "SMS",
+  sensor: "Sensor",
+  verification: "Verificación",
+};
