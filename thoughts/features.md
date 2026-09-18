@@ -1,418 +1,387 @@
-# Funcionalidades construidas y cómo funcionan
+# Features built and how they work
 
-Inventario de lo que se construyó en la rama `feat/crisis-command-center`
-(Next 15, estado en memoria) y que hay que trasladar sobre el andamiaje de
-`main` (Next 16, Supabase, Vercel Workflow, AI SDK). Cada sección dice qué hace
-el módulo, qué funciones exporta, cómo está verificado y qué le falta. Está
-escrito para quien tenga que reimplementarlo sin haberlo visto.
+Inventory of what was built in the `feat/crisis-command-center` branch
+(Next 15, state in memory) and that must be transferred on the scaffolding of
+`main` (Next 16, Supabase, Vercel Workflow, AI SDK). Each section says what the module does, what functions it exports, how it is verified and what is still missing. It is
+written for those who have to reimplement it without having seen it.
+Reference figures when freezing the branch: 266 tests in 10 files, typecheck and
+clean lint, zero vulnerabilities in production, 16 domain modules, 12
+API routes, 14 interface components.
+---
 
-Cifras de referencia al congelar la rama: 266 tests en 10 ficheros, typecheck y
-lint limpios, cero vulnerabilidades en producción, 16 módulos de dominio, 12
-rutas de API, 14 componentes de interfaz.
+## Module map
+
+| Module                         | Responsibility                                                | File                                                      | Tests                                    |
+| ------------------------------ | ------------------------------------------------------------- | --------------------------------------------------------- | ---------------------------------------- |
+| Types                          | Contract between modules                                      | `lib/types.ts`                                            | —                                        |
+| Orchestrator                   | Status, replanning, audit, down payments                      | `lib/store.ts`                                            | `tests/store.test.ts` (12)               |
+| Priority                       | What comes first and why                                      | `lib/priority.ts`                                         | `tests/priority.test.ts` (49)            |
+| Resources                      | Where the media goes and who waits                            | `lib/resources.ts`                                        | `tests/resources.test.ts` (14)           |
+| Contacts and escalation        | Who is notified, by what channel, what is requested           | `lib/contacts.ts`, `lib/escalation.ts`                    | `tests/integration.test.ts` (32, shared) |
+| HappyRobot                     | External execution and callbacks                              | `lib/happyrobot.ts`, `app/api/webhooks/happyrobot/`       | `tests/integration.test.ts`              |
+| Triage                         | Act, verify or discard with probability                       | `lib/triage.ts`                                           | `tests/triage.test.ts`                   |
+| Assumptions                    | When to throw away the plan                                   | `lib/assumptions.ts`                                      | `tests/assumptions.test.ts` (18)         |
+| Autonomy                       | What it does alone and what requires permission; waiting list | `lib/autonomy.ts`                                         | `tests/autonomy.test.ts`                 |
+| Scenario                       | The crisis advances alone                                     | `lib/scenario.ts`, `app/api/scenario/`                    | `tests/scenario.test.ts` (27)            |
+| Persistence, history, learning | Survive the reboot and learn                                  | `lib/persistence.ts`, `lib/history.ts`, `lib/learning.ts` | `tests/persistence.test.ts` (32)         |
+| Validation and API             | Secure input, consistent errors                               | `lib/validation.ts`, `app/api/**`                         | `tests/api.test.ts` (17)                 |
+| Interface                      | See, understand, intervene                                    | `app/page.tsx`, `app/components/`                         | manual verification with browser         |
+
+The rule that made it possible to build it in parallel: **each module has a single
+owner and `store.ts` orchestrates without deciding**. On Supabase, that rule
+translates into "each module writes only its own tables".
 
 ---
 
-## Mapa de módulos
+## 1. Orchestrator (`store.ts`)
 
-| Módulo | Responsabilidad | Fichero | Tests |
-| --- | --- | --- | --- |
-| Tipos | Contrato entre módulos | `lib/types.ts` | — |
-| Orquestador | Estado, replanificación, auditoría, enganches | `lib/store.ts` | `tests/store.test.ts` (12) |
-| Prioridad | Qué va primero y por qué | `lib/priority.ts` | `tests/priority.test.ts` (49) |
-| Recursos | Dónde van los medios y quién espera | `lib/resources.ts` | `tests/resources.test.ts` (14) |
-| Contactos y escalado | A quién se avisa, por qué canal, qué se le pide | `lib/contacts.ts`, `lib/escalation.ts` | `tests/integration.test.ts` (32, compartido) |
-| HappyRobot | Ejecución externa y callbacks | `lib/happyrobot.ts`, `app/api/webhooks/happyrobot/` | `tests/integration.test.ts` |
-| Triaje | Actuar, verificar o descartar con probabilidad | `lib/triage.ts` | `tests/triage.test.ts` |
-| Supuestos | Cuándo tirar el plan | `lib/assumptions.ts` | `tests/assumptions.test.ts` (18) |
-| Autonomía | Qué hace solo y qué pide permiso; lista de espera | `lib/autonomy.ts` | `tests/autonomy.test.ts` |
-| Escenario | La crisis avanza sola | `lib/scenario.ts`, `app/api/scenario/` | `tests/scenario.test.ts` (27) |
-| Persistencia, historial, aprendizaje | Sobrevivir al reinicio y aprender | `lib/persistence.ts`, `lib/history.ts`, `lib/learning.ts` | `tests/persistence.test.ts` (32) |
-| Validación y API | Entrada segura, errores coherentes | `lib/validation.ts`, `app/api/**` | `tests/api.test.ts` (17) |
-| Interfaz | Ver, entender, intervenir | `app/page.tsx`, `app/components/` | verificación manual con navegador |
+Maintains state and delegates every decision to the modules. What it does itself is coordination:
 
-La regla que hizo posible construirlo en paralelo: **cada módulo tiene un único
-propietario y `store.ts` orquesta sin decidir**. Sobre Supabase, esa regla se
-traduce en "cada módulo escribe solo sus tablas".
-
----
-
-## 1. Orquestador (`store.ts`)
-
-Mantiene el estado y delega toda decisión en los módulos. Lo que sí hace por sí
-mismo, porque es coordinación:
-
-- **Replanificación** con contexto: antes de mutar captura zonas, recursos e
-  integración; después llama a `buildPlan` y a `diffPlans` con el antes y el
-  después, para que el diff pueda decir "Sierra Morena pasa a crítica" y no
-  solo cambios de puesto.
-- **Auditoría**: toda mutación deja entrada con actor
-  (`system | operator | happyrobot | scenario`), tipo, resumen y versión de plan.
-- **Barrido de acciones atascadas** (`sweepStalledActions`): una acción en
-  curso que supera `stalledAfter` (90 s) pasa a `stalled`, libera su recurso y
-  replanifica. Se ejecuta en cada sondeo (`pollSituation`).
-- **Descartar revierte**: al marcar una señal como falsa se deshace su efecto
-  exacto sobre la zona (riesgo, estado, necesidad) y se cancelan las acciones
-  que solo existían por ella. Se compara por categoría derivada, no por el
-  registro, porque solo la primera señal que introduce una necesidad la anota.
-- **Guardia de recurso al aprobar**: si el recurso de la acción ya no está
-  disponible, la acción pasa a `blocked` **antes** de llamar al exterior. Sin
-  esto se avisaba a alguien de que iba en camino un recurso inexistente.
-- **Respuesta tardía no pisa al operador**: `approveAction` captura el
-  `attempt` al despachar; si al volver la respuesta la acción ya no está en
-  `running` con ese mismo intento (la cancelaron o reintentaron), la respuesta
-  se descarta.
-- **Cierre de ejecución** (`closeRun`): al parar el escenario o reiniciar la
-  demo, guarda el `RunRecord` y recalcula pesos aprendidos. Reiniciar es lo que
-  más se pulsa en una demo; sin esto se perdía todo el aprendizaje.
-- **Inyectores de demo** honestos: "recurso caído" elige un recurso del que
-  dependa alguna acción viva; "fallo de integración" elige una acción en vuelo,
-  nunca una ya completada.
-
-**Sobre el andamiaje**: lo que aquí es un singleton en memoria pasa a ser
-transacciones sobre Supabase dentro de pasos de Workflow. La lógica de
-coordinación es la misma; el "estado" es la base de datos.
+- **Replanning** with context: before mutating, capture areas, resources and
+  integration; then calls `buildPlan` and `diffPlans` with the before and the
+  afterwards, so that the diff can say "Sierra Morena goes to critical" and not
+  only position changes.
+- **Audit**: every mutation leaves an entry with an actor
+  (`system | operator | happyrobot | scenario`), plan type, summary and version.
+- **Sweep stuck actions** (`sweepStalledActions`): an action in
+  course that passes `stalledAfter` (90 s) goes to `stalled`, releases its resource and
+  replans. It runs on every poll (`pollSituation`).
+- **Discard reverts**: marking a signal as false undoes its effect
+  exact information about the area (risk, status, need) and the actions are canceled
+  that only existed because of her. It is compared by derived category, not by
+  record, because only the first signal that introduces a need is recorded.
+- **Resource guard on approval**: if the action resource is no longer available
+  available, the action goes to `blocked` **before** calling outside. Without
+  This alerted someone that a non-existent resource was on its way.
+- **Late response does not step on the operator**: `approveAction` captures the`attempt` when dispatching; if when the response returns the action is no longer in
+  `running` with that same attempt (they canceled or retried), the response
+  is discarded.
+- **Execution shutdown** (`closeRun`): when stopping the scenario or restarting the
+  demo, save the `RunRecord` and recalculate learned weights.Restart is what
+  the thing clicked most often in a demo; without this all learning was lost.
+- **Honest Demo Injectors**: "resource down" chooses a resource from which
+  some live action depends on;"integration failure" chooses an action in flight,
+  never one already completed.
+  **About the scaffolding**: what is here a singleton in memory becomes
+  transactions on Supabase within Workflow steps. The logic of
+  coordination is the same; the "state" is the database.
 
 ---
 
-## 2. Prioridad (`priority.ts`)
+## 2. Priority (`priority.ts`)
 
-Fórmula, todo determinista y con desglose que suma exactamente la puntuación:
+Formula, all deterministic and with a breakdown that exactly adds up the score:
 
 ```
-puntuación = riesgo base
-           + señales vivas
-           + población en riesgo
-           + necesidades abiertas
-           + recursos caídos
-           − alivio por acciones completadas
+score = base risk
+      + live signals
+      + population at risk
+      + open needs
+      + down resources
+      - relief from completed actions
 ```
 
-Peso de una señal viva: `gravedad × credibilidad × repetición × decaimiento`.
+Weight of a live signal: `severity x credibility x repetition x decay` .
 
-- Gravedad: low 8, medium 28, high 70, critical 160.
-- Credibilidad: confianza (0,4 / 0,75 / 1,0) multiplicada por un castigo si no
-  está confirmada (0,3 / 0,6 / 0,85). Confirmada, sin castigo.
-- Repetición: `min(1,8; 1 + ln(occurrences) · 0,4)`. Cinco repeticiones
-  refuerzan ×1,64, no ×5.
-- Decaimiento: `0,5^(edad_min / vida_media)`, con vida media 6/12/25/45 min
-  según gravedad, y suelo 0,3 confirmada / 0,05 sin confirmar. Lo de las 12:00
-  pesa menos a las 12:20.
-- Apilado con rendimientos decrecientes por zona: la enésima señal cuenta
-  `1/(1 + 0,75·n)`, techo 200.
-- Alivio: 20 por acción completada, vida media 20 min, amortiguado y limitado
-  al 50 % de la presión. Fallidas y pendientes no alivian.
-
-Exporta `buildPlan`, `scoreZone`, `explainZone`, `signalWeight`,
-`credibilityFactor`, `occurrenceFactor`, `decayFactor`, `liveEventsForZone`,
-`defaultPriorityWeights`. `buildPlan` acepta un séptimo parámetro opcional
-`{ now, weights }` para tests deterministas y pesos aprendidos.
-
-**Medido**: ocho señales de ruido (low/low, sin confirmar) subían la zona más
-tranquila del último al segundo puesto (143 puntos); ahora queda cuarta (40).
-Completar una acción bajaba la puntuación 0 puntos; ahora baja 20.
-
-**Pendiente**: incorporar multiplicador de vulnerabilidad y tiempo hasta el
-daño (variables V y t de la fórmula del documento fuente). El modelo de datos
-ya trae ambas columnas en `incidents`.
+- Severity: low 8, medium 28, high 70, critical 160.
+- Credibility: trust (0.4 / 0.75 / 1.0) multiplied by a punishment if not
+  is confirmed (0.3 / 0.6 / 0.85).Confirmed, without punishment.
+- Repetition: `min(1,8; 1 + ln(occurrences) · 0,4)` .Five repetitions
+  they reinforce ×1.64, not ×5.
+- Decay: `0,5^(edad_min / vida_media)`, with half-life 6/12/25/45 min
+  according to severity, and floor 0.3 confirmed / 0.05 unconfirmed. A signal from 12:00
+  weighs less at 12:20.
+- Stacked with diminishing returns by zone: the nth signal counts
+  `1/(1 + 0,75·n)`, ceiling 200.
+- Relief: 20 per completed action, half-life 20 min, buffered and limited
+  at 50% pressure.Failed and pending actions do not relieve pressure.
+  Exports `buildPlan`, `scoreZone`, `explainZone`, `signalWeight`,
+  `credibilityFactor`, `occurrenceFactor`, `decayFactor`, `liveEventsForZone`,
+  `defaultPriorityWeights` .`buildPlan` accepts an optional seventh parameter
+  `{ now, weights }` for deterministic tests and learned weights.
+  **Measured**: eight noise signals (low/low, unconfirmed) raised the highest zone
+  calm from last to second place (143 points);now it ranks fourth (40).
+  Completing an action lowered the score by 0 points;now it goes down 20.
+  **Pending**: incorporate vulnerability multiplier and time to
+  damage (variables V and t from the source document formula). The data model
+  It already has both columns in `incidents`.
 
 ---
 
-## 3. Recursos (`resources.ts`)
+## 3. Resources (`resources.ts`)
 
-Puntuación 0–100 con pesos exportados como `PESOS`:
+Score 0–100 with weights exported as `WEIGHTS`:
 
-| Peso | Factor | Cómo |
-| --- | --- | --- |
-| 45 | Capacidad técnica | `capabilities` frente a la necesidad derivada del objetivo; cubrir la principal vale 0,7 |
-| 25 | Proximidad | Distancia euclídea entre coordenadas de zonas; misma zona = 1; sin base = 0,6 |
-| 15 | Suficiencia | `capacity` frente a una unidad por cada 100 personas, solo en capacidades que escalan con población |
-| 10 | Disponibilidad | `available` 1, `assigned` 0, `unavailable` excluido siempre |
-| 5 | Encaje de canal | Comunicaciones suman si la acción sale por un canal de mensajería |
+| Weight | Factor             | How                                                                                            |
+| ------ | ------------------ | ---------------------------------------------------------------------------------------------- |
+| 45     | Technical capacity | `capabilities` versus the need derived from the objective; covering the main need is worth 0.7 |
+| 25     | Proximity          | Euclidean distance between zone coordinates; same zone = 1; no base = 0.6                      |
+| 15     | Sufficiency        | `capacity` versus one unit per 100 people, only in capacities that scale with population       |
+| 10     | Availability       | `available` 1, `assigned` 0, `unavailable` always excluded                                     |
+| 5      | Channel fit        | Communications add up if the action goes out through a messaging channel                       |
 
-Reglas duras: un recurso que no cubre ninguna necesidad no es candidato por
-cerca que esté; `unavailable` nunca se elige; uno `assigned` solo se expropia
-si no queda alternativa **y** la zona nueva es más urgente que la actual.
-
-Exporta `selectResourceForAction`, `assignResource`, `releaseResource`,
-`reassignAffectedActions`, `resolveResourceConflicts` (devuelve
-`{ allocations, waiting, summary }`, la respuesta a "tres ambulancias y cinco
-sitios"), `rankResourcesForAction` (ranking completo con motivo de descarte por
-candidato), `explainUnassignable`, `necesidadesDeAccion`, `urgenciaDeZona`,
-`distanciaEntreZonas`.
-
-**Medido**: al caer la unidad sanitaria de Sevilla, antes se asignaba la
-brigada forestal de Sierra Morena (primera del array). Ahora esa brigada queda
-descartada por incompatibilidad y entra la unidad sanitaria de Granada con
-motivo: "INFOCA Sierra Bravo está más cerca pero no cubre triaje".
-
-**Detalle importante**: la palabra "coordina" se quitó de la tabla de
-necesidades porque el orquestador redacta todos los objetivos como "Coordinar
-respuesta de…", y convertía al enlace de comunicaciones en comodín universal.
+Hard rules: a resource that does not meet any need is not a candidate for
+| however close it is;`unavailable` is never chosen; one `assigned` alone is expropriated |
+| If there is no alternative **and** the new area is more urgent than the current one. |
+| Exports `selectResourceForAction` , `assignResource` , `releaseResource` , |
+| `reassignAffectedActions` , `resolveResourceConflicts` (returns |
+| `{ allocations, waiting, summary }`, the answer to "three ambulances and five |
+| sites"), `rankResourcesForAction` (complete ranking with reason for discarding |
+| candidate), `explainUnassignable` , `actionNeeds` , `zoneUrgency` , |
+| `distanceBetweenZones` . |
+| **Measured**: when the Seville health unit fell, the |
+| Sierra Morena forestry brigade (first in the array). Now that brigade remains |
+| discarded due to incompatibility and the Granada health unit enters with |
+| reason: "INFOCA Sierra Bravo is closer but does not cover triage." |
+| **Important detail**: the word "coordinate" was removed from the table |
+| needs because the orchestrator writes all the objectives as "Coordinate |
+| response from...", and turned the communications link into a universal wildcard. |
 
 ---
 
-## 4. Contactos y escalado (`contacts.ts`, `escalation.ts`)
+## 4. Contacts and escalation (`contacts.ts`, `escalation.ts`)
 
-- `rankContacts` puntúa rol adecuado a la categoría (con alias es/en y
-  normalización de acentos), despliegue en la zona, `responsiveness`, y
-  `contactStats` aprendidos.
-- `selectChannelWithReason` combina urgencia, preferencias del contacto, sesgo
-  por rol y `channelStats`. En la práctica: al coordinador se le llama, al
-  voluntario o vecino se le manda SMS o WhatsApp, a la autoridad se le escribe.
-- `briefingForRole` genera `headline / detail / askFor` distintos por rol. El
-  `askFor` es lo que cierra el bucle: lo que responda entra como señal nueva.
-- `buildEscalationChain` produce 3–4 escalones sin repetir persona: quien está
-  en la zona por el canal más directo → otro rol útil → sala de coordinación →
-  autoridad por escrito. `waitSeconds` 90 s urgente, 180 s normal, +15 s por
-  escalón. `isStepOverdue` y `describeChain` para la interfaz.
-- `canReceiveLiveAction`: `demoSafe` **y** teléfono o correo utilizable.
-  `isUsableDestination` descarta marcadores como `[teléfono omitido]` que deja
-  la persistencia al redactar datos personales.
-
-**Pendiente**: las cadenas se construyen y se muestran pero **no se ejecutan
-escalón a escalón**, porque no hay runtime duradero que espere y avance. Es
-exactamente lo que aporta Vercel Workflow. `advanceChain`, `satisfyChain` e
-`isStepOverdue` están listas.
+- `rankContacts` scores role appropriate to the category (with alias es/en and
+  accent normalization), zone deployment, `responsiveness`, and
+  `contactStats` learned.
+- `selectChannelWithReason` combines urgency, contact preferences, bias
+  by role and `channelStats` . In practice: the coordinator gets a call, the
+  volunteer or neighbor is sent SMS or WhatsApp, the authority gets a written message.
+- `briefingForRole` generates different `headline / detail / askFor` per role. The
+  `askFor` is what closes the loop: whatever responds enters as a new signal.
+- `buildEscalationChain` produces 3–4 steps without repeating person: who is
+  in the area through the most direct channel → another useful role → coordination room →
+  written authority.`waitSeconds` 90s urgent, 180s normal, +15s per
+  step`isStepOverdue` and `describeChain` for the interface.
+- `canReceiveLiveAction`: `demoSafe` **and** usable phone or email.
+  `isUsableDestination` discards markers like `[phone omitted]` which leaves
+  persistence when writing personal data.
+  **Pending**: The chains are built and displayed but **not executed
+  step by step**, because there is no long-lasting runtime that waits and advances. It is
+  exactly what Vercel Workflow provides.`advanceChain` , `satisfyChain` and
+  `isStepOverdue` are ready.
 
 ---
 
 ## 5. HappyRobot (`happyrobot.ts`, webhook)
 
-El contrato real no está verificado contra la documentación privada, así que
-todo lo dudoso es configurable por entorno con el valor actual por defecto:
+The actual contract is not verified against private documentation, so
+everything doubtful is configurable by environment with the current default value:
 `HAPPYROBOT_ACTION_PATH`, `HAPPYROBOT_AUTH_HEADER`, `HAPPYROBOT_AUTH_SCHEME`,
 `HAPPYROBOT_IDEMPOTENCY_HEADER`, `HAPPYROBOT_PAYLOAD_SHAPE` (`flat | wrapped |
 trigger`), `HAPPYROBOT_RESPONSE_ID_PATH`, `HAPPYROBOT_CHANNEL_MAP`,
 `HAPPYROBOT_WORKFLOW_ID`, `HAPPYROBOT_TIMEOUT_MS`, `HAPPYROBOT_MAX_ATTEMPTS`,
-`HAPPYROBOT_RETRY_BASE_MS`. El día de la demo se toca `.env.local`, no código.
+`HAPPYROBOT_RETRY_BASE_MS` . On demo day we edit `.env.local`, not code.
 
-- `AbortController` por intento; backoff exponencial **solo** en 5xx, red y
-  timeout; un 4xx nunca se reintenta; una respuesta 2xx ilegible no se da por
-  buena.
+- `AbortController` per attempt;exponential backoff **only** in 5xx, network and
+  timeout;a 4xx is never retried;an illegible 2xx response is not given
+  successful.
 - `HappyRobotError.kind`: `missing-credentials | timeout | client-error |
-  server-error | network | unreadable-response`, con mensaje útil para el
-  operador.
-- **Salvaguarda**: aun en modo `happyrobot`, solo se llama de verdad si
-  `canReceiveLiveAction(contact)`. Si no, degrada a simulación con
-  `externalActionId = mock-no-aprobado-<id>` y lo explica. Los seis contactos
-  semilla tienen `demoSafe: false` y sin datos: hoy es imposible que salga
-  nada al exterior, y hay un test que lo comprueba.
-- Webhook `POST /api/webhooks/happyrobot`: secreto obligatorio con
-  `timingSafeEqual`; sin secreto configurado responde 503. Acepta
-  `externalActionId, localActionId, status, summary, newInformation[]`. Cada
-  `newInformation` entra como señal (`source: happyrobot`) y replanifica.
-  Idempotencia por `x-happyrobot-delivery-id` o SHA-256 del cuerpo, caché 15
-  min: un reenvío devuelve lo mismo con `duplicate: true`.
-
-**Activar ejecución real**: confirmar contrato → credenciales en `.env.local` →
-`HAPPYROBOT_WEBHOOK_SECRET` compartido con HappyRobot → dar de alta un
-contacto `demoSafe: true` con permiso explícito → solo entonces
-`ACTION_EXECUTION_MODE=happyrobot`.
+server-error | network | unreadable-response`, with a useful message for the
+  operator.
+- **Safeguard**: even in `happyrobot` mode, it is only truly called if
+  `canReceiveLiveAction(contact)` . If not, downgrade to simulation with
+  `externalActionId = mock-not-approved-<id>` and explains it. The six contacts
+  seed contacts have `demoSafe: false` and without data: today it is impossible for it to come out
+  nothing outside, and there is a test that proves it.
+- Webhook `POST /api/webhooks/happyrobot`: mandatory secret with
+  `timingSafeEqual` ; without secret configured responds 503. Accept
+  `externalActionId, localActionId, status, summary, newInformation[]` . Each
+  `newInformation` enters as signal (`source: happyrobot`) and replans.
+  Idempotence by `x-happyrobot-delivery-id` or SHA-256 from body, cache 15
+  min: a redelivery returns the same with `duplicate: true` .
+  **Activate actual execution**: confirm contract → credentials in `.env.local` →
+  `HAPPYROBOT_WEBHOOK_SECRET` shared with HappyRobot → register a
+  contact `demoSafe: true` with explicit permission → only then
+  `ACTION_EXECUTION_MODE=happyrobot` .
 
 ---
 
-## 6. Triaje calibrado (`triage.ts`)
+## 6. Calibrated triage (`triage.ts`)
 
 Tres salidas con umbrales configurables (0,85 y 0,5 por defecto):
 
-- p alta → `act`.
-- p intermedia → `verify`: genera una acción de verificación con dos o tres
-  preguntas cerradas (`buildVerificationRequest`). Verificar es actuar, no
-  esperar.
-- p baja → `discard`, con motivo guardado.
-
-`assessSignal` deriva `pRelevant`, `pTruthful`, `urgency` y `confidence` de
-severidad, confianza declarada, fuente y su fiabilidad, confirmación,
-repeticiones y coherencia con otras señales de la zona. `fuseConfidence`
-aplica `C = 1 − ∏(1 − p_i · r_i)` solo entre fuentes **independientes**: dos
-señales de la misma fuente no multiplican. `updateSourceReliability` aprende
-con mínimo de muestras y movimiento acotado.
-
-Interfaz `SignalAssessor` con el motor determinista como implementación por
-defecto y hueco para Jev y para un LLM con salida estructurada. El acceso a Jev
-está confirmado; el determinista sigue siendo el respaldo siempre disponible.
-
-**Pendiente**: enganchar en la entrada de señales del orquestador. El módulo
-está completo; nadie lo llama todavía.
+- p high → `act` .
+- intermediate p → `verify` : generates a check action with two or three
+  closed questions (`buildVerificationRequest`).Verifying is acting, not
+  wait.
+- low p → `discard`, with saved reason.
+  `assessSignal` derives `pRelevant` , `pTruthful` , `urgency` and `confidence` from
+  severity, declared trust, source and its reliability, confirmation,
+  repetitions and coherence with other signals in the area.`fuseConfidence`
+  applies `C = 1 − ∏(1 − p_i · r_i)` only between **independent** sources: two
+  signals from the same source do not multiply.`updateSourceReliability` learn
+  with a minimum of samples and limited movement.
+  `SignalAssessor` interface with the deterministic engine as implemented by
+  default implementation and room for Jev and for an LLM with a structured output. Access to Jev
+  is confirmed; the deterministic remains the always available fallback.
+  **Pending**: Latch onto orchestrator signal input. The module
+  is complete;nothing calls it yet.
 
 ---
 
-## 7. Supuestos vivos (`assumptions.ts`)
+## 7. Live assumptions (`assumptions.ts`)
 
-- `deriveAssumptions(plan, zones, resources, world, actions)`: entre tres y
-  seis supuestos que salen de decisiones reales del plan. Si un recurso cruza
-  una carretera, el supuesto es que sigue abierta; si una acción sale por SMS,
-  que el SMS funciona; si se prioriza por viento, la dirección del viento.
-- `checkAssumptions(assumptions, world, event?)`: qué sigue en pie, qué se
-  rompió y por qué. Un supuesto roto no se rompe dos veces ni resucita solo.
-  Usa `unknown` cuando deja de haber dato, en vez de fingir que sigue bien.
-- `applyEventToWorld(world, event)`: una señal `route-blocked` añade la
-  carretera a `blockedRoads`; un cambio de viento actualiza `windDirection`.
-  Pura, sin mutar.
-- `explainInvalidation`: texto de sala de operaciones. Ejemplo real: "El plan
-  v3 ya no vale: daba por hecho que el viento seguiría del nordeste sobre
-  Sierra Morena, y acaba de girar. El orden de prioridades ya no se sostiene…"
-- `consequencesOfBreak`: qué acciones dejan de tener sentido.
-
-**Pendiente**: enganchar en la replanificación. Es el clímax de la demo (el
-jurado gira el viento, el plan se pone en rojo) y está construido pero no
-conectado.
-
----
-
-## 8. Autonomía graduada y coste de oportunidad (`autonomy.ts`)
-
-| Tipo de acción | Reversibilidad | Nivel |
-| --- | --- | --- |
-| Verificar un dato | reversible | automática |
-| Avisar a un responsable | reversible | automática con aviso |
-| Asignar o mover un recurso | reversible | automática con aviso, deshacible |
-| Aviso masivo a la población | parcial | automática solo con confianza ≥ 0,9; si no, aprobación |
-| Ordenar evacuación | irreversible | siempre aprobación |
-| Pedir refuerzos externos | irreversible | siempre aprobación |
-
-- `classifyAction` deduce el tipo a partir del objetivo (la categoría es la
-  señal útil).
-- `decideAutonomy` devuelve nivel y motivo; ante la duda, el más conservador;
-  una acción sin clasificar cae en aprobación; `autonomyPaused` fuerza
-  aprobación en todo.
-- `canAutoDispatch`: el guardián de una línea que se consulta antes de ejecutar
-  sin preguntar. Si falta información, `false`.
-- `buildWaitingList(actions, resources, zones)`: envuelve
-  `resolveResourceConflicts` y devuelve `WaitingDemand[]` con espera estimada.
-
-**Pendiente**: enganchar el despacho automático en el orquestador y publicar la
-lista de espera en el estado (`waiting` existe en el tipo, se inicializa vacía).
+- `deriveAssumptions(plan, zones, resources, world, actions)`: between three and
+  six assumptions that come from real decisions in the plan. If a resource crosses
+  a road, the assumption is that it is still open;if an action goes out by SMS,
+  that SMS works;if prioritized by wind, the direction of the wind.
+- `checkAssumptions(assumptions, world, event?)` : what is still standing, what is
+  broken and why. A broken assumption is not broken twice or resurrected alone.
+  Use `unknown` when data is no longer available, instead of pretending it's still fine.
+- `applyEventToWorld(world, event)` : an `route-blocked` signal adds the
+  road to `blockedRoads` ;a wind change updates `windDirection`.
+  Pure, no mutation.
+- `explainInvalidation`: control-room text.Real example: "The plan
+  v3 is no longer valid: it was assumed that the wind would continue from the northeast over
+  Sierra Morena, and just turned. The order of priorities no longer holds..."
+- `consequencesOfBreak` : which actions stop making sense.
+  **Pending**: engage in replanning. It is the climax of the demo (the
+  jury turns the wind, the plan turns red) and it is built but not
+  connected.
 
 ---
 
-## 9. Escenario (`scenario.ts`, `app/api/scenario/*`)
+## 8. Graduated autonomy and opportunity cost (`autonomy.ts`)
 
-- Reloj por tiempo real transcurrido: sondear más no acelera, sondear menos no
-  retrasa.
-- **Un beat por tick como máximo.** Antes, 60 s sin sondeo disparaban todos los
-  atrasados de golpe. Los beats con más de 60 s de retraso y otro posterior
-  también vencido se omiten y quedan trazados en `skippedBeatIds`; el más
-  reciente nunca se omite. Tras tres minutos sin mirar, el sistema salta al
-  presente en vez de reproducir historia.
-- Pausa y reanudación reales; velocidad 0,25×–10× en caliente; orden
-  determinista.
-- Latido en servidor (`ensureHeartbeat`, 5 s): la crisis avanza aunque nadie
-  mire la pantalla. Handle en `globalThis` que limpia el anterior, `unref()`,
-  apagado en tests y con `SCENARIO_AUTOTICK=0`. Sin disparos duplicados.
-- Tres guiones: `wildfire-andalucia` (predeterminado, 6 beats a 20/55/90/125/
-  160/200 s), `blackout-guadalquivir`, `flood-guadalquivir`. Se eligen con
-  `POST /api/scenario/start { scriptId, speed, restart }`.
+| Action type                     | Reversibility | Level                                                 |
+| ------------------------------- | ------------- | ----------------------------------------------------- |
+| Verify a fact                   | reversible    | automatic                                             |
+| Notify a person in charge       | reversible    | automatic with warning                                |
+| Assign or move a resource       | reversible    | automatic with warning, undoable                      |
+| Mass notice to the population   | partial       | automatic only with confidence ≥ 0.9;if not, approval |
+| Order evacuation                | irreversible  | always approval                                       |
+| Request external reinforcements | irreversible  | always approval                                       |
 
-**Pendiente**: trasladar el guion a Sierra Bermeja (Estepona, Jubrique,
-Genalguacil, Benahavís, Los Pinares) y añadir el beat de ruido (cuarenta
-mensajes, tres relevantes). Sobre Supabase, los beats disparados van a
-`scenario_beats` y el latido a un cron de Vercel o a un paso de Workflow con
-espera.
-
----
-
-## 10. Persistencia, historial y aprendizaje
-
-**Persistencia** (`persistence.ts`, `CRISIS_PERSISTENCE=on`): ficheros JSON en
-`.data/` con sobre `{ schemaVersion, savedAt, payload }`, escritura atómica
-(temporal + rename), diferida (500 ms de silencio, máximo 4 s), volcado final
-en `process.on("exit")`. Descarta el fichero entero ante JSON inválido,
-truncado, versión de esquema distinta o forma incorrecta, y arranca con la
-semilla. `sanitizeState` pone teléfonos y correos a `null` y filtra texto
-libre. Probado con dos procesos reales.
-
-**Historial** (`history.ts`): `diffPlans(previous, next, context)` detecta los
-siete tipos de `PlanChangeKind` y redacta para pantalla: "Costa del Sol
-adelanta a Sevilla Hub y Sierra Morena", "La integración con HappyRobot está
-fallando", "Sierra Morena pasa a crítica". Ordenados por importancia,
-recortados a 12.
-
-**Aprendizaje** (`learning.ts`): `buildRunRecord` resume la ejecución desde el
-estado (idempotente); `weightsFromRuns` reconstruye pesos desde cero sumando
-ejecuciones. Mínimos de muestra: canal 5 intentos, contacto 4 avisos,
-`unconfirmedPenalty` 3 ejecuciones y 8 señales verificadas. Lo que no llega al
-mínimo ni se publica. `explainWeights` devuelve `LearningInsight[]` en
-castellano, incluido lo que **aún no** se aplica y por qué ("hacen falta 3
-ejecuciones y solo hay 2").
-
-**Sobre el andamiaje**: la persistencia en ficheros desaparece; historial y
-aprendizaje leen `domain_events`, `decisions` y `action_results`. La lógica de
-mínimos y explicación se conserva tal cual.
+- `classifyAction` deduces the type from the target (the category is the
+  useful signal).
+- `decideAutonomy` returns level and reason;when in doubt, the most conservative;
+  an unclassified action falls into approval;`autonomyPaused` strength
+  approval in everything.
+- `canAutoDispatch` : the one-line watchdog that is queried before executing
+  without asking. If information is missing, `false` .
+- `buildWaitingList(actions, resources, zones)` : wraps
+  `resolveResourceConflicts` and returns `WaitingDemand[]` with estimated wait.
+  **Pending**: Hook up automatic dispatch in the orchestrator and publish the
+  waitlist in state ( `waiting` exists in type, is initialized empty).
 
 ---
 
-## 11. Validación y API (`validation.ts`, `app/api/**`)
+## 9. Scenario (`scenario.ts`, `app/api/scenario/*`)
 
-Esquema de error único:
+- Real elapsed time clock: polling more does not speed up, polling less does not
+  delay.
+- **One beat per tick maximum.** Previously, 60 s without polling triggered all
+  all overdue beats at once.Beats with more than 60 s delay and another later
+  also due are skipped and are plotted in `skippedBeatIds`; the most
+  recent is never omitted. After three minutes without looking, the system jumps to
+  present instead of reproducing history.
+- Real pause and resume;speed 0.25×–10× hot;order
+  deterministic.
+- Heartbeat on server (`ensureHeartbeat`, 5 s): the crisis advances although no one
+  look at the screen.Handle in `globalThis` that clears the previous one, `unref()` ,
+  off in tests and with `SCENARIO_AUTOTICK=0`. No duplicate timers.
+- Three scripts: `wildfire-andalucia` (default, 6 beats at 20/55/90/125/
+  160/200s), `blackout-guadalquivir` , `flood-guadalquivir` . They are chosen with
+  `POST /api/scenario/start { scriptId, speed, restart }` .
+  **Pending**: transfer the script to Sierra Bermeja (Estepona, Jubrique,
+  Genalguacil, Benahavís, Los Pinares) and add the noise beat (forty
+  messages, three relevant). On Supabase, the triggered beats will
+  `scenario_beats` and the heartbeat to a Vercel cron or a Workflow step with
+  wait.
+
+---
+
+## 10. Persistence, history and learning
+
+**Persistence** ( `persistence.ts` , `CRISIS_PERSISTENCE=on` ): JSON files in
+`.data/` with `{ schemaVersion, savedAt, payload }` envelope, atomic write
+(temporary + rename), deferred (500 ms silence, maximum 4 s), final dump
+in `process.on("exit")`.It discards the entire file if JSON is invalid,
+truncated, different schema version or incorrect form, and starts with the
+seed.`sanitizeState` puts phones and emails to `null` and filters text
+free text. Tested with two real processes.
+**History** (`history.ts`): `diffPlans(previous, next, context)` detects the
+seven types of `PlanChangeKind` and writes for the screen: "Costa del Sol
+advances Sevilla Hub and Sierra Morena", "The integration with HappyRobot is
+failing", "Sierra Morena becomes critical".Sorted by importance,
+cut to 12.
+**Learning** (`learning.ts`): `buildRunRecord` summarizes the execution from the
+state (idempotent);`weightsFromRuns` reconstructs weights from scratch by adding
+executions.Sample minimums: channel 5 attempts, contact 4 warnings,
+`unconfirmedPenalty` 3 runs and 8 verified signals.What does not reach
+the minimum is not published.`explainWeights` returns `LearningInsight[]` in
+Spanish, including what **does not** apply yet and why ("it takes 3
+executions and there are only 2").
+**About scaffolding**: file persistence disappears;history and
+learning reads `domain_events` , `decisions` and `action_results` . The logic of
+minimums and explanation are preserved as is.
+---
+
+## 11. Validation and API (`validation.ts`, `app/api/**`)
+
+Single error shape:
 
 ```json
-{ "error": "La zona \"zone-nope\" no existe…", "code": "referencia_desconocida",
-  "detalles": [{ "campo": "zoneId", "mensaje": "…" }] }
+{
+  "error": "Zone \"zone-nope\" does not exist…",
+  "code": "unknown_reference",
+  "details": [{ "field": "zoneId", "message": "…" }]
+}
 ```
 
-Códigos: `cuerpo_invalido` 400, `json_invalido` 400, `cuerpo_vacio` 400,
+Codes: `cuerpo_invalido` 400, `json_invalido` 400, `cuerpo_vacio` 400,
 `referencia_desconocida` 400, `tipo_contenido_no_soportado` 415,
-`cuerpo_demasiado_grande` 413 (32 KB), `no_autorizado` 401, `no_encontrado`
-404, `conflicto` 409, `metodo_no_permitido` 405 con `Allow`, `error_interno`
-500. Todo con `cache-control: no-store`. Esquemas Zod estrictos: un campo mal
-escrito devuelve 400 en vez de perderse.
-
-Rutas: `GET /api/situation` (usa `pollSituation`), `POST /api/events`,
+`cuerpo_demasiado_grande` 413 (32KB), `no_autorizado` 401, `no_encontrado`
+404, `conflicto` 409, `metodo_no_permitido` 405 with `Allow`, `error_interno` 500. All with `cache-control: no-store`.Strict Zod schemas: a misspelled field returns 400 instead of being lost.
+Paths: `GET /api/situation` (uses `pollSituation` ), `POST /api/events` ,
 `POST /api/events/:id/mark`, `POST /api/actions`, `POST /api/actions/:id/approve`,
-`POST /api/actions/:id/status` (operaciones del operador, **sin** secreto),
-`POST /api/demo/inject`, `POST /api/demo/reset` (con `DEMO_API_TOKEN`),
+`POST /api/actions/:id/status` (operator operations, **no** secret),
+`POST /api/demo/inject`, `POST /api/demo/reset` (with `DEMO_API_TOKEN`),
 `POST /api/scenario/{start,stop,tick}`, `POST /api/webhooks/happyrobot`.
-
-`DEMO_API_TOKEN`: sin definir en desarrollo, abierto; definido, cabecera
-`x-demo-token`, `Bearer` o `?token=`; sin definir en producción, rutas
-desactivadas.
-
-Helpers reutilizables: `apiOk`, `apiError`, `apiErrorFromThrown`,
+`DEMO_API_TOKEN`: undefined in development, open;defined, header
+`x-demo-token` , `Bearer` or `?token=` ;undefined in production, routes
+deactivated.
+Reusable helpers: `apiOk`, `apiError`, `apiErrorFromThrown`,
 `methodNotAllowed`, `parseJsonBody`, `validarReferencias`, `autorizarRutaDemo`.
 
-**Pendiente**: `POST /api/actions/:id/assign`, `POST /api/autonomy`, rutas de
-aceptar y rechazar lecciones. La interfaz ya los llama y avisa si no existen.
+**Pending**: `POST /api/actions/:id/assign`, `POST /api/autonomy`, routes to
+accept y rechazar lecciones. La interfaz ya los llama y avisa si no existen.
 
 ---
 
-## 12. Interfaz (`app/page.tsx`, `app/components/`)
+## 12. Interface (`app/page.tsx`, `app/components/`)
 
-Jerarquía: cabecera con versión del plan e insignia simulado/real → banners →
-hero de tres bloques (prioridad ahora, qué ha cambiado, 6 KPI) → barra de
-escenario con estado del mundo e hitos → inyectores → mapa con marcadores vivos
-que abren el detalle de zona → plan con diff y versiones anteriores → pestañas
-(acciones, señales, recursos, contactos y escalado, auditoría).
-
-Lo que puede hacer el operador: aprobar, reintentar, cancelar, confirmar o
-descartar señales, crear acción a mano, reasignar recurso contra el ranking
-completo con motivos de descarte, arrancar, parar y acelerar el guion, parar la
-autonomía en caliente. Franja permanente de honestidad: "Acciones reales
-ejecutadas: 0 · simuladas: N".
-
-Técnica: sondeo de 4 s con huella JSON para no repintar sin cambios; estado de
-interfaz fuera del objeto `situation` para no perder pestaña ni scroll;
+Hierarchy: header with plan version and mock/real badge → banners →
+three-block hero (priority now, what has changed, 6 KPI) → bar
+scenario with world state and landmarks → injectors → map with live markers
+that open the zone detail → plan with diff and previous versions → tabs
+(actions, signals, resources, contacts and escalation, audit).
+What the operator can do: approve, retry, cancel, confirm or
+discard signals, create action by hand, reallocate resource against ranking
+complete with reasons for discarding, starting, stopping and accelerating the script, stopping the
+live autonomy.Permanent stripe of honesty: "Real actions
+executed: 0 · simulated: N".
+Technique: 4s polling with JSON fingerprint to not repaint without changes;interface state outside the `situation` object to avoid losing tab or scroll;
 `aria-label`, `role=tablist`, `aria-live`, `focus-visible`,
-`prefers-reduced-motion`; cortes en 980 y 640 px.
-
-Componentes: `ActionQueue`, `AuditPanel`, `ChangeBar`, `ContactsPanel`,
+`prefers-reduced-motion` ;cuts at 980 and 640 px.
+Components: `ActionQueue`, `AuditPanel`, `ChangeBar`, `ContactsPanel`,
 `HeroSummary`, `NewActionForm`, `OperationsMap`, `PlanChanges`,
 `ResourcePicker`, `ResourcesPanel`, `ScenarioBar`, `SignalsPanel`,
-`ZoneDetail`. Cuatro más escritos pero **sin conectar**, para la distribución
-de seis zonas del documento fuente: `AgentStrip`, `ChaosBar`, `ContextPanel`,
-`PriorityBoard`.
-
+`ZoneDetail` .Four more written but **not connected**, for distribution
+for the six-zone layout of the source document: `AgentStrip`, `ChaosBar`, `ContextPanel`,
+`PriorityBoard` .
 ---
 
-## Estado de integración al congelar
+## Integration status when freezing
 
-| Pieza | Estado |
-| --- | --- |
-| Prioridad, recursos, contactos, escalado, HappyRobot, escenario, persistencia, API, interfaz | Construido, enchufado y verificado |
-| Triaje calibrado | Construido y testado; **no enchufado** en la entrada de señales |
-| Supuestos vivos | Construido y testado; **no enchufado** en la replanificación |
-| Autonomía y lista de espera | Construido y testado; **no enchufado** en el despacho |
-| Ejecución de cadenas de escalado | Funciones listas; sin runtime que las avance |
-| Rutas `assign`, `autonomy`, lecciones | No existen; la interfaz las llama y avisa |
-| Escenario en Sierra Bermeja | No hecho; sigue en zonas abstractas de Andalucía |
-| Cuatro componentes de la distribución nueva | Escritos, sin importar |
+| Piece                                                                                        | State                                                      |
+| -------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Priority, resources, contacts, escalation, HappyRobot, scenario, persistence, API, interface | Built, plugged in and verified                             |
+| Calibrated triage                                                                            | Built and tested;**not plugged in** at signal input        |
+| Living assumptions                                                                           | Built and tested;**not plugged in** in replanning          |
+| Autonomy and waiting list                                                                    | Built and tested;**not plugged in** in dispatch            |
+| Running escalation chains                                                                    | Ready functions; without runtime to advance them           |
+| `assign`, `autonomy` routes, lessons                                                         | They do not exist; the interface calls them and warns them |
+| Scenario in Sierra Bermeja                                                                   | Not done;continues in abstract areas of Andalusia          |
+| Four components of the new distribution                                                      | Written, not imported                                      |
