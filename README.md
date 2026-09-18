@@ -1,12 +1,20 @@
-# Butterfish
+# FARO
 
-Scaffolding TypeScript para el reto de gestión de crisis de HappyRobot en
-HackSpain 2026. Un único proyecto Next.js desplegable en Vercel.
+Centro de mando agéntico para un incendio forestal en Andalucía: nuestra
+propuesta para el reto de gestión de crisis de HappyRobot en HackSpain 2026.
+Un único proyecto Next.js desplegable en Vercel; el paquete npm se llama
+`butterfish`. La visión de producto, el escenario y el guion de demo están en
+[HackSpain 2026 · Source of Truth del proyecto.md](<HackSpain 2026 · Source of Truth del proyecto.md>)
+y el contexto de diseño (modelo de datos, inventario de funcionalidades,
+decisiones abiertas) en [thoughts/](thoughts/README.md).
 
-**Estado: estructura base completada.** El modelo de IA, el escenario, las
-credenciales y las conexiones reales se concretarán en la siguiente fase.
-Consulta [TASKS.md](TASKS.md) para ver lo terminado y las tareas pendientes.
-La fuente de verdad del proyecto y sus convenciones es [PROJECT.md](PROJECT.md).
+**Estado: estructura base completada; el dominio FARO está por portar.** El
+escenario (incendio en Sierra Bermeja) y el nombre están decididos; el modelo
+de IA, las credenciales y las conexiones reales siguen pendientes. Consulta
+[TASKS.md](TASKS.md) para ver lo terminado y las tareas pendientes, y
+[thoughts/open-questions.md](thoughts/open-questions.md) para las decisiones
+abiertas y las ya confirmadas.
+Las convenciones de desarrollo y los permisos están en [PROJECT.md](PROJECT.md).
 `AGENTS.md` y `CLAUDE.md` apuntan allí para evitar reglas duplicadas.
 Para incorporarte al equipo, sigue [CONTRIBUTING.md](CONTRIBUTING.md).
 El repositorio incluye [skills compartidas](docs/agent-skills.md) para React/Next.js,
@@ -14,8 +22,10 @@ Postgres/Supabase, accesibilidad y diseño visual; no requieren instalación glo
 
 ## Arranque local
 
-Requisitos: Node.js **22.21+ (22.x)** y **npm 11.6.1**. Usamos npm y
-`package-lock.json`; para una instalación reproducible:
+Requisitos: Node.js **22.21+ (22.x)** con el npm que incluye (**10.9+**).
+`package.json` fija `npm@11.6.1` en `packageManager` para quien use Corepack
+(`corepack enable`); no es obligatorio. Usamos npm y `package-lock.json`; para
+una instalación reproducible:
 
 ```powershell
 npm ci

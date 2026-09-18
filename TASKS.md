@@ -13,7 +13,7 @@
 - [x] RLS activado por defecto en el esquema, sin acceso público a los datos.
 - [x] Límite de integración HappyRobot que devuelve `blocked` explícitamente.
 - [x] `.env.example`, README e instrucciones de agentes actualizados.
-- [x] Verificar build, lint, TypeScript y 3 tests.
+- [x] Verificar build, lint, TypeScript y tests (7 tests en 2 archivos: dominio y guardas de hooks).
 - [x] Probar el workflow local hasta completarlo en simulación y validar errores 401/400.
 - [x] Revisar dependencias: auditoría sin vulnerabilidades tras los ajustes.
 
@@ -44,15 +44,20 @@ probado llamadas a modelos ni comunicaciones reales.
 
 ## Fase 2 · Decisiones y configuración, para más adelante
 
-- [ ] Elegir el escenario de crisis y los cambios que se inyectarán durante la demo.
+- [x] Elegir el escenario de crisis y los cambios que se inyectarán durante la demo:
+      incendio en Sierra Bermeja con tres eventos de caos (giro del viento, corte de la
+      A-397, caída del SMS). Detalle en el documento fuente y en `thoughts/open-questions.md`.
 - [ ] Definir recursos disponibles y reglas de prioridad y asignación.
 - [ ] Elegir proveedor/modelo y configurar las credenciales de AI Gateway.
 - [ ] Configurar el proyecto Supabase y aplicar la migración en desarrollo.
 - [ ] Concretar operaciones, autenticación y callbacks de HappyRobot.
 - [ ] Acordar destinatarios y recursos de demo para las pruebas externas.
 
-Estas decisiones quedan aplazadas expresamente. No bloquean la entrega de la
-estructura base y no deben resolverse con credenciales o escenarios inventados.
+Las decisiones aún abiertas no bloquean la estructura base y no deben
+resolverse con credenciales inventadas. La lista completa, ordenada por la fase
+que bloquea, está en [thoughts/open-questions.md](thoughts/open-questions.md);
+las fases de construcción (contratos, punta a punta mínimo, decisión completa,
+ejecución robusta, aprendizaje y ensayo) están en el documento fuente.
 
 ## Fase 3 · Primera vertical conectada
 
@@ -73,7 +78,11 @@ estructura base y no deben resolverse con credenciales o escenarios inventados.
 ## Referencias
 
 - [README.md](README.md): instalación, comandos y límites actuales.
-- [AGENTS.md](AGENTS.md): convenciones de desarrollo y verificaciones.
+- [PROJECT.md](PROJECT.md): convenciones de desarrollo, comandos y verificaciones.
+- [HackSpain 2026 · Source of Truth del proyecto.md](<HackSpain 2026 · Source of Truth del proyecto.md>):
+  visión de producto, escenario, guion de demo y fases.
+- [thoughts/](thoughts/README.md): modelo de datos, inventario de
+  funcionalidades por portar y decisiones abiertas.
 - [CHALLENGE.md](CHALLENGE.md): requisitos originales del reto.
 - [docs/input-architecture.md](docs/input-architecture.md): diseño y guía de
   implementación de la ingesta de eventos (Hito A síncrono con procesamiento de

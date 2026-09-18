@@ -1,6 +1,6 @@
 # HackSpain 2026 · Source of Truth del proyecto
 
-2026-09-18 · @Someone
+2026-09-18
 
 ## Resumen ejecutivo
 

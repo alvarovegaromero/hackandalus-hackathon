@@ -6,9 +6,10 @@ convenciones y los permisos. [README.md](README.md) explica el funcionamiento;
 
 ## Preparar el entorno
 
-Necesitas Git, Node.js 22.21+ (22.x) y npm 11.6.1. En Windows instala Git for
-Windows; los hooks usan su intérprete. En macOS y Linux basta con Git y Node
-en el PATH. Usa npm y el lockfile del repositorio.
+Necesitas Git y Node.js 22.21+ (22.x) con el npm que incluye (10.9+); si usas
+Corepack, `corepack enable` activa el npm 11.6.1 fijado en `package.json`. En
+Windows instala Git for Windows; los hooks usan su intérprete. En macOS y Linux
+basta con Git y Node en el PATH. Usa npm y el lockfile del repositorio.
 
 ```sh
 git clone https://github.com/alvarovegaromero/hackandalus-hackathon.git
@@ -31,8 +32,8 @@ git fetch origin
 git switch -c feat/short-description origin/main
 ```
 
-Usa `feat/`, `fix/` o `chore/` según corresponda. No uses la antigua rama
-`integration`. Si ya tienes cambios, consérvalos antes de cambiar de rama.
+Usa `feat/`, `fix/` o `chore/` según corresponda. Si ya tienes cambios,
+consérvalos antes de cambiar de rama.
 
 ```sh
 npm run format
