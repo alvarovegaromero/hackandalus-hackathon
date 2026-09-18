@@ -13,13 +13,21 @@ system that manages a crisis (wildfire, blackout, flood, or similar) that
 changes while the system runs. See `CHALLENGE.md` for the full brief and
 scoring criteria.
 
+Product: FARO, an agentic command center for a wildfire in Sierra Bermeja
+(Málaga), operated by the 112 Andalucía control room. Everything the operator
+sees is in Spanish. The product vision, scenario, demo script and build phases
+live in `HackSpain 2026 · Source of Truth del proyecto.md` at the repository
+root; `thoughts/` holds the data model proposal, the inventory of features
+built on the `feat/crisis-command-center` branch, and the open decisions.
+
 Status: runnable TypeScript scaffolding with Next.js/React, Vercel AI SDK,
 Vercel Workflow, Supabase clients/schema, and Zod. The browser demo is local
 and deterministic. Supabase persistence, operator authentication, and actual
 HappyRobot communications are not connected yet; see README.md.
-The base scaffolding milestone is complete. Model selection, crisis scenario,
-credentials, and live integrations are explicitly deferred to later work;
-do not treat them as blockers for this milestone. Track follow-up work in TASKS.md.
+The base scaffolding milestone is complete. Scenario and product name are
+confirmed (see `thoughts/open-questions.md`, "Confirmed, do not reopen").
+Model selection, credentials, and live integrations are still open; do not
+resolve them with invented values. Track follow-up work in TASKS.md.
 
 ## Start here
 
@@ -35,6 +43,10 @@ do not treat them as blockers for this milestone. Track follow-up work in TASKS.
 ## Repository map
 
 - `CHALLENGE.md`: authoritative challenge requirements and scoring criteria.
+- `HackSpain 2026 · Source of Truth del proyecto.md`: product vision, scenario,
+  demo script, build phases and risks (in Spanish).
+- `thoughts/`: design context: data model proposal, feature inventory to port,
+  open and confirmed decisions.
 - `TASKS.md`: completed scaffolding checklist and deferred implementation tasks.
 - `PROJECT.md`: authoritative project context and shared development instructions.
 - `AGENTS.md`: entry point directing all coding agents to this file.
@@ -58,13 +70,16 @@ do not treat them as blockers for this milestone. Track follow-up work in TASKS.
 - `docs/`: design and implementation guides; `docs/input-architecture.md` covers
   event ingestion (synchronous batch intake now; async/topic fan-out deferred).
 - `README.md`, `.env.example`: local setup, credentials and integration limitations.
-- `.husky`, `scripts`, `lint-staged.config.mjs`: local quality and branch/credential guards.
+- `.husky`, `scripts`, `lint-staged.config.mjs`: local quality and branch/credential guards;
+  `scripts/hooks.test.ts` covers the guards, `src/lib/domain.test.ts` the domain boundaries.
 - `.secretlintrc.json`: Secretlint recommended rules; `.secretlintignore` excludes generated output.
 - `scripts/setup-env.mjs`: creates an ignored local environment template without overwriting files.
 
 ## Setup / Build / Test / Run
 
-Use Node.js 22.21+ (22.x) and npm 11.6.1. Commit package-lock.json; use npm only.
+Use Node.js 22.21+ (22.x) with its bundled npm (10.9+). `packageManager` pins
+npm 11.6.1 for Corepack users (`corepack enable`); it is optional.
+Commit package-lock.json; use npm only.
 Install: `npm ci`. Develop: `npm run dev`. Production: `npm run build` then
 `npm start`. Checks: `npm run lint`, `npm run typecheck`, `npm test` (Vitest).
 Formatting: `npm run format` writes changes; `npm run format:check` only checks.
@@ -141,8 +156,7 @@ When extending the scaffolding:
   explicitly in `gh --repo` commands when needed.
 - `main` is the canonical integration branch for all work. Create new feature
   branches from the latest `origin/main` and target every PR at `main`.
-  The old `integration` branch workflow is retired; do not use it as a base or
-  PR target. Existing feature branches may continue with their unmerged work.
+  Existing feature branches may continue with their unmerged work.
 - `main` must only change through pull requests. Never commit or push directly
   to `main`, including `git push origin HEAD:main`, API file writes, or force
   pushes. The one-off direct push used during setup is no longer authorized.
