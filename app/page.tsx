@@ -1,389 +1,587 @@
 "use client";
 
+// Pantalla única del centro de mando. Orquesta el sondeo del estado, guarda lo
+// que el operador tiene abierto entre refrescos y reparte el estado a los
+// paneles. Los textos del servidor se muestran tal cual llegan.
+
 import {
   AlertTriangle,
-  Ban,
-  Check,
-  CheckCircle2,
-  CircleAlert,
-  Clock3,
   Crosshair,
+  Flame,
   Loader2,
-  PhoneCall,
-  Radio,
+  PauseCircle,
+  Play,
   RefreshCw,
   RotateCcw,
   Route,
   ShieldAlert,
-  Siren,
-  X
+  Siren
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import type { Action, CrisisEvent, CrisisZone, Resource, SituationState } from "@/lib/types";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { CreateActionPayload, SituationState } from "@/lib/types";
+import ActionQueue from "./components/ActionQueue";
+import AuditPanel from "./components/AuditPanel";
+import ContactsPanel from "./components/ContactsPanel";
+import HeroSummary from "./components/HeroSummary";
+import OperationsMap from "./components/OperationsMap";
+import PlanChanges from "./components/PlanChanges";
+import ResourcesPanel from "./components/ResourcesPanel";
+import ScenarioBar from "./components/ScenarioBar";
+import SignalsPanel from "./components/SignalsPanel";
+import ZoneDetail from "./components/ZoneDetail";
+import {
+  agoLabel,
+  isOpenAction,
+  maybe,
+  severityRank,
+  troubledActionStatuses,
+  zoneStatusLabels
+} from "./components/shared";
 
-const statusLabels: Record<Action["status"], string> = {
-  pending: "Pendiente",
-  approved: "Aprobada",
-  running: "En curso",
-  succeeded: "Completada",
-  failed: "Fallida",
-  blocked: "Bloqueada",
-  cancelled: "Cancelada",
-  stalled: "Sin respuesta"
+const POLL_MS = 4000;
+const FRESH_MS = 25000;
+
+type TabId = "actions" | "signals" | "resources" | "contacts" | "audit";
+
+const tabLabels: Record<TabId, string> = {
+  actions: "Acciones",
+  signals: "Señales",
+  resources: "Recursos",
+  contacts: "Contactos y escalado",
+  audit: "Auditoría"
 };
 
-const severityRank: Record<CrisisEvent["severity"], number> = {
-  low: 1,
-  medium: 2,
-  high: 3,
-  critical: 4
-};
-
-function timeLabel(value: string) {
-  return new Intl.DateTimeFormat("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit"
-  }).format(new Date(value));
+/** Traduce una respuesta de error de la API a una frase para el operador. */
+async function describeFailure(response: Response, path: string) {
+  const body = await response.text();
+  try {
+    const parsed = JSON.parse(body) as { error?: string; mensaje?: string };
+    const message = parsed.error ?? parsed.mensaje;
+    if (message) return `${message} (${response.status} en ${path})`;
+  } catch {
+    // La respuesta no era JSON: se muestra tal cual, recortada.
+  }
+  return `${response.status} en ${path}: ${body.slice(0, 160)}`;
 }
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...init,
-    headers: {
-      "content-type": "application/json",
-      ...(init?.headers ?? {})
-    }
+    headers: { "content-type": "application/json", ...(init?.headers ?? {}) }
   });
-  if (!response.ok) throw new Error(await response.text());
+  if (!response.ok) throw new Error(await describeFailure(response, path));
   return response.json() as Promise<T>;
-}
-
-function priorityFor(zone: CrisisZone, situation: SituationState) {
-  return situation.plan.priorities.find((priority) => priority.zoneId === zone.id);
-}
-
-function actionIcon(action: Action) {
-  if (action.status === "running") return <Loader2 className="spin" size={16} />;
-  if (action.status === "failed" || action.status === "blocked") return <CircleAlert size={16} />;
-  if (action.status === "succeeded") return <CheckCircle2 size={16} />;
-  if (action.channel === "call") return <PhoneCall size={16} />;
-  return <Radio size={16} />;
 }
 
 export default function Home() {
   const [situation, setSituation] = useState<SituationState | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabId>("actions");
+  const [formOpen, setFormOpen] = useState(false);
+  const [prefillZoneId, setPrefillZoneId] = useState<string | null>(null);
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
-  async function refresh() {
-    const next = await requestJson<SituationState>("/api/situation");
-    setSituation(next);
-  }
+  // Control del refresco: la huella evita repintar cuando nada ha cambiado, y
+  // los mapas de "primera vez que lo vi" permiten resaltar lo recién llegado.
+  const fingerprintRef = useRef<string>("");
+  const seenRef = useRef<Map<string, number>>(new Map());
+  const bootstrappedRef = useRef(false);
+  const planSeenRef = useRef<{ version: number; at: number }>({ version: -1, at: 0 });
 
-  async function run(label: string, operation: () => Promise<void>) {
-    setBusy(label);
-    setError(null);
-    try {
-      await operation();
-      await refresh();
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unexpected error");
-    } finally {
-      setBusy(null);
+  const registerSeen = useCallback((next: SituationState) => {
+    const stamp = bootstrappedRef.current ? Date.now() : 0;
+    for (const item of [...next.events, ...next.actions]) {
+      if (!seenRef.current.has(item.id)) seenRef.current.set(item.id, stamp);
     }
-  }
+    if (planSeenRef.current.version !== next.plan.version) {
+      planSeenRef.current = { version: next.plan.version, at: stamp };
+    }
+    bootstrappedRef.current = true;
+  }, []);
 
+  const refresh = useCallback(async () => {
+    const next = await requestJson<SituationState>("/api/situation");
+    registerSeen(next);
+    const fingerprint = JSON.stringify(next);
+    if (fingerprint === fingerprintRef.current) return;
+    fingerprintRef.current = fingerprint;
+    setSituation(next);
+  }, [registerSeen]);
+
+  const run = useCallback(
+    async (label: string, operation: () => Promise<void>) => {
+      setBusy(label);
+      setError(null);
+      try {
+        await operation();
+        await refresh();
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : "Error inesperado");
+      } finally {
+        setBusy(null);
+      }
+    },
+    [refresh]
+  );
+
+  // Sondeo del estado. GET /api/situation ya hace avanzar el guion y barrer las
+  // acciones atascadas en el servidor, así que no hace falta empujar nada más.
   useEffect(() => {
-    refresh().catch((caught) => setError(caught instanceof Error ? caught.message : "Unable to load situation"));
-    const timer = window.setInterval(() => {
-      refresh().catch(() => undefined);
-    }, 4000);
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        await refresh();
+      } catch (caught) {
+        if (!cancelled) setError(caught instanceof Error ? caught.message : "No se pudo leer la situación");
+      }
+    };
+    poll();
+    const timer = window.setInterval(poll, POLL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [refresh]);
+
+  // Reloj local a un segundo: mueve el cronómetro del escenario y caduca los
+  // resaltados de "esto acaba de cambiar" sin pedir nada al servidor.
+  useEffect(() => {
+    const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
 
-  const topPriority = useMemo(() => {
-    if (!situation) return null;
-    const priority = situation.plan.priorities[0];
-    const zone = situation.zones.find((candidate) => candidate.id === priority?.zoneId);
-    return zone && priority ? { zone, priority } : null;
-  }, [situation]);
+  const freshIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const [id, at] of seenRef.current) {
+      if (at > 0 && nowMs - at < FRESH_MS) ids.add(id);
+    }
+    return ids;
+  }, [nowMs]);
+
+  const planIsFresh = planSeenRef.current.at > 0 && nowMs - planSeenRef.current.at < FRESH_MS;
+
+  const selectedZone = situation?.zones.find((zone) => zone.id === selectedZoneId) ?? null;
+
+  const elapsedSeconds = useMemo(() => {
+    if (!situation) return 0;
+    const { scenario } = situation;
+    if (scenario.running && scenario.startedAt) {
+      return (nowMs - new Date(scenario.startedAt).getTime()) / 1000;
+    }
+    return scenario.elapsedSeconds;
+  }, [situation, nowMs]);
+
+  const scenarioCall = useCallback(
+    (operation: "start" | "stop", body: Record<string, unknown> = {}) =>
+      run(`scenario-${operation}`, async () => {
+        setNotice(null);
+        const response = await fetch(`/api/scenario/${operation}`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        if (response.status === 404 || response.status === 405) {
+          setNotice(
+            `El endpoint POST /api/scenario/${operation} todavía no existe en este servidor. El control queda listo en la interfaz y funcionará en cuanto la ruta esté publicada.`
+          );
+          return;
+        }
+        if (!response.ok) throw new Error(await describeFailure(response, `/api/scenario/${operation}`));
+      }),
+    [run]
+  );
+
+  // Interruptor general de autonomía: es el mando más importante para poder
+  // intervenir, así que la interfaz lo ofrece aunque la ruta aún no exista.
+  const toggleAutonomy = useCallback(
+    (paused: boolean) =>
+      run("autonomy", async () => {
+        setNotice(null);
+        const response = await fetch("/api/autonomy", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ paused })
+        });
+        if (response.status === 404 || response.status === 405) {
+          setNotice(
+            "Para parar o reanudar la autonomía hace falta POST /api/autonomy con { paused }. La ruta todavía no responde, así que el sistema sigue como estaba."
+          );
+          return;
+        }
+        if (!response.ok) throw new Error(await describeFailure(response, "/api/autonomy"));
+      }),
+    [run]
+  );
+
+  const reassignResource = useCallback(
+    (actionId: string, resourceId: string) =>
+      run(`${actionId}-assign`, async () => {
+        setNotice(null);
+        const primary = await fetch(`/api/actions/${actionId}/assign`, {
+          method: "POST",
+          body: JSON.stringify({ resourceId })
+        });
+        if (primary.ok) return;
+        if (primary.status !== 404 && primary.status !== 405) {
+          throw new Error(`${primary.status} /api/actions/${actionId}/assign`);
+        }
+        // Segunda convención posible: la ruta de estado con una operación.
+        const fallback = await fetch(`/api/actions/${actionId}/status`, {
+          method: "POST",
+          body: JSON.stringify({ operation: "assign", resourceId })
+        });
+        if (fallback.ok) return;
+        setNotice(
+          "La reasignación de recursos necesita POST /api/actions/:id/assign con { resourceId }. La ruta aún no responde, así que el recurso no se ha cambiado."
+        );
+      }),
+    [run]
+  );
+
+  const createAction = useCallback(
+    (payload: CreateActionPayload) =>
+      run("create-action", async () => {
+        await requestJson("/api/actions", { method: "POST", body: JSON.stringify(payload) });
+        setFormOpen(false);
+      }),
+    [run]
+  );
+
+  const injectDemo = useCallback(
+    (kind: string) =>
+      run(`inject-${kind}`, () =>
+        requestJson("/api/demo/inject", { method: "POST", body: JSON.stringify({ kind }) }).then(
+          () => undefined
+        )
+      ),
+    [run]
+  );
 
   if (!situation) {
     return (
       <main className="shell center">
-        <Loader2 className="spin" size={24} />
-        <span>Cargando centro de mando</span>
+        <Loader2 className="spin" size={24} aria-hidden="true" />
+        <span>{error ?? "Cargando el centro de mando…"}</span>
       </main>
     );
   }
 
-  const openActions = situation.actions.filter((action) =>
-    ["pending", "approved", "running", "failed", "blocked"].includes(action.status)
-  ).length;
-  const availableResources = situation.resources.filter((resource) => resource.status === "available").length;
-  const criticalEvents = situation.events.filter((event) => severityRank[event.severity] >= severityRank.high).length;
+  const autonomyPaused = maybe(situation, "autonomyPaused") === true;
+  const openActions = situation.actions.filter(isOpenAction);
+  const troubled = situation.actions.filter((action) => troubledActionStatuses.includes(action.status));
+  const unverified = situation.events.filter((event) => event.confirmed === null);
+  const criticalSignals = situation.events.filter(
+    (event) => event.confirmed !== false && severityRank[event.severity] >= severityRank.high
+  );
+
+  const tabBadges: Record<TabId, number> = {
+    actions: openActions.length,
+    signals: unverified.length,
+    resources: situation.resources.filter((resource) => resource.status === "unavailable").length,
+    contacts: situation.chains.filter((chain) => chain.status === "active").length,
+    audit: situation.audit.length
+  };
 
   return (
     <main className="shell">
       <header className="topbar">
         <div>
-          <p className="eyebrow">HappyRobot Crisis Command · Andalucia</p>
-          <h1>Plan vivo de respuesta v{situation.plan.version}</h1>
+          <p className="eyebrow">Centro de mando de crisis · HappyRobot · Andalucía</p>
+          <h1>
+            Plan vivo de respuesta v{situation.plan.version}
+            <span className={situation.integration.mode === "happyrobot" ? "mode live" : "mode mock"}>
+              {situation.integration.mode === "happyrobot" ? "Ejecución real" : "Ejecución simulada"}
+            </span>
+          </h1>
+          <p className="topbar-sub">
+            {situation.plan.summary} · actualizado {agoLabel(situation.plan.generatedAt, nowMs)}
+          </p>
         </div>
         <div className="top-actions">
+          {busy ? <Loader2 className="spin" size={18} aria-hidden="true" /> : null}
           <button
-            title="Actualizar situacion"
+            className={autonomyPaused ? "primary" : ""}
+            onClick={() => toggleAutonomy(!autonomyPaused)}
+            disabled={busy !== null}
+            aria-pressed={autonomyPaused}
+            aria-label={
+              autonomyPaused
+                ? "Reanudar la autonomía del sistema"
+                : "Parar la autonomía: nada saldrá sin que lo apruebe una persona"
+            }
+          >
+            {autonomyPaused ? (
+              <>
+                <Play size={16} aria-hidden="true" /> Reanudar autonomía
+              </>
+            ) : (
+              <>
+                <PauseCircle size={16} aria-hidden="true" /> Parar autonomía
+              </>
+            )}
+          </button>
+          <button
+            aria-label="Actualizar la situación ahora"
             className="icon-button"
             onClick={() => run("refresh", refresh)}
             disabled={busy !== null}
           >
-            <RefreshCw size={18} />
+            <RefreshCw size={18} aria-hidden="true" />
           </button>
           <button
-            title="Reiniciar demo"
+            aria-label="Reiniciar la demo al estado inicial"
             className="icon-button danger-light"
             onClick={() => run("reset", () => requestJson("/api/demo/reset", { method: "POST", body: "{}" }))}
             disabled={busy !== null}
           >
-            <RotateCcw size={18} />
+            <RotateCcw size={18} aria-hidden="true" />
           </button>
         </div>
       </header>
 
-      {error ? <div className="banner error">{error}</div> : null}
-      {situation.integration.lastExternalError ? (
-        <div className="banner warning">{situation.integration.lastExternalError}</div>
-      ) : null}
+      <div className="banner-stack" aria-live="assertive">
+        {error ? <div className="banner error">{error}</div> : null}
+        {notice ? <div className="banner warning">{notice}</div> : null}
+        {autonomyPaused ? (
+          <div className="banner warning">
+            Autonomía parada por una persona: el sistema sigue analizando y proponiendo, pero no ejecuta nada
+            por su cuenta hasta que se reanude.
+          </div>
+        ) : null}
+        {situation.plan.valid === false ? (
+          <div className="banner error">
+            El plan v{situation.plan.version} ya no es válido
+            {situation.plan.invalidatedReason ? `: ${situation.plan.invalidatedReason}` : "."} Hay que rehacerlo.
+          </div>
+        ) : null}
+        {situation.integration.lastExternalError ? (
+          <div className="banner warning">Integración: {situation.integration.lastExternalError}</div>
+        ) : null}
+        <div className={situation.integration.mode === "happyrobot" ? "banner live" : "banner mock"}>
+          {situation.integration.mode === "happyrobot"
+            ? "Modo de ejecución real: las acciones aprobadas salen a HappyRobot."
+            : "Modo simulación: ninguna acción sale al exterior, todo lo que ves aquí es simulado."}{" "}
+          Acciones reales ejecutadas: {situation.integration.liveActionsExecuted} · simuladas:{" "}
+          {situation.integration.mockActionsExecuted}.
+          {situation.integration.mode === "happyrobot" && !situation.integration.happyRobotConfigured
+            ? " Faltan credenciales de HappyRobot, así que las acciones fallarán."
+            : ""}
+        </div>
+      </div>
 
-      <section className="metrics">
-        <article>
-          <span>Prioridad actual</span>
-          <strong>{topPriority?.zone.name ?? "Ninguna"}</strong>
-        </article>
-        <article>
-          <span>Senales criticas</span>
-          <strong>{criticalEvents}</strong>
-        </article>
-        <article>
-          <span>Acciones abiertas</span>
-          <strong>{openActions}</strong>
-        </article>
-        <article>
-          <span>Recursos libres</span>
-          <strong>{availableResources}</strong>
-        </article>
-        <article>
-          <span>Modo ejecucion</span>
-          <strong>{situation.integration.mode}</strong>
-        </article>
-      </section>
+      <HeroSummary
+        situation={situation}
+        nowMs={nowMs}
+        planIsFresh={planIsFresh}
+        onFocusZone={(zoneId) => setSelectedZoneId(zoneId)}
+        onOpenAudit={() => setActiveTab("audit")}
+      />
 
-      <section className="demo-strip" aria-label="Inyectores de eventos demo">
-        <button onClick={() => run("incident", () => requestJson("/api/demo/inject", { method: "POST", body: JSON.stringify({ kind: "incident" }) }))}>
-          <Siren size={16} /> Nuevo incidente
+      <ScenarioBar
+        scenario={situation.scenario}
+        world={maybe(situation, "world")}
+        elapsedSeconds={elapsedSeconds}
+        busy={busy !== null}
+        onStart={() => scenarioCall("start")}
+        onStop={() => scenarioCall("stop")}
+        onSpeed={(speed) => scenarioCall("start", { speed })}
+      />
+
+      <section className="demo-strip" aria-label="Inyectar cambios a mano">
+        <span className="strip-label">Inyectar un cambio</span>
+        <button onClick={() => injectDemo("incident")} disabled={busy !== null}>
+          <Siren size={16} aria-hidden="true" /> Nuevo incidente
         </button>
-        <button onClick={() => run("resource", () => requestJson("/api/demo/inject", { method: "POST", body: JSON.stringify({ kind: "resource-down" }) }))}>
-          <ShieldAlert size={16} /> Recurso caido
+        <button onClick={() => injectDemo("resource-down")} disabled={busy !== null}>
+          <ShieldAlert size={16} aria-hidden="true" /> Recurso caído
         </button>
-        <button onClick={() => run("route", () => requestJson("/api/demo/inject", { method: "POST", body: JSON.stringify({ kind: "route-blocked" }) }))}>
-          <Route size={16} /> Ruta bloqueada
+        <button onClick={() => injectDemo("route-blocked")} disabled={busy !== null}>
+          <Route size={16} aria-hidden="true" /> Ruta bloqueada
         </button>
-        <button onClick={() => run("failure", () => requestJson("/api/demo/inject", { method: "POST", body: JSON.stringify({ kind: "integration-failure" }) }))}>
-          <AlertTriangle size={16} /> Fallo integracion
+        <button onClick={() => injectDemo("integration-failure")} disabled={busy !== null}>
+          <AlertTriangle size={16} aria-hidden="true" /> Fallo de integración
         </button>
       </section>
 
       <div className="grid">
         <section className="panel map-panel">
           <div className="panel-title">
-            <Crosshair size={18} />
-            <h2>Mapa operativo de Andalucia</h2>
+            <Crosshair size={18} aria-hidden="true" />
+            <h2>Mapa operativo</h2>
+            <span className="hint">Pulsa una zona para ver por qué puntúa así</span>
           </div>
-          <div className="map">
-            <div className="map-label">Andalucia · cobertura demo regional</div>
-            <svg className="region-shape" viewBox="0 0 760 520" role="img" aria-label="Mapa esquematico de Andalucia">
-              <path
-                className="map-land andalucia"
-                d="M94 285 L126 226 L185 206 L238 165 L314 152 L371 178 L431 143 L510 157 L574 188 L647 197 L694 235 L676 291 L628 328 L590 383 L506 389 L437 365 L374 386 L301 369 L248 397 L174 374 L121 335 Z"
-              />
-              <path className="map-land border-context" d="M86 214 L126 226 L94 285 L121 335 L83 354 L55 296 Z" />
-              <path className="map-land sea-context" d="M148 408 L249 421 L354 406 L451 421 L571 411 L650 374 L691 395 L632 461 L423 479 L238 459 Z" />
-              <path className="map-line" d="M185 206 L174 374 M314 152 L301 369 M431 143 L437 365 M574 188 L590 383 M121 335 L676 291 M126 226 L628 328" />
-            </svg>
-            {situation.zones.map((zone) => {
-              const priority = priorityFor(zone, situation);
-              return (
-                <button
-                  key={zone.id}
-                  className={`zone-marker ${zone.status}`}
-                  style={{ left: `${zone.coordinates.x}%`, top: `${zone.coordinates.y}%` }}
-                  title={`${zone.name}: ${priority?.score ?? zone.riskScore}`}
-                >
-                  <span>{zone.name}</span>
-                  <b>{priority?.score ?? zone.riskScore}</b>
-                </button>
-              );
-            })}
-          </div>
+          <OperationsMap
+            zones={situation.zones}
+            plan={situation.plan}
+            selectedZoneId={selectedZoneId}
+            onSelect={(zoneId) => setSelectedZoneId(zoneId === selectedZoneId ? null : zoneId)}
+          />
           <p className="plan-summary">{situation.plan.summary}</p>
         </section>
 
-        <section className="panel">
-          <div className="panel-title">
-            <AlertTriangle size={18} />
-            <h2>Prioridades</h2>
-          </div>
-          <div className="priority-list">
-            {situation.plan.priorities.map((priority, index) => {
-              const zone = situation.zones.find((candidate) => candidate.id === priority.zoneId);
-              if (!zone) return null;
-              return (
-                <article key={priority.zoneId} className="priority-row">
-                  <strong>{index + 1}</strong>
-                  <div>
-                    <h3>{zone.name}</h3>
-                    <p>{priority.reason}</p>
-                  </div>
-                  <span>{priority.score}</span>
-                </article>
-              );
-            })}
-          </div>
-        </section>
+        {selectedZone ? (
+          <ZoneDetail
+            zone={selectedZone}
+            situation={situation}
+            nowMs={nowMs}
+            onClose={() => setSelectedZoneId(null)}
+            onCreateAction={(zoneId) => {
+              setPrefillZoneId(zoneId);
+              setFormOpen(true);
+              setActiveTab("actions");
+            }}
+          />
+        ) : (
+          <section className="panel" aria-label="Prioridades del plan">
+            <div className="panel-title">
+              <Flame size={18} aria-hidden="true" />
+              <h2>Qué va primero</h2>
+            </div>
+            <div className="priority-list">
+              {situation.plan.priorities.map((priority, index) => {
+                const zone = situation.zones.find((candidate) => candidate.id === priority.zoneId);
+                if (!zone) return null;
+                return (
+                  <button
+                    key={priority.zoneId}
+                    className={`priority-row ${index === 0 ? "top" : ""}`}
+                    onClick={() => setSelectedZoneId(zone.id)}
+                    aria-label={`Ver el detalle de ${zone.name}, prioridad número ${index + 1}`}
+                  >
+                    <strong>{index + 1}</strong>
+                    <div>
+                      <h3>
+                        {zone.name} <span className={`pill zone-${zone.status}`}>{zoneStatusLabels[zone.status]}</span>
+                      </h3>
+                      <p>{priority.reason}</p>
+                    </div>
+                    <span className="score">{priority.score}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        <PlanChanges
+          plan={situation.plan}
+          planHistory={situation.planHistory}
+          nowMs={nowMs}
+          isFresh={planIsFresh}
+        />
 
         <section className="panel wide">
-          <div className="panel-title">
-            <Radio size={18} />
-            <h2>Cola de acciones</h2>
-          </div>
-          <div className="action-list">
-            {situation.actions.map((action) => (
-              <article key={action.id} className={`action-row ${action.status}`}>
-                <div className="action-main">
-                  <span className="action-icon">{actionIcon(action)}</span>
-                  <div>
-                    <h3>{action.objective}</h3>
-                    <p>{action.reason}</p>
-                    {action.error ? <p className="inline-error">{action.error}</p> : null}
-                  </div>
-                </div>
-                <div className="action-meta">
-                  <span>{action.channel}</span>
-                  <span>{statusLabels[action.status]}</span>
-                  <span>{action.executionMode}</span>
-                </div>
-                <div className="row-actions">
-                  <button
-                    title="Aprobar accion"
-                    onClick={() => run(action.id, () => requestJson(`/api/actions/${action.id}/approve`, { method: "POST", body: "{}" }))}
-                    disabled={busy !== null || !["pending", "failed", "blocked"].includes(action.status)}
-                  >
-                    <Check size={15} /> Aprobar
-                  </button>
-                  <button
-                    title="Reintentar accion"
-                    onClick={() =>
-                      run(`${action.id}-retry`, () =>
-                        requestJson(`/api/actions/${action.id}/status`, {
-                          method: "POST",
-                          body: JSON.stringify({ operation: "retry" })
-                        })
-                      )
-                    }
-                    disabled={busy !== null || !["failed", "blocked", "cancelled"].includes(action.status)}
-                  >
-                    <RefreshCw size={15} /> Reintentar
-                  </button>
-                  <button
-                    title="Cancelar accion"
-                    className="danger-light"
-                    onClick={() =>
-                      run(`${action.id}-cancel`, () =>
-                        requestJson(`/api/actions/${action.id}/status`, {
-                          method: "POST",
-                          body: JSON.stringify({ operation: "cancel" })
-                        })
-                      )
-                    }
-                    disabled={busy !== null || ["succeeded", "cancelled"].includes(action.status)}
-                  >
-                    <X size={15} /> Cancelar
-                  </button>
-                </div>
-              </article>
+          <div className="tab-bar" role="tablist" aria-label="Detalle de la respuesta">
+            {(Object.keys(tabLabels) as TabId[]).map((tabId) => (
+              <button
+                key={tabId}
+                role="tab"
+                id={`tab-${tabId}`}
+                aria-selected={activeTab === tabId}
+                aria-controls={`panel-${tabId}`}
+                className={activeTab === tabId ? "tab active" : "tab"}
+                onClick={() => setActiveTab(tabId)}
+              >
+                {tabLabels[tabId]}
+                {tabBadges[tabId] > 0 ? <em>{tabBadges[tabId]}</em> : null}
+              </button>
             ))}
+            <span className="tab-hint">
+              {troubled.length > 0
+                ? `${troubled.length} acción(es) esperan a una persona`
+                : `${criticalSignals.length} señal(es) críticas activas`}
+            </span>
           </div>
-        </section>
 
-        <section className="panel">
-          <div className="panel-title">
-            <Clock3 size={18} />
-            <h2>Linea temporal</h2>
-          </div>
-          <div className="timeline">
-            {situation.events.map((event) => (
-              <article key={event.id} className={`event ${event.severity}`}>
-                <div>
-                  <h3>{event.title}</h3>
-                  <p>{event.description}</p>
-                  <span>{timeLabel(event.createdAt)} · {event.source} · {event.confidence}</span>
-                </div>
-                <div className="event-actions">
-                  <button
-                    title="Confirmar evento"
-                    onClick={() =>
-                      run(`${event.id}-confirm`, () =>
-                        requestJson(`/api/events/${event.id}/mark`, {
-                          method: "POST",
-                          body: JSON.stringify({ confirmed: true })
-                        })
-                      )
-                    }
-                    disabled={busy !== null || event.confirmed === true}
-                  >
-                    <Check size={15} />
-                  </button>
-                  <button
-                    title="Descartar evento"
-                    className="danger-light"
-                    onClick={() =>
-                      run(`${event.id}-discard`, () =>
-                        requestJson(`/api/events/${event.id}/mark`, {
-                          method: "POST",
-                          body: JSON.stringify({ confirmed: false })
-                        })
-                      )
-                    }
-                    disabled={busy !== null || event.confirmed === false}
-                  >
-                    <Ban size={15} />
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
+          <div
+            className="tab-panel"
+            role="tabpanel"
+            id={`panel-${activeTab}`}
+            aria-labelledby={`tab-${activeTab}`}
+          >
+            {activeTab === "actions" ? (
+              <ActionQueue
+                actions={situation.actions}
+                zones={situation.zones}
+                contacts={situation.contacts}
+                resources={situation.resources}
+                busy={busy}
+                nowMs={nowMs}
+                freshIds={freshIds}
+                formOpen={formOpen}
+                prefillZoneId={prefillZoneId}
+                onToggleForm={setFormOpen}
+                onApprove={(actionId) =>
+                  run(actionId, () =>
+                    requestJson(`/api/actions/${actionId}/approve`, { method: "POST", body: "{}" }).then(
+                      () => undefined
+                    )
+                  )
+                }
+                onRetry={(actionId) =>
+                  run(`${actionId}-retry`, () =>
+                    requestJson(`/api/actions/${actionId}/status`, {
+                      method: "POST",
+                      body: JSON.stringify({ operation: "retry" })
+                    }).then(() => undefined)
+                  )
+                }
+                onCancel={(actionId) =>
+                  run(`${actionId}-cancel`, () =>
+                    requestJson(`/api/actions/${actionId}/status`, {
+                      method: "POST",
+                      body: JSON.stringify({ operation: "cancel" })
+                    }).then(() => undefined)
+                  )
+                }
+                onReassign={reassignResource}
+                onCreate={createAction}
+              />
+            ) : null}
 
-        <section className="panel">
-          <div className="panel-title">
-            <ShieldAlert size={18} />
-            <h2>Recursos</h2>
-          </div>
-          <div className="resource-list">
-            {situation.resources.map((resource: Resource) => {
-              const zone = situation.zones.find((candidate) => candidate.id === resource.zoneId);
-              return (
-                <article key={resource.id} className={`resource ${resource.status}`}>
-                  <div>
-                    <h3>{resource.name}</h3>
-                    <p>{resource.type} · capacidad {resource.capacity}</p>
-                  </div>
-                  <span>{resource.status}</span>
-                  <small>{zone?.name ?? "movil"}</small>
-                </article>
-              );
-            })}
+            {activeTab === "signals" ? (
+              <SignalsPanel
+                events={situation.events}
+                zones={situation.zones}
+                busy={busy}
+                nowMs={nowMs}
+                freshIds={freshIds}
+                onMark={(eventId, confirmed) =>
+                  run(`${eventId}-mark`, () =>
+                    requestJson(`/api/events/${eventId}/mark`, {
+                      method: "POST",
+                      body: JSON.stringify({ confirmed })
+                    }).then(() => undefined)
+                  )
+                }
+              />
+            ) : null}
+
+            {activeTab === "resources" ? (
+              <ResourcesPanel
+                resources={situation.resources}
+                zones={situation.zones}
+                actions={situation.actions}
+                waiting={maybe(situation, "waiting")}
+                nowMs={nowMs}
+              />
+            ) : null}
+
+            {activeTab === "contacts" ? (
+              <ContactsPanel
+                contacts={situation.contacts}
+                chains={situation.chains}
+                zones={situation.zones}
+                nowMs={nowMs}
+              />
+            ) : null}
+
+            {activeTab === "audit" ? (
+              <AuditPanel audit={situation.audit} lessons={maybe(situation, "lessons")} />
+            ) : null}
           </div>
         </section>
       </div>
