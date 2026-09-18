@@ -12,6 +12,9 @@ rules, use the active shell's syntax, and state which OS was actually tested.
 
 ## Claude Code specifics
 
+- Read the relevant `.agents/skills/` skill using the explicit paths in
+  [PROJECT.md](PROJECT.md#shared-stack-skills); shared snapshots live there.
+
 - Project settings/permissions live in `.claude/settings.json`; they supplement
   PROJECT.md and do not override its push/merge restrictions.
 - Put personal overrides in `.claude/settings.local.json` and notes in

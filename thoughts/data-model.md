@@ -351,13 +351,8 @@ export const worldStateSchema = z
       whatsapp: z.boolean(),
       email: z.boolean(),
     }),
-    hospitals: z.record(
-      z.string(),
-      z.object({ beds: z.number().int().min(0) }),
-    ),
-    frontline: z
-      .object({ x: z.number(), y: z.number(), headingDeg: z.number() })
-      .optional(),
+    hospitals: z.record(z.string(), z.object({ beds: z.number().int().min(0) })),
+    frontline: z.object({ x: z.number(), y: z.number(), headingDeg: z.number() }).optional(),
   })
   .strict();
 ```

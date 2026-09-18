@@ -62,6 +62,18 @@ instrucciones, pídele que lea AGENTS.md y PROJECT.md antes de empezar.
 No subas preferencias personales ni claves de las herramientas. Coordina los
 archivos que modifica cada persona o agente para evitar pisar cambios.
 
+## Skills compartidas
+
+Las cuatro skills del equipo están versionadas en `.agents/skills/` y llegan
+con el clone o pull de la rama que las contiene. No ejecutes una instalación
+global ni copies las skills a cada editor. Sigue la
+[guía de uso y actualización](docs/agent-skills.md); PROJECT.md enlaza cada
+`SKILL.md` para que cualquier agente pueda leerlo aunque no lo detecte solo.
+
+Si una sesión ya estaba abierta, inicia una nueva o pide al agente que lea el
+archivo de la skill correspondiente. Las instrucciones de proyecto siguen
+siendo prioritarias y las skills no conceden permisos para publicar o desplegar.
+
 ## Claves y servicios
 
 Ejecuta `npm run env:setup` para copiar `.env.example` a `.env.local` con valores
