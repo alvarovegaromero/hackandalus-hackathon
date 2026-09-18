@@ -8,6 +8,7 @@ credenciales y las conexiones reales se concretarán en la siguiente fase.
 Consulta [TASKS.md](TASKS.md) para ver lo terminado y las tareas pendientes.
 La fuente de verdad del proyecto y sus convenciones es [PROJECT.md](PROJECT.md).
 `AGENTS.md` y `CLAUDE.md` apuntan allí para evitar reglas duplicadas.
+Para incorporarte al equipo, sigue [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Arranque local
 

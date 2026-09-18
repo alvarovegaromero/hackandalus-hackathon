@@ -40,6 +40,10 @@ do not treat them as blockers for this milestone. Track follow-up work in TASKS.
 - `.claude/settings.json`: shared Claude Code permissions.
 - `GEMINI.md`: imports these instructions for Gemini CLI.
 - `.agents/rules/project.md`: always-on Antigravity rule referencing this file.
+- `.cursor/rules/project.mdc`: always-on Cursor rule referencing this file.
+- `CONTRIBUTING.md`: contributor onboarding and the branch-to-PR workflow.
+- `.github/pull_request_template.md`: change description and verification checklist.
+- `.vscode`: shared formatting settings and recommended editor extensions.
 - `.gitignore`: local credentials, personal agent settings, and generated caches.
 
 - `src/app`, `src/components`: Next.js endpoints and local demo dashboard.
@@ -115,11 +119,10 @@ When extending the scaffolding:
   (https://github.com/alvarovegaromero/hackandalus-hackathon). The local
   application/package name is `butterfish`; use the GitHub repository name
   explicitly in `gh --repo` commands when needed.
-- The owner explicitly requested `main` as the target for the base scaffolding
-  delivery: https://github.com/alvarovegaromero/hackandalus-hackathon/pull/2.
-  This is an authorized exception to the integration-branch default below.
-  At PR creation, `integration` existed locally but was not published on origin;
-  verify remote branches before relying on stale remote-tracking refs.
+- `main` is the canonical integration branch for all work. Create new feature
+  branches from the latest `origin/main` and target every PR at `main`.
+  The old `integration` branch workflow is retired; do not use it as a base or
+  PR target. Existing feature branches may continue with their unmerged work.
 - `main` must only change through pull requests. Never commit or push directly
   to `main`, including `git push origin HEAD:main`, API file writes, or force
   pushes. The one-off direct push used during setup is no longer authorized.
@@ -127,10 +130,6 @@ When extending the scaffolding:
   requires PRs, applies to administrators, and blocks force pushes and deletion.
   It does not require reviewer approvals or CI checks yet. The user merges PRs;
   agents must never merge them, even when asked to "merge it".
-- The integration branch is `integration`; branch new work from it and target
-  PRs at it. It was bootstrapped locally from `main` for initial setup; publishing
-  it requires explicit permission. If missing in another clone, resolve the
-  integration base before making commits; do not silently use `main` for PRs.
 - Work on a feature branch such as `feat/<topic>`, `fix/<topic>`, or
   `chore/<topic>`. Never commit directly to `main`, `master`, or `develop`.
 - Local commits are permitted. Never push without explicit user permission
@@ -149,6 +148,21 @@ When extending the scaffolding:
   `git log --oneline -n 10`; expand only the relevant details.
 - Use the active shell's syntax. On Windows, use PowerShell and literal paths
   for file operations; do not assume Unix utilities are installed.
+
+## Coding agents and models
+
+- The team uses Codex, Claude Code, Cursor, Gemini, Antigravity and other models.
+  All tools follow this same file; rules do not depend on the model/provider.
+- `AGENTS.md` is the generic entry point. `CLAUDE.md`, `GEMINI.md`, and editor
+  rule files reference this document rather than copying shared policy.
+- For tools that do not automatically load repository instructions, explicitly
+  provide `AGENTS.md` and `PROJECT.md` at the start of the session.
+- Keep personal model choices, subscriptions, API keys and editor accounts local.
+  Coding-agent credentials are separate from the application's AI Gateway key;
+  no agent-specific credentials are needed to run the browser demo.
+- Multiple agents must preserve existing changes, keep tasks scoped, and avoid
+  editing the same files concurrently without coordination. A choice of tool
+  never grants permission to push, merge, deploy or execute live communications.
 
 ## Implementation and verification
 

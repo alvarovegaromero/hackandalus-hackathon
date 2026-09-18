@@ -1,0 +1,11 @@
+---
+description: Shared project context and development rules for every model
+alwaysApply: true
+---
+
+Read and follow the repository-root [PROJECT.md](../../PROJECT.md) before working.
+It is the single source of truth for stack, commands, naming, English commits,
+secrets, Git permissions and PRs targeting main. Update shared rules there.
+
+Also read [AGENTS.md](../../AGENTS.md) and any nested instructions for the files
+you change. The selected model does not change repository permissions.

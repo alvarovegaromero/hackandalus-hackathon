@@ -5,6 +5,8 @@
 [PROJECT.md](PROJECT.md) is the single source of truth for project information
 and shared rules, including English commits, naming, hooks, secret detection
 and protected branches. Keep this file limited to Claude Code-specific notes.
+The team also uses Codex, Cursor and other models; use the same PROJECT.md rules
+when handing work between tools.
 
 ## Claude Code specifics
 
