@@ -5,15 +5,17 @@ export const factValueSchema = z.union([z.string(), z.number(), z.boolean()]);
 export type FactValue = z.infer<typeof factValueSchema>;
 
 // A fact is one hidden variable of the simulated world. `kind` is owned by the pack.
-export const factDefSchema = z.object({
-  id: z.string().min(1),
-  kind: z.string().min(1),
-  entityLabel: z.string().min(1),
-  location: locationSchema,
-  initial: factValueSchema,
-  alternatives: z.array(factValueSchema).default([]),
-  unit: z.string().optional(),
-}).strict();
+export const factDefSchema = z
+  .object({
+    id: z.string().min(1),
+    kind: z.string().min(1),
+    entityLabel: z.string().min(1),
+    location: locationSchema,
+    initial: factValueSchema,
+    alternatives: z.array(factValueSchema).default([]),
+    unit: z.string().optional(),
+  })
+  .strict();
 
 export type FactDef = z.infer<typeof factDefSchema>;
 export type Keyframe = { atMin: number; value: FactValue };

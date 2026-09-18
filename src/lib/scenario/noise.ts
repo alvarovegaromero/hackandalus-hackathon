@@ -21,8 +21,10 @@ export function rng(seed: number): () => number {
   };
 }
 
-export const pick = <T>(r: () => number, items: readonly T[]): T => items[Math.floor(r() * items.length)];
-export const between = (r: () => number, [lo, hi]: readonly [number, number]) => lo + r() * (hi - lo);
+export const pick = <T>(r: () => number, items: readonly T[]): T =>
+  items[Math.floor(r() * items.length)];
+export const between = (r: () => number, [lo, hi]: readonly [number, number]) =>
+  lo + r() * (hi - lo);
 
 const DEG_PER_METER = 1 / 111_320;
 
@@ -45,7 +47,9 @@ export function chooseValue(
   previous: FactValue | undefined,
   alternatives: readonly FactValue[],
 ): { value: FactValue; wrong: boolean } {
-  const wrongs = [...new Set([...(previous === undefined ? [] : [previous]), ...alternatives])].filter((v) => v !== truth);
+  const wrongs = [
+    ...new Set([...(previous === undefined ? [] : [previous]), ...alternatives]),
+  ].filter((v) => v !== truth);
   if (r() < reliability || wrongs.length === 0) return { value: truth, wrong: false };
   return { value: pick(r, wrongs), wrong: true };
 }

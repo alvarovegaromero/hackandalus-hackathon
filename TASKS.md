@@ -61,9 +61,9 @@ estructura base y no deben resolverse con credenciales o escenarios inventados.
 - [ ] Incorporar esperas, reintentos y recuperación de fallos al workflow.
 - [ ] Demostrar replanificación al cambiar la situación durante la ejecución.
 - [ ] Gemelo digital de la incidencia (ver Ideas): ejecutar el motor de
-  escenarios sobre una copia del estado actual, simular variantes (viento,
-  accesos cortados, pérdida de recursos), comparar alternativas por resultado
-  y mostrar en el panel la recomendada antes de actuar.
+      escenarios sobre una copia del estado actual, simular variantes (viento,
+      accesos cortados, pérdida de recursos), comparar alternativas por resultado
+      y mostrar en el panel la recomendada antes de actuar.
 - [ ] Probar restricciones de recursos, fallos y control humano.
 - [ ] Configurar y desplegar en Vercel cuando se autorice.
 - [ ] Validar una interacción real con destinatarios de demo aprobados.
@@ -71,10 +71,10 @@ estructura base y no deben resolverse con credenciales o escenarios inventados.
 ## Ideas
 
 - [ ] Gemelo digital de la incidencia: además del mapa base, representar la
-  incidencia en un gemelo digital que sirva como campo de pruebas. Permitiría
-  simular escenarios de forma proactiva (p. ej. cambios de viento, cortes de
-  acceso, pérdida de recursos) y comparar alternativas para proponer la mejor
-  antes de ejecutar acciones reales.
+      incidencia en un gemelo digital que sirva como campo de pruebas. Permitiría
+      simular escenarios de forma proactiva (p. ej. cambios de viento, cortes de
+      acceso, pérdida de recursos) y comparar alternativas para proponer la mejor
+      antes de ejecutar acciones reales.
 
 ## Referencias
 
