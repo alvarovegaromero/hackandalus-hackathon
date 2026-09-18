@@ -12,8 +12,8 @@ rules, use the active shell's syntax, and state which OS was actually tested.
 
 ## Claude Code specifics
 
-- Use the project-local Graft commands in
-  [PROJECT.md](PROJECT.md#code-index-with-graft) for code navigation.
+- Graft is required before exploring or changing code. Use the project-local
+  commands and fallback rules in [PROJECT.md](PROJECT.md#code-index-with-graft).
 
 - Read the relevant `.agents/skills/` skill using the explicit paths in
   [PROJECT.md](PROJECT.md#shared-stack-skills); shared snapshots live there.

@@ -68,12 +68,13 @@ Use Node.js 22.21+ (22.x) and npm 11.6.1. Commit package-lock.json; use npm only
 Install: `npm ci`. Develop: `npm run dev`. Production: `npm run build` then
 `npm start`. Checks: `npm run lint`, `npm run typecheck`, `npm test` (Vitest).
 Formatting: `npm run format` writes changes; `npm run format:check` only checks.
-`npm run check` runs secret detection, formatting, lint, types, tests and build.
+`npm run check` runs secret detection, formatting, lint, types, tests, build
+and Graft index construction/freshness verification.
 `npm run lint:staged` runs Secretlint, Prettier and ESLint on staged files using
 lint-staged (serial tasks; unstaged hunks in partially staged files are hidden).
 `npm ci` installs Husky hooks through `prepare` in development. Pre-commit blocks
 protected branches and private credential filenames, then runs lint-staged,
-typecheck and tests. Pre-push blocks updates to `main`, `master`, and `develop`
+typecheck, tests and `index:verify`. Pre-push blocks updates to `main`, `master`, and `develop`
 (including refspecs and deletions), then runs the full check including build.
 Secretlint masks matched secrets in its output. Never disable detection to
 commit a credential; use empty or harmless placeholders in `.env.example`.
@@ -173,6 +174,10 @@ When extending the scaffolding:
 ### Code index with Graft
 
 Graft 0.10.1 is pinned as a development dependency and installed by `npm ci`.
+Graft is required for team code-navigation work, including all coding agents.
+Before exploring or changing code, run the map or a relevant query and use its
+results to select source files. Report tool failures or missing coverage when
+falling back to scoped searches; do not silently skip the tool.
 Run `npm run index:build` once per checkout. Query through `npm run graft --`
 to use the project version rather than a potentially different global CLI:
 
@@ -182,12 +187,19 @@ to use the project version rather than a potentially different global CLI:
 - `npm run graft -- callers simulatePlan`: incoming references.
 - `npm run graft -- grep "crisisEventSchema"`: occurrences in indexed files.
 - `npm run index:check`: report whether the local index is current.
+- `npm run index:verify`: build/update the index, then verify freshness.
 
 Queries refresh the structural graph by default. Rebuild explicitly after
 changing branches or when freshness checks fail. Keep `graft/` out of Git;
 each teammate generates it locally. Structural indexing needs no model key.
-Use plain `build`, not `--deep`, for this setup. No indexing runs during app
-builds, commits or deployment, and no global agent settings are changed.
+Use plain `build`, not `--deep`, for this setup. Pre-commit runs `index:verify`
+after its other checks, and pre-push runs it through `npm run check`. An indexing
+failure blocks these hooks. This also creates a missing index automatically.
+Direct app builds and deployments do not invoke indexing, and no global agent
+settings are changed. Do not bypass hooks. Local hooks can be disabled by a
+developer, so they enforce successful indexing in the normal workflow, not
+proof that someone consulted the graph or remote branch protection. The PR
+checklist asks contributors to confirm use and report coverage limitations.
 
 The index is a navigation aid, not proof that every reference is found. Read
 source before changing it; use scoped `rg` for SQL migrations, docs, CSS,

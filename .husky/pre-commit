@@ -3,3 +3,4 @@ node scripts/guard-staged-files.mjs
 npm run lint:staged
 npm run typecheck
 npm test
+npm run index:verify

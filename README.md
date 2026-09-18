@@ -13,6 +13,8 @@ El repositorio incluye [skills compartidas](docs/agent-skills.md) para React/Nex
 Postgres/Supabase, accesibilidad y diseño visual; no requieren instalación global.
 Para indexar el código tras `npm ci`, ejecuta `npm run index:build` y consulta
 el mapa con `npm run index:map`. Consulta la [guía de Graft](docs/code-index.md).
+Su uso para navegar por el código es obligatorio; los hooks de commit y push
+generan y verifican el índice con `npm run index:verify`.
 
 ## Arranque local
 

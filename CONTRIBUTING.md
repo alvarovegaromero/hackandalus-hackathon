@@ -64,6 +64,11 @@ archivos que modifica cada persona o agente para evitar pisar cambios.
 
 ## Índice local de código
 
+Su uso es obligatorio para navegar por el código, también para los agentes.
+Consulta el mapa o una búsqueda relevante antes de explorar o modificar código.
+Indica en la PR si necesitas recurrir a búsquedas directas por fallos o falta
+de cobertura. El checklist de la PR incluye esta comprobación.
+
 Graft se instala con las dependencias de desarrollo de `npm ci`. En cada clon
 o worktree, ejecuta `npm run index:build` y después `npm run index:map`.
 Para buscar una tarea: `npm run graft -- ask "event validation"`.
@@ -72,6 +77,9 @@ Los agentes encuentran estas instrucciones a través de PROJECT.md.
 El índice `graft/` es local y está ignorado por Git; cada persona genera el suyo.
 No hacen falta claves ni instalación global. Usa la
 [guía de Graft](docs/code-index.md) para consultas, actualización y límites.
+Los hooks de commit y push ejecutan `npm run index:verify`: generan o actualizan
+el índice y validan su frescura. Si falla, corrige el problema antes de continuar;
+no omitas los hooks. Son comprobaciones locales, no protección remota.
 
 ## Skills compartidas
 

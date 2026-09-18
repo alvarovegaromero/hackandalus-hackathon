@@ -21,8 +21,20 @@ CLAUDE.md ya remiten al flujo común de PROJECT.md, igual que las reglas de los
 otros agentes. Si una herramienta no carga las instrucciones, pídele que lea
 PROJECT.md antes de empezar.
 
-La creación del índice es explícita: no forma parte de `npm ci`, los hooks,
-el build de Next.js o el despliegue. Con `npm ci --omit=dev`, Graft no se instala.
+El uso de Graft para navegar por el código es obligatorio para el equipo y
+sus agentes. Consulta el mapa o una búsqueda relevante antes de explorar o
+modificar código. Si falla o no cubre lo que necesitas, documenta el motivo
+al recurrir a búsquedas directas.
+
+Los hooks de commit y push ejecutan `npm run index:verify`: construyen o
+actualizan el índice y después comprueban su frescura. Si falla, bloquean la
+operación. Pre-commit lo ejecuta al final; pre-push lo ejecuta como último paso
+de `npm run check`. No desactives los hooks para evitar la comprobación.
+Son controles locales: no impiden que un usuario desactive sus hooks ni prueban
+que haya consultado el grafo. El checklist de PR exige confirmar el uso.
+
+La indexación no forma parte de `npm ci`, el build directo de Next.js o el
+despliegue. Con `npm ci --omit=dev`, Graft no se instala.
 Si tu configuración npm desactiva scripts de instalación, el setup local
 verificado también pudo construir el índice; para los hooks del proyecto sigue
 siendo necesario ejecutar `npm run prepare`, como indica CONTRIBUTING.md.
@@ -37,6 +49,7 @@ npm run graft -- callers simulatePlan
 npm run graft -- callers simulatePlan --direction out
 npm run graft -- grep "crisisEventSchema"
 npm run index:check
+npm run index:verify
 ```
 
 Usa `ask` para localizar código relacionado con una tarea, `skeleton` para ver

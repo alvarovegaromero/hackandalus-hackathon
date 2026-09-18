@@ -16,14 +16,15 @@
     "prepare": "node scripts/install-hooks.mjs",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
-    "check": "npm run secrets:check && npm run format:check && npm run lint && npm run typecheck && npm test && npm run build",
+    "check": "npm run secrets:check && npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && npm run index:verify",
     "lint:staged": "lint-staged --concurrent false",
     "secrets:check": "node scripts/check-secrets.mjs",
     "env:setup": "node scripts/setup-env.mjs",
     "graft": "graft",
     "index:build": "graft build",
     "index:map": "graft map",
-    "index:check": "graft check"
+    "index:check": "graft check",
+    "index:verify": "npm run index:build && npm run index:check"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
