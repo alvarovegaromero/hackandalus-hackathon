@@ -8,17 +8,25 @@
 **/.claude/settings.local.json
 **/CLAUDE.local.md
 
-# Estado persistido en local (CRISIS_PERSISTENCE=on). Nunca se versiona.
+# Local persisted demo state.
 .data/
 
 # Regenerable code graph and OS metadata.
 /graft/
-.next/
-.next.broken-*/
-node_modules/
-coverage/
+graft/
 .DS_Store
 Thumbs.db
 
-# Directorio de compilacion del segundo servidor dev (NEXT_DIST_DIR).
-.next-dev/
+# Next.js, npm, Workflow and local tooling.
+/node_modules/
+/.next/
+/.next-dev/
+/.next.broken-*/
+/out/
+/.vercel/
+/.workflow-data/
+/src/app/.well-known/workflow/
+/coverage/
+*.tsbuildinfo
+npm-debug.log*
+/.swc/

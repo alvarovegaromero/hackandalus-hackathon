@@ -69,7 +69,10 @@ export interface ResourceCandidate {
  * cubrir solo la secundaria.
  */
 const TABLA_NECESIDADES: { claves: string[]; capacidades: string[] }[] = [
-  { claves: ["incendio", "fuego", "extincion", "llama", "humo", "frente"], capacidades: ["extincion", "campo"] },
+  {
+    claves: ["incendio", "fuego", "extincion", "llama", "humo", "frente"],
+    capacidades: ["extincion", "campo"]
+  },
   {
     claves: ["monte", "forestal", "evaluacion de monte", "vigilancia", "reconocimiento"],
     capacidades: ["evaluacion de monte", "campo"]
@@ -126,10 +129,7 @@ const ESTADOS_VIVOS = new Set(["pending", "approved", "running", "blocked", "sta
 
 /** Quita acentos y baja a minusculas para poder comparar texto libre. */
 function normalizar(texto: string) {
-  return texto
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
+  return texto.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
 /** Devuelve las capacidades necesarias, la principal primero. */
@@ -268,7 +268,15 @@ export function rankResourcesForAction(
           PESOS.canal * canal
         : 0;
 
-    return { resource, compatible, score: Math.round(score * 10) / 10, factors, distance, matched, rejection };
+    return {
+      resource,
+      compatible,
+      score: Math.round(score * 10) / 10,
+      factors,
+      distance,
+      matched,
+      rejection
+    };
   });
 
   return candidatos.sort((a, b) => b.score - a.score || a.resource.id.localeCompare(b.resource.id));
@@ -587,7 +595,9 @@ export function resolveResourceConflicts(
   const repartibles = resources.filter(
     (resource) =>
       resource.status === "available" ||
-      (resource.status === "assigned" && resource.assignedActionId !== null && idsAbiertas.has(resource.assignedActionId))
+      (resource.status === "assigned" &&
+        resource.assignedActionId !== null &&
+        idsAbiertas.has(resource.assignedActionId))
   );
 
   const allocations: ResourceAllocation[] = [];
@@ -641,8 +651,8 @@ export function resolveResourceConflicts(
       (candidato) => candidato.compatible && candidato.resource.status !== "unavailable"
     );
     const disputado = deseados.find((candidato) => tomados.has(candidato.resource.id));
-    const ganadoraId = disputado ? tomados.get(disputado.resource.id) ?? null : null;
-    const ganadora = ganadoraId ? allocations.find((item) => item.actionId === ganadoraId) ?? null : null;
+    const ganadoraId = disputado ? (tomados.get(disputado.resource.id) ?? null) : null;
+    const ganadora = ganadoraId ? (allocations.find((item) => item.actionId === ganadoraId) ?? null) : null;
     const zonaGanadora = ganadora ? buscarZona(zones, ganadora.zoneId) : null;
 
     const reason = disputado
@@ -653,12 +663,18 @@ export function resolveResourceConflicts(
         } que quedaba libre.`
       : `${zona?.name ?? action.zoneId} espera: ${explainUnassignable(peticion, repartibles, zones)}`;
 
-    waiting.push({ actionId: action.id, zoneId: action.zoneId, reason, blockedByActionId: ganadoraId, urgency });
+    waiting.push({
+      actionId: action.id,
+      zoneId: action.zoneId,
+      reason,
+      blockedByActionId: ganadoraId,
+      urgency
+    });
   }
 
   const masDisputado = [...disputas.entries()].sort((a, b) => b[1] - a[1])[0];
   const nombreDisputado = masDisputado
-    ? resources.find((resource) => resource.id === masDisputado[0])?.name ?? masDisputado[0]
+    ? (resources.find((resource) => resource.id === masDisputado[0])?.name ?? masDisputado[0])
     : null;
 
   const summary =

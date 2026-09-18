@@ -37,13 +37,7 @@ import {
   validateState
 } from "@/lib/persistence";
 import { addEvent, getSituation, resetSituation } from "@/lib/store";
-import type {
-  Action,
-  IntegrationState,
-  Plan,
-  RunRecord,
-  SituationState
-} from "@/lib/types";
+import type { Action, IntegrationState, Plan, RunRecord, SituationState } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
 // Utillaje
@@ -309,7 +303,11 @@ describe("persistencia del estado", () => {
 
   it("descarta un estado de una version anterior del esquema", () => {
     writeRawState(
-      JSON.stringify({ schemaVersion: SCHEMA_VERSION - 1, savedAt: "2026-01-01T00:00:00.000Z", payload: makeState() })
+      JSON.stringify({
+        schemaVersion: SCHEMA_VERSION - 1,
+        savedAt: "2026-01-01T00:00:00.000Z",
+        payload: makeState()
+      })
     );
     expect(loadState()).toBeNull();
   });
@@ -525,7 +523,9 @@ describe("diffPlans", () => {
       actions: [makeAction({ id: "act-9", status: "cancelled", target: "Sala 112" })]
     });
 
-    expect(changes.some((change) => change.kind === "action-invalidated" && change.detail.includes("canceló"))).toBe(true);
+    expect(
+      changes.some((change) => change.kind === "action-invalidated" && change.detail.includes("canceló"))
+    ).toBe(true);
   });
 
   it("no reporta como invalidada una acción que terminó bien", () => {
@@ -570,7 +570,9 @@ describe("diffPlans", () => {
 
   it("detecta la reasignación de un recurso", () => {
     const changes = diffPlans(makePlan(1), makePlan(2), {
-      previousResources: [{ id: "res-1", name: "EPES Sevilla Alpha", zoneId: "zone-central", status: "available" }],
+      previousResources: [
+        { id: "res-1", name: "EPES Sevilla Alpha", zoneId: "zone-central", status: "available" }
+      ],
       nextResources: [{ id: "res-1", name: "EPES Sevilla Alpha", zoneId: "zone-north", status: "assigned" }]
     });
 

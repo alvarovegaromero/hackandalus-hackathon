@@ -62,7 +62,8 @@ export default function HeroSummary({ situation, nowMs, planIsFresh, onFocusZone
               <span className={`pill zone-${topZone.status}`}>{zoneStatusLabels[topZone.status]}</span>
               <span className="pill">Puntuación {priority.score}</span>
               <span className="pill">
-                <Users size={13} aria-hidden="true" /> {topZone.populationAtRisk.toLocaleString("es-ES")} personas
+                <Users size={13} aria-hidden="true" /> {topZone.populationAtRisk.toLocaleString("es-ES")}{" "}
+                personas
               </span>
               <button className="link-button" onClick={() => onFocusZone(topZone.id)}>
                 Ver zona <ArrowRight size={14} aria-hidden="true" />
@@ -139,7 +140,8 @@ export default function HeroSummary({ situation, nowMs, planIsFresh, onFocusZone
             {situation.integration.mode === "happyrobot" ? "Real" : "Simulada"}
           </strong>
           <small>
-            {situation.integration.liveActionsExecuted} reales · {situation.integration.mockActionsExecuted} simuladas
+            {situation.integration.liveActionsExecuted} reales · {situation.integration.mockActionsExecuted}{" "}
+            simuladas
           </small>
         </article>
         <article className={situation.scenario.running ? "kpi running" : "kpi"}>

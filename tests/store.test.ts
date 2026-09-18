@@ -71,7 +71,12 @@ describe("descartar una señal deshace su efecto", () => {
   });
 
   it("no arrastra la necesidad de otra señal viva que pedía lo mismo", () => {
-    const primera = addEvent({ zoneId: "zone-south", category: "refugio", severity: "high", confidence: "high" });
+    const primera = addEvent({
+      zoneId: "zone-south",
+      category: "refugio",
+      severity: "high",
+      confidence: "high"
+    });
     addEvent({ zoneId: "zone-south", category: "refugio", severity: "critical", confidence: "high" });
 
     markEvent(primera.event.id, false);
@@ -81,7 +86,12 @@ describe("descartar una señal deshace su efecto", () => {
   });
 
   it("vuelve a aplicar el efecto si la señal se confirma después de haberse descartado", () => {
-    const { event } = addEvent({ zoneId: "zone-east", category: "rumor", severity: "high", confidence: "medium" });
+    const { event } = addEvent({
+      zoneId: "zone-east",
+      category: "rumor",
+      severity: "high",
+      confidence: "medium"
+    });
     const conSenal = getSituation().zones.find((zona) => zona.id === "zone-east")!.riskScore;
 
     markEvent(event.id, false);
@@ -219,8 +229,18 @@ describe("idempotencia y deduplicación", () => {
   });
 
   it("una señal repetida se fusiona y cuenta las veces que llegó", () => {
-    const primera = addEvent({ zoneId: "zone-east", category: "route-blocked", severity: "high", confidence: "medium" });
-    const segunda = addEvent({ zoneId: "zone-east", category: "route-blocked", severity: "high", confidence: "high" });
+    const primera = addEvent({
+      zoneId: "zone-east",
+      category: "route-blocked",
+      severity: "high",
+      confidence: "medium"
+    });
+    const segunda = addEvent({
+      zoneId: "zone-east",
+      category: "route-blocked",
+      severity: "high",
+      confidence: "high"
+    });
 
     expect(primera.duplicate).toBe(false);
     expect(segunda.duplicate).toBe(true);
@@ -228,10 +248,20 @@ describe("idempotencia y deduplicación", () => {
   });
 
   it("una señal descartada no absorbe señales nuevas iguales", () => {
-    const primera = addEvent({ zoneId: "zone-east", category: "route-blocked", severity: "high", confidence: "medium" });
+    const primera = addEvent({
+      zoneId: "zone-east",
+      category: "route-blocked",
+      severity: "high",
+      confidence: "medium"
+    });
     markEvent(primera.event.id, false);
 
-    const segunda = addEvent({ zoneId: "zone-east", category: "route-blocked", severity: "high", confidence: "high" });
+    const segunda = addEvent({
+      zoneId: "zone-east",
+      category: "route-blocked",
+      severity: "high",
+      confidence: "high"
+    });
     expect(segunda.duplicate).toBe(false);
   });
 });

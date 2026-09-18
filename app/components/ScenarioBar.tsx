@@ -34,7 +34,10 @@ export default function ScenarioBar({
   const nextBeat = pending.slice().sort((a, b) => a.atSeconds - b.atSeconds)[0] ?? null;
 
   return (
-    <section className={`scenario-bar ${scenario.running ? "running" : ""}`} aria-label="Control del escenario">
+    <section
+      className={`scenario-bar ${scenario.running ? "running" : ""}`}
+      aria-label="Control del escenario"
+    >
       <div className="scenario-head">
         <div className="scenario-id">
           <span className="eyebrow">Escenario</span>
@@ -116,9 +119,7 @@ export default function ScenarioBar({
                 {clockLabel(beat.atSeconds)}
               </span>
               <span className="beat-label">{beat.label}</span>
-              <span className="beat-state">
-                {fired ? "Disparado" : isNext ? "Siguiente" : "Pendiente"}
-              </span>
+              <span className="beat-state">{fired ? "Disparado" : isNext ? "Siguiente" : "Pendiente"}</span>
             </li>
           );
         })}

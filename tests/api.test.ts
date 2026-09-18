@@ -54,7 +54,9 @@ describe("crisis API routes", () => {
 
   it("approves an action through the mock HappyRobot adapter", async () => {
     const action = getSituation().actions[0];
-    const response = await approvePost(new Request("http://localhost"), { params: Promise.resolve({ id: action.id }) });
+    const response = await approvePost(new Request("http://localhost"), {
+      params: Promise.resolve({ id: action.id })
+    });
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -68,7 +70,9 @@ describe("crisis API routes", () => {
     delete process.env.HAPPYROBOT_AGENT_ID;
 
     const action = getSituation().actions[0];
-    const response = await approvePost(new Request("http://localhost"), { params: Promise.resolve({ id: action.id }) });
+    const response = await approvePost(new Request("http://localhost"), {
+      params: Promise.resolve({ id: action.id })
+    });
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -81,7 +85,11 @@ describe("crisis API routes", () => {
     // /api/webhooks/happyrobot y no pasa por aqui.
     const action = getSituation().actions[0];
     const response = await statusPost(
-      jsonRequest("http://localhost", { status: "running", externalActionId: "hr-123", localActionId: action.id }),
+      jsonRequest("http://localhost", {
+        status: "running",
+        externalActionId: "hr-123",
+        localActionId: action.id
+      }),
       { params: Promise.resolve({ id: action.id }) }
     );
     const body = await response.json();
@@ -105,7 +113,11 @@ describe("validacion de entrada", () => {
   it("rechaza una zona inexistente en vez de aceptar una señal huérfana", async () => {
     const before = getSituation().events.length;
     const response = await eventPost(
-      jsonRequest("http://localhost/api/events", { zoneId: "zone-nope", category: "incendio", severity: "critical" })
+      jsonRequest("http://localhost/api/events", {
+        zoneId: "zone-nope",
+        category: "incendio",
+        severity: "critical"
+      })
     );
     const body = await response.json();
 
@@ -249,7 +261,11 @@ describe("proteccion de las rutas de demo", () => {
     expect(resetSinToken.status).toBe(401);
 
     const conToken = await injectPost(
-      jsonRequest("http://localhost/api/demo/inject", { kind: "incident" }, { "x-demo-token": "token-de-demo" })
+      jsonRequest(
+        "http://localhost/api/demo/inject",
+        { kind: "incident" },
+        { "x-demo-token": "token-de-demo" }
+      )
     );
     expect(conToken.status).toBe(200);
   });

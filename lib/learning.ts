@@ -29,14 +29,7 @@
 // Como la reconstruccion siempre parte de los RunRecord, reiniciar el proceso
 // no infla ningun contador.
 
-import type {
-  Action,
-  ActionChannel,
-  ChannelStat,
-  LearnedWeights,
-  RunRecord,
-  SituationState
-} from "./types";
+import type { Action, ActionChannel, ChannelStat, LearnedWeights, RunRecord, SituationState } from "./types";
 
 // ---------------------------------------------------------------------------
 // Umbrales de aprendizaje
@@ -111,11 +104,7 @@ export function recordActionOutcome(weights: LearnedWeights, action: Action): Le
   next.channelStats[action.channel] = addStat(next.channelStats[action.channel], 1, succeeded ? 1 : 0);
 
   if (action.contactId) {
-    next.contactStats[action.contactId] = addStat(
-      next.contactStats[action.contactId],
-      1,
-      succeeded ? 1 : 0
-    );
+    next.contactStats[action.contactId] = addStat(next.contactStats[action.contactId], 1, succeeded ? 1 : 0);
   }
 
   next.updatedAt = new Date().toISOString();
@@ -383,7 +372,8 @@ export function explainWeights(weights: LearnedWeights, runs: RunRecord[] = []):
     insights.push({
       key: "runs",
       label: "Todavía no hay ejecuciones anteriores",
-      detail: "El sistema arranca sin historial: ningún peso está ajustado y se usan los valores por defecto.",
+      detail:
+        "El sistema arranca sin historial: ningún peso está ajustado y se usan los valores por defecto.",
       samples: 0,
       value: 0,
       applied: false

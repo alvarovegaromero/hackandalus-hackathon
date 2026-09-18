@@ -69,13 +69,7 @@ function filePath(name: string): string {
 // ---------------------------------------------------------------------------
 
 export type PersistenceIssue =
-  | "none"
-  | "missing"
-  | "unreadable"
-  | "invalid-json"
-  | "schema-mismatch"
-  | "invalid-shape"
-  | "write-failed";
+  "none" | "missing" | "unreadable" | "invalid-json" | "schema-mismatch" | "invalid-shape" | "write-failed";
 
 interface Diagnostics {
   lastLoadIssue: PersistenceIssue;
@@ -333,7 +327,8 @@ function isValidPlan(value: unknown): boolean {
 function isValidLearning(value: unknown): boolean {
   if (!isRecord(value)) return false;
   if (!isRecord(value.channelStats) || !isRecord(value.contactStats)) return false;
-  if (typeof value.unconfirmedPenalty !== "number" || !Number.isFinite(value.unconfirmedPenalty)) return false;
+  if (typeof value.unconfirmedPenalty !== "number" || !Number.isFinite(value.unconfirmedPenalty))
+    return false;
   return typeof value.runsAnalyzed === "number" && Number.isFinite(value.runsAnalyzed);
 }
 
@@ -478,7 +473,8 @@ function isValidRun(value: unknown): value is RunRecord {
   if (typeof value.startedAt !== "string") return false;
   if (value.endedAt !== null && typeof value.endedAt !== "string") return false;
   const counters = ["actionsTotal", "actionsSucceeded", "actionsFailed", "planVersions"];
-  if (!counters.every((key) => typeof value[key] === "number" && Number.isFinite(value[key] as number))) return false;
+  if (!counters.every((key) => typeof value[key] === "number" && Number.isFinite(value[key] as number)))
+    return false;
   return Array.isArray(value.notes) && value.notes.every((note) => typeof note === "string");
 }
 

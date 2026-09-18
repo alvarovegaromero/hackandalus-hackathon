@@ -295,12 +295,13 @@ function normalizeTopic(category: string): string {
 }
 
 /** Fiabilidad aprendida de una fuente, o el valor por defecto si no hay historial. */
-export function reliabilityOf(
-  reliability: SourceReliability[] | undefined,
-  source: EventSource
-): number {
+export function reliabilityOf(reliability: SourceReliability[] | undefined, source: EventSource): number {
   const entry = reliability?.find((candidate) => candidate.source === source);
-  return clamp(entry?.reliability ?? DEFAULT_SOURCE_RELIABILITY, MIN_SOURCE_RELIABILITY, MAX_SOURCE_RELIABILITY);
+  return clamp(
+    entry?.reliability ?? DEFAULT_SOURCE_RELIABILITY,
+    MIN_SOURCE_RELIABILITY,
+    MAX_SOURCE_RELIABILITY
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -433,7 +434,11 @@ export function updateSourceReliability(
   let next = current.reliability;
   if (observations >= MIN_SOURCE_SAMPLES) {
     const observedRate = confirmed / observations;
-    const delta = clamp(observedRate - current.reliability, -SOURCE_RELIABILITY_STEP, SOURCE_RELIABILITY_STEP);
+    const delta = clamp(
+      observedRate - current.reliability,
+      -SOURCE_RELIABILITY_STEP,
+      SOURCE_RELIABILITY_STEP
+    );
     next = clamp(current.reliability + delta, MIN_SOURCE_RELIABILITY, MAX_SOURCE_RELIABILITY);
   }
 
@@ -678,9 +683,7 @@ function assessDeterministic(signal: TriageSignal, context: TriageContext = {}):
   // 5. Decisión. El umbral baja con la urgencia: equivocarse callando ante una
   //    señal crítica cuesta más que equivocarse llamando.
   const actThreshold = round(clamp(thresholds.act - thresholds.urgencyRelief * urgency, 0.2, 1));
-  const verifyThreshold = round(
-    clamp(thresholds.verify - thresholds.verifyUrgencyRelief * urgency, 0.1, 1)
-  );
+  const verifyThreshold = round(clamp(thresholds.verify - thresholds.verifyUrgencyRelief * urgency, 0.1, 1));
 
   let decision: TriageDecision;
   if (confidence >= actThreshold && pRelevant >= thresholds.relevanceForAct) {
@@ -857,9 +860,7 @@ export function buildVerificationRequest(
   const zone = context.zones?.find((candidate) => candidate.id === event.zoneId);
   const zoneName = zone?.name ?? event.zoneId;
   const role = rolesForCategory(event.category)[0] ?? "operations-lead";
-  const contact = context.contacts
-    ? selectContactByRole(context.contacts, event.zoneId, role)
-    : null;
+  const contact = context.contacts ? selectContactByRole(context.contacts, event.zoneId, role) : null;
 
   // La duda dominante es la pata más floja: si dudamos de que sea cierto,
   // preguntamos por los hechos; si dudamos de que importe, preguntamos por el

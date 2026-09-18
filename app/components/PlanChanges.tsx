@@ -85,7 +85,11 @@ export default function PlanChanges({ plan, planHistory, nowMs, isFresh }: Props
                         : "pill"
                   }
                 >
-                  {assumption.status === "broken" ? "Roto" : assumption.status === "ok" ? "Se sostiene" : "Sin datos"}
+                  {assumption.status === "broken"
+                    ? "Roto"
+                    : assumption.status === "ok"
+                      ? "Se sostiene"
+                      : "Sin datos"}
                 </span>
               </li>
             ))}

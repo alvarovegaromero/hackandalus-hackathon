@@ -1,51 +1,23 @@
-# Qué cambia
+## What changes
 
-<!-- Una o dos frases: qué hace este cambio y por qué. Si arregla una incidencia, enlázala con "Closes #N". -->
+<!-- Explain the problem and resulting behavior. Keep the scope concrete. -->
 
-## Tipo de cambio
+## Verification
 
-- [ ] `feat` — funcionalidad nueva
-- [ ] `fix` — corrección
-- [ ] `chore` / `docs` — tooling, documentación, mantenimiento
-- [ ] `refactor` — reorganización sin cambio de comportamiento
+<!-- List checks actually run and their results. Note failures or skipped checks. -->
 
-## Rama
+## Configuration and migrations
 
-- [ ] Parte de la rama base correcta y la PR apunta a ella (ver `AGENTS.md` → *Working with this repo*).
-- [ ] No es un commit directo a `main`.
+<!-- New environment variable names, migration files, or deployment steps. Never include secret values. Write "None" if not applicable. -->
 
-## Alcance y propiedad de ficheros
+## Checklist
 
-Varios agentes y personas trabajan en paralelo sobre módulos distintos.
+- [ ] Targets `main` from a feature branch.
+- [ ] Follows `PROJECT.md`; commit messages are in English.
+- [ ] Local hooks passed; relevant checks and limitations are documented above.
+- [ ] Used Graft for code navigation and passed `npm run index:verify`; documented any unavailable or unindexed results.
+- [ ] No credentials or private interaction data included.
+- [ ] Relevant docs and `.env.example` updated if needed.
+- [ ] Simulated behavior is clearly identified; live results are not assumed.
 
-- [ ] Solo toco los ficheros de mi módulo (ver cabecera `// PROPIETARIO:` en `lib/**`).
-- [ ] Si he tenido que tocar un fichero de otro módulo, lo explico aquí abajo.
-
-<!-- Ficheros ajenos tocados y motivo: -->
-
-## Verificación
-
-Comandos ejecutados en local (marca lo que hayas corrido de verdad):
-
-- [ ] `npx tsc --noEmit`
-- [ ] `npm run lint`
-- [ ] `npm test`
-- [ ] `npm run build`
-- [ ] Probado a mano en `npm run dev` (describe el flujo abajo)
-
-<!-- Qué has probado a mano y qué has visto: -->
-
-## Acciones externas y credenciales
-
-- [ ] No introduce credenciales, teléfonos, correos ni datos de interacciones reales en el código, los logs o los commits.
-- [ ] Si toca ejecución real (`ACTION_EXECUTION_MODE=happyrobot`), se ha usado solo con destinatarios de demo y con aprobación previa del usuario.
-- [ ] Lo simulado se muestra etiquetado como simulado en la interfaz; nada mock se presenta como ejecución real.
-
-## Impacto en la demo
-
-<!-- ¿Cambia el guion de la demo, la superficie de API o las variables de entorno?
-     Si sí, di qué hay que actualizar en README.md o docs/. -->
-
-## Pendiente / riesgos conocidos
-
-<!-- Lo que sabes que falta o puede romperse. Mejor aquí que en la demo. -->
+<!-- The repository owner performs the final merge. Agents must not merge. -->

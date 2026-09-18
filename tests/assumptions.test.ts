@@ -97,7 +97,9 @@ function plan(): Plan {
   };
 }
 
-function senal(overrides: Partial<CrisisEvent> & Pick<CrisisEvent, "id" | "zoneId" | "category">): CrisisEvent {
+function senal(
+  overrides: Partial<CrisisEvent> & Pick<CrisisEvent, "id" | "zoneId" | "category">
+): CrisisEvent {
   return {
     source: "scenario",
     title: "Señal de prueba",
@@ -385,7 +387,9 @@ describe("explicación de la invalidación", () => {
   });
 
   it("dice que el plan sigue en pie cuando no hay nada roto", () => {
-    expect(explainInvalidation([], plan())).toBe("El plan v3 sigue en pie: ninguno de sus supuestos se ha roto.");
+    expect(explainInvalidation([], plan())).toBe(
+      "El plan v3 sigue en pie: ninguno de sus supuestos se ha roto."
+    );
   });
 });
 

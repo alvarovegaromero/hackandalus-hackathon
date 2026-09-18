@@ -18,7 +18,12 @@ export default function OperationsMap({ zones, plan, selectedZoneId, onSelect }:
   return (
     <div className="map">
       <div className="map-label">Andalucía · cobertura de la demo regional</div>
-      <svg className="region-shape" viewBox="0 0 760 520" role="img" aria-label="Mapa esquemático de Andalucía">
+      <svg
+        className="region-shape"
+        viewBox="0 0 760 520"
+        role="img"
+        aria-label="Mapa esquemático de Andalucía"
+      >
         <path
           className="map-land andalucia"
           d="M94 285 L126 226 L185 206 L238 165 L314 152 L371 178 L431 143 L510 157 L574 188 L647 197 L694 235 L676 291 L628 328 L590 383 L506 389 L437 365 L374 386 L301 369 L248 397 L174 374 L121 335 Z"

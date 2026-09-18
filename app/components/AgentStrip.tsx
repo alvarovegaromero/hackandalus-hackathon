@@ -13,7 +13,11 @@ interface Props {
 const ACTIVE_MS = 90 * 1000;
 
 const agents: { id: string; label: string; kinds: string[] }[] = [
-  { id: "triage", label: "Triaje", kinds: ["event-ingested", "event-deduplicated", "event-confirmed", "event-discarded"] },
+  {
+    id: "triage",
+    label: "Triaje",
+    kinds: ["event-ingested", "event-deduplicated", "event-confirmed", "event-discarded"]
+  },
   { id: "priority", label: "Prioridad", kinds: ["replan", "plan", "priority"] },
   { id: "resources", label: "Recursos", kinds: ["resource", "assign", "reassign"] },
   { id: "contacts", label: "Avisos", kinds: ["chain", "escalation", "contact"] },

@@ -55,9 +55,8 @@ export default function SignalsPanel({ events, zones, busy, nowMs, freshIds, onM
                   >
                     {decisionLabels[event.assessment.decision]}
                   </span>{" "}
-                  {event.assessment.rationale} (relevante{" "}
-                  {Math.round(event.assessment.pRelevant * 100)} %, veraz{" "}
-                  {Math.round(event.assessment.pTruthful * 100)} %, urgencia{" "}
+                  {event.assessment.rationale} (relevante {Math.round(event.assessment.pRelevant * 100)} %,
+                  veraz {Math.round(event.assessment.pTruthful * 100)} %, urgencia{" "}
                   {Math.round(event.assessment.urgency * 100)} %)
                 </p>
               ) : null}

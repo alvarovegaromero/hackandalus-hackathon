@@ -2,7 +2,13 @@
 // Confirmacion o descarte de una senal por parte de un operador.
 
 import { markEvent } from "@/lib/store";
-import { apiErrorFromThrown, apiOk, markEventSchema, methodNotAllowed, parseJsonBody } from "@/lib/validation";
+import {
+  apiErrorFromThrown,
+  apiOk,
+  markEventSchema,
+  methodNotAllowed,
+  parseJsonBody
+} from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 

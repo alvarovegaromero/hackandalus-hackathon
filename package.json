@@ -1,42 +1,66 @@
 {
-  "name": "hackandalus-crisis-command",
+  "name": "butterfish",
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=18.18.0",
-    "npm": ">=9.0.0"
+    "node": ">=22.21.0 <23"
   },
+  "packageManager": "npm@11.6.1",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint app lib tests",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "typecheck": "tsc --noEmit",
-    "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "lint": "eslint .",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "vitest run --reporter=dot",
+    "prepare": "node scripts/install-hooks.mjs",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "check": "npm run secrets:check && npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && npm run index:verify",
+    "lint:staged": "lint-staged --concurrent false",
+    "secrets:check": "node scripts/check-secrets.mjs",
+    "env:setup": "node scripts/setup-env.mjs",
+    "graft": "graft",
+    "index:build": "graft build",
+    "index:map": "graft map",
+    "index:check": "graft check",
+    "index:verify": "npm run index:build && npm run index:check"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.116.0",
+    "ai": "^7.0.106",
     "lucide-react": "^1.47.0",
-    "next": "^15.5.25",
+    "next": "^16.3.5",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "server-only": "^0.0.1",
+    "workflow": "^4.8.9",
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.7",
-    "@testing-library/react": "^16.3.3",
-    "@types/node": "^20.17.10",
+    "@nanonets/graft": "0.10.1",
+    "@secretlint/secretlint-rule-preset-recommend": "13.0.5",
+    "@types/node": "^22.20.3",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "eslint": "^9.39.5",
-    "eslint-config-next": "^15.5.25",
-    "prettier": "^3.9.8",
-    "typescript": "^5.7.2",
-    "vitest": "^3.2.7"
+    "eslint-config-next": "^16.3.5",
+    "husky": "9.1.7",
+    "lint-staged": "16.4.0",
+    "prettier": "3.9.8",
+    "secretlint": "13.0.5",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.1"
   },
   "overrides": {
-    "postcss": "^8.5.28"
+    "@workflow/core": {
+      "nanoid": "5.1.16"
+    },
+    "@workflow/world-local": {
+      "undici": "7.29.0"
+    },
+    "@workflow/world-vercel": {
+      "undici": "7.29.0"
+    }
   }
 }

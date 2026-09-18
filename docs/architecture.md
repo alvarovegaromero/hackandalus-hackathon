@@ -1,6 +1,6 @@
 # Arquitectura y decisiones
 
-Este documento explica **por qué** el sistema está construido así. El *qué* está
+Este documento explica **por qué** el sistema está construido así. El _qué_ está
 en el README; aquí quedan las decisiones y lo que cuestan.
 
 Contexto que condiciona todo lo demás: es un proyecto de hackathon de fin de
@@ -76,7 +76,7 @@ por plataforma) en un proyecto que tiene que arrancar en el portátil de cualqui
 del equipo. Sus funciones no pueden lanzar nunca: un disco lleno no puede tumbar
 la demo, como mucho puede hacer que se pierda el historial.
 
-> Estado real a día de hoy: las funciones de `persistence.ts` son *stubs*
+> Estado real a día de hoy: las funciones de `persistence.ts` son _stubs_
 > deliberados (`loadState` devuelve `null`, `saveState` no hace nada). El contrato
 > está fijado y `store.ts` ya lo llama; la implementación es trabajo pendiente del
 > agente propietario de ese módulo.
@@ -94,7 +94,7 @@ desglose de factores (`PriorityFactor[]`) que la interfaz enseña tal cual.
 
 1. **Se puede explicar.** El reto pregunta "¿sabe qué va primero cuando todo
    parece urgente?". Un número con su desglose responde a eso delante de un
-   jurado; un párrafo generado, no. La UI puede enseñar *por qué* una zona subió
+   jurado; un párrafo generado, no. La UI puede enseñar _por qué_ una zona subió
    al primer puesto, factor a factor.
 2. **Se puede testear.** `tests/priority.test.ts` fija que una señal crítica y
    confirmada supera a la prioridad inicial. Con un modelo detrás, ese test sería
@@ -144,14 +144,14 @@ Ninguna acción sale del sistema por sí sola. El ciclo es:
 
 **Salvaguardas encadenadas** (todas tienen que dar permiso para que salga algo):
 
-| Salvaguarda | Dónde | Qué hace |
-|---|---|---|
-| Modo de ejecución | `getExecutionMode()` | Con `ACTION_EXECUTION_MODE` distinto de `happyrobot`, nada sale del proceso. Es el valor por defecto. |
-| Credenciales | `isHappyRobotConfigured()` | Sin clave, URL base y agente, la ejecución real falla con un error explícito en vez de intentarlo a medias. |
-| Destinatario aprobado | `canReceiveLiveAction()` / `liveActionBlockReason()` | Un contacto sin `demoSafe` **degrada la acción a simulación** y explica por qué. En la semilla actual todos los contactos están marcados como no aptos. |
-| Aprobación humana | `approveAction()` | Sin aprobación no se ejecuta nada. |
-| Idempotencia | `idempotencyKey = "<id>:<intento>"` | Evita duplicar el aviso al reintentar o al recibir el mismo evento dos veces. |
-| Honestidad en la UI | `IntegrationState`, `simulated`, ids `mock-…` | Se cuentan por separado las acciones reales y las simuladas, y lo simulado lleva el prefijo escrito en el propio identificador para que ni un log pueda presentarlo como real. |
+| Salvaguarda           | Dónde                                                | Qué hace                                                                                                                                                                       |
+| --------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Modo de ejecución     | `getExecutionMode()`                                 | Con `ACTION_EXECUTION_MODE` distinto de `happyrobot`, nada sale del proceso. Es el valor por defecto.                                                                          |
+| Credenciales          | `isHappyRobotConfigured()`                           | Sin clave, URL base y agente, la ejecución real falla con un error explícito en vez de intentarlo a medias.                                                                    |
+| Destinatario aprobado | `canReceiveLiveAction()` / `liveActionBlockReason()` | Un contacto sin `demoSafe` **degrada la acción a simulación** y explica por qué. En la semilla actual todos los contactos están marcados como no aptos.                        |
+| Aprobación humana     | `approveAction()`                                    | Sin aprobación no se ejecuta nada.                                                                                                                                             |
+| Idempotencia          | `idempotencyKey = "<id>:<intento>"`                  | Evita duplicar el aviso al reintentar o al recibir el mismo evento dos veces.                                                                                                  |
+| Honestidad en la UI   | `IntegrationState`, `simulated`, ids `mock-…`        | Se cuentan por separado las acciones reales y las simuladas, y lo simulado lleva el prefijo escrito en el propio identificador para que ni un log pueda presentarlo como real. |
 
 **Lo que cuesta.** El sistema no es completamente autónomo, y eso roza el criterio
 de "decide y actúa por su cuenta". Se compensa con el resto: el sistema decide,
@@ -170,29 +170,29 @@ primera línea:
 // PROPIETARIO: agente del motor de prioridad.
 ```
 
-| Módulo | Responsabilidad |
-|---|---|
-| `types.ts` | Frontera entre módulos. Los tipos compartidos y nada más. |
-| `validation.ts` | Validación de entrada con zod y forma única de error para toda la API. |
-| `store.ts` | Estado y orquestación. Coordinación; no lo editan los agentes de módulo. |
-| `priority.ts` | Puntuar zonas y construir el plan. |
-| `resources.ts` | Elegir, asignar y liberar recursos. |
-| `contacts.ts` | A quién se avisa, por qué canal y con qué briefing. |
-| `escalation.ts` | Cadenas de escalado: qué pasa si el primero no contesta. |
+| Módulo           | Responsabilidad                                                                                       |
+| ---------------- | ----------------------------------------------------------------------------------------------------- |
+| `types.ts`       | Frontera entre módulos. Los tipos compartidos y nada más.                                             |
+| `validation.ts`  | Validación de entrada con zod y forma única de error para toda la API.                                |
+| `store.ts`       | Estado y orquestación. Coordinación; no lo editan los agentes de módulo.                              |
+| `priority.ts`    | Puntuar zonas y construir el plan.                                                                    |
+| `resources.ts`   | Elegir, asignar y liberar recursos.                                                                   |
+| `contacts.ts`    | A quién se avisa, por qué canal y con qué briefing.                                                   |
+| `escalation.ts`  | Cadenas de escalado: qué pasa si el primero no contesta.                                              |
 | `digitalTwin.ts` | Gemelo digital: estado percibido desde señales, divergencias y precisión frente a la verdad simulada. |
-| `happyrobot.ts` | Único punto de salida al exterior. |
-| `scenario.ts` | El guion que hace que la situación cambie sola. |
-| `history.ts` | Historial de planes, diferencias entre versiones y auditoría. |
-| `learning.ts` | Pesos aprendidos de ejecuciones anteriores (bonus). |
-| `persistence.ts` | Guardar y restaurar, opcional. |
-| `seed.ts` | Situación inicial y beats del guion. |
+| `happyrobot.ts`  | Único punto de salida al exterior.                                                                    |
+| `scenario.ts`    | El guion que hace que la situación cambie sola.                                                       |
+| `history.ts`     | Historial de planes, diferencias entre versiones y auditoría.                                         |
+| `learning.ts`    | Pesos aprendidos de ejecuciones anteriores (bonus).                                                   |
+| `persistence.ts` | Guardar y restaurar, opcional.                                                                        |
+| `seed.ts`        | Situación inicial y beats del guion.                                                                  |
 
 **Por qué.**
 
 - Varios agentes escriben a la vez. Sin fronteras de fichero, dos de ellos editan
   la misma función y el resultado es un conflicto o, peor, una fusión silenciosa
   que rompe algo. Un fichero con un dueño hace imposible ese choque.
-- `types.ts` como contrato permite que un módulo se escriba contra la *forma* de
+- `types.ts` como contrato permite que un módulo se escriba contra la _forma_ de
   otro sin esperar a que esté implementado. Por eso `persistence.ts` puede ser
   hoy un conjunto de stubs sin bloquear a nadie.
 - Concentrar la orquestación en `store.ts` deja un único sitio donde entender el
@@ -232,7 +232,7 @@ relojes para el mismo motor, porque el que no puede fallar es el de la demo.
 
 ## Decisión 6 — El escenario está guionizado, pero se puede tocar a mano
 
-`lib/scenario.ts` reproduce guiones formados por *beats* con marca de tiempo —hay
+`lib/scenario.ts` reproduce guiones formados por _beats_ con marca de tiempo —hay
 tres: incendio, apagón e inundación—: el frente avanza, el viento gira, una
 carretera se corta, un recurso cae. Se arrancan, se pausan y se aceleran desde
 `/api/scenario/*`. Además, los botones de la interfaz permiten inyectar a mano
@@ -247,15 +247,15 @@ reproducible y demo interactiva con el mismo motor detrás.
 
 ## Qué está implementado y qué no
 
-| Pieza | Estado |
-|---|---|
-| Estado en memoria, replanificación, auditoría | Implementado |
-| Motor de prioridad determinista con desglose | Implementado |
-| Asignación de recursos, contactos, escalado | Implementado |
-| Adaptador HappyRobot con reintentos, timeout e idempotencia | Implementado (ruta y cuerpo **sin verificar** contra la documentación privada; ver `docs/happyDocumentation.md`) |
-| Aprobación humana y cola de acciones | Implementado |
-| Validación de entrada y errores homogéneos en toda la API | Implementado |
-| Guion que avanza solo, con tres escenarios y velocidad ajustable | Implementado |
-| Gemelo digital con métricas de precisión, divergencia e incertidumbre | Implementado |
-| Persistencia en JSON | Contrato definido, implementación pendiente |
-| Aprendizaje entre ejecuciones | Contrato definido, acumula estadísticas en memoria; no influye todavía en la puntuación |
+| Pieza                                                                 | Estado                                                                                                           |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Estado en memoria, replanificación, auditoría                         | Implementado                                                                                                     |
+| Motor de prioridad determinista con desglose                          | Implementado                                                                                                     |
+| Asignación de recursos, contactos, escalado                           | Implementado                                                                                                     |
+| Adaptador HappyRobot con reintentos, timeout e idempotencia           | Implementado (ruta y cuerpo **sin verificar** contra la documentación privada; ver `docs/happyDocumentation.md`) |
+| Aprobación humana y cola de acciones                                  | Implementado                                                                                                     |
+| Validación de entrada y errores homogéneos en toda la API             | Implementado                                                                                                     |
+| Guion que avanza solo, con tres escenarios y velocidad ajustable      | Implementado                                                                                                     |
+| Gemelo digital con métricas de precisión, divergencia e incertidumbre | Implementado                                                                                                     |
+| Persistencia en JSON                                                  | Contrato definido, implementación pendiente                                                                      |
+| Aprendizaje entre ejecuciones                                         | Contrato definido, acumula estadísticas en memoria; no influye todavía en la puntuación                          |

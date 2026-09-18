@@ -40,7 +40,10 @@ export default function ResourcesPanel({ resources, zones, actions, waiting, now
                         ? ` · unos ${entry.estimatedWaitMinutes} min`
                         : ""}
                     </strong>
-                    <small>{action ? `${action.objective}. ` : ""}{entry.reason}</small>
+                    <small>
+                      {action ? `${action.objective}. ` : ""}
+                      {entry.reason}
+                    </small>
                   </div>
                 </li>
               );
@@ -51,28 +54,29 @@ export default function ResourcesPanel({ resources, zones, actions, waiting, now
 
       <h3 className="section-head">Dispositivo ({resources.length} recursos)</h3>
       <div className="resource-list">
-      {resources.map((resource) => {
-        const zone = zones.find((candidate) => candidate.id === resource.zoneId);
-        const action = actions.find((candidate) => candidate.id === resource.assignedActionId);
-        return (
-          <article key={resource.id} className={`resource ${resource.status}`}>
-            <div>
-              <h3>{resource.name}</h3>
-              <p>
-                {resource.type} · capacidad {resource.capacity} · sabe hacer {resource.capabilities.join(", ")}
-              </p>
-              {action ? (
-                <p className="action-trace">
-                  Atado a: {action.objective}
-                  {resource.assignedAt ? ` · desde ${agoLabel(resource.assignedAt, nowMs)}` : ""}
+        {resources.map((resource) => {
+          const zone = zones.find((candidate) => candidate.id === resource.zoneId);
+          const action = actions.find((candidate) => candidate.id === resource.assignedActionId);
+          return (
+            <article key={resource.id} className={`resource ${resource.status}`}>
+              <div>
+                <h3>{resource.name}</h3>
+                <p>
+                  {resource.type} · capacidad {resource.capacity} · sabe hacer{" "}
+                  {resource.capabilities.join(", ")}
                 </p>
-              ) : null}
-            </div>
-            <span>{resourceStatusLabels[resource.status]}</span>
-            <small>{zone?.name ?? "sin zona fija"}</small>
-          </article>
-        );
-      })}
+                {action ? (
+                  <p className="action-trace">
+                    Atado a: {action.objective}
+                    {resource.assignedAt ? ` · desde ${agoLabel(resource.assignedAt, nowMs)}` : ""}
+                  </p>
+                ) : null}
+              </div>
+              <span>{resourceStatusLabels[resource.status]}</span>
+              <small>{zone?.name ?? "sin zona fija"}</small>
+            </article>
+          );
+        })}
       </div>
     </div>
   );

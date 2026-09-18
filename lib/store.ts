@@ -10,9 +10,22 @@ import { buildEscalationChain } from "./escalation";
 import { executeHappyRobotAction, getExecutionMode, isHappyRobotConfigured } from "./happyrobot";
 import { appendAudit, diffPlans, pushPlanHistory } from "./history";
 import { buildRunRecord, emptyWeights, recordActionOutcome, weightsFromRuns } from "./learning";
-import { isPersistenceEnabled, loadRuns, loadState, loadWeights, saveRun, saveState, saveWeights } from "./persistence";
+import {
+  isPersistenceEnabled,
+  loadRuns,
+  loadState,
+  loadWeights,
+  saveRun,
+  saveState,
+  saveWeights
+} from "./persistence";
 import { buildDedupeKey, buildPlan } from "./priority";
-import { assignResource, reassignAffectedActions, releaseResource, selectResourceForAction } from "./resources";
+import {
+  assignResource,
+  reassignAffectedActions,
+  releaseResource,
+  selectResourceForAction
+} from "./resources";
 import { createScenarioState, dueBeats, startScenario, stopScenario } from "./scenario";
 import {
   seedActions,
@@ -112,7 +125,8 @@ function withDefaults(restored: SituationState): SituationState {
   return {
     ...restored,
     world: restored.world ?? clone(seedWorld),
-    digitalTwin: restored.digitalTwin ?? buildDigitalTwin(restored.world ?? clone(seedWorld), restored.events ?? []),
+    digitalTwin:
+      restored.digitalTwin ?? buildDigitalTwin(restored.world ?? clone(seedWorld), restored.events ?? []),
     autonomyRules: restored.autonomyRules ?? clone(seedAutonomyRules),
     autonomyPaused: restored.autonomyPaused ?? false,
     waiting: restored.waiting ?? [],
@@ -547,14 +561,13 @@ export function createAction(payload: CreateActionPayload, actor: Actor = "opera
   const current = state();
   const at = nowIso();
   const id = uid("act");
-  const assignment =
-    payload.resourceId
-      ? { resourceId: payload.resourceId, reason: "Recurso elegido manualmente." }
-      : selectResourceForAction(
-          { zoneId: payload.zoneId, objective: payload.objective, channel: payload.channel },
-          current.resources,
-          current.zones
-        );
+  const assignment = payload.resourceId
+    ? { resourceId: payload.resourceId, reason: "Recurso elegido manualmente." }
+    : selectResourceForAction(
+        { zoneId: payload.zoneId, objective: payload.objective, channel: payload.channel },
+        current.resources,
+        current.zones
+      );
 
   const action: Action = {
     id,
@@ -773,8 +786,9 @@ export function injectDemo(kind: DemoKind, actor: Actor = "operator") {
         .filter(Boolean) as string[]
     );
     const resource =
-      current.resources.find((candidate) => candidate.status !== "unavailable" && busyIds.has(candidate.id)) ??
-      current.resources.find((candidate) => candidate.status !== "unavailable");
+      current.resources.find(
+        (candidate) => candidate.status !== "unavailable" && busyIds.has(candidate.id)
+      ) ?? current.resources.find((candidate) => candidate.status !== "unavailable");
 
     if (!resource) return getSituation();
 

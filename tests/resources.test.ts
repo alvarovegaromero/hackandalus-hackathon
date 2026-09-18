@@ -295,8 +295,16 @@ describe("competencia entre zonas por el mismo recurso", () => {
 
   it("no deja a nadie esperando cuando cada necesidad tiene su recurso", () => {
     const acciones = [
-      accion({ id: "act-fuego", zoneId: "zone-north", objective: "Extinción del incendio en Sierra Morena." }),
-      accion({ id: "act-triaje", zoneId: "zone-central", objective: "Montar triaje sanitario en Sevilla Hub." }),
+      accion({
+        id: "act-fuego",
+        zoneId: "zone-north",
+        objective: "Extinción del incendio en Sierra Morena."
+      }),
+      accion({
+        id: "act-triaje",
+        zoneId: "zone-central",
+        objective: "Montar triaje sanitario en Sevilla Hub."
+      }),
       accion({ id: "act-refugio", zoneId: "zone-south", objective: "Abrir refugio en la Costa del Sol." })
     ];
 

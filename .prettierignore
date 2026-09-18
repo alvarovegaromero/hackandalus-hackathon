@@ -1,15 +1,25 @@
-# Generado o ajeno: no lo formateamos.
 node_modules/
 .next/
+.next-dev/
 .next.broken-*/
+out/
+.vercel/
+.workflow-data/
+.swc/
 coverage/
 .data/
-*.tsbuildinfo
+graft/
+src/app/.well-known/workflow/
 next-env.d.ts
-
-# npm gestiona el formato de estos ficheros.
 package-lock.json
+*.tsbuildinfo
+.env*
+**/.claude/settings.local.json
+**/CLAUDE.local.md
 
-# Documentos con formato propio que no queremos que Prettier reflow-ee.
+# Preserve upstream skill snapshots and their recorded hashes.
+.agents/skills/
+
+# Documents with hand-maintained formatting.
 CHALLENGE.md
 docs/happyDocumentation.md

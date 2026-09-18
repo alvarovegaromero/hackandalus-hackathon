@@ -12,7 +12,14 @@
 
 import { cancelAction, getSituation, retryAction, setActionStatus } from "@/lib/store";
 import type { Action } from "@/lib/types";
-import { actionStatusSchema, apiError, apiErrorFromThrown, apiOk, methodNotAllowed, parseJsonBody } from "@/lib/validation";
+import {
+  actionStatusSchema,
+  apiError,
+  apiErrorFromThrown,
+  apiOk,
+  methodNotAllowed,
+  parseJsonBody
+} from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -62,12 +69,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     if (!payload.status) {
-      return apiError(
-        "cuerpo_invalido",
-        "Para fijar el estado hay que indicar el campo status.",
-        400,
-        [{ campo: "status", mensaje: "Campo obligatorio con la operación set-status." }]
-      );
+      return apiError("cuerpo_invalido", "Para fijar el estado hay que indicar el campo status.", 400, [
+        { campo: "status", mensaje: "Campo obligatorio con la operación set-status." }
+      ]);
     }
 
     // Cambio de estado iniciado por el operador: el actor es "operator", no

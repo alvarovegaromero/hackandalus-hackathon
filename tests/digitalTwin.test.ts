@@ -9,7 +9,9 @@ function mundo(overrides: Partial<WorldState> = {}): WorldState {
   return { ...structuredClone(seedWorld), updatedAt: AHORA, ...overrides };
 }
 
-function senal(overrides: Partial<CrisisEvent> & Pick<CrisisEvent, "id" | "category" | "description">): CrisisEvent {
+function senal(
+  overrides: Partial<CrisisEvent> & Pick<CrisisEvent, "id" | "category" | "description">
+): CrisisEvent {
   const { id, category, description, ...rest } = overrides;
   return {
     ...rest,

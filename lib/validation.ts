@@ -157,11 +157,7 @@ export async function parseJsonBody<T>(
   if (!contentTypeAceptable(request)) {
     return {
       ok: false,
-      response: apiError(
-        "tipo_contenido_no_soportado",
-        "El cuerpo debe enviarse como application/json.",
-        415
-      )
+      response: apiError("tipo_contenido_no_soportado", "El cuerpo debe enviarse como application/json.", 415)
     };
   }
 

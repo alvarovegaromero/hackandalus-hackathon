@@ -55,15 +55,15 @@ nada, el sistema arranca en **modo simulado** y no sale nada hacia el exterior.
 
 ### Comandos
 
-| Comando | Qué hace |
-|---|---|
-| `npm run dev` | Servidor de desarrollo en el puerto 3000. |
-| `npm run build` | Build de producción. |
-| `npm start` | Sirve el build de producción. |
-| `npm run lint` | ESLint sobre `app`, `lib` y `tests`. |
-| `npm test` | Tests con Vitest, una pasada. |
-| `npm run test:watch` | Tests en modo watch. |
-| `npx tsc --noEmit` | Comprobación de tipos (no hay script propio todavía). |
+| Comando              | Qué hace                                              |
+| -------------------- | ----------------------------------------------------- |
+| `npm run dev`        | Servidor de desarrollo en el puerto 3000.             |
+| `npm run build`      | Build de producción.                                  |
+| `npm start`          | Sirve el build de producción.                         |
+| `npm run lint`       | ESLint sobre `app`, `lib` y `tests`.                  |
+| `npm test`           | Tests con Vitest, una pasada.                         |
+| `npm run test:watch` | Tests en modo watch.                                  |
+| `npx tsc --noEmit`   | Comprobación de tipos (no hay script propio todavía). |
 
 La integración continua (`.github/workflows/ci.yml`) ejecuta tipos, lint, tests y
 build en cada push y cada pull request.
@@ -100,24 +100,24 @@ declarado en la primera línea del fichero (`// PROPIETARIO: …`). Eso permite 
 varias personas y agentes trabajen a la vez sin pisarse, y que se entienda de un
 vistazo dónde tocar algo.
 
-| Fichero | De qué responde |
-|---|---|
-| `lib/types.ts` | Los tipos compartidos. Es el contrato entre módulos. |
-| `lib/store.ts` | Estado de la crisis y orquestación del ciclo completo. |
-| `lib/validation.ts` | Validación de los cuerpos con zod y forma única de error. |
-| `lib/priority.ts` | Puntuación de zonas y construcción del plan. |
-| `lib/resources.ts` | Elección, asignación y liberación de recursos. |
-| `lib/contacts.ts` | A quién se avisa, por qué canal y con qué briefing. |
-| `lib/escalation.ts` | Cadenas de escalado cuando el primer contacto no responde. |
-| `lib/digitalTwin.ts` | Gemelo digital: reconstruye el mundo percibido desde señales y mide precisión contra la verdad simulada. |
-| `lib/happyrobot.ts` | Adaptador a HappyRobot. Lo único que habla con el exterior. |
-| `lib/scenario.ts` | Los guiones que hacen que la crisis cambie sola. |
-| `lib/history.ts` | Historial de planes, diferencias entre versiones y auditoría. |
-| `lib/learning.ts` | Estadísticas aprendidas de ejecuciones anteriores (bonus). |
-| `lib/persistence.ts` | Guardado opcional en JSON. |
-| `lib/seed.ts` | Situación inicial: zonas, recursos, contactos y guiones. |
-| `app/page.tsx`, `app/components/` | El panel del operador. |
-| `app/api/` | La superficie HTTP. |
+| Fichero                           | De qué responde                                                                                          |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `lib/types.ts`                    | Los tipos compartidos. Es el contrato entre módulos.                                                     |
+| `lib/store.ts`                    | Estado de la crisis y orquestación del ciclo completo.                                                   |
+| `lib/validation.ts`               | Validación de los cuerpos con zod y forma única de error.                                                |
+| `lib/priority.ts`                 | Puntuación de zonas y construcción del plan.                                                             |
+| `lib/resources.ts`                | Elección, asignación y liberación de recursos.                                                           |
+| `lib/contacts.ts`                 | A quién se avisa, por qué canal y con qué briefing.                                                      |
+| `lib/escalation.ts`               | Cadenas de escalado cuando el primer contacto no responde.                                               |
+| `lib/digitalTwin.ts`              | Gemelo digital: reconstruye el mundo percibido desde señales y mide precisión contra la verdad simulada. |
+| `lib/happyrobot.ts`               | Adaptador a HappyRobot. Lo único que habla con el exterior.                                              |
+| `lib/scenario.ts`                 | Los guiones que hacen que la crisis cambie sola.                                                         |
+| `lib/history.ts`                  | Historial de planes, diferencias entre versiones y auditoría.                                            |
+| `lib/learning.ts`                 | Estadísticas aprendidas de ejecuciones anteriores (bonus).                                               |
+| `lib/persistence.ts`              | Guardado opcional en JSON.                                                                               |
+| `lib/seed.ts`                     | Situación inicial: zonas, recursos, contactos y guiones.                                                 |
+| `app/page.tsx`, `app/components/` | El panel del operador.                                                                                   |
+| `app/api/`                        | La superficie HTTP.                                                                                      |
 
 **El estado vive en memoria** (colgado de `globalThis`, para sobrevivir a las
 recargas en caliente de Next) y se pierde al reiniciar el servidor. Es deliberado:
@@ -175,24 +175,24 @@ método no soportado responde `405` con la cabecera `Allow`.
 
 ### Situación
 
-| Endpoint | Qué hace |
-|---|---|
+| Endpoint             | Qué hace                                                                                                                                                                                                                                                                                                                   |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `GET /api/situation` | Devuelve el `SituationState` completo: señales, zonas, recursos, contactos, cadenas, acciones, plan vivo, historial de planes, auditoría, escenario, mundo simulado, gemelo digital, aprendizaje e integración. Es lo que sondea el panel cada 4 segundos, y de paso hace avanzar el guion y barre las acciones atascadas. |
 
 ### Señales
 
-| Endpoint | Cuerpo | Qué hace |
-|---|---|---|
-| `POST /api/events` | `{ source?, title?, description?, zoneId?, category?, severity?, confidence?, confirmed? }` | Ingiere una señal. Valida contra el estado vivo (una zona inexistente se rechaza) y fusiona las equivalentes: si es duplicada responde `200` con `duplicate: true`, si es nueva `201`. |
-| `POST /api/events/:id/mark` | `{ confirmed: boolean }` | Confirma o descarta una señal. Descartarla revierte el efecto que tuvo sobre su zona y replanifica. |
+| Endpoint                    | Cuerpo                                                                                      | Qué hace                                                                                                                                                                               |
+| --------------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /api/events`          | `{ source?, title?, description?, zoneId?, category?, severity?, confidence?, confirmed? }` | Ingiere una señal. Valida contra el estado vivo (una zona inexistente se rechaza) y fusiona las equivalentes: si es duplicada responde `200` con `duplicate: true`, si es nueva `201`. |
+| `POST /api/events/:id/mark` | `{ confirmed: boolean }`                                                                    | Confirma o descarta una señal. Descartarla revierte el efecto que tuvo sobre su zona y replanifica.                                                                                    |
 
 ### Acciones
 
-| Endpoint | Cuerpo | Qué hace |
-|---|---|---|
-| `POST /api/actions` | `{ channel, target, objective, reason, zoneId, resourceId?, contactId? }` | Crea una acción a mano. Nace en `pending`; si no se indica recurso, el sistema elige uno. |
-| `POST /api/actions/:id/approve` | — | **Aprobación humana.** Único camino por el que una acción llega a ejecutarse. |
-| `POST /api/actions/:id/status` | `{ operation?: "cancel" \| "retry", status?, externalActionId?, localActionId?, error? }` | Operaciones del operador desde el panel: cancelar, reintentar o fijar estado. Devuelve `409` si la operación no tiene sentido para el estado actual (cancelar algo ya terminado, reintentar algo en curso). **No es el callback de HappyRobot.** |
+| Endpoint                        | Cuerpo                                                                                    | Qué hace                                                                                                                                                                                                                                         |
+| ------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `POST /api/actions`             | `{ channel, target, objective, reason, zoneId, resourceId?, contactId? }`                 | Crea una acción a mano. Nace en `pending`; si no se indica recurso, el sistema elige uno.                                                                                                                                                        |
+| `POST /api/actions/:id/approve` | —                                                                                         | **Aprobación humana.** Único camino por el que una acción llega a ejecutarse.                                                                                                                                                                    |
+| `POST /api/actions/:id/status`  | `{ operation?: "cancel" \| "retry", status?, externalActionId?, localActionId?, error? }` | Operaciones del operador desde el panel: cancelar, reintentar o fijar estado. Devuelve `409` si la operación no tiene sentido para el estado actual (cancelar algo ya terminado, reintentar algo en curso). **No es el callback de HappyRobot.** |
 
 Canales: `call`, `sms`, `email`, `ticket`, `webhook`, `whatsapp`, `slack`.
 Estados: `pending`, `approved`, `running`, `succeeded`, `failed`, `blocked`,
@@ -200,28 +200,28 @@ Estados: `pending`, `approved`, `running`, `succeeded`, `failed`, `blocked`,
 
 ### Webhook de HappyRobot
 
-| Endpoint | Qué hace |
-|---|---|
+| Endpoint                        | Qué hace                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `POST /api/webhooks/happyrobot` | Entrada de callbacks. **Exige** la cabecera `x-happyrobot-secret`; sin `HAPPYROBOT_WEBHOOK_SECRET` configurado responde `503` y no procesa nada. Acepta `{ status?, summary?, error?, localActionId?, externalActionId?, deliveryId?, newInformation?: [...] }`: mueve el estado de la acción **y** convierte lo que se haya recogido en la conversación en señales nuevas. Es idempotente durante 15 minutos: un reenvío devuelve la misma respuesta sin volver a tocar nada. |
 
 ### Escenario
 
-| Endpoint | Cuerpo | Qué hace |
-|---|---|---|
+| Endpoint                   | Cuerpo                            | Qué hace                                                                                                                                                  |
+| -------------------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `POST /api/scenario/start` | `{ scriptId?, speed?, restart? }` | Arranca o reanuda el guion. `speed` entre 0.25 y 10, aplicable en caliente. Guiones: `wildfire-andalucia`, `blackout-guadalquivir`, `flood-guadalquivir`. |
-| `POST /api/scenario/stop` | — | Pausa. No reinicia: conserva el tiempo consumido. |
-| `POST /api/scenario/tick` | — | Empuje manual del guion. Útil para el presentador o para un cron externo. |
-| `GET /api/scenario/tick` | — | Lectura sin efectos del estado del guion. |
+| `POST /api/scenario/stop`  | —                                 | Pausa. No reinicia: conserva el tiempo consumido.                                                                                                         |
+| `POST /api/scenario/tick`  | —                                 | Empuje manual del guion. Útil para el presentador o para un cron externo.                                                                                 |
+| `GET /api/scenario/tick`   | —                                 | Lectura sin efectos del estado del guion.                                                                                                                 |
 
 ### Demo
 
 Estas dos rutas manipulan el estado de la crisis, así que están protegidas: ver
 `DEMO_API_TOKEN` más abajo.
 
-| Endpoint | Cuerpo | Qué hace |
-|---|---|---|
+| Endpoint                | Cuerpo                                                                                 | Qué hace                                                 |
+| ----------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------- |
 | `POST /api/demo/inject` | `{ kind?: "incident" \| "resource-down" \| "route-blocked" \| "integration-failure" }` | Inyecta una avería concreta en el momento que se quiera. |
-| `POST /api/demo/reset` | — | Vuelve al estado inicial. |
+| `POST /api/demo/reset`  | —                                                                                      | Vuelve al estado inicial.                                |
 
 ---
 
@@ -232,18 +232,18 @@ y comentada; esto es el resumen.
 
 ### Lo mínimo
 
-| Variable | Por defecto | Para qué |
-|---|---|---|
-| `ACTION_EXECUTION_MODE` | `mock` | `mock`: nada sale del proceso. `happyrobot`: ejecución real. |
+| Variable                | Por defecto | Para qué                                                     |
+| ----------------------- | ----------- | ------------------------------------------------------------ |
+| `ACTION_EXECUTION_MODE` | `mock`      | `mock`: nada sale del proceso. `happyrobot`: ejecución real. |
 
 ### Credenciales de HappyRobot (solo para ejecución real)
 
-| Variable | Para qué |
-|---|---|
-| `HAPPYROBOT_API_KEY` | Clave de la API. Sin ella la ejecución real falla con un error explícito. |
-| `HAPPYROBOT_BASE_URL` | URL base. Por defecto `https://api.happyrobot.ai`. |
-| `HAPPYROBOT_AGENT_ID` | Agente que ejecuta la acción. |
-| `HAPPYROBOT_WORKFLOW_ID` | Workflow a disparar, si el contrato real lo pide. |
+| Variable                 | Para qué                                                                  |
+| ------------------------ | ------------------------------------------------------------------------- |
+| `HAPPYROBOT_API_KEY`     | Clave de la API. Sin ella la ejecución real falla con un error explícito. |
+| `HAPPYROBOT_BASE_URL`    | URL base. Por defecto `https://api.happyrobot.ai`.                        |
+| `HAPPYROBOT_AGENT_ID`    | Agente que ejecuta la acción.                                             |
+| `HAPPYROBOT_WORKFLOW_ID` | Workflow a disparar, si el contrato real lo pide.                         |
 
 ### Contrato con HappyRobot (pendiente de confirmar)
 
@@ -258,19 +258,19 @@ cambiar es configurable, para poder corregirlo el día de la demo tocando
 
 ### Robustez de la llamada saliente
 
-| Variable | Por defecto | Para qué |
-|---|---|---|
-| `HAPPYROBOT_TIMEOUT_MS` | `8000` | Tope por intento. Una llamada colgada no puede bloquear el centro de mando. |
-| `HAPPYROBOT_MAX_ATTEMPTS` | `3` | Intentos por despacho. Solo se reintentan 5xx, red y timeout; un 4xx nunca. |
-| `HAPPYROBOT_RETRY_BASE_MS` | `400` | Base del backoff exponencial. |
+| Variable                   | Por defecto | Para qué                                                                    |
+| -------------------------- | ----------- | --------------------------------------------------------------------------- |
+| `HAPPYROBOT_TIMEOUT_MS`    | `8000`      | Tope por intento. Una llamada colgada no puede bloquear el centro de mando. |
+| `HAPPYROBOT_MAX_ATTEMPTS`  | `3`         | Intentos por despacho. Solo se reintentan 5xx, red y timeout; un 4xx nunca. |
+| `HAPPYROBOT_RETRY_BASE_MS` | `400`       | Base del backoff exponencial.                                               |
 
 ### Entrada y acceso
 
-| Variable | Para qué |
-|---|---|
-| `HAPPYROBOT_WEBHOOK_SECRET` | Secreto compartido del webhook (`x-happyrobot-secret`). Sin él, `/api/webhooks/happyrobot` se cierra con `503`. |
-| `DEMO_API_TOKEN` | Protege `/api/demo/*`. Si está definido hay que enviarlo (`x-demo-token`, `Authorization: Bearer …` o `?token=`). Si está vacío: abierto en local, y **desactivado en producción**. |
-| `CRISIS_PERSISTENCE` | `on` activa el guardado en JSON bajo `.data/`. Apagado por defecto. |
+| Variable                    | Para qué                                                                                                                                                                            |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `HAPPYROBOT_WEBHOOK_SECRET` | Secreto compartido del webhook (`x-happyrobot-secret`). Sin él, `/api/webhooks/happyrobot` se cierra con `503`.                                                                     |
+| `DEMO_API_TOKEN`            | Protege `/api/demo/*`. Si está definido hay que enviarlo (`x-demo-token`, `Authorization: Bearer …` o `?token=`). Si está vacío: abierto en local, y **desactivado en producción**. |
+| `CRISIS_PERSISTENCE`        | `on` activa el guardado en JSON bajo `.data/`. Apagado por defecto.                                                                                                                 |
 
 ---
 
@@ -330,13 +330,13 @@ Los tests comparten proceso, así que llaman a `resetSituation()` en `beforeEach
 
 ## Documentación
 
-| Documento | Qué contiene |
-|---|---|
-| [`CHALLENGE.md`](CHALLENGE.md) | El brief del reto y los criterios de puntuación. |
-| [`docs/architecture.md`](docs/architecture.md) | Las decisiones de diseño y lo que cuesta cada una. |
-| [`docs/security.md`](docs/security.md) | Credenciales, secreto del webhook, destinatarios de demo y lo que este prototipo **no** hace. |
-| [`docs/happyDocumentation.md`](docs/happyDocumentation.md) | Notas sobre la plataforma HappyRobot y qué partes del contrato están sin verificar. |
-| [`AGENTS.md`](AGENTS.md) | Convenciones para todo el que trabaje aquí, persona o agente. |
+| Documento                                                  | Qué contiene                                                                                  |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [`CHALLENGE.md`](CHALLENGE.md)                             | El brief del reto y los criterios de puntuación.                                              |
+| [`docs/architecture.md`](docs/architecture.md)             | Las decisiones de diseño y lo que cuesta cada una.                                            |
+| [`docs/security.md`](docs/security.md)                     | Credenciales, secreto del webhook, destinatarios de demo y lo que este prototipo **no** hace. |
+| [`docs/happyDocumentation.md`](docs/happyDocumentation.md) | Notas sobre la plataforma HappyRobot y qué partes del contrato están sin verificar.           |
+| [`AGENTS.md`](AGENTS.md)                                   | Convenciones para todo el que trabaje aquí, persona o agente.                                 |
 
 ---
 

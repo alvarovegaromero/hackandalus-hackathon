@@ -84,6 +84,8 @@ export default function Home() {
   const [formOpen, setFormOpen] = useState(false);
   const [prefillZoneId, setPrefillZoneId] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const [seenTimes, setSeenTimes] = useState<Map<string, number>>(() => new Map());
+  const [planSeen, setPlanSeen] = useState<{ version: number; at: number }>(() => ({ version: -1, at: 0 }));
 
   // Control del refresco: la huella evita repintar cuando nada ha cambiado, y
   // los mapas de "primera vez que lo vi" permiten resaltar lo recién llegado.
@@ -101,6 +103,8 @@ export default function Home() {
       planSeenRef.current = { version: next.plan.version, at: stamp };
     }
     bootstrappedRef.current = true;
+    setSeenTimes(new Map(seenRef.current));
+    setPlanSeen(planSeenRef.current);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -156,13 +160,13 @@ export default function Home() {
 
   const freshIds = useMemo(() => {
     const ids = new Set<string>();
-    for (const [id, at] of seenRef.current) {
+    for (const [id, at] of seenTimes) {
       if (at > 0 && nowMs - at < FRESH_MS) ids.add(id);
     }
     return ids;
-  }, [nowMs]);
+  }, [seenTimes, nowMs]);
 
-  const planIsFresh = planSeenRef.current.at > 0 && nowMs - planSeenRef.current.at < FRESH_MS;
+  const planIsFresh = planSeen.at > 0 && nowMs - planSeen.at < FRESH_MS;
 
   const selectedZone = situation?.zones.find((zone) => zone.id === selectedZoneId) ?? null;
 
@@ -355,7 +359,8 @@ export default function Home() {
         {situation.plan.valid === false ? (
           <div className="banner error">
             El plan v{situation.plan.version} ya no es válido
-            {situation.plan.invalidatedReason ? `: ${situation.plan.invalidatedReason}` : "."} Hay que rehacerlo.
+            {situation.plan.invalidatedReason ? `: ${situation.plan.invalidatedReason}` : "."} Hay que
+            rehacerlo.
           </div>
         ) : null}
         {situation.integration.lastExternalError ? (
@@ -457,7 +462,8 @@ export default function Home() {
                     <strong>{index + 1}</strong>
                     <div>
                       <h3>
-                        {zone.name} <span className={`pill zone-${zone.status}`}>{zoneStatusLabels[zone.status]}</span>
+                        {zone.name}{" "}
+                        <span className={`pill zone-${zone.status}`}>{zoneStatusLabels[zone.status]}</span>
                       </h3>
                       <p>{priority.reason}</p>
                     </div>

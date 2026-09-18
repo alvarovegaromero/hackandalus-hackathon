@@ -3,7 +3,7 @@
 // Intervención humana: un operador crea una acción a mano cuando el sistema
 // no ha visto algo o se ha equivocado.
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Send, X } from "lucide-react";
 import type { ActionChannel, Contact, CreateActionPayload, CrisisZone, Resource } from "@/lib/types";
 import { channelLabels, roleLabels } from "./shared";
@@ -37,10 +37,6 @@ export default function NewActionForm({
   const [reason, setReason] = useState("");
   const [resourceId, setResourceId] = useState("");
 
-  useEffect(() => {
-    if (prefillZoneId) setZoneId(prefillZoneId);
-  }, [prefillZoneId]);
-
   const selectedContact = contacts.find((contact) => contact.id === contactId) ?? null;
   const effectiveTarget = target.trim() || selectedContact?.name || "";
   const canSubmit = Boolean(zoneId && objective.trim() && effectiveTarget) && !busy;
@@ -67,7 +63,12 @@ export default function NewActionForm({
     >
       <div className="new-action-head">
         <h3>Nueva acción manual</h3>
-        <button type="button" className="icon-button" onClick={onClose} aria-label="Cerrar el formulario de acción">
+        <button
+          type="button"
+          className="icon-button"
+          onClick={onClose}
+          aria-label="Cerrar el formulario de acción"
+        >
           <X size={16} aria-hidden="true" />
         </button>
       </div>

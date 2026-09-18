@@ -43,7 +43,11 @@ export default function ZoneDetail({ zone, situation, nowMs, onClose, onCreateAc
   return (
     <section className="panel zone-detail" aria-label={`Detalle de ${zone.name}`}>
       <div className="panel-title">
-        <button className="icon-button" onClick={onClose} aria-label="Cerrar el detalle y volver a las prioridades">
+        <button
+          className="icon-button"
+          onClick={onClose}
+          aria-label="Cerrar el detalle y volver a las prioridades"
+        >
           <ArrowLeft size={16} aria-hidden="true" />
         </button>
         <h2>{zone.name}</h2>

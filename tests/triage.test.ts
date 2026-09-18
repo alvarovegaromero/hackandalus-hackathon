@@ -227,7 +227,9 @@ describe("fusión de confianza", () => {
 
     expect(mismaFuente).toBeLessThan(independientes);
     // Sigue aportando algo, pero muy descontado por correlación.
-    expect(mismaFuente).toBeGreaterThan(fuseConfidence([{ source: "public", probability: 0.8, reliability: 0.6 }]));
+    expect(mismaFuente).toBeGreaterThan(
+      fuseConfidence([{ source: "public", probability: 0.8, reliability: 0.6 }])
+    );
     // Con peso cero, repetir la misma fuente no aporta absolutamente nada.
     const sinCorrelacion = fuseConfidence(
       [
@@ -441,7 +443,10 @@ describe("umbrales y determinismo", () => {
     const contextoFijo = contexto({ events: [evento({ zoneId: "zone-north", category: "incendio" })] });
 
     const primera = assessSignal(aviso, contextoFijo);
-    const segunda = assessSignal(aviso, contexto({ events: [evento({ zoneId: "zone-north", category: "incendio" })] }));
+    const segunda = assessSignal(
+      aviso,
+      contexto({ events: [evento({ zoneId: "zone-north", category: "incendio" })] })
+    );
 
     expect(segunda).toEqual(primera);
     expect(primera.assessedAt).toBe(AHORA);
@@ -550,7 +555,13 @@ describe("petición de verificación", () => {
     };
 
     const peticion = buildVerificationRequest(
-      evento({ id: "evt-dudoso", zoneId: "zone-south", category: "refugio", severity: "medium", title: "Aviso de refugio saturado" }),
+      evento({
+        id: "evt-dudoso",
+        zoneId: "zone-south",
+        category: "refugio",
+        severity: "medium",
+        title: "Aviso de refugio saturado"
+      }),
       assessment,
       { zones: seedZones, contacts: seedContacts }
     );

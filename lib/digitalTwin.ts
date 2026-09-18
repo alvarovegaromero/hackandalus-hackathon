@@ -7,7 +7,13 @@
 
 import { applyEventToWorld } from "./assumptions";
 import { seedWorld } from "./seed";
-import type { CrisisEvent, DigitalTwinFact, DigitalTwinFactStatus, DigitalTwinState, WorldState } from "./types";
+import type {
+  CrisisEvent,
+  DigitalTwinFact,
+  DigitalTwinFactStatus,
+  DigitalTwinState,
+  WorldState
+} from "./types";
 
 const STALE_AFTER_MINUTES = 25;
 
@@ -22,11 +28,7 @@ function clone<T>(value: T): T {
 }
 
 function normalizar(value: string) {
-  return (value ?? "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
+  return (value ?? "").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
 function signalConfidence(event: CrisisEvent, nowMs: number) {
@@ -73,7 +75,12 @@ function roadsMatch(a: string[], b: string[]) {
   return [...left].every((road) => right.has(road));
 }
 
-function statusFrom(confidence: number, matchesTruth: boolean, updatedAt: string | null, nowMs: number): DigitalTwinFactStatus {
+function statusFrom(
+  confidence: number,
+  matchesTruth: boolean,
+  updatedAt: string | null,
+  nowMs: number
+): DigitalTwinFactStatus {
   if (!updatedAt || confidence <= 0) return "unknown";
   const stale = nowMs - new Date(updatedAt).getTime() > STALE_AFTER_MINUTES * 60_000;
   if (!matchesTruth) return "mismatch";
@@ -98,7 +105,10 @@ function fact(input: FactInput, nowMs: number): DigitalTwinFact {
   const confidence =
     input.evidence.length === 0
       ? 0
-      : Math.min(0.99, input.evidence.reduce((max, event) => Math.max(max, signalConfidence(event, nowMs)), 0));
+      : Math.min(
+          0.99,
+          input.evidence.reduce((max, event) => Math.max(max, signalConfidence(event, nowMs)), 0)
+        );
 
   return {
     id: input.id,
@@ -139,10 +149,15 @@ export function buildDigitalTwin(
   const perceivedWorld = perceivedFromSignals(events);
 
   const windEvidence = evidenceFor(events, (event) => event.category === "wind-shift");
-  const roadEvidence = evidenceFor(events, (event) => event.category === "route-blocked" || event.category === "route-open");
+  const roadEvidence = evidenceFor(
+    events,
+    (event) => event.category === "route-blocked" || event.category === "route-open"
+  );
   const smsEvidence = evidenceFor(
     events,
-    (event) => event.category === "integration-failure" && normalizar(`${event.title} ${event.description}`).includes("sms")
+    (event) =>
+      event.category === "integration-failure" &&
+      normalizar(`${event.title} ${event.description}`).includes("sms")
   );
   const voiceEvidence = evidenceFor(
     events,
@@ -220,7 +235,10 @@ export function buildDigitalTwin(
               perceivedWorld.hospitalBeds[hospitalId] === undefined
                 ? "sin dato"
                 : `${perceivedWorld.hospitalBeds[hospitalId]} camas`,
-            truth: truth.hospitalBeds[hospitalId] === undefined ? "sin dato" : `${truth.hospitalBeds[hospitalId]} camas`,
+            truth:
+              truth.hospitalBeds[hospitalId] === undefined
+                ? "sin dato"
+                : `${truth.hospitalBeds[hospitalId]} camas`,
             matchesTruth: perceivedWorld.hospitalBeds[hospitalId] === truth.hospitalBeds[hospitalId],
             evidence: hospitalEvidence.filter((event) =>
               normalizar(`${event.title} ${event.description}`).includes(

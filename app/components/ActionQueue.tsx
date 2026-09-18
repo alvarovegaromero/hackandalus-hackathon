@@ -124,6 +124,7 @@ export default function ActionQueue({
 
       {formOpen ? (
         <NewActionForm
+          key={prefillZoneId ?? "manual-action"}
           zones={zones}
           contacts={contacts}
           resources={resources}
@@ -142,7 +143,11 @@ export default function ActionQueue({
           const assignedResource = resources.find((resource) => resource.id === action.resourceId) ?? null;
           const fresh = freshIds.has(action.id);
           return (
-            <article key={action.id} className={`action-row ${action.status} ${fresh ? "just-changed" : ""}`} role="listitem">
+            <article
+              key={action.id}
+              className={`action-row ${action.status} ${fresh ? "just-changed" : ""}`}
+              role="listitem"
+            >
               <div className="action-main">
                 <span className={`action-icon ${action.status}`}>{channelIcon(action)}</span>
                 <div>
@@ -154,15 +159,15 @@ export default function ActionQueue({
                   <p className="action-trace">
                     {channelLabels[action.channel]} a {action.target}
                     {contact ? ` · contacto ${contact}` : ""} · {zone?.name ?? action.zoneId} ·{" "}
-                    {assignedResource?.name ?? "sin recurso"} ·
-                    intento {action.attempt} · {agoLabel(action.updatedAt, nowMs)}
+                    {assignedResource?.name ?? "sin recurso"} · intento {action.attempt} ·{" "}
+                    {agoLabel(action.updatedAt, nowMs)}
                   </p>
                   {action.result ? <p className="inline-result">{action.result}</p> : null}
                   {action.error ? <p className="inline-error">{action.error}</p> : null}
                   {assignedResource?.status === "unavailable" && isOpenAction(action) ? (
                     <p className="inline-error">
-                      {assignedResource.name} está fuera de servicio: aprobar ahora dejaría la acción bloqueada.
-                      Reasigna el recurso antes.
+                      {assignedResource.name} está fuera de servicio: aprobar ahora dejaría la acción
+                      bloqueada. Reasigna el recurso antes.
                     </p>
                   ) : null}
                 </div>
@@ -180,7 +185,9 @@ export default function ActionQueue({
                 <button
                   aria-label={`Aprobar y ejecutar: ${action.objective}`}
                   onClick={() => onApprove(action.id)}
-                  disabled={busy !== null || !["pending", "failed", "blocked", "stalled"].includes(action.status)}
+                  disabled={
+                    busy !== null || !["pending", "failed", "blocked", "stalled"].includes(action.status)
+                  }
                 >
                   <Check size={15} aria-hidden="true" /> Aprobar
                 </button>

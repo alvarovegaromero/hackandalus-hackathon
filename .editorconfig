@@ -1,22 +1,12 @@
-# Estilo compartido por todos los editores. Coincide con .prettierrc.
 root = true
 
 [*]
 charset = utf-8
 end_of_line = lf
+insert_final_newline = true
 indent_style = space
 indent_size = 2
-insert_final_newline = true
 trim_trailing_whitespace = true
-max_line_length = 110
 
 [*.md]
-# En Markdown dos espacios al final significan salto de linea.
 trim_trailing_whitespace = false
-
-[*.{yml,yaml}]
-indent_size = 2
-
-[package.json]
-# npm reescribe este fichero con su propio formato; no pelees con el.
-indent_size = 2

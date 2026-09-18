@@ -15,14 +15,14 @@ tener que abrir el código. La versión corta está en la sección 3, el diagram
 El enunciado del reto obliga a responder seis preguntas en pantalla, y cada una
 impone algo al modelo de datos:
 
-| Pregunta del reto | Lo que exige del modelo |
-| --- | --- |
-| Qué información importa | Señales con probabilidad, deduplicación, fusión en incidentes, y motivo de descarte guardado |
-| Qué va primero | Ranking versionado con el desglose de la puntuación, no solo el número |
-| A quién se avisa y cuándo | Contactos por rol, canales con fiabilidad medida, cadenas de escalado con espera |
-| Dónde van los recursos | Asignaciones con motivo, y la lista de quién se queda esperando y por qué |
-| Qué se hace ahora | Acciones con nivel de autonomía, intento, idempotencia y resultado real |
-| Cuándo tirar el plan | Supuestos declarados por plan y el evento exacto que los rompió |
+| Pregunta del reto         | Lo que exige del modelo                                                                      |
+| ------------------------- | -------------------------------------------------------------------------------------------- |
+| Qué información importa   | Señales con probabilidad, deduplicación, fusión en incidentes, y motivo de descarte guardado |
+| Qué va primero            | Ranking versionado con el desglose de la puntuación, no solo el número                       |
+| A quién se avisa y cuándo | Contactos por rol, canales con fiabilidad medida, cadenas de escalado con espera             |
+| Dónde van los recursos    | Asignaciones con motivo, y la lista de quién se queda esperando y por qué                    |
+| Qué se hace ahora         | Acciones con nivel de autonomía, intento, idempotencia y resultado real                      |
+| Cuándo tirar el plan      | Supuestos declarados por plan y el evento exacto que los rompió                              |
 
 Y el documento fuente añade cuatro requisitos transversales:
 
@@ -51,7 +51,7 @@ auditar quién decidió qué, y alimentar el aprendizaje sin instrumentar nada m
 
 ### 2.2 Una señal descartada no se borra: se excluye
 
-Aprendizaje de la rama de dominio. Allí, cada señal *mutaba* el riesgo de su
+Aprendizaje de la rama de dominio. Allí, cada señal _mutaba_ el riesgo de su
 zona al llegar, y al descartarla había que revertir esa mutación con contabilidad
 explícita. Funcionaba, pero era frágil y obligó a un contrato delicado entre
 dos módulos. Aquí la presión sobre un incidente **se deriva** de sus señales
@@ -163,19 +163,19 @@ erDiagram
 
 **Mapa módulo → tablas.** Cada módulo escribe solo sus tablas; el resto las lee.
 
-| Módulo | Escribe | Lee |
-| --- | --- | --- |
-| `scenario` | `runs` (reloj), `world_state_versions`, `scenario_beats`, `areas`, `vulnerable_sites` | — |
-| `ingest` | `signals` (alta), `webhook_deliveries` | `runs`, `areas` |
-| `triage` | `signals` (columnas de triaje), `source_reliability` (lectura) | `contacts` |
-| `incidents` | `incidents`, `signals.incident_id` | `signals`, `vulnerable_sites` |
-| `resources` | `resources`, `assignments`, `unmet_demands` | `incidents`, `plans` |
-| `planning` | `plans`, `plan_priorities`, `assumptions` | todo lo anterior, `world_state_versions` |
-| `execution` | `actions`, `action_results`, `escalation_chains`, `escalation_steps` | `contacts`, `contact_channels`, `autonomy_rules` |
-| `control` | `approvals`, `directives`, `autonomy_rules`, `runs.autonomy_paused` | `actions` |
-| `audit` | `domain_events`, `decisions` | — |
-| `learning` | `lessons`, `learned_weights`, `source_reliability` | `domain_events`, `action_results`, `signals` |
-| `agents` | `ai_invocations` | lo que le pase el coordinador |
+| Módulo      | Escribe                                                                               | Lee                                              |
+| ----------- | ------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `scenario`  | `runs` (reloj), `world_state_versions`, `scenario_beats`, `areas`, `vulnerable_sites` | —                                                |
+| `ingest`    | `signals` (alta), `webhook_deliveries`                                                | `runs`, `areas`                                  |
+| `triage`    | `signals` (columnas de triaje), `source_reliability` (lectura)                        | `contacts`                                       |
+| `incidents` | `incidents`, `signals.incident_id`                                                    | `signals`, `vulnerable_sites`                    |
+| `resources` | `resources`, `assignments`, `unmet_demands`                                           | `incidents`, `plans`                             |
+| `planning`  | `plans`, `plan_priorities`, `assumptions`                                             | todo lo anterior, `world_state_versions`         |
+| `execution` | `actions`, `action_results`, `escalation_chains`, `escalation_steps`                  | `contacts`, `contact_channels`, `autonomy_rules` |
+| `control`   | `approvals`, `directives`, `autonomy_rules`, `runs.autonomy_paused`                   | `actions`                                        |
+| `audit`     | `domain_events`, `decisions`                                                          | —                                                |
+| `learning`  | `lessons`, `learned_weights`, `source_reliability`                                    | `domain_events`, `action_results`, `signals`     |
+| `agents`    | `ai_invocations`                                                                      | lo que le pase el coordinador                    |
 
 ---
 
@@ -200,8 +200,8 @@ erDiagram
 - **Sin borrados en tablas de dominio.** Todo transita de estado
   (`dismissed`, `cancelled`, `superseded`). Las FK van con `on delete restrict`.
 - **Referencias cruzadas circulares** (`signals ↔ actions`, `plans ↔
-  assumptions`) se añaden al final de la migración con `alter table … add
-  constraint`, para que el orden de creación no importe.
+assumptions`) se añaden al final de la migración con `alter table … add
+constraint`, para que el orden de creación no importe.
 - **Numéricos de probabilidad** como `numeric` acotado `between 0 and 1`. Los
   costes en micro-unidades enteras (`cost_micros bigint`), nunca `float`.
 
@@ -250,14 +250,14 @@ create trigger runs_updated before update on public.runs
   for each row execute function public.set_updated_at();
 ```
 
-| Campo | Para qué |
-| --- | --- |
-| `kind` | `demo` es una partida ante el jurado; `drill` un ensayo del que también aprendemos; `live` queda reservado. Permite filtrar qué ejecuciones alimentan lecciones. |
-| `scenario_id` | Guion usado (`wildfire-sierra-bermeja`). `null` si no hay guion. |
-| `clock_speed` | Multiplicador del reloj del escenario. El documento habla de reloj comprimido, 1 minuto real ≈ 10 de crisis. |
-| `alert_level` | Nivel de alerta 1–3. Fija cuánto coste por hora se permite gastar en recursos. |
-| `autonomy_paused` | Interruptor general. Cuando está a `true`, toda acción pasa a exigir aprobación. Es el mando más fuerte del operador. |
-| `summary` | Métricas de cierre: señales triadas, llamadas, confirmaciones, tiempo medio de replanificación, coste de triaje. Se rellena al cerrar. |
+| Campo             | Para qué                                                                                                                                                         |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `kind`            | `demo` es una partida ante el jurado; `drill` un ensayo del que también aprendemos; `live` queda reservado. Permite filtrar qué ejecuciones alimentan lecciones. |
+| `scenario_id`     | Guion usado (`wildfire-sierra-bermeja`). `null` si no hay guion.                                                                                                 |
+| `clock_speed`     | Multiplicador del reloj del escenario. El documento habla de reloj comprimido, 1 minuto real ≈ 10 de crisis.                                                     |
+| `alert_level`     | Nivel de alerta 1–3. Fija cuánto coste por hora se permite gastar en recursos.                                                                                   |
+| `autonomy_paused` | Interruptor general. Cuando está a `true`, toda acción pasa a exigir aprobación. Es el mando más fuerte del operador.                                            |
+| `summary`         | Métricas de cierre: señales triadas, llamadas, confirmaciones, tiempo medio de replanificación, coste de triaje. Se rellena al cerrar.                           |
 
 ### 5.2 `areas` — zonas geográficas
 
@@ -287,12 +287,12 @@ create trigger areas_updated before update on public.areas
   for each row execute function public.set_updated_at();
 ```
 
-| Campo | Para qué |
-| --- | --- |
-| `slug` | Identificador estable (`estepona`, `los-pinares`) que usan el guion, las semillas y los tests. Las UUID cambian por ejecución; el slug no. |
-| `base_risk` | Riesgo estructural de la zona, independiente de las señales vivas. Es la única parte del riesgo que se guarda: el resto se deriva. |
-| `centroid_x`, `centroid_y` | Coordenadas del mapa del panel, en el sistema que use el SVG. Suficiente para la distancia entre zonas que necesita la asignación de recursos. |
-| `geometry` | GeoJSON opcional del polígono. Cuando haya tiempo, se sustituye por `geography(Polygon, 4326)` de PostGIS, que Supabase trae instalado; la columna `jsonb` permite empezar sin él. |
+| Campo                      | Para qué                                                                                                                                                                           |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `slug`                     | Identificador estable (`estepona`, `los-pinares`) que usan el guion, las semillas y los tests. Las UUID cambian por ejecución; el slug no.                                         |
+| `base_risk`                | Riesgo estructural de la zona, independiente de las señales vivas. Es la única parte del riesgo que se guarda: el resto se deriva.                                                 |
+| `centroid_x`, `centroid_y` | Coordenadas del mapa del panel, en el sistema que use el SVG. Suficiente para la distancia entre zonas que necesita la asignación de recursos.                                     |
+| `geometry`                 | GeoJSON opcional del polígono. Cuando haya tiempo, se sustituye por `geography(Polygon, 4326)` de PostGIS, que Supabase trae instalado; la columna `jsonb` permite empezar sin él. |
 
 ### 5.3 `vulnerable_sites` — puntos vulnerables
 
@@ -352,21 +352,23 @@ create index world_state_run_idx on public.world_state_versions (run_id, version
 Forma de `state`, validada por `worldStateSchema`:
 
 ```ts
-export const worldStateSchema = z.object({
-  wind: z.object({
-    direction: z.enum(["N", "NE", "E", "SE", "S", "SO", "O", "NO"]),
-    speedKmh: z.number().min(0)
-  }),
-  roads: z.record(z.string(), z.enum(["open", "restricted", "closed"])),
-  channels: z.object({
-    sms: z.boolean(),
-    voice: z.boolean(),
-    whatsapp: z.boolean(),
-    email: z.boolean()
-  }),
-  hospitals: z.record(z.string(), z.object({ beds: z.number().int().min(0) })),
-  frontline: z.object({ x: z.number(), y: z.number(), headingDeg: z.number() }).optional()
-}).strict();
+export const worldStateSchema = z
+  .object({
+    wind: z.object({
+      direction: z.enum(["N", "NE", "E", "SE", "S", "SO", "O", "NO"]),
+      speedKmh: z.number().min(0)
+    }),
+    roads: z.record(z.string(), z.enum(["open", "restricted", "closed"])),
+    channels: z.object({
+      sms: z.boolean(),
+      voice: z.boolean(),
+      whatsapp: z.boolean(),
+      email: z.boolean()
+    }),
+    hospitals: z.record(z.string(), z.object({ beds: z.number().int().min(0) })),
+    frontline: z.object({ x: z.number(), y: z.number(), headingDeg: z.number() }).optional()
+  })
+  .strict();
 ```
 
 ### 5.5 `scenario_beats` — el guion
@@ -469,18 +471,18 @@ create trigger signals_updated before update on public.signals
   for each row execute function public.set_updated_at();
 ```
 
-| Campo | Para qué |
-| --- | --- |
-| `source` / `channel` | Fuente lógica y canal físico. `public` es un vecino; `happyrobot` es lo que devuelve una llamada del sistema. La fiabilidad aprendida cuelga de `source`. |
-| `external_ref` | Identificador en el sistema de origen: id de llamada en HappyRobot, id de mensaje. Permite enlazar con la transcripción. |
-| `category` | Catálogo abierto (`incendio`, `evacuacion`, `route-blocked`, `refugio`). Es la clave que usan la asignación de recursos y la elección de contacto; por eso es texto sin acentos y estable. |
-| `occurred_at` / `received_at` | El decaimiento temporal usa `occurred_at`; la ordenación del panel y la deduplicación usan `received_at`. |
-| `dedupe_key`, `occurrences`, `merged_into_id` | Una señal repetida dentro de la ventana no crea fila nueva: incrementa `occurrences` de la original. Si sí se creó y luego se detecta, apunta a la original con `merged_into_id`. |
-| `p_*`, `fused_confidence`, `triage_decision` | Las tres salidas del triaje. La banda intermedia genera una acción de verificación y `verification_status` pasa a `verifying`. |
-| `triage_assessor`, `triage_latency_ms`, `triage_cost_micros` | Quién evaluó y cuánto costó. Es el dato de "40 señales triadas en X segundos por Y euros" que el documento quiere en pantalla. |
-| `triage_details` | Lo que no merece columna: desglose de la fusión, alternativas descartadas, versión del evaluador. |
-| `verification_*` | Resultado de la verificación por llamada o del operador. `refuted` es lo que antes llamábamos "descartada por una persona". |
-| `raw` | El payload original íntegro. No se toca nunca. Es lo que permite re-triar con un evaluador mejor sin pedir el dato otra vez. |
+| Campo                                                        | Para qué                                                                                                                                                                                   |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `source` / `channel`                                         | Fuente lógica y canal físico. `public` es un vecino; `happyrobot` es lo que devuelve una llamada del sistema. La fiabilidad aprendida cuelga de `source`.                                  |
+| `external_ref`                                               | Identificador en el sistema de origen: id de llamada en HappyRobot, id de mensaje. Permite enlazar con la transcripción.                                                                   |
+| `category`                                                   | Catálogo abierto (`incendio`, `evacuacion`, `route-blocked`, `refugio`). Es la clave que usan la asignación de recursos y la elección de contacto; por eso es texto sin acentos y estable. |
+| `occurred_at` / `received_at`                                | El decaimiento temporal usa `occurred_at`; la ordenación del panel y la deduplicación usan `received_at`.                                                                                  |
+| `dedupe_key`, `occurrences`, `merged_into_id`                | Una señal repetida dentro de la ventana no crea fila nueva: incrementa `occurrences` de la original. Si sí se creó y luego se detecta, apunta a la original con `merged_into_id`.          |
+| `p_*`, `fused_confidence`, `triage_decision`                 | Las tres salidas del triaje. La banda intermedia genera una acción de verificación y `verification_status` pasa a `verifying`.                                                             |
+| `triage_assessor`, `triage_latency_ms`, `triage_cost_micros` | Quién evaluó y cuánto costó. Es el dato de "40 señales triadas en X segundos por Y euros" que el documento quiere en pantalla.                                                             |
+| `triage_details`                                             | Lo que no merece columna: desglose de la fusión, alternativas descartadas, versión del evaluador.                                                                                          |
+| `verification_*`                                             | Resultado de la verificación por llamada o del operador. `refuted` es lo que antes llamábamos "descartada por una persona".                                                                |
+| `raw`                                                        | El payload original íntegro. No se toca nunca. Es lo que permite re-triar con un evaluador mejor sin pedir el dato otra vez.                                                               |
 
 Índices parciales (`signals_untriaged_idx`, `signals_live_idx`) porque las dos
 consultas calientes son "qué queda por triar" y "qué señales vivas tiene esta
@@ -572,12 +574,12 @@ create table public.contact_channels (
 create index contact_channels_contact_idx on public.contact_channels (contact_id, priority);
 ```
 
-| Campo | Para qué |
-| --- | --- |
-| `role` | El mensaje y el canal dependen del rol: a un vecino se le manda SMS, a un coordinador se le llama, a una autoridad se le escribe. Incluye `alcalde` porque es quien hace el jurado en la demo. |
-| `demo_safe` + `consent_note` | Un contacto solo puede recibir una acción real si está aprobado **y** consta quién lo autorizó y para qué. El `check` obliga a las dos cosas a la vez. |
-| `address` | El único sitio del modelo con datos personales. Nunca en semillas versionadas. Cuando Supabase Vault esté configurado, se cifra a nivel de columna. |
-| `attempts`, `successes`, `avg_seconds_to_confirm` | La fiabilidad medida por canal. Con mínimo de muestras antes de usarse, como ya hace el módulo de aprendizaje. |
+| Campo                                             | Para qué                                                                                                                                                                                       |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `role`                                            | El mensaje y el canal dependen del rol: a un vecino se le manda SMS, a un coordinador se le llama, a una autoridad se le escribe. Incluye `alcalde` porque es quien hace el jurado en la demo. |
+| `demo_safe` + `consent_note`                      | Un contacto solo puede recibir una acción real si está aprobado **y** consta quién lo autorizó y para qué. El `check` obliga a las dos cosas a la vez.                                         |
+| `address`                                         | El único sitio del modelo con datos personales. Nunca en semillas versionadas. Cuando Supabase Vault esté configurado, se cifra a nivel de columna.                                            |
+| `attempts`, `successes`, `avg_seconds_to_confirm` | La fiabilidad medida por canal. Con mínimo de muestras antes de usarse, como ya hace el módulo de aprendizaje.                                                                                 |
 
 ### 5.9 `resources` y `assignments` — dónde van los medios
 
@@ -628,13 +630,13 @@ create unique index assignments_one_active_per_resource
 create index assignments_incident_idx on public.assignments (incident_id) where status = 'active';
 ```
 
-| Campo | Para qué |
-| --- | --- |
-| `capabilities` | Lo que el recurso sabe cubrir, como `text[]` con índice GIN. Es lo que evita asignar una brigada forestal a una emergencia sanitaria; la rama de dominio lo comprobó con un caso real. |
-| `min_reserve` | Reserva mínima del tipo. No se baja de ella salvo prioridad 1, y si se hace, se marca en rojo. |
-| `cost_per_hour` × `runs.alert_level` | El nivel de alerta fija cuánto se permite gastar. |
-| `assignments.reason` y `score` | Por qué este recurso y no el más cercano. Es texto de pantalla. |
-| Índice único parcial | Un recurso tiene como mucho una asignación activa. La base de datos lo garantiza, no el código. |
+| Campo                                | Para qué                                                                                                                                                                               |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `capabilities`                       | Lo que el recurso sabe cubrir, como `text[]` con índice GIN. Es lo que evita asignar una brigada forestal a una emergencia sanitaria; la rama de dominio lo comprobó con un caso real. |
+| `min_reserve`                        | Reserva mínima del tipo. No se baja de ella salvo prioridad 1, y si se hace, se marca en rojo.                                                                                         |
+| `cost_per_hour` × `runs.alert_level` | El nivel de alerta fija cuánto se permite gastar.                                                                                                                                      |
+| `assignments.reason` y `score`       | Por qué este recurso y no el más cercano. Es texto de pantalla.                                                                                                                        |
+| Índice único parcial                 | Un recurso tiene como mucho una asignación activa. La base de datos lo garantiza, no el código.                                                                                        |
 
 ### 5.10 `plans`, `plan_priorities`, `assumptions`, `unmet_demands` — el plan
 
@@ -712,15 +714,15 @@ create table public.unmet_demands (
 create index unmet_demands_plan_idx on public.unmet_demands (plan_id);
 ```
 
-| Campo | Para qué |
-| --- | --- |
-| `plans.changes` | El diff con la versión anterior, ya redactado para pantalla: `[{ kind, label, detail }]`. La barra de cambios del panel lee esto. |
-| `plans.trigger` | Por qué se replanificó, en una frase. |
-| `plans.mode` | `deterministic` es el núcleo; `ai` cuando el coordinador propuso y el código validó; `simulation` para ejecuciones sin modelo. Nunca se mezcla en la misma fila. |
-| `plan_priorities.factors` + `formula_version` | El desglose real de la puntuación. El modelo es agnóstico a la fórmula: `[{ key, label, value, op: "add" \| "mul" }]`. La rama de dominio usa factores aditivos; el documento propone una fórmula multiplicativa. Ambas caben, y `formula_version` dice cuál se aplicó. |
-| `assumptions.variable`, `operator`, `expected` | El supuesto de forma evaluable contra `world_state_versions.state`: `("wind.direction", "eq", "NE")`, `("roads.A-397", "eq", "open")`, `("hospitals.costa-del-sol.beds", "gte", 10)`. |
-| `assumptions.consequence` | Qué deja de tener sentido si cae: "los autobuses por la A-397 hacia el pabellón". |
-| `unmet_demands` | Quién se queda esperando en esta versión del plan, qué quería, quién se lo llevó y qué riesgo se acepta. Es el pilar 3 del documento hecho tabla. |
+| Campo                                          | Para qué                                                                                                                                                                                                                                                                |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `plans.changes`                                | El diff con la versión anterior, ya redactado para pantalla: `[{ kind, label, detail }]`. La barra de cambios del panel lee esto.                                                                                                                                       |
+| `plans.trigger`                                | Por qué se replanificó, en una frase.                                                                                                                                                                                                                                   |
+| `plans.mode`                                   | `deterministic` es el núcleo; `ai` cuando el coordinador propuso y el código validó; `simulation` para ejecuciones sin modelo. Nunca se mezcla en la misma fila.                                                                                                        |
+| `plan_priorities.factors` + `formula_version`  | El desglose real de la puntuación. El modelo es agnóstico a la fórmula: `[{ key, label, value, op: "add" \| "mul" }]`. La rama de dominio usa factores aditivos; el documento propone una fórmula multiplicativa. Ambas caben, y `formula_version` dice cuál se aplicó. |
+| `assumptions.variable`, `operator`, `expected` | El supuesto de forma evaluable contra `world_state_versions.state`: `("wind.direction", "eq", "NE")`, `("roads.A-397", "eq", "open")`, `("hospitals.costa-del-sol.beds", "gte", 10)`.                                                                                   |
+| `assumptions.consequence`                      | Qué deja de tener sentido si cae: "los autobuses por la A-397 hacia el pabellón".                                                                                                                                                                                       |
+| `unmet_demands`                                | Quién se queda esperando en esta versión del plan, qué quería, quién se lo llevó y qué riesgo se acepta. Es el pilar 3 del documento hecho tabla.                                                                                                                       |
 
 ### 5.11 `escalation_chains`, `escalation_steps`, `actions`, `action_results`, `webhook_deliveries` — ejecutar
 
@@ -834,18 +836,18 @@ create table public.webhook_deliveries (
 );
 ```
 
-| Campo | Para qué |
-| --- | --- |
-| `actions.kind` | Tipo a efectos de autonomía. Extiende los tres del andamiaje (`review`, `notify`, `allocate` → `assign`) con los que exige el documento: `verify`, `mass_alert`, `evacuate`, `escalate`. |
-| `autonomy_level`, `reversibility` | Con qué nivel se despachó y por qué. Se copian de la regla en el momento de crear la acción, para que cambiar la política después no reescriba la historia. |
-| `execution_mode` | `simulated` o `live`. No hay tercer valor. El panel lo enseña en cada fila. |
-| `attempt`, `idempotency_key` | Ver principio 2.5. La unicidad la garantiza la base de datos. |
-| `workflow_run_id` | Enlace con la ejecución de Vercel Workflow que lleva esta acción. Workflow persiste su propio estado; nosotros guardamos la referencia. |
-| `stalled_after` | Cuándo pasa a considerarse atascada si no llega resultado. Un índice parcial hace barato el barrido. |
-| `verifies_signal_id` | La acción de verificación apunta a la señal cuya duda resuelve. Al llegar el resultado, se actualiza `signals.verification_status`. |
-| `action_results.structured` | Los campos que devuelve el agente de HappyRobot: "confirma humo", "dirección", "personas". Lo que se convierte en señales nuevas queda en `new_signal_ids`. |
-| `action_results.transcript` | La transcripción de la llamada. Materia prima del aprendizaje. |
-| `webhook_deliveries` | Deduplicación de entrada: el mismo callback reenviado devuelve la misma respuesta y no mueve nada. Clave `(provider, delivery_id)`; si el proveedor no manda id, se usa el hash del cuerpo. |
+| Campo                             | Para qué                                                                                                                                                                                    |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `actions.kind`                    | Tipo a efectos de autonomía. Extiende los tres del andamiaje (`review`, `notify`, `allocate` → `assign`) con los que exige el documento: `verify`, `mass_alert`, `evacuate`, `escalate`.    |
+| `autonomy_level`, `reversibility` | Con qué nivel se despachó y por qué. Se copian de la regla en el momento de crear la acción, para que cambiar la política después no reescriba la historia.                                 |
+| `execution_mode`                  | `simulated` o `live`. No hay tercer valor. El panel lo enseña en cada fila.                                                                                                                 |
+| `attempt`, `idempotency_key`      | Ver principio 2.5. La unicidad la garantiza la base de datos.                                                                                                                               |
+| `workflow_run_id`                 | Enlace con la ejecución de Vercel Workflow que lleva esta acción. Workflow persiste su propio estado; nosotros guardamos la referencia.                                                     |
+| `stalled_after`                   | Cuándo pasa a considerarse atascada si no llega resultado. Un índice parcial hace barato el barrido.                                                                                        |
+| `verifies_signal_id`              | La acción de verificación apunta a la señal cuya duda resuelve. Al llegar el resultado, se actualiza `signals.verification_status`.                                                         |
+| `action_results.structured`       | Los campos que devuelve el agente de HappyRobot: "confirma humo", "dirección", "personas". Lo que se convierte en señales nuevas queda en `new_signal_ids`.                                 |
+| `action_results.transcript`       | La transcripción de la llamada. Materia prima del aprendizaje.                                                                                                                              |
+| `webhook_deliveries`              | Deduplicación de entrada: el mismo callback reenviado devuelve la misma respuesta y no mueve nada. Clave `(provider, delivery_id)`; si el proveedor no manda id, se usa el hash del cuerpo. |
 
 ### 5.12 `autonomy_rules`, `approvals`, `directives` — control humano
 
@@ -898,10 +900,10 @@ create table public.directives (
 create index directives_active_idx on public.directives (run_id) where status = 'active';
 ```
 
-| Campo | Para qué |
-| --- | --- |
-| `autonomy_rules.run_id` nulo | Regla global por defecto; con `run_id`, la sobreescribe para esa ejecución. El operador puede subir o bajar niveles desde steering sin tocar la global. |
-| `approvals.consequence_preview` | Lo que pasa si se aprueba y si se rechaza: qué zona queda descubierta, qué recurso se mueve. El documento quiere que el humano vea la consecuencia **antes** de confirmar. |
+| Campo                                 | Para qué                                                                                                                                                                                                                                            |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `autonomy_rules.run_id` nulo          | Regla global por defecto; con `run_id`, la sobreescribe para esa ejecución. El operador puede subir o bajar niveles desde steering sin tocar la global.                                                                                             |
+| `approvals.consequence_preview`       | Lo que pasa si se aprueba y si se rechaza: qué zona queda descubierta, qué recurso se mueve. El documento quiere que el humano vea la consecuencia **antes** de confirmar.                                                                          |
 | `directives.raw_text` / `interpreted` | "Prioriza el colegio" tal cual lo escribió el operador, y la restricción estructurada en que se convirtió: `{ kind: "boost", target: { vulnerable_site: "colegio-rural" }, factor: 1.5 }`. Se guardan las dos para poder auditar la interpretación. |
 
 ### 5.13 `domain_events` y `decisions` — el registro
@@ -1001,13 +1003,13 @@ create table public.learned_weights (
 );
 ```
 
-| Campo | Para qué |
-| --- | --- |
-| `lessons.change` | Un parche estructurado, no prosa: `{ target: "contact_channel", contact: "bomberos-estepona", set: { preferred: "sms" } }`. Es lo que la siguiente ejecución **aplica** al cargar. |
-| `lessons.metric` + `evidence` | La cifra que la justifica y los ids que lo prueban. Sin métrica no hay lección, y el panel enseña las dos. |
-| `lessons.status` | Las lecciones las valida una persona antes de activarse. `applied` cuando una ejecución las cargó, con `applied_in_run_id`. Es lo que permite etiquetar en el feed "SMS en vez de llamada · lección #3". |
-| `source_reliability.min_samples` | Por debajo del mínimo la fiabilidad no se publica. Un sistema que sobrerreacciona a un solo error es peor que uno que no aprende. |
-| `learned_weights` | Pesos derivados de ejecuciones pasadas con su explicación: `triage.verify_threshold`, `channel.sms.success_rate`, `vulnerability.colegio.multiplier`. Se reconstruyen desde cero al arrancar sumando `runs` cerradas, para que reiniciar no infle nada. |
+| Campo                            | Para qué                                                                                                                                                                                                                                                |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lessons.change`                 | Un parche estructurado, no prosa: `{ target: "contact_channel", contact: "bomberos-estepona", set: { preferred: "sms" } }`. Es lo que la siguiente ejecución **aplica** al cargar.                                                                      |
+| `lessons.metric` + `evidence`    | La cifra que la justifica y los ids que lo prueban. Sin métrica no hay lección, y el panel enseña las dos.                                                                                                                                              |
+| `lessons.status`                 | Las lecciones las valida una persona antes de activarse. `applied` cuando una ejecución las cargó, con `applied_in_run_id`. Es lo que permite etiquetar en el feed "SMS en vez de llamada · lección #3".                                                |
+| `source_reliability.min_samples` | Por debajo del mínimo la fiabilidad no se publica. Un sistema que sobrerreacciona a un solo error es peor que uno que no aprende.                                                                                                                       |
+| `learned_weights`                | Pesos derivados de ejecuciones pasadas con su explicación: `triage.verify_threshold`, `channel.sms.success_rate`, `vulnerability.colegio.multiplier`. Se reconstruyen desde cero al arrancar sumando `runs` cerradas, para que reiniciar no infle nada. |
 
 ### 5.15 `ai_invocations` — provenance del modelo
 
@@ -1101,146 +1103,216 @@ export const probability = z.number().min(0).max(1);
 export const isoDate = z.iso.datetime();
 
 export const signalSource = z.enum(["operator", "sensor", "happyrobot", "public", "scenario", "webhook"]);
-export const channel = z.enum(["call", "sms", "whatsapp", "email", "slack", "teams", "ticket", "webhook", "internal"]);
+export const channel = z.enum([
+  "call",
+  "sms",
+  "whatsapp",
+  "email",
+  "slack",
+  "teams",
+  "ticket",
+  "webhook",
+  "internal"
+]);
 export const triageDecision = z.enum(["act", "verify", "discard"]);
 export const autonomyLevel = z.enum(["auto", "auto_notify", "approval"]);
 export const reversibility = z.enum(["reversible", "partial", "irreversible"]);
-export const actionKind = z.enum(["verify", "notify", "assign", "mass_alert", "evacuate", "escalate", "ticket", "review"]);
+export const actionKind = z.enum([
+  "verify",
+  "notify",
+  "assign",
+  "mass_alert",
+  "evacuate",
+  "escalate",
+  "ticket",
+  "review"
+]);
 export const actionStatus = z.enum([
-  "proposed", "awaiting_approval", "approved", "rejected", "running",
-  "succeeded", "failed", "blocked", "stalled", "cancelled"
+  "proposed",
+  "awaiting_approval",
+  "approved",
+  "rejected",
+  "running",
+  "succeeded",
+  "failed",
+  "blocked",
+  "stalled",
+  "cancelled"
 ]);
 ```
 
 ```ts
 // src/lib/domain/signal.ts
-export const incomingSignalSchema = z.object({
-  runId: z.uuid(),
-  areaSlug: z.string().min(1).optional(),
-  source: signalSource,
-  channel: channel.optional(),
-  externalRef: z.string().max(200).optional(),
-  title: z.string().trim().min(1).max(300),
-  body: z.string().trim().min(1).max(4000),
-  category: z.string().regex(/^[a-z0-9-]+$/),
-  severity,
-  reportedConfidence: confidenceLabel.optional(),
-  location: z.object({ x: z.number(), y: z.number() }).optional(),
-  occurredAt: isoDate.optional(),
-  raw: z.unknown().optional()
-}).strict();
+export const incomingSignalSchema = z
+  .object({
+    runId: z.uuid(),
+    areaSlug: z.string().min(1).optional(),
+    source: signalSource,
+    channel: channel.optional(),
+    externalRef: z.string().max(200).optional(),
+    title: z.string().trim().min(1).max(300),
+    body: z.string().trim().min(1).max(4000),
+    category: z.string().regex(/^[a-z0-9-]+$/),
+    severity,
+    reportedConfidence: confidenceLabel.optional(),
+    location: z.object({ x: z.number(), y: z.number() }).optional(),
+    occurredAt: isoDate.optional(),
+    raw: z.unknown().optional()
+  })
+  .strict();
 
-export const signalAssessmentSchema = z.object({
-  pRelevant: probability,
-  pTruthful: probability,
-  urgency: probability,
-  fusedConfidence: probability,
-  decision: triageDecision,
-  rationale: z.string().min(1).max(600),
-  assessor: z.enum(["deterministic", "jev", "llm", "operator"]),
-  latencyMs: z.number().int().min(0).optional(),
-  costMicros: z.number().int().min(0).optional(),
-  details: z.record(z.string(), z.unknown()).optional()
-}).strict();
+export const signalAssessmentSchema = z
+  .object({
+    pRelevant: probability,
+    pTruthful: probability,
+    urgency: probability,
+    fusedConfidence: probability,
+    decision: triageDecision,
+    rationale: z.string().min(1).max(600),
+    assessor: z.enum(["deterministic", "jev", "llm", "operator"]),
+    latencyMs: z.number().int().min(0).optional(),
+    costMicros: z.number().int().min(0).optional(),
+    details: z.record(z.string(), z.unknown()).optional()
+  })
+  .strict();
 ```
 
 ```ts
 // src/lib/domain/plan.ts
-export const priorityFactorSchema = z.object({
-  key: z.string(),
-  label: z.string(),
-  value: z.number(),
-  op: z.enum(["add", "mul"]).default("add")
-}).strict();
+export const priorityFactorSchema = z
+  .object({
+    key: z.string(),
+    label: z.string(),
+    value: z.number(),
+    op: z.enum(["add", "mul"]).default("add")
+  })
+  .strict();
 
-export const planPrioritySchema = z.object({
-  incidentId: z.uuid(),
-  rank: z.number().int().min(1),
-  previousRank: z.number().int().min(1).nullable(),
-  score: z.number(),
-  formulaVersion: z.string(),
-  factors: z.array(priorityFactorSchema).min(1),
-  reason: z.string().min(1).max(400)
-}).strict();
+export const planPrioritySchema = z
+  .object({
+    incidentId: z.uuid(),
+    rank: z.number().int().min(1),
+    previousRank: z.number().int().min(1).nullable(),
+    score: z.number(),
+    formulaVersion: z.string(),
+    factors: z.array(priorityFactorSchema).min(1),
+    reason: z.string().min(1).max(400)
+  })
+  .strict();
 
-export const planChangeSchema = z.object({
-  kind: z.enum(["priority_up", "priority_down", "action_added", "action_invalidated",
-                "resource_reassigned", "assumption_broken", "zone_status", "integration"]),
-  label: z.string().min(1).max(160),
-  detail: z.string().min(1).max(600)
-}).strict();
+export const planChangeSchema = z
+  .object({
+    kind: z.enum([
+      "priority_up",
+      "priority_down",
+      "action_added",
+      "action_invalidated",
+      "resource_reassigned",
+      "assumption_broken",
+      "zone_status",
+      "integration"
+    ]),
+    label: z.string().min(1).max(160),
+    detail: z.string().min(1).max(600)
+  })
+  .strict();
 
-export const assumptionSchema = z.object({
-  key: z.string().regex(/^[a-z0-9.-]+$/),
-  text: z.string().min(1).max(200),
-  variable: z.string(),
-  operator: z.enum(["eq", "neq", "lt", "lte", "gt", "gte", "in", "contains"]),
-  expected: z.unknown(),
-  consequence: z.string().max(400).optional()
-}).strict();
+export const assumptionSchema = z
+  .object({
+    key: z.string().regex(/^[a-z0-9.-]+$/),
+    text: z.string().min(1).max(200),
+    variable: z.string(),
+    operator: z.enum(["eq", "neq", "lt", "lte", "gt", "gte", "in", "contains"]),
+    expected: z.unknown(),
+    consequence: z.string().max(400).optional()
+  })
+  .strict();
 
 /** Salida del planificador (AI SDK). El código la valida antes de persistir nada. */
-export const plannerOutputSchema = z.object({
-  summary: z.string().min(1).max(600),
-  priorities: z.array(planPrioritySchema).min(1),
-  assumptions: z.array(assumptionSchema).min(1).max(8),
-  proposedActions: z.array(z.object({
-    kind: actionKind,
-    channel,
-    incidentId: z.uuid(),
-    contactSlug: z.string().optional(),
-    resourceSlug: z.string().optional(),
-    objective: z.string().min(1).max(400),
-    messageBody: z.string().max(1200).optional(),
-    askFor: z.string().max(300).optional(),
-    reason: z.string().min(1).max(400)
-  }).strict()).max(12),
-  planB: z.string().max(800).optional()
-}).strict();
+export const plannerOutputSchema = z
+  .object({
+    summary: z.string().min(1).max(600),
+    priorities: z.array(planPrioritySchema).min(1),
+    assumptions: z.array(assumptionSchema).min(1).max(8),
+    proposedActions: z
+      .array(
+        z
+          .object({
+            kind: actionKind,
+            channel,
+            incidentId: z.uuid(),
+            contactSlug: z.string().optional(),
+            resourceSlug: z.string().optional(),
+            objective: z.string().min(1).max(400),
+            messageBody: z.string().max(1200).optional(),
+            askFor: z.string().max(300).optional(),
+            reason: z.string().min(1).max(400)
+          })
+          .strict()
+      )
+      .max(12),
+    planB: z.string().max(800).optional()
+  })
+  .strict();
 ```
 
 ```ts
 // src/lib/domain/action.ts
-export const createActionSchema = z.object({
-  runId: z.uuid(),
-  incidentId: z.uuid().optional(),
-  kind: actionKind,
-  channel,
-  contactId: z.uuid().optional(),
-  resourceId: z.uuid().optional(),
-  targetLabel: z.string().min(1).max(200),
-  objective: z.string().min(1).max(400),
-  messageBody: z.string().max(1200).optional(),
-  reason: z.string().min(1).max(400)
-}).strict();
+export const createActionSchema = z
+  .object({
+    runId: z.uuid(),
+    incidentId: z.uuid().optional(),
+    kind: actionKind,
+    channel,
+    contactId: z.uuid().optional(),
+    resourceId: z.uuid().optional(),
+    targetLabel: z.string().min(1).max(200),
+    objective: z.string().min(1).max(400),
+    messageBody: z.string().max(1200).optional(),
+    reason: z.string().min(1).max(400)
+  })
+  .strict();
 
-export const actionResultSchema = z.object({
-  externalActionId: z.string().optional(),
-  localActionId: z.uuid().optional(),
-  attempt: z.number().int().min(1),
-  outcome: z.enum(["accepted", "declined", "no_answer", "needs_human", "delivered", "failed", "info"]),
-  summary: z.string().max(2000).optional(),
-  transcript: z.string().max(20000).optional(),
-  structured: z.record(z.string(), z.unknown()).optional(),
-  newInformation: z.array(incomingSignalSchema.omit({ runId: true })).max(10).optional()
-}).strict();
+export const actionResultSchema = z
+  .object({
+    externalActionId: z.string().optional(),
+    localActionId: z.uuid().optional(),
+    attempt: z.number().int().min(1),
+    outcome: z.enum(["accepted", "declined", "no_answer", "needs_human", "delivered", "failed", "info"]),
+    summary: z.string().max(2000).optional(),
+    transcript: z.string().max(20000).optional(),
+    structured: z.record(z.string(), z.unknown()).optional(),
+    newInformation: z
+      .array(incomingSignalSchema.omit({ runId: true }))
+      .max(10)
+      .optional()
+  })
+  .strict();
 ```
 
 ```ts
 // src/lib/domain/control.ts
-export const approvalDecisionSchema = z.object({
-  approvalId: z.uuid(),
-  decision: z.enum(["approved", "rejected"]),
-  note: z.string().max(400).optional()
-}).strict();
+export const approvalDecisionSchema = z
+  .object({
+    approvalId: z.uuid(),
+    decision: z.enum(["approved", "rejected"]),
+    note: z.string().max(400).optional()
+  })
+  .strict();
 
-export const directiveSchema = z.object({
-  runId: z.uuid(),
-  rawText: z.string().trim().min(1).max(300)
-}).strict();
+export const directiveSchema = z
+  .object({
+    runId: z.uuid(),
+    rawText: z.string().trim().min(1).max(300)
+  })
+  .strict();
 
 export const interpretedDirectiveSchema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("boost"), target: z.object({ incidentId: z.uuid().optional(), vulnerableSiteSlug: z.string().optional() }), factor: z.number().min(1).max(3) }),
+  z.object({
+    kind: z.literal("boost"),
+    target: z.object({ incidentId: z.uuid().optional(), vulnerableSiteSlug: z.string().optional() }),
+    factor: z.number().min(1).max(3)
+  }),
   z.object({ kind: z.literal("forbid_resource"), resourceSlug: z.string() }),
   z.object({ kind: z.literal("reserve"), resourceKind: z.string(), minimum: z.number().int().min(0) }),
   z.object({ kind: z.literal("pause_autonomy") }),
@@ -1365,7 +1437,7 @@ Lo que se hace ahora porque es barato, y lo que se deja preparado.
   beats por disparar. Son las consultas que el panel y el Workflow hacen en
   bucle, y cada una toca una fracción pequeña de su tabla.
 - **`domain_events` con identidad `bigint`**: orden total sin `order by
-  occurred_at`, cursores baratos (`where id > $last`) para el feed y para
+occurred_at`, cursores baratos (`where id > $last`) para el feed y para
   reproducir una ejecución. Cuando crezca, se particiona por `run_id` con
   `partition by hash`; la clave ya está en todas las consultas.
 - **Retención**: `runs.kind = 'drill'` se puede purgar por antigüedad sin tocar
@@ -1401,12 +1473,12 @@ fichero o en `202609180002_faro_schema.sql` borrando la anterior.
 Renombrados respecto al andamiaje, para que el equipo no se confunda leyendo
 código antiguo:
 
-| Andamiaje | Aquí | Por qué |
-| --- | --- | --- |
-| `incidents` (contenedor) | `runs` | El documento fuente usa "incidente" para la subincidencia priorizable. |
-| `events` (entradas) | `signals` | "Evento" queda para el registro de dominio, como pide el módulo `audit`. |
-| `results` | `action_results` | Explícito sobre a qué pertenece. |
-| `actions.kind` `allocate` | `assign` | Alineado con la autonomía y con el motor de recursos. |
+| Andamiaje                    | Aquí                                   | Por qué                                                                                      |
+| ---------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `incidents` (contenedor)     | `runs`                                 | El documento fuente usa "incidente" para la subincidencia priorizable.                       |
+| `events` (entradas)          | `signals`                              | "Evento" queda para el registro de dominio, como pide el módulo `audit`.                     |
+| `results`                    | `action_results`                       | Explícito sobre a qué pertenece.                                                             |
+| `actions.kind` `allocate`    | `assign`                               | Alineado con la autonomía y con el motor de recursos.                                        |
 | `actions.status` `simulated` | `actions.execution_mode = 'simulated'` | Simulado no es un estado del ciclo de vida; una acción simulada también se completa o falla. |
 
 Lo que se conserva tal cual del andamiaje: RLS activado por defecto con

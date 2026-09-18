@@ -9,7 +9,14 @@ import {
   scoreZone,
   signalWeight
 } from "@/lib/priority";
-import { addEvent, approveAction, getSituation, injectDemo, resetSituation, setActionStatus } from "@/lib/store";
+import {
+  addEvent,
+  approveAction,
+  getSituation,
+  injectDemo,
+  resetSituation,
+  setActionStatus
+} from "@/lib/store";
 import type { Action, CrisisEvent, CrisisZone, Resource } from "@/lib/types";
 
 beforeEach(() => {
@@ -148,11 +155,17 @@ describe("crisis priority engine", () => {
 
     expect(first.duplicate).toBe(false);
     expect(second.duplicate).toBe(true);
-    expect(getSituation().events.filter((event) => event.dedupeKey === buildDedupeKey({
-      zoneId: "zone-east",
-      category: "route-blocked",
-      severity: "high"
-    })).length).toBe(1);
+    expect(
+      getSituation().events.filter(
+        (event) =>
+          event.dedupeKey ===
+          buildDedupeKey({
+            zoneId: "zone-east",
+            category: "route-blocked",
+            severity: "high"
+          })
+      ).length
+    ).toBe(1);
   });
 
   it("accounts for resource failures during replanning", () => {
@@ -231,9 +244,7 @@ describe("tabla de pesos de señal", () => {
     const sinVerificar = senal({ severity: "high", confidence: "low", confirmed: null });
     const confirmada = senal({ severity: "high", confidence: "low", confirmed: true });
 
-    expect(signalWeight(sinVerificar, { now: AHORA })).toBeLessThan(
-      signalWeight(confirmada, { now: AHORA })
-    );
+    expect(signalWeight(sinVerificar, { now: AHORA })).toBeLessThan(signalWeight(confirmada, { now: AHORA }));
   });
 
   it("una señal crítica sin verificar sigue pesando más que una baja confirmada", () => {
@@ -329,8 +340,7 @@ describe("tabla de repeticiones", () => {
 // ---------------------------------------------------------------------------
 
 describe("tabla de decisiones de prioridad", () => {
-  const zonaB = (overrides: Partial<CrisisZone> = {}) =>
-    zona({ id: "zone-b", name: "Zona B", ...overrides });
+  const zonaB = (overrides: Partial<CrisisZone> = {}) => zona({ id: "zone-b", name: "Zona B", ...overrides });
 
   const casos: Array<{
     nombre: string;
@@ -372,7 +382,13 @@ describe("tabla de decisiones de prioridad", () => {
       zonas: [zona(), zonaB()],
       eventos: [
         senal({ id: "evt-a", severity: "high", confirmed: true, createdAt: AHORA }),
-        senal({ id: "evt-b", zoneId: "zone-b", severity: "high", confirmed: true, createdAt: haceMinutos(60) })
+        senal({
+          id: "evt-b",
+          zoneId: "zone-b",
+          severity: "high",
+          confirmed: true,
+          createdAt: haceMinutos(60)
+        })
       ],
       esperado: "zone-a"
     },
@@ -521,22 +537,14 @@ describe("adaptación: la prioridad también baja", () => {
     expect(ejecutada.status).toBe("succeeded");
 
     const despues = getSituation();
-    const puntuacionDespues = despues.plan.priorities.find(
-      (priority) => priority.zoneId === zonaTop
-    )!.score;
+    const puntuacionDespues = despues.plan.priorities.find((priority) => priority.zoneId === zonaTop)!.score;
 
     expect(puntuacionDespues).toBeLessThan(puntuacionAntes);
   });
 
   it("el alivio aparece como factor negativo explicable", () => {
     const zonaConAccion = zona({ riskScore: 40, needs: ["triaje"] });
-    const conAlivio = explainZone(
-      zonaConAccion,
-      [],
-      [],
-      [accion({ status: "succeeded" })],
-      { now: AHORA }
-    );
+    const conAlivio = explainZone(zonaConAccion, [], [], [accion({ status: "succeeded" })], { now: AHORA });
     const sinAlivio = explainZone(zonaConAccion, [], [], [], { now: AHORA });
 
     const alivio = conAlivio.factors.find((factor) => factor.label === "Alivio por acciones completadas");
@@ -548,13 +556,7 @@ describe("adaptación: la prioridad también baja", () => {
   it("el alivio caduca: una acción resuelta hace una hora calma menos que una recién resuelta", () => {
     const zonaBase = zona({ riskScore: 40, needs: ["triaje"] });
     const reciente = scoreZone(zonaBase, [], [], [accion({ completedAt: AHORA })], { now: AHORA });
-    const antigua = scoreZone(
-      zonaBase,
-      [],
-      [],
-      [accion({ completedAt: haceMinutos(60) })],
-      { now: AHORA }
-    );
+    const antigua = scoreZone(zonaBase, [], [], [accion({ completedAt: haceMinutos(60) })], { now: AHORA });
 
     expect(antigua).toBeGreaterThan(reciente);
   });

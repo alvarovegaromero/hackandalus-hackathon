@@ -192,7 +192,12 @@ export function decayFactor(event: CrisisEvent, options?: PriorityOptions) {
 export function signalWeight(event: CrisisEvent, options?: PriorityOptions) {
   const weights = resolveWeights(options);
   const severity = weights.severity[event.severity] ?? weights.severity.medium;
-  return severity * credibilityFactor(event, options) * occurrenceFactor(event.occurrences, options) * decayFactor(event, options);
+  return (
+    severity *
+    credibilityFactor(event, options) *
+    occurrenceFactor(event.occurrences, options) *
+    decayFactor(event, options)
+  );
 }
 
 /** Señales que siguen contando: las de la zona que no han sido descartadas. */
@@ -284,10 +289,7 @@ export function explainZone(
   const rawRelief = dampedSum(
     resolved.map((action) => {
       const at = action.completedAt ?? action.updatedAt;
-      const decay = Math.pow(
-        0.5,
-        ageInMinutes(at, now) / Math.max(0.01, weights.reliefHalfLifeMinutes)
-      );
+      const decay = Math.pow(0.5, ageInMinutes(at, now) / Math.max(0.01, weights.reliefHalfLifeMinutes));
       return weights.reliefPerAction * Math.min(1, Math.max(0, decay));
     }),
     weights.reliefDamping,
@@ -345,8 +347,7 @@ function buildReason(
   const parts: string[] = [];
 
   if (strongest) {
-    const verification =
-      strongest.confirmed === true ? "confirmada" : "sin verificar";
+    const verification = strongest.confirmed === true ? "confirmada" : "sin verificar";
     const repeated = strongest.occurrences > 1 ? `, repetida ${strongest.occurrences} veces` : "";
     const weight = Math.round(signalWeight(strongest, options));
     parts.push(
@@ -413,7 +414,7 @@ export function buildPlan(
     })
     // Empates resueltos por identificador: el orden nunca depende del azar ni
     // del orden de llegada.
-    .sort((a, b) => (b.score - a.score) || a.zoneId.localeCompare(b.zoneId));
+    .sort((a, b) => b.score - a.score || a.zoneId.localeCompare(b.zoneId));
 
   const topPriority = priorities[0];
   const topZone = zones.find((zone) => zone.id === topPriority?.zoneId);

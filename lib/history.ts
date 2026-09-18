@@ -112,10 +112,7 @@ function zoneNameResolver(context: PlanDiffContext) {
   return (zoneId: string) => names[zoneId] ?? zoneId;
 }
 
-function describeAction(
-  actionId: string,
-  context: PlanDiffContext
-): { label: string; detail: string } {
+function describeAction(actionId: string, context: PlanDiffContext): { label: string; detail: string } {
   const action = context.actions?.find((candidate) => candidate.id === actionId);
   if (!action) {
     return { label: `Acción ${actionId}`, detail: `Acción ${actionId}.` };
@@ -175,19 +172,23 @@ function diffPriorities(previous: Plan, next: Plan, context: PlanDiffContext): P
 
       changes.push({
         kind: "priority-up",
-        label: overtaken.length > 0 ? `${name} adelanta a ${joinNames(overtaken)}` : `${name} sube al puesto ${index + 1}`,
+        label:
+          overtaken.length > 0
+            ? `${name} adelanta a ${joinNames(overtaken)}`
+            : `${name} sube al puesto ${index + 1}`,
         detail: `${name} pasa del puesto ${before + 1} al ${index + 1}. ${scoreText}${motive(next)}`
       });
       return;
     }
 
-    const aheadNow = next.priorities
-      .slice(before, index)
-      .map((candidate) => nameOf(candidate.zoneId));
+    const aheadNow = next.priorities.slice(before, index).map((candidate) => nameOf(candidate.zoneId));
 
     changes.push({
       kind: "priority-down",
-      label: aheadNow.length > 0 ? `${name} queda por detrás de ${joinNames(aheadNow)}` : `${name} baja al puesto ${index + 1}`,
+      label:
+        aheadNow.length > 0
+          ? `${name} queda por detrás de ${joinNames(aheadNow)}`
+          : `${name} baja al puesto ${index + 1}`,
       detail: `${name} cede el puesto ${before + 1} y baja al ${index + 1}. ${scoreText}${motive(next)}`
     });
   });
@@ -337,7 +338,9 @@ function diffIntegration(context: PlanDiffContext): PlanChange[] {
   if (before.happyRobotConfigured !== now.happyRobotConfigured) {
     changes.push({
       kind: "integration",
-      label: now.happyRobotConfigured ? "Credenciales de HappyRobot disponibles" : "Faltan credenciales de HappyRobot",
+      label: now.happyRobotConfigured
+        ? "Credenciales de HappyRobot disponibles"
+        : "Faltan credenciales de HappyRobot",
       detail: now.happyRobotConfigured
         ? "La plataforma queda configurada y se puede ejecutar de verdad."
         : "Sin credenciales, todo lo que se ejecute quedará etiquetado como simulado."
@@ -383,7 +386,15 @@ export function pushPlanHistory(history: Plan[], plan: Plan): Plan[] {
 
 export function appendAudit(
   audit: AuditEntry[],
-  entry: { id: string; at: string; actor: Actor; kind: string; summary: string; planVersion: number; ref?: string }
+  entry: {
+    id: string;
+    at: string;
+    actor: Actor;
+    kind: string;
+    summary: string;
+    planVersion: number;
+    ref?: string;
+  }
 ): AuditEntry[] {
   return [entry, ...audit].slice(0, MAX_AUDIT_ENTRIES);
 }

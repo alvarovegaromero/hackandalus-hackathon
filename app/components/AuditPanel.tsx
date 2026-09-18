@@ -41,26 +41,25 @@ export default function AuditPanel({ audit, lessons }: Props) {
             ))}
           </ul>
           <p className="muted-note">
-            Validar o descartar una lección todavía no tiene ruta en la API: aquí se muestran tal como
-            llegan.
+            Validar o descartar una lección todavía no tiene ruta en la API: aquí se muestran tal como llegan.
           </p>
         </section>
       ) : null}
 
       <div className="audit-list" role="log" aria-live="polite" aria-relevant="additions">
-      {audit.length === 0 ? <p className="muted-note">Todavía no hay nada registrado.</p> : null}
-      {audit.map((entry) => (
-        <article key={entry.id} className={`audit-row actor-${entry.actor}`}>
-          <span className="audit-time">{timeLabel(entry.at)}</span>
-          <span className={`pill actor actor-${entry.actor}`}>{actorLabels[entry.actor]}</span>
-          <div>
-            <strong>{entry.summary}</strong>
-            <small>
-              {entry.kind} · plan v{entry.planVersion}
-              {entry.ref ? ` · ${entry.ref}` : ""}
-            </small>
-          </div>
-        </article>
+        {audit.length === 0 ? <p className="muted-note">Todavía no hay nada registrado.</p> : null}
+        {audit.map((entry) => (
+          <article key={entry.id} className={`audit-row actor-${entry.actor}`}>
+            <span className="audit-time">{timeLabel(entry.at)}</span>
+            <span className={`pill actor actor-${entry.actor}`}>{actorLabels[entry.actor]}</span>
+            <div>
+              <strong>{entry.summary}</strong>
+              <small>
+                {entry.kind} · plan v{entry.planVersion}
+                {entry.ref ? ` · ${entry.ref}` : ""}
+              </small>
+            </div>
+          </article>
         ))}
       </div>
     </>

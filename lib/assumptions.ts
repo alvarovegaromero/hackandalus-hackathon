@@ -121,14 +121,13 @@ const PALABRAS_SANITARIAS = ["evacua", "triaje", "sanitari", "herid", "hospital"
 
 /** Quita acentos y baja a minúsculas para poder comparar texto libre. */
 function normalizar(texto: string) {
-  return (texto ?? "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
+  return (texto ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
 function slug(texto: string) {
-  return normalizar(texto).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return normalizar(texto)
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 function mayuscula(texto: string) {
@@ -285,12 +284,7 @@ export function evaluateAssumption(assumption: Assumption, world: WorldState): A
 // 1. Derivación: de qué depende este plan
 // ---------------------------------------------------------------------------
 
-function supuesto(
-  planVersion: number,
-  variable: string,
-  text: string,
-  condition: string
-): Assumption {
+function supuesto(planVersion: number, variable: string, text: string, condition: string): Assumption {
   return {
     id: `sup-v${planVersion}-${slug(variable)}`,
     text,
@@ -530,7 +524,8 @@ function direccionDeSenal(crudo: string, texto: string): string | null {
   // inequívoco; después los nombres largos, del más largo al más corto para
   // que "sureste" no se lea como "este".
   const codigo = /\b(?:viento|frente|racha)[^.]{0,40}?\b(NE|NO|NW|SE|SO|SW|N|S|E|O|W)\b/.exec(crudo);
-  if (codigo) return codigo[1] === "NW" ? "NO" : codigo[1] === "SW" ? "SO" : codigo[1] === "W" ? "O" : codigo[1];
+  if (codigo)
+    return codigo[1] === "NW" ? "NO" : codigo[1] === "SW" ? "SO" : codigo[1] === "W" ? "O" : codigo[1];
 
   for (const [nombre, valor] of DIRECCIONES) {
     if (texto.includes(nombre)) return valor;
@@ -605,9 +600,10 @@ export function applyEventToWorld(world: WorldState, event: CrisisEvent): WorldS
   );
   if (hablaDeCanal) {
     const restablece = /restablecid|recuperad|vuelve a funcionar|de nuevo operativ|resuelt/.test(texto);
-    const cae = /caid|cae|fallo|falla|fuera de servicio|no funciona|inoperativ|sin servicio|failure|down/.test(
-      `${categoria} ${texto}`
-    );
+    const cae =
+      /caid|cae|fallo|falla|fuera de servicio|no funciona|inoperativ|sin servicio|failure|down/.test(
+        `${categoria} ${texto}`
+      );
     if (!restablece && !cae) return world;
 
     const operativo = restablece;
@@ -828,7 +824,9 @@ export function explainInvalidation(brokenAssumptions: Assumption[], plan: Plan)
   if (resto.length === 0) return `${cabecera} ${efecto}`;
 
   const otros = resto
-    .map((assumption) => frasesDeSupuesto(assumption).dependencia.replace(/^(contaba con que |daba por hecho que )/, ""))
+    .map((assumption) =>
+      frasesDeSupuesto(assumption).dependencia.replace(/^(contaba con que |daba por hecho que )/, "")
+    )
     .join("; ");
   return `${cabecera} ${efecto} También ha caído: ${otros}.`;
 }
