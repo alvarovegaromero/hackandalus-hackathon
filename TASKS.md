@@ -50,6 +50,14 @@ estructura base y no deben resolverse con credenciales o escenarios inventados.
 - [ ] Configurar y desplegar en Vercel cuando se autorice.
 - [ ] Validar una interacción real con destinatarios de demo aprobados.
 
+## Ideas
+
+- [ ] Gemelo digital de la incidencia: además del mapa base, representar la
+  incidencia en un gemelo digital que sirva como campo de pruebas. Permitiría
+  simular escenarios de forma proactiva (p. ej. cambios de viento, cortes de
+  acceso, pérdida de recursos) y comparar alternativas para proponer la mejor
+  antes de ejecutar acciones reales.
+
 ## Referencias
 
 - [README.md](README.md): instalación, comandos y límites actuales.
