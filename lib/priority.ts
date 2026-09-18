@@ -1,4 +1,14 @@
-import type { Action, CrisisEvent, CrisisZone, Plan, Resource, Severity, Confidence } from "./types";
+// PROPIETARIO: agente del motor de prioridad.
+import type {
+  Action,
+  CrisisEvent,
+  CrisisZone,
+  Plan,
+  PriorityFactor,
+  Resource,
+  Severity,
+  Confidence
+} from "./types";
 
 const severityWeight: Record<Severity, number> = {
   low: 10,
@@ -47,9 +57,16 @@ export function buildPlan(
         .filter((event) => event.zoneId === zone.id && event.confirmed !== false)
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
 
+      const factors: PriorityFactor[] = [
+        { label: "Riesgo base", value: zone.riskScore },
+        { label: "Poblacion en riesgo", value: Math.min(35, Math.round(zone.populationAtRisk / 120)) },
+        { label: "Necesidades abiertas", value: zone.needs.length * 8 }
+      ];
+
       return {
         zoneId: zone.id,
         score,
+        factors,
         reason: latestEvent
           ? `Senal ${latestEvent.severity} de ${latestEvent.category}, confianza ${latestEvent.confidence}, ${zone.populationAtRisk} personas en riesgo y ${zone.needs.length} necesidades abiertas.`
           : `${zone.populationAtRisk} personas en riesgo y ${zone.needs.length} necesidades abiertas.`
@@ -66,12 +83,15 @@ export function buildPlan(
   return {
     id: `plan-${version}`,
     version,
+    previousVersion: version > 1 ? version - 1 : null,
     generatedAt: new Date().toISOString(),
     summary: topZone
       ? `${topZone.name} es la prioridad actual con puntuacion ${topPriority.score}. ${topPriority.reason}`
       : "No hay zonas activas que requieran accion.",
     priorities,
     proposedActionIds: openActionIds,
-    invalidatedActionIds
+    invalidatedActionIds,
+    changes: [],
+    trigger: "replanificacion"
   };
 }

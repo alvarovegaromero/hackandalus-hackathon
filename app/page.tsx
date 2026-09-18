@@ -28,7 +28,8 @@ const statusLabels: Record<Action["status"], string> = {
   succeeded: "Completada",
   failed: "Fallida",
   blocked: "Bloqueada",
-  cancelled: "Cancelada"
+  cancelled: "Cancelada",
+  stalled: "Sin respuesta"
 };
 
 const severityRank: Record<CrisisEvent["severity"], number> = {

@@ -1,12 +1,26 @@
+// PROPIETARIO: coordinacion (no lo editan los agentes de modulo).
+// Orquestador del estado de crisis. Mantiene el estado y delega las decisiones
+// en los modulos especializados: priority, resources, contacts, escalation,
+// history, learning, persistence y scenario.
+
+import { selectChannel, selectContact } from "./contacts";
+import { buildEscalationChain } from "./escalation";
 import { executeHappyRobotAction, getExecutionMode, isHappyRobotConfigured } from "./happyrobot";
+import { appendAudit, diffPlans, pushPlanHistory } from "./history";
+import { emptyWeights, recordActionOutcome } from "./learning";
+import { isPersistenceEnabled, loadState, loadWeights, saveState } from "./persistence";
 import { buildDedupeKey, buildPlan } from "./priority";
-import { seedActions, seedEvents, seedResources, seedZones } from "./seed";
+import { assignResource, reassignAffectedActions, releaseResource, selectResourceForAction } from "./resources";
+import { createScenarioState, dueBeats, startScenario, stopScenario } from "./scenario";
+import { seedActions, seedContacts, seedEvents, seedResources, seedZones } from "./seed";
 import type {
   Action,
   ActionStatus,
+  Actor,
   CreateActionPayload,
   CrisisEvent,
   CrisisZone,
+  DemoKind,
   IncomingEventPayload,
   Resource,
   SituationState
@@ -15,8 +29,12 @@ import type {
 type MutableState = SituationState & { nextVersion: number };
 
 declare global {
+  // eslint-disable-next-line no-var
   var crisisState: MutableState | undefined;
 }
+
+/** Segundos que una accion puede estar en curso antes de considerarse atascada. */
+const STALL_SECONDS = 90;
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
@@ -26,37 +44,89 @@ function uid(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function nowIso() {
+  return new Date().toISOString();
+}
+
+// ---------------------------------------------------------------------------
+// Ciclo de vida del estado
+// ---------------------------------------------------------------------------
+
 function createInitialState(): MutableState {
   const events = clone(seedEvents);
   const zones = clone(seedZones);
   const resources = clone(seedResources);
+  const contacts = clone(seedContacts);
   const actions = clone(seedActions);
 
   return {
     events,
     zones,
     resources,
+    contacts,
+    chains: [],
     actions,
     plan: buildPlan(1, zones, events, resources, actions),
+    planHistory: [],
+    audit: [],
+    scenario: createScenarioState(),
+    learning: loadWeights() ?? emptyWeights(),
     integration: {
       mode: getExecutionMode(),
       happyRobotConfigured: isHappyRobotConfigured(),
-      lastExternalError: null
+      lastExternalError: null,
+      liveActionsExecuted: 0,
+      mockActionsExecuted: 0
     },
     nextVersion: 2
   };
 }
 
-function state() {
-  globalThis.crisisState ??= createInitialState();
-  globalThis.crisisState.integration.mode = getExecutionMode();
-  globalThis.crisisState.integration.happyRobotConfigured = isHappyRobotConfigured();
-  return globalThis.crisisState;
+function restoreOrCreate(): MutableState {
+  if (!isPersistenceEnabled()) return createInitialState();
+  const restored = loadState();
+  if (!restored) return createInitialState();
+  return { ...restored, nextVersion: restored.plan.version + 1 };
 }
 
-function replan(invalidatedActionIds: string[] = []) {
+function state() {
+  globalThis.crisisState ??= restoreOrCreate();
+  const current = globalThis.crisisState;
+  current.integration.mode = getExecutionMode();
+  current.integration.happyRobotConfigured = isHappyRobotConfigured();
+  return current;
+}
+
+function persist() {
+  if (!isPersistenceEnabled()) return;
+  try {
+    saveState(getSituation());
+  } catch {
+    // La persistencia nunca puede tumbar la demo.
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Auditoria y replanificacion
+// ---------------------------------------------------------------------------
+
+function audit(actor: Actor, kind: string, summary: string, ref?: string) {
   const current = state();
-  current.plan = buildPlan(
+  current.audit = appendAudit(current.audit, {
+    id: uid("aud"),
+    at: nowIso(),
+    actor,
+    kind,
+    summary,
+    planVersion: current.plan.version,
+    ref
+  });
+}
+
+function replan(trigger: string, invalidatedActionIds: string[] = []) {
+  const current = state();
+  const previous = current.plan;
+  const next = buildPlan(
     current.nextVersion++,
     current.zones,
     current.events,
@@ -64,7 +134,39 @@ function replan(invalidatedActionIds: string[] = []) {
     current.actions,
     invalidatedActionIds
   );
+  next.trigger = trigger;
+  next.changes = diffPlans(previous, next);
+  current.planHistory = pushPlanHistory(current.planHistory, previous);
+  current.plan = next;
+  persist();
 }
+
+// ---------------------------------------------------------------------------
+// Vigilante de acciones atascadas
+// ---------------------------------------------------------------------------
+
+function sweepStalledActions() {
+  const current = state();
+  const now = Date.now();
+  let changed = false;
+
+  for (const action of current.actions) {
+    if (action.status !== "running" || !action.stalledAfter) continue;
+    if (new Date(action.stalledAfter).getTime() > now) continue;
+    action.status = "stalled";
+    action.error = `Sin respuesta del ejecutor externo tras ${STALL_SECONDS} segundos.`;
+    action.updatedAt = nowIso();
+    releaseResource(current.resources, action.id);
+    audit("system", "action-stalled", `La accion "${action.objective}" dejo de responder.`, action.id);
+    changed = true;
+  }
+
+  if (changed) replan("una accion externa dejo de responder");
+}
+
+// ---------------------------------------------------------------------------
+// Senales
+// ---------------------------------------------------------------------------
 
 function defaultZoneId() {
   return state().zones[0]?.id ?? "zone-central";
@@ -84,13 +186,28 @@ function normalizeIncomingEvent(payload: IncomingEventPayload): CrisisEvent {
     category,
     severity,
     confidence: payload.confidence ?? "medium",
-    createdAt: new Date().toISOString(),
+    createdAt: nowIso(),
     confirmed: payload.confirmed ?? null,
-    dedupeKey: buildDedupeKey({ zoneId, category, severity })
+    dedupeKey: buildDedupeKey({ zoneId, category, severity }),
+    occurrences: 1,
+    appliedRiskDelta: 0,
+    appliedNeed: null,
+    previousZoneStatus: null
   };
 }
 
-function updateZoneFromEvent(zone: CrisisZone, event: CrisisEvent): CrisisZone {
+const riskDeltaBySeverity: Record<CrisisEvent["severity"], number> = {
+  low: 4,
+  medium: 4,
+  high: 10,
+  critical: 18
+};
+
+/**
+ * Aplica el efecto de una senal sobre su zona y anota en la propia senal que
+ * cambio provoco, de forma que descartarla pueda revertirlo exactamente.
+ */
+function applyEventToZone(zone: CrisisZone, event: CrisisEvent): CrisisZone {
   const statusBySeverity: Record<CrisisEvent["severity"], CrisisZone["status"]> = {
     low: zone.status === "stable" ? "stable" : zone.status,
     medium: zone.status === "critical" ? "critical" : "watch",
@@ -99,42 +216,111 @@ function updateZoneFromEvent(zone: CrisisZone, event: CrisisEvent): CrisisZone {
   };
 
   const need = event.category.replace(/-/g, " ");
+  const rawDelta = riskDeltaBySeverity[event.severity];
+  const appliedDelta = Math.min(rawDelta, 100 - zone.riskScore);
+  const addsNeed = !zone.needs.includes(need);
+
+  event.appliedRiskDelta = appliedDelta;
+  event.appliedNeed = addsNeed ? need : null;
+  event.previousZoneStatus = zone.status;
+
   return {
     ...zone,
     status: statusBySeverity[event.severity],
-    riskScore: Math.min(100, zone.riskScore + (event.severity === "critical" ? 18 : event.severity === "high" ? 10 : 4)),
-    needs: zone.needs.includes(need) ? zone.needs : [...zone.needs, need],
+    riskScore: zone.riskScore + appliedDelta,
+    needs: addsNeed ? [...zone.needs, need] : zone.needs,
     lastUpdatedAt: event.createdAt
+  };
+}
+
+/** Deshace el efecto de una senal descartada sobre su zona. */
+function revertEventFromZone(zone: CrisisZone, event: CrisisEvent): CrisisZone {
+  const stillNeeded = state().events.some(
+    (other) =>
+      other.id !== event.id &&
+      other.zoneId === event.zoneId &&
+      other.confirmed !== false &&
+      other.appliedNeed === event.appliedNeed
+  );
+
+  return {
+    ...zone,
+    status: event.previousZoneStatus ?? zone.status,
+    riskScore: Math.max(0, zone.riskScore - event.appliedRiskDelta),
+    needs:
+      event.appliedNeed && !stillNeeded
+        ? zone.needs.filter((need) => need !== event.appliedNeed)
+        : zone.needs,
+    lastUpdatedAt: nowIso()
   };
 }
 
 function proposeActionForEvent(event: CrisisEvent) {
   const current = state();
   const zone = current.zones.find((candidate) => candidate.id === event.zoneId);
+  if (!zone) return;
+
   const existingOpen = current.actions.some(
     (action) =>
       action.zoneId === event.zoneId &&
       action.objective.toLowerCase().includes(event.category.toLowerCase()) &&
       !["succeeded", "cancelled"].includes(action.status)
   );
-  if (!zone || existingOpen) return;
+  if (existingOpen) return;
 
-  const resource = current.resources.find((candidate) => candidate.status === "available");
+  const urgent = event.severity === "critical" || event.severity === "high";
+  const contact = selectContact(current.contacts, zone.id, event.category);
+  const channel = contact ? selectChannel(contact, urgent, current.learning) : urgent ? "call" : "ticket";
+  const at = nowIso();
+  const id = uid("act");
+
+  const assignment = selectResourceForAction(
+    { zoneId: zone.id, objective: event.category, channel },
+    current.resources,
+    current.zones
+  );
+
+  const chain = buildEscalationChain({
+    id: uid("chain"),
+    objective: `Coordinar respuesta de ${event.category} en ${zone.name}.`,
+    zoneId: zone.id,
+    category: event.category,
+    urgent,
+    contacts: current.contacts,
+    learning: current.learning,
+    at
+  });
+  if (chain.steps.length > 0) current.chains.unshift(chain);
+
   const action: Action = {
-    id: uid("act"),
-    channel: event.severity === "critical" ? "call" : "ticket",
-    target: `Responsable de ${zone.name}`,
+    id,
+    channel,
+    target: contact?.name ?? `Responsable de ${zone.name}`,
     objective: `Coordinar respuesta de ${event.category} en ${zone.name}.`,
     status: "pending",
-    reason: `${event.title} elevo la prioridad de ${zone.name} con severidad ${event.severity} y confianza ${event.confidence}.`,
+    reason: `${event.title} elevo la prioridad de ${zone.name} con severidad ${event.severity} y confianza ${event.confidence}.${assignment ? ` ${assignment.reason}` : " Sin recurso compatible libre."}`,
     zoneId: zone.id,
-    resourceId: resource?.id,
+    resourceId: assignment?.resourceId,
+    contactId: contact?.id,
+    chainId: chain.steps.length > 0 ? chain.id : undefined,
     executionMode: getExecutionMode(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    attempt: 1,
+    idempotencyKey: `${id}:1`,
+    stalledAfter: null,
+    approvedBy: null,
+    approvedAt: null,
+    completedAt: null,
+    createdAt: at,
+    updatedAt: at
   };
+
   current.actions.unshift(action);
+  audit("system", "action-proposed", `Propuesta: ${action.objective}`, action.id);
 }
+
+// ---------------------------------------------------------------------------
+// API publica del store
+// ---------------------------------------------------------------------------
 
 export function getSituation(): SituationState {
   const current = state();
@@ -142,188 +328,413 @@ export function getSituation(): SituationState {
     events: current.events,
     zones: current.zones,
     resources: current.resources,
+    contacts: current.contacts,
+    chains: current.chains,
     actions: current.actions,
     plan: current.plan,
+    planHistory: current.planHistory,
+    audit: current.audit,
+    scenario: current.scenario,
+    learning: current.learning,
     integration: current.integration
   });
 }
 
-export function resetSituation() {
-  globalThis.crisisState = createInitialState();
+/** Lectura viva: avanza el escenario y barre acciones atascadas antes de leer. */
+export function pollSituation(): SituationState {
+  tickScenario();
+  sweepStalledActions();
   return getSituation();
 }
 
-export function addEvent(payload: IncomingEventPayload) {
+export function resetSituation() {
+  globalThis.crisisState = createInitialState();
+  audit("operator", "reset", "La demo se reinicio al estado inicial.");
+  return getSituation();
+}
+
+export function addEvent(payload: IncomingEventPayload, actor: Actor = "system") {
   const current = state();
   const event = normalizeIncomingEvent(payload);
   const duplicate = current.events.find(
-    (candidate) => candidate.dedupeKey === event.dedupeKey && Date.now() - new Date(candidate.createdAt).getTime() < 5 * 60 * 1000
+    (candidate) =>
+      candidate.dedupeKey === event.dedupeKey &&
+      candidate.confirmed !== false &&
+      Date.now() - new Date(candidate.createdAt).getTime() < 5 * 60 * 1000
   );
 
   if (duplicate) {
+    duplicate.occurrences += 1;
     duplicate.description = `${duplicate.description}\nSenal duplicada: ${event.description}`;
     duplicate.confidence = duplicate.confidence === "high" ? "high" : event.confidence;
     duplicate.createdAt = event.createdAt;
+    audit(actor, "event-deduplicated", `Senal repetida fusionada: ${duplicate.title}`, duplicate.id);
   } else {
     current.events.unshift(event);
-    current.zones = current.zones.map((zone) => (zone.id === event.zoneId ? updateZoneFromEvent(zone, event) : zone));
+    current.zones = current.zones.map((zone) =>
+      zone.id === event.zoneId ? applyEventToZone(zone, event) : zone
+    );
+    audit(actor, "event-ingested", `Nueva senal: ${event.title}`, event.id);
     proposeActionForEvent(event);
   }
 
-  replan();
+  replan(duplicate ? "senal repetida" : `nueva senal: ${event.title}`);
   return { event: duplicate ?? event, duplicate: Boolean(duplicate), situation: getSituation() };
 }
 
-export function createAction(payload: CreateActionPayload) {
+export function markEvent(eventId: string, confirmed: boolean, actor: Actor = "operator") {
   const current = state();
+  const event = current.events.find((candidate) => candidate.id === eventId);
+  if (!event) throw new Error("Event not found");
+  if (event.confirmed === confirmed) return event;
+
+  const wasDiscarded = event.confirmed === false;
+  event.confirmed = confirmed;
+
+  if (!confirmed) {
+    // Descartar una senal deshace su efecto sobre la zona y cancela las
+    // acciones que solo existian por ella.
+    current.zones = current.zones.map((zone) =>
+      zone.id === event.zoneId ? revertEventFromZone(zone, event) : zone
+    );
+    for (const action of current.actions) {
+      const bornFromEvent =
+        action.zoneId === event.zoneId &&
+        action.objective.toLowerCase().includes(event.category.toLowerCase()) &&
+        ["pending", "blocked"].includes(action.status);
+      if (!bornFromEvent) continue;
+      action.status = "cancelled";
+      action.error = `Se descarto la senal "${event.title}" que la motivo.`;
+      action.updatedAt = nowIso();
+      releaseResource(current.resources, action.id);
+    }
+    audit(actor, "event-discarded", `Senal descartada y efecto revertido: ${event.title}`, event.id);
+  } else {
+    if (wasDiscarded) {
+      current.zones = current.zones.map((zone) =>
+        zone.id === event.zoneId ? applyEventToZone(zone, event) : zone
+      );
+    }
+    audit(actor, "event-confirmed", `Senal confirmada: ${event.title}`, event.id);
+  }
+
+  replan(confirmed ? "una senal fue confirmada" : "una senal fue descartada");
+  return event;
+}
+
+export function createAction(payload: CreateActionPayload, actor: Actor = "operator") {
+  const current = state();
+  const at = nowIso();
+  const id = uid("act");
+  const assignment =
+    payload.resourceId
+      ? { resourceId: payload.resourceId, reason: "Recurso elegido manualmente." }
+      : selectResourceForAction(
+          { zoneId: payload.zoneId, objective: payload.objective, channel: payload.channel },
+          current.resources,
+          current.zones
+        );
+
   const action: Action = {
-    id: uid("act"),
+    id,
     ...payload,
+    resourceId: assignment?.resourceId,
     status: "pending",
     executionMode: getExecutionMode(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    attempt: 1,
+    idempotencyKey: `${id}:1`,
+    stalledAfter: null,
+    approvedBy: null,
+    approvedAt: null,
+    completedAt: null,
+    createdAt: at,
+    updatedAt: at
   };
   current.actions.unshift(action);
-  replan();
+  audit(actor, "action-created", `Accion creada a mano: ${action.objective}`, action.id);
+  replan("un operador creo una accion");
   return action;
 }
 
-export async function approveAction(actionId: string) {
+export async function approveAction(actionId: string, actor: Actor = "operator") {
   const current = state();
   const action = current.actions.find((candidate) => candidate.id === actionId);
   if (!action) throw new Error("Action not found");
   if (["succeeded", "cancelled", "running"].includes(action.status)) return action;
 
   action.status = "running";
-  action.updatedAt = new Date().toISOString();
+  action.approvedBy = actor;
+  action.approvedAt = nowIso();
+  action.updatedAt = action.approvedAt;
+  action.stalledAfter = new Date(Date.now() + STALL_SECONDS * 1000).toISOString();
+  action.idempotencyKey = `${action.id}:${action.attempt}`;
+  if (action.resourceId) assignResource(current.resources, action.resourceId, action.id, action.approvedAt);
+  audit(actor, "action-approved", `Accion aprobada: ${action.objective}`, action.id);
+
+  const attemptAtDispatch = action.attempt;
 
   try {
     const result = await executeHappyRobotAction(action);
-    action.status = result.mode === "mock" ? "succeeded" : "running";
-    action.executionMode = result.mode;
-    action.externalActionId = result.externalActionId;
-    action.error = undefined;
+
+    // El operador puede haber cancelado o reintentado mientras la llamada
+    // estaba en vuelo: en ese caso la respuesta tardia no puede pisar el estado.
+    const settled = current.actions.find((candidate) => candidate.id === actionId);
+    if (!settled || settled.attempt !== attemptAtDispatch || settled.status !== "running") {
+      return settled ?? action;
+    }
+
+    settled.status = result.mode === "mock" ? "succeeded" : "running";
+    settled.executionMode = result.mode;
+    settled.externalActionId = result.externalActionId;
+    settled.error = undefined;
+    settled.updatedAt = nowIso();
+    if (settled.status === "succeeded") {
+      settled.completedAt = settled.updatedAt;
+      settled.stalledAfter = null;
+      releaseResource(current.resources, settled.id);
+      current.learning = recordActionOutcome(current.learning, settled);
+    }
+    if (result.mode === "mock") current.integration.mockActionsExecuted += 1;
+    else current.integration.liveActionsExecuted += 1;
     current.integration.lastExternalError = null;
+    replan("se ejecuto una accion");
+    return settled;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown HappyRobot error";
-    action.status = "failed";
-    action.error = message;
+    const settled = current.actions.find((candidate) => candidate.id === actionId);
+    if (!settled || settled.attempt !== attemptAtDispatch || settled.status !== "running") {
+      return settled ?? action;
+    }
+    settled.status = "failed";
+    settled.error = message;
+    settled.stalledAfter = null;
+    settled.updatedAt = nowIso();
+    releaseResource(current.resources, settled.id);
     current.integration.lastExternalError = message;
+    current.learning = recordActionOutcome(current.learning, settled);
+    audit("happyrobot", "action-failed", `Fallo la ejecucion: ${message}`, settled.id);
+    replan("fallo la ejecucion de una accion");
+    return settled;
   }
-
-  action.updatedAt = new Date().toISOString();
-  replan();
-  return action;
 }
 
-export function setActionStatus(actionId: string, status: ActionStatus, externalActionId?: string, error?: string) {
+export function setActionStatus(
+  actionId: string,
+  status: ActionStatus,
+  externalActionId?: string,
+  error?: string,
+  actor: Actor = "happyrobot"
+) {
   const current = state();
-  const action = current.actions.find((candidate) => candidate.id === actionId || candidate.externalActionId === actionId);
+  const action = current.actions.find(
+    (candidate) => candidate.id === actionId || candidate.externalActionId === actionId
+  );
   if (!action) throw new Error("Action not found");
 
   action.status = status;
   action.externalActionId = externalActionId ?? action.externalActionId;
   action.error = error;
-  action.updatedAt = new Date().toISOString();
+  action.updatedAt = nowIso();
+
+  if (["succeeded", "failed", "cancelled", "blocked", "stalled"].includes(status)) {
+    action.stalledAfter = null;
+    releaseResource(current.resources, action.id);
+  }
+  if (status === "succeeded") action.completedAt = action.updatedAt;
+  if (["succeeded", "failed"].includes(status)) {
+    current.learning = recordActionOutcome(current.learning, action);
+  }
   if (status === "failed") current.integration.lastExternalError = error ?? "External action failed";
-  replan();
+
+  audit(actor, `action-${status}`, `La accion "${action.objective}" paso a ${status}.`, action.id);
+  replan(`una accion paso a ${status}`);
   return action;
 }
 
-export function cancelAction(actionId: string) {
-  return setActionStatus(actionId, "cancelled");
+export function cancelAction(actionId: string, actor: Actor = "operator") {
+  return setActionStatus(actionId, "cancelled", undefined, undefined, actor);
 }
 
-export function retryAction(actionId: string) {
+export function retryAction(actionId: string, actor: Actor = "operator") {
   const current = state();
   const action = current.actions.find((candidate) => candidate.id === actionId);
   if (!action) throw new Error("Action not found");
+
+  // Cada reintento es un intento nuevo con su propia clave de idempotencia,
+  // de forma que HappyRobot no deduplique un reintento legitimo contra el
+  // intento anterior.
+  action.attempt += 1;
+  action.idempotencyKey = `${action.id}:${action.attempt}`;
   action.status = "pending";
   action.error = undefined;
   action.externalActionId = undefined;
-  action.updatedAt = new Date().toISOString();
-  replan();
+  action.stalledAfter = null;
+  action.updatedAt = nowIso();
+  audit(actor, "action-retried", `Reintento ${action.attempt} de "${action.objective}".`, action.id);
+  replan("un operador reintento una accion");
   return action;
 }
 
-export function markEvent(eventId: string, confirmed: boolean) {
+export function updateResource(resourceId: string, status: Resource["status"], actor: Actor = "operator") {
   const current = state();
-  const event = current.events.find((candidate) => candidate.id === eventId);
-  if (!event) throw new Error("Event not found");
-  event.confirmed = confirmed;
-  replan();
-  return event;
+  const resource = current.resources.find((candidate) => candidate.id === resourceId);
+  if (!resource) throw new Error("Resource not found");
+  resource.status = status;
+  audit(actor, "resource-updated", `${resource.name} paso a ${status}.`, resource.id);
+  replan("cambio la disponibilidad de un recurso");
+  return resource;
 }
 
-export function injectDemo(kind: "incident" | "resource-down" | "route-blocked" | "integration-failure") {
+// ---------------------------------------------------------------------------
+// Escenario
+// ---------------------------------------------------------------------------
+
+export function startScenarioRun() {
+  const current = state();
+  startScenario(current.scenario, nowIso());
+  audit("operator", "scenario-started", `Escenario en marcha: ${current.scenario.name}.`);
+  replan("arranco el escenario");
+  return getSituation();
+}
+
+export function stopScenarioRun() {
+  const current = state();
+  stopScenario(current.scenario);
+  audit("operator", "scenario-stopped", "Escenario detenido.");
+  return getSituation();
+}
+
+/** Aplica los beats del guion que ya tocaban. La UI lo dispara al refrescar. */
+export function tickScenario() {
+  const current = state();
+  const due = dueBeats(current.scenario, Date.now());
+  for (const beat of due) {
+    audit("scenario", "scenario-beat", beat.label, beat.id);
+    if (beat.demoKind) injectDemo(beat.demoKind, "scenario");
+    else if (beat.event) addEvent(beat.event, "scenario");
+  }
+  return due.length;
+}
+
+// ---------------------------------------------------------------------------
+// Inyectores manuales de demo
+// ---------------------------------------------------------------------------
+
+export function injectDemo(kind: DemoKind, actor: Actor = "operator") {
   const current = state();
 
   if (kind === "resource-down") {
-    const resource = current.resources.find((candidate) => candidate.status !== "unavailable");
-    if (resource) {
-      resource.status = "unavailable";
-      const invalidated = current.actions
-        .filter((action) => action.resourceId === resource.id && ["pending", "approved", "running"].includes(action.status))
-        .map((action) => {
-          action.status = "blocked";
-          action.error = `${resource.name} queda no disponible.`;
-          action.updatedAt = new Date().toISOString();
-          return action.id;
-        });
-      addEvent({
-        source: "demo",
+    // Tumbar un recurso solo es interesante si algo depende de el: se elige
+    // primero uno con acciones vivas, y solo si no hay ninguno se coge otro.
+    const busyIds = new Set(
+      current.actions
+        .filter((action) => ["pending", "approved", "running"].includes(action.status))
+        .map((action) => action.resourceId)
+        .filter(Boolean) as string[]
+    );
+    const resource =
+      current.resources.find((candidate) => candidate.status !== "unavailable" && busyIds.has(candidate.id)) ??
+      current.resources.find((candidate) => candidate.status !== "unavailable");
+
+    if (!resource) return getSituation();
+
+    resource.status = "unavailable";
+    resource.assignedActionId = null;
+    resource.assignedAt = null;
+
+    const invalidated = current.actions
+      .filter(
+        (action) =>
+          action.resourceId === resource.id && ["pending", "approved", "running"].includes(action.status)
+      )
+      .map((action) => {
+        action.status = "blocked";
+        action.error = `${resource.name} queda no disponible.`;
+        action.updatedAt = nowIso();
+        return action.id;
+      });
+
+    const reassignments = reassignAffectedActions(
+      current.actions,
+      current.resources,
+      current.zones,
+      resource.id
+    );
+    for (const move of reassignments) {
+      const action = current.actions.find((candidate) => candidate.id === move.actionId);
+      if (!action || !move.toResourceId) continue;
+      action.resourceId = move.toResourceId;
+      action.status = "pending";
+      action.error = undefined;
+      action.reason = `${action.reason} ${move.reason}`;
+      action.updatedAt = nowIso();
+    }
+
+    addEvent(
+      {
+        source: actor === "scenario" ? "scenario" : "demo",
         title: `${resource.name} queda no disponible`,
-        description: "La disponibilidad de recursos cambio durante la ejecucion regional; el plan debe rehacerse.",
+        description: "La disponibilidad de recursos cambio durante la ejecucion; el plan debe rehacerse.",
         zoneId: resource.zoneId ?? defaultZoneId(),
         category: "resource-shortage",
         severity: "high",
         confidence: "high",
         confirmed: true
-      });
-      replan(invalidated);
-    }
+      },
+      actor
+    );
+    replan(`${resource.name} quedo fuera de servicio`, invalidated);
     return getSituation();
   }
 
   if (kind === "route-blocked") {
-    addEvent({
-      source: "demo",
-      title: "Ruta de acceso bloqueada",
-      description: "La ruta principal entre Granada y Almeria queda bloqueada y los recursos asignados pueden necesitar desvio.",
-      zoneId: "zone-east",
-      category: "route-blocked",
-      severity: "critical",
-      confidence: "high",
-      confirmed: true
-    });
+    addEvent(
+      {
+        source: actor === "scenario" ? "scenario" : "demo",
+        title: "Ruta de acceso bloqueada",
+        description:
+          "La ruta principal entre Granada y Almeria queda bloqueada y los recursos asignados pueden necesitar desvio.",
+        zoneId: "zone-east",
+        category: "route-blocked",
+        severity: "critical",
+        confidence: "high",
+        confirmed: true
+      },
+      actor
+    );
     return getSituation();
   }
 
   if (kind === "integration-failure") {
-    const action = current.actions.find((candidate) => candidate.status !== "cancelled");
-    if (action) setActionStatus(action.id, "failed", action.externalActionId, "Fallo simulado de callback HappyRobot.");
+    // Solo tiene sentido tumbar una accion que este realmente en vuelo o a la
+    // espera; marcar como fallida una ya completada seria mentir.
+    const action =
+      current.actions.find((candidate) => candidate.status === "running") ??
+      current.actions.find((candidate) => ["approved", "pending"].includes(candidate.status));
+    if (action) {
+      setActionStatus(
+        action.id,
+        "failed",
+        action.externalActionId,
+        "Fallo simulado de callback HappyRobot.",
+        "happyrobot"
+      );
+    }
     return getSituation();
   }
 
-  addEvent({
-    source: "demo",
-    title: "Nuevo incidente de alta prioridad",
-    description: "Una nueva senal desde Sierra Morena indica una necesidad operativa que cambia rapido.",
-    zoneId: "zone-north",
-    category: "evacuation-support",
-    severity: "critical",
-    confidence: "medium",
-    confirmed: null
-  });
+  addEvent(
+    {
+      source: actor === "scenario" ? "scenario" : "demo",
+      title: "Nuevo incidente de alta prioridad",
+      description: "Una nueva senal desde Sierra Morena indica una necesidad operativa que cambia rapido.",
+      zoneId: "zone-north",
+      category: "evacuation-support",
+      severity: "critical",
+      confidence: "medium",
+      confirmed: null
+    },
+    actor
+  );
   return getSituation();
-}
-
-export function updateResource(resourceId: string, status: Resource["status"]) {
-  const current = state();
-  const resource = current.resources.find((candidate) => candidate.id === resourceId);
-  if (!resource) throw new Error("Resource not found");
-  resource.status = status;
-  replan();
-  return resource;
 }

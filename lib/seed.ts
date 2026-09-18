@@ -1,4 +1,4 @@
-import type { Action, CrisisEvent, CrisisZone, Resource } from "./types";
+import type { Action, Contact, CrisisEvent, CrisisZone, Resource, ScenarioBeat } from "./types";
 
 const now = new Date().toISOString();
 
@@ -63,7 +63,10 @@ export const seedResources: Resource[] = [
     capacity: 24,
     status: "available",
     zoneId: "zone-central",
-    assignedActionId: null
+    homeZoneId: "zone-central",
+    capabilities: ["triaje", "sanitario", "evacuacion"],
+    assignedActionId: null,
+    assignedAt: null
   },
   {
     id: "res-field-1",
@@ -72,7 +75,10 @@ export const seedResources: Resource[] = [
     capacity: 12,
     status: "available",
     zoneId: "zone-north",
-    assignedActionId: null
+    homeZoneId: "zone-north",
+    capabilities: ["extincion", "evaluacion de monte", "campo"],
+    assignedActionId: null,
+    assignedAt: null
   },
   {
     id: "res-transport-1",
@@ -81,7 +87,10 @@ export const seedResources: Resource[] = [
     capacity: 80,
     status: "available",
     zoneId: "zone-south",
-    assignedActionId: null
+    homeZoneId: "zone-south",
+    capabilities: ["evacuacion", "transporte", "refugio"],
+    assignedActionId: null,
+    assignedAt: null
   },
   {
     id: "res-comms-1",
@@ -90,7 +99,102 @@ export const seedResources: Resource[] = [
     capacity: 1,
     status: "available",
     zoneId: null,
-    assignedActionId: null
+    homeZoneId: null,
+    capabilities: ["coordinacion", "alerta publica", "comunicaciones"],
+    assignedActionId: null,
+    assignedAt: null
+  },
+  {
+    id: "res-med-2",
+    name: "EPES Granada Delta",
+    type: "sanitario",
+    capacity: 18,
+    status: "available",
+    zoneId: "zone-east",
+    homeZoneId: "zone-east",
+    capabilities: ["triaje", "sanitario"],
+    assignedActionId: null,
+    assignedAt: null
+  }
+];
+
+/**
+ * Contactos de demo. Solo los marcados con demoSafe pueden recibir acciones
+ * reales a traves de HappyRobot; el resto se queda siempre en modo simulado.
+ * Los telefonos y correos son marcadores de posicion, nunca datos reales.
+ */
+export const seedContacts: Contact[] = [
+  {
+    id: "con-field-north",
+    name: "Coordinacion INFOCA Sierra Morena",
+    role: "field-coordinator",
+    zoneId: "zone-north",
+    channels: ["call", "sms", "email"],
+    phone: null,
+    email: null,
+    demoSafe: false,
+    lastContactedAt: null,
+    responsiveness: 0.8
+  },
+  {
+    id: "con-med-central",
+    name: "Jefatura sanitaria Sevilla Hub",
+    role: "medical-lead",
+    zoneId: "zone-central",
+    channels: ["call", "sms"],
+    phone: null,
+    email: null,
+    demoSafe: false,
+    lastContactedAt: null,
+    responsiveness: 0.75
+  },
+  {
+    id: "con-ops-lead",
+    name: "Sala de coordinacion 112 Andalucia",
+    role: "operations-lead",
+    zoneId: null,
+    channels: ["call", "email", "slack"],
+    phone: null,
+    email: null,
+    demoSafe: false,
+    lastContactedAt: null,
+    responsiveness: 0.9
+  },
+  {
+    id: "con-safety-east",
+    name: "Trafico y carreteras Granada",
+    role: "public-safety",
+    zoneId: "zone-east",
+    channels: ["sms", "email"],
+    phone: null,
+    email: null,
+    demoSafe: false,
+    lastContactedAt: null,
+    responsiveness: 0.6
+  },
+  {
+    id: "con-volunteer-south",
+    name: "Voluntariado Costa del Sol",
+    role: "volunteer",
+    zoneId: "zone-south",
+    channels: ["sms", "whatsapp"],
+    phone: null,
+    email: null,
+    demoSafe: false,
+    lastContactedAt: null,
+    responsiveness: 0.45
+  },
+  {
+    id: "con-authority",
+    name: "Autoridad regional de emergencias",
+    role: "authority",
+    zoneId: null,
+    channels: ["email", "call"],
+    phone: null,
+    email: null,
+    demoSafe: false,
+    lastContactedAt: null,
+    responsiveness: 0.5
   }
 ];
 
@@ -106,7 +210,11 @@ export const seedEvents: CrisisEvent[] = [
     confidence: "high",
     createdAt: now,
     confirmed: true,
-    dedupeKey: "zone-central:coordinacion:high"
+    dedupeKey: "zone-central:coordinacion:high",
+    occurrences: 1,
+    appliedRiskDelta: 0,
+    appliedNeed: null,
+    previousZoneStatus: null
   }
 ];
 
@@ -120,8 +228,86 @@ export const seedActions: Action[] = [
     reason: "Sevilla Hub tiene la mayor puntuacion de riesgo inicial y demanda confirmada.",
     zoneId: "zone-central",
     resourceId: "res-comms-1",
+    contactId: "con-med-central",
     executionMode: "mock",
+    attempt: 1,
+    idempotencyKey: "act-seed-1:1",
+    stalledAfter: null,
+    approvedBy: null,
+    approvedAt: null,
+    completedAt: null,
     createdAt: now,
     updatedAt: now
+  }
+];
+
+/**
+ * Guion por defecto del escenario que avanza solo: un incendio forestal que
+ * cambia de frente, corta una carretera y tumba un recurso mientras el sistema
+ * esta ejecutando acciones.
+ */
+export const seedScenarioBeats: ScenarioBeat[] = [
+  {
+    id: "beat-1",
+    atSeconds: 20,
+    label: "Columna de humo confirmada en Sierra Morena",
+    event: {
+      source: "scenario",
+      title: "Columna de humo confirmada en Sierra Morena",
+      description: "Vigilancia forestal confirma frente activo avanzando hacia el sur.",
+      zoneId: "zone-north",
+      category: "incendio",
+      severity: "high",
+      confidence: "high",
+      confirmed: true
+    }
+  },
+  {
+    id: "beat-2",
+    atSeconds: 55,
+    label: "El viento gira y el frente amenaza nucleos habitados",
+    event: {
+      source: "scenario",
+      title: "Cambio de viento hacia nucleos habitados",
+      description: "El frente gira al suroeste. La evacuacion preventiva pasa a ser urgente.",
+      zoneId: "zone-north",
+      category: "evacuacion",
+      severity: "critical",
+      confidence: "high",
+      confirmed: true
+    }
+  },
+  {
+    id: "beat-3",
+    atSeconds: 90,
+    label: "Carretera de acceso cortada",
+    demoKind: "route-blocked"
+  },
+  {
+    id: "beat-4",
+    atSeconds: 125,
+    label: "Un recurso asignado queda fuera de servicio",
+    demoKind: "resource-down"
+  },
+  {
+    id: "beat-5",
+    atSeconds: 160,
+    label: "Saturacion de refugios en la costa",
+    event: {
+      source: "scenario",
+      title: "Refugios de la Costa del Sol al limite",
+      description: "Llegan mas desplazados de los previstos y la capacidad de refugio se agota.",
+      zoneId: "zone-south",
+      category: "refugio",
+      severity: "high",
+      confidence: "medium",
+      confirmed: null
+    }
+  },
+  {
+    id: "beat-6",
+    atSeconds: 200,
+    label: "Caida de la integracion de mensajeria",
+    demoKind: "integration-failure"
   }
 ];
