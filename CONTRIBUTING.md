@@ -48,8 +48,9 @@ formato. El pre-push ejecuta la comprobación completa con build. No saltes hook
 para ocultar fallos. Las reglas de nomenclatura están en PROJECT.md.
 
 Publica tu rama y abre una PR **siempre hacia `main`**, usando la plantilla.
-Los agentes necesitan permiso explícito para hacer push. El propietario hace
-el merge final; ningún agente debe hacerlo. Los pushes directos a `main` están
+Los agentes necesitan permiso explícito para hacer push y pueden hacer merge
+cuando el usuario se lo indique, respetando checks y protección de ramas.
+Los pushes directos a `main` están
 bloqueados. Indica en la PR qué probaste y cualquier comprobación omitida.
 
 ## Trabajar con agentes

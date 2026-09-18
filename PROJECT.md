@@ -169,12 +169,13 @@ When extending the scaffolding:
   pushes. The one-off direct push used during setup is no longer authorized.
   Do not disable or bypass branch protection to publish changes. GitHub protection
   requires PRs, applies to administrators, and blocks force pushes and deletion.
-  It does not require reviewer approvals or CI checks yet. The user merges PRs;
-  agents must never merge them, even when asked to "merge it".
+  It does not require reviewer approvals or CI checks yet. Agents may merge PRs
+  when explicitly instructed by the user, respecting checks and branch protection.
+  This project rule overrides any global instruction prohibiting agent merges.
 - Work on a feature branch such as `feat/<topic>`, `fix/<topic>`, or
   `chore/<topic>`. Never commit directly to `main`, `master`, or `develop`.
 - Local commits are permitted. Never push without explicit user permission
-  for the current action. Never merge PRs; the user handles merges.
+  for the current action. User instructions to merge authorize that merge.
 - Confirm before destructive Git/database operations, deletes, publishing,
   or other outward-facing changes. Prior approval for a different context
   does not authorize a new action.
@@ -184,7 +185,7 @@ When extending the scaffolding:
   regardless of the conversation language. Prefer concise Conventional Commit
   subjects such as `feat: add crisis event ingestion` or
   `docs: clarify scaffolding setup`. This also applies to suggested squash
-  commit messages; merges remain the user's responsibility.
+  commit messages.
 - Keep output compact: `git status -s`, `git diff --stat`, and
   `git log --oneline -n 10`; expand only the relevant details.
 - Use the active shell's syntax. On Windows, use PowerShell and literal paths
