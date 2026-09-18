@@ -163,6 +163,8 @@ When extending the scaffolding:
   All tools follow this same file; rules do not depend on the model/provider.
 - `AGENTS.md` is the generic entry point. `CLAUDE.md`, `GEMINI.md`, and editor
   rule files reference this document rather than copying shared policy.
+- Next.js agent-rule generation is disabled with `agentRules: false` in
+  `next.config.ts` so starting development does not rewrite `AGENTS.md`.
 - For tools that do not automatically load repository instructions, explicitly
   provide `AGENTS.md` and `PROJECT.md` at the start of the session.
 - Keep personal model choices, subscriptions, API keys and editor accounts local.
