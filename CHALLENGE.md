@@ -4,11 +4,11 @@
 
 What the challenge is about, what your system must do, and how it is scored. You choose the type of crisis: a wildfire, a blackout, a flood, or whatever you come up with.
 
-| | |
-|---|---|
-| **Scenario** | A crisis of your choosing |
+|                 |                                     |
+| --------------- | ----------------------------------- |
+| **Scenario**    | A crisis of your choosing           |
 | **Environment** | Changes while the system is running |
-| **Resources** | HappyRobot platform |
+| **Resources**   | HappyRobot platform                 |
 
 ---
 
@@ -24,7 +24,7 @@ A hundred messages arrive and only three change anything. The system has to keep
 
 #### What comes first
 
-Twenty things can be done at once, but some matter more than others. The system has to say where to start *now*.
+Twenty things can be done at once, but some matter more than others. The system has to say where to start _now_.
 
 #### Who gets notified, and when
 
@@ -62,7 +62,7 @@ Of everything that is open, the system says what is handled first and why—base
 
 It notifies people, assigns tasks, and tracks who has taken what.
 
-Calls, messages, tickets, APIs. The system *moves* things; it does not only propose them.
+Calls, messages, tickets, APIs. The system _moves_ things; it does not only propose them.
 
 #### Adapt
 
@@ -76,14 +76,14 @@ The system is able to rebuild the plan.
 
 ### What the submission must include
 
-| What | What it means | Status |
-|---|---|---|
-| **Agentic system** | Decides and acts on its own. A chatbot that answers questions does not qualify. | Required |
-| **Moving scenario** | The situation changes while the system runs. If the case is static, there is nothing to adapt to. | Required |
-| **Multi-step response** | A chain of actions toward a goal, not a single isolated action. | Required |
-| **Real interaction** | Calls, writes, creates tickets, or moves data in a real system. Talking to a person counts. | Required |
-| **Human interface** | A screen where you can understand the situation, see what the system is doing, and intervene when needed. | Required |
-| **Learns from past interactions** | Reviews calls and decisions from previous runs, sees what worked and what did not, and adjusts how it acts next time. | Bonus |
+| What                              | What it means                                                                                                         | Status   |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------- | -------- |
+| **Agentic system**                | Decides and acts on its own. A chatbot that answers questions does not qualify.                                       | Required |
+| **Moving scenario**               | The situation changes while the system runs. If the case is static, there is nothing to adapt to.                     | Required |
+| **Multi-step response**           | A chain of actions toward a goal, not a single isolated action.                                                       | Required |
+| **Real interaction**              | Calls, writes, creates tickets, or moves data in a real system. Talking to a person counts.                           | Required |
+| **Human interface**               | A screen where you can understand the situation, see what the system is doing, and intervene when needed.             | Required |
+| **Learns from past interactions** | Reviews calls and decisions from previous runs, sees what worked and what did not, and adjusts how it acts next time. | Bonus    |
 
 ---
 
@@ -95,26 +95,26 @@ Three blocks: how the system decides, how it acts, and how it is supervised. Non
 
 ### How it decides
 
-| Criterion | Question |
-|---|---|
-| **Decision** | Does it decide something sensible without having all the data? |
-| **Priority** | Does it know what comes first when everything looks urgent? |
-| **Adaptation** | Does it do something different when the situation changes? |
+| Criterion      | Question                                                       |
+| -------------- | -------------------------------------------------------------- |
+| **Decision**   | Does it decide something sensible without having all the data? |
+| **Priority**   | Does it know what comes first when everything looks urgent?    |
+| **Adaptation** | Does it do something different when the situation changes?     |
 
 ### How it acts
 
-| Criterion | Question |
-|---|---|
-| **Coordination** | Does it handle people, information, and resources at the same time? |
-| **Execution** | Does it execute actions outside the system, or only propose them? Calls, messages, tickets, API calls. |
+| Criterion        | Question                                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------ |
+| **Coordination** | Does it handle people, information, and resources at the same time?                                    |
+| **Execution**    | Does it execute actions outside the system, or only propose them? Calls, messages, tickets, API calls. |
 
 ### How it is supervised
 
-| Criterion | Question |
-|---|---|
-| **Control** | Is it clear what the system is doing, and can someone intervene if needed? |
-| **Creativity** | Does the scenario and how it is managed have something distinctive? |
-| **Learning** | Extra points if it learns from previous runs. |
+| Criterion      | Question                                                                   |
+| -------------- | -------------------------------------------------------------------------- |
+| **Control**    | Is it clear what the system is doing, and can someone intervene if needed? |
+| **Creativity** | Does the scenario and how it is managed have something distinctive?        |
+| **Learning**   | Extra points if it learns from previous runs.                              |
 
 ---
 
@@ -124,14 +124,14 @@ Three blocks: how the system decides, how it acts, and how it is supervised. Non
 
 These are examples from the brief, not a closed list. Anything works—including something that is not here.
 
-| Scenario | Angle |
-|---|---|
-| **Wildfire** | Warn towns, move resources, and rebuild the plan every time the front turns. |
-| **Widespread blackout** | No power and patchy coverage—decide who is informed and what is restored first. |
-| **Armed conflict** | Move civilians and transport when half of what comes in cannot be confirmed. |
-| **Flood or other natural disaster** | Timely alerts, closed roads, and teams spread across the area. |
-| **Critical infrastructure failure** | A system other systems depend on goes down. What is brought back up first? |
-| **Whatever you come up with** | A multi-casualty accident, a humanitarian emergency, an outbreak. The scenario is intentionally open. |
+| Scenario                            | Angle                                                                                                 |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| **Wildfire**                        | Warn towns, move resources, and rebuild the plan every time the front turns.                          |
+| **Widespread blackout**             | No power and patchy coverage—decide who is informed and what is restored first.                       |
+| **Armed conflict**                  | Move civilians and transport when half of what comes in cannot be confirmed.                          |
+| **Flood or other natural disaster** | Timely alerts, closed roads, and teams spread across the area.                                        |
+| **Critical infrastructure failure** | A system other systems depend on goes down. What is brought back up first?                            |
+| **Whatever you come up with**       | A multi-casualty accident, a humanitarian emergency, an outbreak. The scenario is intentionally open. |
 
 ---
 
@@ -143,4 +143,4 @@ These are examples from the brief, not a closed list. Anything works—including
 
 ---
 
-*HappyRobot challenge for HackSpain 2026.*
+_HappyRobot challenge for HackSpain 2026._

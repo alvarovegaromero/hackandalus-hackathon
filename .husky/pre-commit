@@ -1,0 +1,2 @@
+node scripts/guard-protected-branches.mjs commit
+npm run check

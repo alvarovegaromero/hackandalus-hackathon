@@ -54,6 +54,13 @@ do not treat them as blockers for this milestone. Track follow-up work in TASKS.
 Use Node.js 22.21+ (22.x) and npm 11.6.1. Commit package-lock.json; use npm only.
 Install: `npm ci`. Develop: `npm run dev`. Production: `npm run build` then
 `npm start`. Checks: `npm run lint`, `npm run typecheck`, `npm test` (Vitest).
+Formatting: `npm run format` writes changes; `npm run format:check` only checks.
+`npm run check` runs formatting, lint, types, tests and build sequentially.
+`npm ci` installs Husky hooks through `prepare` in development. The pre-commit
+hook blocks protected branches and runs `npm run check`; pre-push blocks all
+updates to `main`, `master`, and `develop`, including refspecs and deletions.
+Do not skip hooks to work around failing checks. Hooks are local checks, not
+remote enforcement; no paid GitHub features or Actions are needed to run them.
 The local browser demo requires no credentials. See README.md for the protected
 workflow API and optional environment variables. Do not apply migrations or
 invoke live communications without authorization for the specific action.
@@ -70,9 +77,17 @@ When extending the scaffolding:
 
 ## Conventions
 
+- Use the committed Prettier configuration: UTF-8, LF, two-space indentation,
+  double quotes, semicolons and trailing commas. `.editorconfig` configures
+  editors and `.gitattributes` normalizes Git text files across macOS, Windows
+  and Linux. Do not introduce OS-specific formatting overrides.
+- Use camelCase for variables/functions, PascalCase for React components and
+  types, kebab-case for application filenames, and UPPER_SNAKE_CASE for environment
+  variables. Preserve framework filenames such as `page.tsx`, `route.ts`, and
+  `AGENTS.md`. Prettier handles formatting, not identifier naming or commit language.
 - This is a hackathon project: prioritize a working end-to-end demo over
   polish. Don't build abstractions for hypothetical future requirements.
-- The challenge requires the system to actually *act* (calls, messages,
+- The challenge requires the system to actually _act_ (calls, messages,
   tickets, API calls), not just propose actions — keep integrations real
   wherever feasible instead of stubbing them out silently.
 - The challenge requires a human interface — a screen showing what the

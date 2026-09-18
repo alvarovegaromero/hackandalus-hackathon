@@ -22,6 +22,14 @@ workflow. La migración está escrita, pero no aplicada; los clientes Supabase y
 el helper Realtime están preparados, pero no conectados al panel. No se han
 probado llamadas a modelos ni comunicaciones reales.
 
+## Preparación local del código
+
+- [x] Prettier compartido, EditorConfig y finales LF en Git para macOS, Windows y Linux.
+- [x] Husky instalado automáticamente al instalar dependencias de desarrollo.
+- [x] Pre-commit con formato, lint, TypeScript, tests y build.
+- [x] Bloqueo local de commits y pushes a ramas protegidas.
+- [x] Documentar nomenclatura y comandos de formato y verificación.
+
 ## Fase 2 · Decisiones y configuración, para más adelante
 
 - [ ] Elegir el escenario de crisis y los cambios que se inyectarán durante la demo.

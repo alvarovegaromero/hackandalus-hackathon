@@ -7,6 +7,10 @@ Keep this file limited to Claude Code-specific notes.
 
 ## Claude Code specifics
 
+- Follow the shared Prettier and naming conventions in `AGENTS.md` on every OS.
+  Run `npm run format` before committing. Husky runs format, lint, type, test and
+  build checks before commits and blocks pushes to protected branches; never
+  bypass the hooks to hide failures. `npm ci` installs hooks in development.
 - Write commit subjects and bodies in English, even when the user communicates
   in Spanish. Follow the shared commit convention in `AGENTS.md`.
 - Repository: `alvarovegaromero/hackandalus-hackathon`; the local app is named

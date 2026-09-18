@@ -36,17 +36,54 @@ npm start
 (`nanoid` y `undici`) a versiones corregidas dentro de sus respectivas versiones
 mayores. Revisa si siguen siendo necesarios cuando actualices Workflow.
 
+## Formato y hooks locales
+
+`npm ci` instala automáticamente los hooks de Husky mediante `prepare` en
+desarrollo. Necesitas Git y Node/npm en el PATH; en Windows, Git for Windows
+proporciona el intérprete que utiliza Husky. No necesitas GitHub Actions ni un
+plan de pago para ejecutar estas comprobaciones.
+
+```powershell
+npm run format
+npm run check
+```
+
+- `npm run format` aplica Prettier; `npm run format:check` comprueba sin modificar.
+- **Pre-commit:** bloquea commits en `main`, `master`, `develop` o HEAD separado
+  y ejecuta formato, lint, TypeScript, tests y build. Si algo falla, no crea el
+  commit. Comprueba el proyecto completo, por lo que también detecta cambios
+  sin añadir al staging; formatea, revisa y añade los cambios antes de reintentar.
+- **Pre-push:** bloquea cualquier actualización o eliminación de las ramas
+  protegidas, incluso `git push origin HEAD:main`.
+- Si instalaste dependencias sin scripts, ejecuta `npm run prepare` para activar
+  los hooks. En despliegues o CI se omite su instalación.
+
+Compartimos UTF-8, finales LF, dos espacios, comillas dobles, punto y coma y
+comas finales mediante `.prettierrc.json`, `.editorconfig` y `.gitattributes`.
+Esto mantiene el mismo formato en macOS, Windows y Linux. Prettier formatea los
+archivos que soporta; SQL y hooks shell conservan las reglas de EditorConfig/Git.
+Los archivos generados y las credenciales quedan fuera del formateador.
+
+Nombres: camelCase para variables y funciones, PascalCase para componentes y
+tipos, kebab-case para archivos de aplicación y UPPER_SNAKE_CASE para variables
+de entorno. Se respetan nombres impuestos por el framework. Los mensajes de
+commit se escriben en inglés. Estas convenciones de nombres e idioma se revisan
+en código; Prettier no las valida.
+
+Los hooks funcionan en cada clon tras instalar las dependencias. No sustituyen
+la protección remota: clientes que omitan hooks pueden saltarse controles locales.
+
 ## Arquitectura
 
-| Ruta | Responsabilidad |
-| --- | --- |
-| `src/app`, `src/components` | Panel React y endpoints Next.js App Router |
-| `src/lib/domain.ts` | Eventos y planes validados con Zod; tipos compartidos |
-| `src/lib/agents/coordinator.ts` | Planificación estructurada con Vercel AI SDK |
-| `src/workflows/crisis.ts` | Workflow persistente con pasos de planificación y preparación |
-| `src/lib/supabase` | Clientes servidor/navegador y suscripción Realtime preparada |
-| `supabase/migrations` | Esquema inicial de incidentes, eventos, recursos, planes, acciones y resultados |
-| `src/lib/integrations/happyrobot.ts` | Límite de integración: devuelve `blocked` hasta concretar la API |
+| Ruta                                 | Responsabilidad                                                                 |
+| ------------------------------------ | ------------------------------------------------------------------------------- |
+| `src/app`, `src/components`          | Panel React y endpoints Next.js App Router                                      |
+| `src/lib/domain.ts`                  | Eventos y planes validados con Zod; tipos compartidos                           |
+| `src/lib/agents/coordinator.ts`      | Planificación estructurada con Vercel AI SDK                                    |
+| `src/workflows/crisis.ts`            | Workflow persistente con pasos de planificación y preparación                   |
+| `src/lib/supabase`                   | Clientes servidor/navegador y suscripción Realtime preparada                    |
+| `supabase/migrations`                | Esquema inicial de incidentes, eventos, recursos, planes, acciones y resultados |
+| `src/lib/integrations/happyrobot.ts` | Límite de integración: devuelve `blocked` hasta concretar la API                |
 
 El panel funciona como una demo independiente: **no llama al workflow ni a
 Supabase**. El workflow es un ejemplo ejecutable de planificación por evento;
@@ -59,15 +96,15 @@ para arrancar. No hay workers separados, Convex, Python ni Supabase Queues.
 Copia `.env.example` a `.env.local` y completa únicamente lo que vayas a usar.
 Nunca subas claves al repositorio.
 
-| Variable | Uso |
-| --- | --- |
-| `CRISIS_API_TOKEN` | Token aleatorio privado para los endpoints de workflows |
-| `AI_GATEWAY_API_KEY` | Credencial de Vercel AI Gateway |
-| `AI_MODEL` | Identificador `proveedor/modelo`, a elegir por el equipo |
-| `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto Supabase |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Clave pública del proyecto |
-| `SUPABASE_SECRET_KEY` | Clave secreta, solo servidor |
-| `HAPPYROBOT_API_KEY`, `HAPPYROBOT_WORKFLOW_ID` | Reservadas; aún no habilitan comunicaciones |
+| Variable                                       | Uso                                                      |
+| ---------------------------------------------- | -------------------------------------------------------- |
+| `CRISIS_API_TOKEN`                             | Token aleatorio privado para los endpoints de workflows  |
+| `AI_GATEWAY_API_KEY`                           | Credencial de Vercel AI Gateway                          |
+| `AI_MODEL`                                     | Identificador `proveedor/modelo`, a elegir por el equipo |
+| `NEXT_PUBLIC_SUPABASE_URL`                     | URL del proyecto Supabase                                |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`         | Clave pública del proyecto                               |
+| `SUPABASE_SECRET_KEY`                          | Clave secreta, solo servidor                             |
+| `HAPPYROBOT_API_KEY`, `HAPPYROBOT_WORKFLOW_ID` | Reservadas; aún no habilitan comunicaciones              |
 
 Las claves de Supabase se obtienen en la configuración API del proyecto.
 La de AI Gateway se crea en Vercel AI Gateway. HappyRobot requiere concretar

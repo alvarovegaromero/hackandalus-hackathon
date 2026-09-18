@@ -1,0 +1,14 @@
+node_modules/
+.next/
+out/
+.vercel/
+.workflow-data/
+.swc/
+coverage/
+graft/
+src/app/.well-known/workflow/
+next-env.d.ts
+package-lock.json
+.env*
+**/.claude/settings.local.json
+**/CLAUDE.local.md

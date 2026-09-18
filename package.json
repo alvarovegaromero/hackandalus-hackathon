@@ -12,7 +12,11 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run --reporter=dot"
+    "test": "vitest run --reporter=dot",
+    "prepare": "node scripts/install-hooks.mjs",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
@@ -30,6 +34,8 @@
     "@types/react-dom": "^19.3.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.3.5",
+    "husky": "9.1.7",
+    "prettier": "3.9.8",
     "typescript": "^6.0.3",
     "vitest": "^5.0.1"
   },
