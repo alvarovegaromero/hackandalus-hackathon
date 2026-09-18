@@ -55,6 +55,7 @@ resolve them with invented values. Track follow-up work in TASKS.md.
 - `GEMINI.md`: imports these instructions for Gemini CLI.
 - `.agents/rules/project.md`: always-on Antigravity rule referencing this file.
 - `.cursor/rules/project.mdc`: always-on Cursor rule referencing this file.
+- `docs/dashboard-design-guide.md`: visual and data visualization guide for the operator dashboard.
 - `CONTRIBUTING.md`: contributor onboarding and the branch-to-PR workflow.
 - `.github/pull_request_template.md`: change description and verification checklist.
 - `.vscode`: shared formatting settings and recommended editor extensions.
