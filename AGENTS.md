@@ -21,3 +21,6 @@ Do not leave stale instructions for the next agent to rediscover.
 
 For stack-specific work, use the shared skill paths listed in
 [PROJECT.md](PROJECT.md#shared-stack-skills).
+Graft is required for code navigation: follow
+[the Graft workflow](PROJECT.md#code-index-with-graft) before exploring or
+changing code, and report any fallback caused by failures or missing coverage.

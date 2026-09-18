@@ -49,7 +49,8 @@ The snapshots do not add browser automation, database access or deployment tools
 
 AI SDK, Workflow, Zod and HappyRobot are not covered by these four skills. Use
 official documentation matching the installed versions and our integration
-contracts for those tasks. Graft remains an optional local code-navigation tool.
+contracts for those tasks. [Graft](code-index.md) is installed with development
+dependencies and provides a local code index alongside these skills.
 
 ## Updating
 
