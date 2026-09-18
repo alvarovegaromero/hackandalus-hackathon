@@ -12,8 +12,10 @@ system that manages a crisis (wildfire, blackout, flood, or similar) that
 changes while the system runs. See `CHALLENGE.md` for the full brief and
 scoring criteria.
 
-Status: documentation and agent configuration only. No application code,
-runtime, package manager, or stack has been chosen yet.
+Status: runnable TypeScript scaffolding with Next.js/React, Vercel AI SDK,
+Vercel Workflow, Supabase clients/schema, and Zod. The browser demo is local
+and deterministic. Supabase persistence, operator authentication, and actual
+HappyRobot communications are not connected yet; see README.md.
 
 ## Start here
 
@@ -34,12 +36,23 @@ runtime, package manager, or stack has been chosen yet.
 - `.agents/rules/project.md`: always-on Antigravity rule referencing this file.
 - `.gitignore`: local credentials, personal agent settings, and generated caches.
 
-Add each major component's location and purpose here when it is introduced.
+- `src/app`, `src/components`: Next.js endpoints and local demo dashboard.
+- `src/lib/domain.ts`: shared Zod schemas and domain types.
+- `src/lib/agents`: AI SDK coordinator (model configured through environment).
+- `src/workflows`: durable Workflow example, separate from the browser demo.
+- `src/lib/supabase`: server/browser clients and Realtime subscription helper.
+- `src/lib/integrations`: HappyRobot boundary, explicitly blocked until implemented.
+- `supabase/migrations`: initial PostgreSQL schema with deny-by-default RLS.
+- `README.md`, `.env.example`: local setup, credentials and integration limitations.
 
 ## Setup / Build / Test / Run
 
-There are currently no install, build, test, lint, or run commands. Do not
-invent commands or report application checks as passing before they exist.
+Use Node.js 22.21+ (22.x) and npm 11.6.1. Commit package-lock.json; use npm only.
+Install: `npm ci`. Develop: `npm run dev`. Production: `npm run build` then
+`npm start`. Checks: `npm run lint`, `npm run typecheck`, `npm test` (Vitest).
+The local browser demo requires no credentials. See README.md for the protected
+workflow API and optional environment variables. Do not apply migrations or
+invoke live communications without authorization for the specific action.
 
 When implementing the first runnable slice:
 
