@@ -26,7 +26,10 @@ probado llamadas a modelos ni comunicaciones reales.
 
 - [x] Prettier compartido, EditorConfig y finales LF en Git para macOS, Windows y Linux.
 - [x] Husky instalado automáticamente al instalar dependencias de desarrollo.
-- [x] Pre-commit con formato, lint, TypeScript, tests y build.
+- [x] Pre-commit con Secretlint, Prettier y ESLint sobre archivos staged, más TypeScript y tests.
+- [x] Pre-push con verificación completa y build.
+- [x] Bloqueo de archivos privados y detección de formatos conocidos de claves/tokens.
+- [x] PROJECT.md como fuente de verdad, referenciada por AGENTS.md y CLAUDE.md.
 - [x] Bloqueo local de commits y pushes a ramas protegidas.
 - [x] Documentar nomenclatura y comandos de formato y verificación.
 

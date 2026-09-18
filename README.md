@@ -6,6 +6,8 @@ HackSpain 2026. Un único proyecto Next.js desplegable en Vercel.
 **Estado: estructura base completada.** El modelo de IA, el escenario, las
 credenciales y las conexiones reales se concretarán en la siguiente fase.
 Consulta [TASKS.md](TASKS.md) para ver lo terminado y las tareas pendientes.
+La fuente de verdad del proyecto y sus convenciones es [PROJECT.md](PROJECT.md).
+`AGENTS.md` y `CLAUDE.md` apuntan allí para evitar reglas duplicadas.
 
 ## Arranque local
 
@@ -49,12 +51,15 @@ npm run check
 ```
 
 - `npm run format` aplica Prettier; `npm run format:check` comprueba sin modificar.
-- **Pre-commit:** bloquea commits en `main`, `master`, `develop` o HEAD separado
-  y ejecuta formato, lint, TypeScript, tests y build. Si algo falla, no crea el
-  commit. Comprueba el proyecto completo, por lo que también detecta cambios
-  sin añadir al staging; formatea, revisa y añade los cambios antes de reintentar.
+- **Pre-commit:** bloquea commits en ramas protegidas o HEAD separado y archivos
+  privados como `.env.local` y claves privadas. `lint-staged` comprueba secretos,
+  aplica Prettier y ejecuta ESLint sobre los archivos preparados para commit.
+  Oculta temporalmente los cambios no preparados de archivos parcialmente
+  añadidos; las tareas se ejecutan en serie. Después ejecuta TypeScript y tests
+  sobre el proyecto. Si algo falla, el commit se detiene.
 - **Pre-push:** bloquea cualquier actualización o eliminación de las ramas
-  protegidas, incluso `git push origin HEAD:main`.
+  protegidas, incluso `git push origin HEAD:main`, y ejecuta `npm run check`,
+  incluyendo el build. No hace falta compilar en cada commit.
 - Si instalaste dependencias sin scripts, ejecuta `npm run prepare` para activar
   los hooks. En despliegues o CI se omite su instalación.
 
@@ -72,6 +77,13 @@ en código; Prettier no las valida.
 
 Los hooks funcionan en cada clon tras instalar las dependencias. No sustituyen
 la protección remota: clientes que omitan hooks pueden saltarse controles locales.
+
+Secretlint detecta formatos conocidos de credenciales con el preset recomendado
+y oculta los valores detectados en la salida. Las plantillas `.env.example`
+están permitidas, pero también se analizan: deben contener valores vacíos o
+placeholders inocuos. Ningún detector reconoce todos los secretos; no añadas
+credenciales reales aunque no generen una alerta. `npm run secrets:check`
+comprueba los archivos versionados; los `.env.local` privados no se publican.
 
 ## Arquitectura
 

@@ -1,2 +1,5 @@
 node scripts/guard-protected-branches.mjs commit
-npm run check
+node scripts/guard-staged-files.mjs
+npm run lint:staged
+npm run typecheck
+npm test
