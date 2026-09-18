@@ -3,12 +3,12 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Crisis Command Center",
-  description: "Agentic crisis management demo for HackSpain HappyRobot challenge"
+  description: "Centro de mando agéntico para la gestión de crisis. Reto HappyRobot de HackSpain 2026."
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="es">
       <body>{children}</body>
     </html>
   );

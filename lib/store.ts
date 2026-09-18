@@ -29,7 +29,6 @@ import type {
 type MutableState = SituationState & { nextVersion: number };
 
 declare global {
-  // eslint-disable-next-line no-var
   var crisisState: MutableState | undefined;
 }
 
@@ -157,7 +156,7 @@ function sweepStalledActions() {
     action.error = `Sin respuesta del ejecutor externo tras ${STALL_SECONDS} segundos.`;
     action.updatedAt = nowIso();
     releaseResource(current.resources, action.id);
-    audit("system", "action-stalled", `La accion "${action.objective}" dejo de responder.`, action.id);
+    audit("system", "action-stalled", `La acción "${action.objective}" dejó de responder.`, action.id);
     changed = true;
   }
 
@@ -180,7 +179,7 @@ function normalizeIncomingEvent(payload: IncomingEventPayload): CrisisEvent {
   return {
     id: uid("evt"),
     source: payload.source ?? "happyrobot",
-    title: payload.title ?? "Nueva senal de crisis",
+    title: payload.title ?? "Nueva señal de crisis",
     description: payload.description ?? "Entrada no estructurada recibida y normalizada.",
     zoneId,
     category,
@@ -298,7 +297,7 @@ function proposeActionForEvent(event: CrisisEvent) {
     target: contact?.name ?? `Responsable de ${zone.name}`,
     objective: `Coordinar respuesta de ${event.category} en ${zone.name}.`,
     status: "pending",
-    reason: `${event.title} elevo la prioridad de ${zone.name} con severidad ${event.severity} y confianza ${event.confidence}.${assignment ? ` ${assignment.reason}` : " Sin recurso compatible libre."}`,
+    reason: `${event.title} elevó la prioridad de ${zone.name} con severidad ${event.severity} y confianza ${event.confidence}.${assignment ? ` ${assignment.reason}` : " Sin recurso compatible libre."}`,
     zoneId: zone.id,
     resourceId: assignment?.resourceId,
     contactId: contact?.id,
@@ -349,7 +348,7 @@ export function pollSituation(): SituationState {
 
 export function resetSituation() {
   globalThis.crisisState = createInitialState();
-  audit("operator", "reset", "La demo se reinicio al estado inicial.");
+  audit("operator", "reset", "La demo se reinició al estado inicial.");
   return getSituation();
 }
 
@@ -365,20 +364,20 @@ export function addEvent(payload: IncomingEventPayload, actor: Actor = "system")
 
   if (duplicate) {
     duplicate.occurrences += 1;
-    duplicate.description = `${duplicate.description}\nSenal duplicada: ${event.description}`;
+    duplicate.description = `${duplicate.description}\nSeñal duplicada: ${event.description}`;
     duplicate.confidence = duplicate.confidence === "high" ? "high" : event.confidence;
     duplicate.createdAt = event.createdAt;
-    audit(actor, "event-deduplicated", `Senal repetida fusionada: ${duplicate.title}`, duplicate.id);
+    audit(actor, "event-deduplicated", `Señal repetida fusionada: ${duplicate.title}`, duplicate.id);
   } else {
     current.events.unshift(event);
     current.zones = current.zones.map((zone) =>
       zone.id === event.zoneId ? applyEventToZone(zone, event) : zone
     );
-    audit(actor, "event-ingested", `Nueva senal: ${event.title}`, event.id);
+    audit(actor, "event-ingested", `Nueva señal: ${event.title}`, event.id);
     proposeActionForEvent(event);
   }
 
-  replan(duplicate ? "senal repetida" : `nueva senal: ${event.title}`);
+  replan(duplicate ? "señal repetida" : `nueva señal: ${event.title}`);
   return { event: duplicate ?? event, duplicate: Boolean(duplicate), situation: getSituation() };
 }
 
@@ -404,21 +403,21 @@ export function markEvent(eventId: string, confirmed: boolean, actor: Actor = "o
         ["pending", "blocked"].includes(action.status);
       if (!bornFromEvent) continue;
       action.status = "cancelled";
-      action.error = `Se descarto la senal "${event.title}" que la motivo.`;
+      action.error = `Se descartó la señal "${event.title}" que la motivó.`;
       action.updatedAt = nowIso();
       releaseResource(current.resources, action.id);
     }
-    audit(actor, "event-discarded", `Senal descartada y efecto revertido: ${event.title}`, event.id);
+    audit(actor, "event-discarded", `Señal descartada y efecto revertido: ${event.title}`, event.id);
   } else {
     if (wasDiscarded) {
       current.zones = current.zones.map((zone) =>
         zone.id === event.zoneId ? applyEventToZone(zone, event) : zone
       );
     }
-    audit(actor, "event-confirmed", `Senal confirmada: ${event.title}`, event.id);
+    audit(actor, "event-confirmed", `Señal confirmada: ${event.title}`, event.id);
   }
 
-  replan(confirmed ? "una senal fue confirmada" : "una senal fue descartada");
+  replan(confirmed ? "una señal fue confirmada" : "una señal fue descartada");
   return event;
 }
 
@@ -451,8 +450,8 @@ export function createAction(payload: CreateActionPayload, actor: Actor = "opera
     updatedAt: at
   };
   current.actions.unshift(action);
-  audit(actor, "action-created", `Accion creada a mano: ${action.objective}`, action.id);
-  replan("un operador creo una accion");
+  audit(actor, "action-created", `Acción creada a mano: ${action.objective}`, action.id);
+  replan("un operador creó una acción");
   return action;
 }
 
@@ -469,7 +468,7 @@ export async function approveAction(actionId: string, actor: Actor = "operator")
   action.stalledAfter = new Date(Date.now() + STALL_SECONDS * 1000).toISOString();
   action.idempotencyKey = `${action.id}:${action.attempt}`;
   if (action.resourceId) assignResource(current.resources, action.resourceId, action.id, action.approvedAt);
-  audit(actor, "action-approved", `Accion aprobada: ${action.objective}`, action.id);
+  audit(actor, "action-approved", `Acción aprobada: ${action.objective}`, action.id);
 
   const attemptAtDispatch = action.attempt;
 
@@ -497,7 +496,7 @@ export async function approveAction(actionId: string, actor: Actor = "operator")
     if (result.mode === "mock") current.integration.mockActionsExecuted += 1;
     else current.integration.liveActionsExecuted += 1;
     current.integration.lastExternalError = null;
-    replan("se ejecuto una accion");
+    replan("se ejecutó una acción");
     return settled;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown HappyRobot error";
@@ -512,8 +511,8 @@ export async function approveAction(actionId: string, actor: Actor = "operator")
     releaseResource(current.resources, settled.id);
     current.integration.lastExternalError = message;
     current.learning = recordActionOutcome(current.learning, settled);
-    audit("happyrobot", "action-failed", `Fallo la ejecucion: ${message}`, settled.id);
-    replan("fallo la ejecucion de una accion");
+    audit("happyrobot", "action-failed", `Falló la ejecución: ${message}`, settled.id);
+    replan("falló la ejecución de una acción");
     return settled;
   }
 }
@@ -546,8 +545,8 @@ export function setActionStatus(
   }
   if (status === "failed") current.integration.lastExternalError = error ?? "External action failed";
 
-  audit(actor, `action-${status}`, `La accion "${action.objective}" paso a ${status}.`, action.id);
-  replan(`una accion paso a ${status}`);
+  audit(actor, `action-${status}`, `La acción "${action.objective}" pasó a ${status}.`, action.id);
+  replan(`una acción pasó a ${status}`);
   return action;
 }
 
@@ -571,7 +570,7 @@ export function retryAction(actionId: string, actor: Actor = "operator") {
   action.stalledAfter = null;
   action.updatedAt = nowIso();
   audit(actor, "action-retried", `Reintento ${action.attempt} de "${action.objective}".`, action.id);
-  replan("un operador reintento una accion");
+  replan("un operador reintentó una acción");
   return action;
 }
 
@@ -580,8 +579,8 @@ export function updateResource(resourceId: string, status: Resource["status"], a
   const resource = current.resources.find((candidate) => candidate.id === resourceId);
   if (!resource) throw new Error("Resource not found");
   resource.status = status;
-  audit(actor, "resource-updated", `${resource.name} paso a ${status}.`, resource.id);
-  replan("cambio la disponibilidad de un recurso");
+  audit(actor, "resource-updated", `${resource.name} pasó a ${status}.`, resource.id);
+  replan("cambió la disponibilidad de un recurso");
   return resource;
 }
 
@@ -593,7 +592,7 @@ export function startScenarioRun() {
   const current = state();
   startScenario(current.scenario, nowIso());
   audit("operator", "scenario-started", `Escenario en marcha: ${current.scenario.name}.`);
-  replan("arranco el escenario");
+  replan("arrancó el escenario");
   return getSituation();
 }
 
@@ -674,7 +673,7 @@ export function injectDemo(kind: DemoKind, actor: Actor = "operator") {
       {
         source: actor === "scenario" ? "scenario" : "demo",
         title: `${resource.name} queda no disponible`,
-        description: "La disponibilidad de recursos cambio durante la ejecucion; el plan debe rehacerse.",
+        description: "La disponibilidad de recursos cambió durante la ejecución; el plan debe rehacerse.",
         zoneId: resource.zoneId ?? defaultZoneId(),
         category: "resource-shortage",
         severity: "high",
@@ -683,7 +682,7 @@ export function injectDemo(kind: DemoKind, actor: Actor = "operator") {
       },
       actor
     );
-    replan(`${resource.name} quedo fuera de servicio`, invalidated);
+    replan(`${resource.name} quedó fuera de servicio`, invalidated);
     return getSituation();
   }
 
@@ -693,7 +692,7 @@ export function injectDemo(kind: DemoKind, actor: Actor = "operator") {
         source: actor === "scenario" ? "scenario" : "demo",
         title: "Ruta de acceso bloqueada",
         description:
-          "La ruta principal entre Granada y Almeria queda bloqueada y los recursos asignados pueden necesitar desvio.",
+          "La ruta principal entre Granada y Almería queda bloqueada y los recursos asignados pueden necesitar desvío.",
         zoneId: "zone-east",
         category: "route-blocked",
         severity: "critical",
@@ -727,7 +726,7 @@ export function injectDemo(kind: DemoKind, actor: Actor = "operator") {
     {
       source: actor === "scenario" ? "scenario" : "demo",
       title: "Nuevo incidente de alta prioridad",
-      description: "Una nueva senal desde Sierra Morena indica una necesidad operativa que cambia rapido.",
+      description: "Una nueva señal desde Sierra Morena indica una necesidad operativa que cambia rápido.",
       zoneId: "zone-north",
       category: "evacuation-support",
       severity: "critical",

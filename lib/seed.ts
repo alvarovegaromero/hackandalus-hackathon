@@ -25,7 +25,7 @@ export const seedZones: CrisisZone[] = [
   },
   {
     id: "zone-east",
-    name: "Granada y Almeria",
+    name: "Granada y Almería",
     status: "stable",
     populationAtRisk: 900,
     riskScore: 24,
@@ -45,7 +45,7 @@ export const seedZones: CrisisZone[] = [
   },
   {
     id: "zone-islands",
-    name: "Cadiz y Estrecho",
+    name: "Cádiz y Estrecho",
     status: "stable",
     populationAtRisk: 640,
     riskScore: 18,
@@ -126,7 +126,7 @@ export const seedResources: Resource[] = [
 export const seedContacts: Contact[] = [
   {
     id: "con-field-north",
-    name: "Coordinacion INFOCA Sierra Morena",
+    name: "Coordinación INFOCA Sierra Morena",
     role: "field-coordinator",
     zoneId: "zone-north",
     channels: ["call", "sms", "email"],
@@ -150,7 +150,7 @@ export const seedContacts: Contact[] = [
   },
   {
     id: "con-ops-lead",
-    name: "Sala de coordinacion 112 Andalucia",
+    name: "Sala de coordinación 112 Andalucía",
     role: "operations-lead",
     zoneId: null,
     channels: ["call", "email", "slack"],
@@ -162,7 +162,7 @@ export const seedContacts: Contact[] = [
   },
   {
     id: "con-safety-east",
-    name: "Trafico y carreteras Granada",
+    name: "Tráfico y carreteras Granada",
     role: "public-safety",
     zoneId: "zone-east",
     channels: ["sms", "email"],
@@ -202,8 +202,8 @@ export const seedEvents: CrisisEvent[] = [
   {
     id: "evt-seed-1",
     source: "operator",
-    title: "Sevilla Hub comunica aumento de presion",
-    description: "Varias entradas indican mayor necesidad de triaje y orientacion publica.",
+    title: "Sevilla Hub comunica aumento de presión",
+    description: "Varias entradas indican mayor necesidad de triaje y orientación pública.",
     zoneId: "zone-central",
     category: "coordinacion",
     severity: "high",
@@ -223,9 +223,9 @@ export const seedActions: Action[] = [
     id: "act-seed-1",
     channel: "call",
     target: "Coordinador Sevilla Hub",
-    objective: "Confirmar capacidad de triaje y pedir proxima ventana de actualizacion.",
+    objective: "Confirmar capacidad de triaje y pedir próxima ventana de actualización.",
     status: "pending",
-    reason: "Sevilla Hub tiene la mayor puntuacion de riesgo inicial y demanda confirmada.",
+    reason: "Sevilla Hub tiene la mayor puntuación de riesgo inicial y demanda confirmada.",
     zoneId: "zone-central",
     resourceId: "res-comms-1",
     contactId: "con-med-central",
@@ -265,11 +265,11 @@ export const seedScenarioBeats: ScenarioBeat[] = [
   {
     id: "beat-2",
     atSeconds: 55,
-    label: "El viento gira y el frente amenaza nucleos habitados",
+    label: "El viento gira y el frente amenaza núcleos habitados",
     event: {
       source: "scenario",
-      title: "Cambio de viento hacia nucleos habitados",
-      description: "El frente gira al suroeste. La evacuacion preventiva pasa a ser urgente.",
+      title: "Cambio de viento hacia núcleos habitados",
+      description: "El frente gira al suroeste. La evacuación preventiva pasa a ser urgente.",
       zoneId: "zone-north",
       category: "evacuacion",
       severity: "critical",
@@ -292,11 +292,11 @@ export const seedScenarioBeats: ScenarioBeat[] = [
   {
     id: "beat-5",
     atSeconds: 160,
-    label: "Saturacion de refugios en la costa",
+    label: "Saturación de refugios en la costa",
     event: {
       source: "scenario",
-      title: "Refugios de la Costa del Sol al limite",
-      description: "Llegan mas desplazados de los previstos y la capacidad de refugio se agota.",
+      title: "Refugios de la Costa del Sol al límite",
+      description: "Llegan más desplazados de los previstos y la capacidad de refugio se agota.",
       zoneId: "zone-south",
       category: "refugio",
       severity: "high",
@@ -307,7 +307,7 @@ export const seedScenarioBeats: ScenarioBeat[] = [
   {
     id: "beat-6",
     atSeconds: 200,
-    label: "Caida de la integracion de mensajeria",
+    label: "Caída de la integración de mensajería",
     demoKind: "integration-failure"
   }
 ];
