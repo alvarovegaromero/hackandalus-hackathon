@@ -3,6 +3,10 @@
 Scaffolding TypeScript para el reto de gestión de crisis de HappyRobot en
 HackSpain 2026. Un único proyecto Next.js desplegable en Vercel.
 
+**Estado: estructura base completada.** El modelo de IA, el escenario, las
+credenciales y las conexiones reales se concretarán en la siguiente fase.
+Consulta [TASKS.md](TASKS.md) para ver lo terminado y las tareas pendientes.
+
 ## Arranque local
 
 Requisitos: Node.js **22.21+ (22.x)** y **npm 11.6.1**. Usamos npm y
@@ -117,17 +121,15 @@ tablas necesitarán suscripciones/publicación cuando el panel las consuma.
 Importa el repositorio como proyecto Next.js, selecciona Node.js 22.x y usa
 `npm ci` / `npm run build`. `withWorkflow` está configurado en `next.config.ts`.
 Añade las variables necesarias en Vercel y despliega cuando el equipo lo
-autorice. No se ha creado ni publicado ningún recurso externo desde este repo.
+autorice. Este scaffolding no incluye un despliegue ni la creación de recursos
+en Vercel, Supabase o HappyRobot.
 
 ## Próxima vertical funcional
 
-- Elegir escenario y modelo; definir recursos y reglas de priorización.
-- Conectar eventos, planes y resultados a Supabase con deduplicación.
-- Conectar el panel al backend, Auth y Realtime; persistir la intervención humana.
-- Añadir herramientas/subagentes a AI SDK según las operaciones reales.
-- Implementar HappyRobot, callbacks autenticados, esperas y reintentos seguros.
-- Ensayar cambios durante la ejecución y fallos usando destinatarios de demo
-  aprobados. Este scaffolding aún no cumple el requisito de interacción real.
+Las tareas se mantienen en [TASKS.md](TASKS.md). Se abordarán después de esta
+entrega de estructura base; no es necesario configurar ahora el modelo ni las
+integraciones. Este scaffolding aún no cumple el requisito de interacción real
+del reto.
 
 Referencias: [AI SDK](https://ai-sdk.dev/docs),
 [Workflow](https://workflow.dev/docs),

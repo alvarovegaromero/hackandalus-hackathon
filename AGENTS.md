@@ -16,6 +16,9 @@ Status: runnable TypeScript scaffolding with Next.js/React, Vercel AI SDK,
 Vercel Workflow, Supabase clients/schema, and Zod. The browser demo is local
 and deterministic. Supabase persistence, operator authentication, and actual
 HappyRobot communications are not connected yet; see README.md.
+The base scaffolding milestone is complete. Model selection, crisis scenario,
+credentials, and live integrations are explicitly deferred to later work;
+do not treat them as blockers for this milestone. Track follow-up work in TASKS.md.
 
 ## Start here
 
@@ -29,6 +32,7 @@ HappyRobot communications are not connected yet; see README.md.
 ## Repository map
 
 - `CHALLENGE.md`: authoritative challenge requirements and scoring criteria.
+- `TASKS.md`: completed scaffolding checklist and deferred implementation tasks.
 - `AGENTS.md`: shared development instructions for all coding agents.
 - `CLAUDE.md`: imports these instructions and adds Claude-specific notes.
 - `.claude/settings.json`: shared Claude Code permissions.
@@ -54,9 +58,9 @@ The local browser demo requires no credentials. See README.md for the protected
 workflow API and optional environment variables. Do not apply migrations or
 invoke live communications without authorization for the specific action.
 
-When implementing the first runnable slice:
+When extending the scaffolding:
 
-- Pick the smallest stack that supports the requested scenario and human UI.
+- Keep the agreed TypeScript / Next.js / AI SDK / Workflow / Supabase stack.
 - Document prerequisites, runtime versions, package manager, and exact install,
   development, build, test, and lint commands here and in a developer README.
 - Commit the appropriate dependency lockfile and use one package manager.
