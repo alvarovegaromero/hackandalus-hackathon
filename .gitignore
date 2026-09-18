@@ -10,5 +10,8 @@
 
 # Regenerable code graph and OS metadata.
 /graft/
+.next/
+node_modules/
+coverage/
 .DS_Store
 Thumbs.db

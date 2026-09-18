@@ -12,8 +12,8 @@ system that manages a crisis (wildfire, blackout, flood, or similar) that
 changes while the system runs. See `CHALLENGE.md` for the full brief and
 scoring criteria.
 
-Status: documentation and agent configuration only. No application code,
-runtime, package manager, or stack has been chosen yet.
+Status: Next.js + TypeScript prototype with in-memory crisis state, dashboard,
+API routes, deterministic replanning, tests, and HappyRobot adapter scaffold.
 
 ## Start here
 
@@ -33,13 +33,34 @@ runtime, package manager, or stack has been chosen yet.
 - `GEMINI.md`: imports these instructions for Gemini CLI.
 - `.agents/rules/project.md`: always-on Antigravity rule referencing this file.
 - `.gitignore`: local credentials, personal agent settings, and generated caches.
+- `README.md`: developer setup, demo flow, API surface, and HappyRobot env vars.
+- `app/`: Next.js App Router dashboard and API routes.
+- `lib/`: crisis domain types, seed data, priority engine, store, and HappyRobot
+  adapter.
+- `tests/`: Vitest coverage for priority logic and API route behavior.
 
 Add each major component's location and purpose here when it is introduced.
 
 ## Setup / Build / Test / Run
 
-There are currently no install, build, test, lint, or run commands. Do not
-invent commands or report application checks as passing before they exist.
+Prerequisites:
+
+- Node.js 18.19+
+- npm 9+
+
+Commands:
+
+- Install: `npm install`
+- Develop: `npm run dev`
+- Build: `npm run build`
+- Lint: `npm run lint`
+- Test: `npm test`
+
+Environment:
+
+- Copy `.env.example` to `.env.local`.
+- Keep `ACTION_EXECUTION_MODE=mock` unless HappyRobot demo credentials and
+  recipients are configured.
 
 When implementing the first runnable slice:
 
