@@ -46,6 +46,10 @@ estructura base y no deben resolverse con credenciales o escenarios inventados.
 - [ ] Implementar llamadas reales a HappyRobot y procesar resultados autenticados.
 - [ ] Incorporar esperas, reintentos y recuperación de fallos al workflow.
 - [ ] Demostrar replanificación al cambiar la situación durante la ejecución.
+- [ ] Gemelo digital de la incidencia (ver Ideas): ejecutar el motor de
+  escenarios sobre una copia del estado actual, simular variantes (viento,
+  accesos cortados, pérdida de recursos), comparar alternativas por resultado
+  y mostrar en el panel la recomendada antes de actuar.
 - [ ] Probar restricciones de recursos, fallos y control humano.
 - [ ] Configurar y desplegar en Vercel cuando se autorice.
 - [ ] Validar una interacción real con destinatarios de demo aprobados.
