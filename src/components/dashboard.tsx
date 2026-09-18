@@ -10,7 +10,7 @@ import {
 } from "@/lib/domain";
 import { ScenarioPanel } from "./scenario-panel";
 
-type Entry = { event: CrisisEvent; plan: Plan; status: ActionStatus };
+export type Entry = { event: CrisisEvent; plan: Plan; status: ActionStatus; note?: string };
 const incidentId = "11111111-1111-4111-8111-111111111111";
 
 export function Dashboard() {
@@ -114,7 +114,7 @@ export function Dashboard() {
             {paused ? "Reanudar simulación" : "Pausar simulación"}
           </button>
         </section>
-        <section className="panel" aria-live="polite">
+        <section className="panel activity" aria-live="polite">
           <h2>Actividad y decisiones</h2>
           <p>Los nuevos eventos sustituyen las propuestas que siguen pendientes.</p>
           {entries.length === 0 && (
@@ -124,7 +124,7 @@ export function Dashboard() {
               La actividad de la simulación aparecerá aquí.
             </div>
           )}
-          {entries.map(({ event, plan, status }) => (
+          {entries.map(({ event, plan, status, note }) => (
             <article className="entry" key={event.id}>
               <div className="entry-heading">
                 <span className="badge">{plan.priority}</span>
@@ -143,6 +143,7 @@ export function Dashboard() {
                   </button>
                 </div>
               )}
+              {note && <small>{note}</small>}
               {status === "simulated" && (
                 <small>Simulación completada. No se ha enviado ninguna comunicación.</small>
               )}
@@ -150,7 +151,7 @@ export function Dashboard() {
           ))}
         </section>
       </div>
-      <ScenarioPanel />
+      <ScenarioPanel onAgentEntries={(fresh) => setEntries((current) => [...fresh, ...current])} />
       <footer>
         AI SDK · Workflow · Supabase · HappyRobot — conexiones reales pendientes de configurar
       </footer>

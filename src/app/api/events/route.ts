@@ -1,14 +1,13 @@
-import { start } from "workflow/api";
 import { authorize } from "@/lib/api-auth";
-import { crisisEventSchema } from "@/lib/domain";
-import { crisisWorkflow } from "@/workflows/crisis";
+import { normalizeBatch } from "@/lib/ingest";
+import { ingestBatch } from "@/lib/ingest-server";
 
+// One event, an array, or { events: [...] }. `?wait=1` returns each run's result.
 export async function POST(request: Request) {
   const denied = authorize(request);
   if (denied) return denied;
-  const parsed = crisisEventSchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success)
-    return Response.json({ error: "Invalid event", issues: parsed.error.issues }, { status: 400 });
-  const run = await start(crisisWorkflow, [parsed.data]);
-  return Response.json({ runId: run.runId }, { status: 202 });
+  const body = normalizeBatch(await request.json().catch(() => undefined));
+  const wait = new URL(request.url).searchParams.get("wait") === "1";
+  const { status, body: response } = await ingestBatch(body, wait);
+  return Response.json(response, { status });
 }

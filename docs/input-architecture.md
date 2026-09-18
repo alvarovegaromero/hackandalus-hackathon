@@ -33,6 +33,11 @@ signals in one request** and processes them **concurrently**. Milestone B is the
 
 ## 1. Where ingestion sits (the pipeline)
 
+- **Milestone A (implemented):** a **synchronous** ingestion endpoint that
+  accepts **many events in one request** and processes them **concurrently**.
+- **Milestone B (documented, deferred):** the **async / topic** evolution
+  (Supabase Realtime fan-out to the dashboard). Section at the end. Do not
+  implement B until A is merged and demoable.
 Ingestion is one stage, not the whole loop. Per the module map in
 `data-model.md` §3, three different modules touch a new signal in sequence:
 
@@ -52,6 +57,26 @@ producer ──▶ [ingest] ──▶ [triage] ──▶ [incidents] ──▶ p
 - **incidents** — fuses coherent signals into a single `incident` and sets
   `signals.incident_id`.
 
+## 1. What exists today
+
+- `POST /api/events` - `src/app/api/events/route.ts`. Authorizes with the
+  static bearer token `CRISIS_API_TOKEN` (`src/lib/api-auth.ts`), normalizes one
+  event, an array or `{ events }`, and delegates to `ingestBatch`.
+- `ingestBatch` - `src/lib/ingest-server.ts`. Size checks (`400`/`413`),
+  persistence (Supabase or in-memory fallback), `start(crisisWorkflow, [event])`
+  per new event, optional `wait` mode.
+- `ingest` - `src/lib/ingest.ts`. Framework-free pipeline: validate, in-batch
+  dedup, persist, bounded concurrent starts, per-event partition. Unit tests in
+  `src/lib/ingest.test.ts`.
+- `POST /api/scenario/signals` - `src/app/api/scenario/signals/route.ts`. Demo
+  bridge with no token: the dashboard's scenario panel sends simulated `Signal`s,
+  which `signalToEvent` (`src/lib/signals/to-event.ts`) maps to `CrisisEvent`s
+  with stable ids, then calls `ingestBatch` in wait mode. Open in development;
+  in production it answers `503` unless `SCENARIO_AGENT_ENABLED=true`.
+- `GET /api/runs/[runId]` - polls a run's status and result.
+- DB schema - `supabase/migrations/202609180001_initial_schema.sql`. Ingestion
+  writes `incidents` (on demand) and `events`. `plans`, `actions` and `results`
+  are not written yet.
 Everything hangs off a `run` (one per managed crisis; multi-tenant by `run_id`).
 A signal always carries the `runId` it belongs to.
 
@@ -174,6 +199,44 @@ demo seeds `wildfire-sierra-bermeja`).
 - Do not report a signal `accepted` until its insert resolves (`PROJECT.md`:
   don't claim success the result doesn't support).
 
+### 3.7 Implementation notes
+
+Implemented as designed, with these decisions:
+
+- The body normalizer lives in `src/lib/ingest.ts` (`normalizeBatch`), not in
+  `src/lib/domain.ts`; the single-event schema is unchanged.
+- Status mapping (`ingestStatus`): `202` if any event is accepted, `400` if all
+  are rejected, `500` if none is accepted and some failed to persist or start,
+  `200` if all were duplicates. Wait mode answers `200` instead of `202`.
+- If persistence fails, every event in the batch is an `error` and no run starts.
+- Without Supabase, dedup falls back to an in-process set (lost on restart and
+  not shared across serverless instances), with a one-time warning.
+- With Supabase, the ingest upserts one `incidents` row per new `incidentId`
+  (title `Incidente <id prefix>`), so no manual seed step is needed.
+- Scenario signals have no severity: `signalToEvent` sends `medium` and leaves
+  triage to the agent. Each scenario run uses a fresh `incidentId`, so rehearsals
+  are not deduplicated away; resending a signal within a run is.
+
+Tests cover the mixed-batch partition, in-batch and cross-request duplicates,
+isolated `start()` failures, persistence failure and the all-rejected `400`.
+The `413` and empty-body `400` checks live in `ingestBatch` and were verified
+manually (3.8).
+
+### 3.8 Manual verification
+
+```bash
+# a single event is still accepted
+curl -sS -X POST localhost:3000/api/events \
+  -H "Authorization: Bearer $CRISIS_API_TOKEN" -H "Content-Type: application/json" \
+  -d '{"id":"…uuid…","incidentId":"…uuid…","summary":"Smoke plume N sector","severity":"high","source":"sensor"}'
+
+# batch of events, processed concurrently
+curl -sS -X POST localhost:3000/api/events \
+  -H "Authorization: Bearer $CRISIS_API_TOKEN" -H "Content-Type: application/json" \
+  -d '{"events":[ {…}, {…}, {…} ]}'
+
+# replay the same batch → expect all in "duplicates", zero new runs
+```
 ### 3.7 Implementation checklist
 
 - [ ] `src/lib/domain/signal.ts` — `incomingSignalSchema` + a batch helper
@@ -200,6 +263,10 @@ Tests (Vitest — decisions & failure paths):
 
 ## 4. Triage & incident handoff (brief)
 
+Milestone A has shipped; this is the next step. It is the "more interesting"
+event-driven design and the piece that makes the **dashboard react live** to a
+changing scenario (the CHALLENGE's core requirement). It is cheap because
+Supabase Realtime does the fan-out — **no broker, no queue, no worker process.**
 Ingest returns fast; the rest is separate modules (out of scope here, tracked in
 `TASKS.md` Fase 3):
 
@@ -266,6 +333,20 @@ Do not invent these; they gate the build:
 
 ---
 
+## 5. Summary
+
+| Concern     | Milestone A (implemented)                  | Milestone B (later)                        |
+| ----------- | ------------------------------------------ | ------------------------------------------ |
+| Intake      | `POST /api/events`, single **or batch**    | same producer                              |
+| Concurrency | `Promise.allSettled` + `MAX_CONCURRENT`    | unchanged                                  |
+| Execution   | durable async (`202 { runId }`)            | unchanged                                  |
+| Dedup       | event `id` upsert + action idempotency key | unchanged                                  |
+| Persistence | insert `events`                            | + `plans`/`actions`/`results` writeback    |
+| Dashboard   | scenario panel posts, reads wait results   | Realtime fan-out via `subscribeToIncident` |
+| New infra   | none                                       | RLS read policy + operator auth            |
+
+A is real, testable and handles many events at once without new
+infrastructure. B layers the live fan-out on top without changing the producer.
 ## 8. Current-code → target mapping
 
 | Scaffolding (in code today)                   | Confirmed target (`data-model.md`)                            |

@@ -64,8 +64,12 @@ ejecución robusta, aprendizaje y ensayo) están en el documento fuente.
 
 ## Fase 3 · Primera vertical conectada
 
-- [ ] Persistir eventos, planes, acciones y resultados en Supabase.
-- [ ] Deduplicar eventos y evitar acciones externas duplicadas durante reintentos.
+- [x] Ingesta por lotes con deduplicación de eventos (Hito A de
+      `docs/input-architecture.md`), guardado en Supabase si está configurado.
+- [x] Enviar los avisos del motor de escenarios al workflow del agente y mostrar
+      sus planes en el panel.
+- [ ] Persistir planes, acciones y resultados en Supabase.
+- [ ] Evitar acciones externas duplicadas durante reintentos.
 - [ ] Incorporar historial y disponibilidad real de recursos a las decisiones.
 - [ ] Añadir autenticación de operadores y políticas RLS por incidente.
 - [ ] Conectar el panel al backend y a Realtime.
