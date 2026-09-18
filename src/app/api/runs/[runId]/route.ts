@@ -7,5 +7,9 @@ export async function GET(request: Request, context: { params: Promise<{ runId: 
   const { runId } = await context.params;
   const run = getRun(runId);
   const status = await run.status;
-  return Response.json({ runId, status, result: status === "completed" ? await run.returnValue : null });
+  return Response.json({
+    runId,
+    status,
+    result: status === "completed" ? await run.returnValue : null,
+  });
 }

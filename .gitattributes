@@ -1,0 +1,11 @@
+# Keep text files identical on macOS, Windows and Linux, regardless of autocrlf.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
