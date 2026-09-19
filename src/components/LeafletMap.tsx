@@ -7,10 +7,10 @@ import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, CircleMarker, Marker, useMap } from "react-leaflet";
 import { divIcon } from "leaflet";
 import { resourceSummary } from "./resource-summary";
-import { assignedEventLocations } from "./AmbulanceCard";
+import { assignedEventLocations, type PriorityLevel } from "./dashboard/model";
 import type { CoordinatorState } from "@/lib/contracts/coordinator";
 import type { TelemetryRecord } from "@/lib/event-pipeline";
-import type { CrisisZone, Severity } from "@/lib/types";
+import type { CrisisZone } from "@/lib/types";
 
 interface Props {
   zones: CrisisZone[];
@@ -19,27 +19,21 @@ interface Props {
   onSelectAmbulance?: (id: string) => void;
   /** Telemetry records (SSE); `event.accepted` ones with coordinates are plotted. */
   events?: TelemetryRecord[];
+  /** Coordinator priority by event ID; pins without one render as unassessed. */
+  priorities?: Map<string, PriorityLevel>;
+  selectedEventId?: string | null;
+  onSelectEvent?: (eventId: string) => void;
   selectedZoneId: string | null;
   onSelect: (zoneId: string) => void;
   /** Called once if the base map cannot load any tiles. */
   onTilesUnavailable?: () => void;
 }
 
-// Leaflet SVG paths require literal colors matching the CSS palette.
-const colors = { danger: "#a11b12", warn: "#96490f", info: "#17527f", fire: "#e05638" };
-
-const severityColors: Record<Severity, string> = {
-  low: colors.info,
-  medium: colors.warn,
-  high: colors.fire,
-  critical: colors.danger,
-};
-
 interface EventPin {
   id: string;
   position: [number, number];
   title: string;
-  severity: Severity;
+  eventId: string;
   reference: string;
   description?: string;
 }
@@ -50,7 +44,7 @@ function eventPins(records: TelemetryRecord[]): EventPin[] {
   const pins: EventPin[] = [];
   for (const record of records) {
     if (record.type !== "event.accepted") continue;
-    const { location, title, severity } = record.payload as {
+    const { location, title } = record.payload as {
       location?: {
         latitude?: unknown;
         longitude?: unknown;
@@ -58,17 +52,13 @@ function eventPins(records: TelemetryRecord[]): EventPin[] {
         description?: unknown;
       };
       title?: unknown;
-      severity?: unknown;
     };
     if (typeof location?.latitude !== "number" || typeof location.longitude !== "number") continue;
     pins.push({
       id: record.id,
       position: [location.latitude, location.longitude],
       title: typeof title === "string" ? title : "Event",
-      severity:
-        typeof severity === "string" && severity in severityColors
-          ? (severity as Severity)
-          : "medium",
+      eventId: record.eventId,
       reference: typeof location.reference === "string" ? location.reference : "unknown",
       description: typeof location.description === "string" ? location.description : undefined,
     });
@@ -133,6 +123,9 @@ function FollowEvents({ pins }: { pins: EventPin[] }) {
 export default function LeafletMap({
   zones,
   events = [],
+  priorities = new Map(),
+  selectedEventId,
+  onSelectEvent,
   ambulances = [],
   ambulanceFocus,
   onSelectAmbulance,
@@ -158,12 +151,12 @@ export default function LeafletMap({
   const selectedZone = zones.find((zone) => zone.id === selectedZoneId);
 
   return (
-    <div className="relative w-full h-[480px] rounded-[16px] overflow-hidden border border-line shadow-xs">
+    <div className="relative h-full w-full overflow-hidden rounded-lg">
       <MapContainer
         center={defaultCenter}
         zoom={11}
         scrollWheelZoom={true}
-        style={{ height: "100%", width: "100%" }}
+        className="h-full w-full"
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -192,13 +185,16 @@ export default function LeafletMap({
           <CircleMarker
             key={pin.id}
             center={pin.position}
-            radius={8}
-            eventHandlers={{ click: () => setSelection({ title: pin.title }) }}
+            radius={pin.eventId === selectedEventId ? 11 : 7}
+            eventHandlers={{
+              click: () => {
+                onSelectEvent?.(pin.eventId);
+                setSelection({ title: pin.title });
+              },
+            }}
             pathOptions={{
-              color: "#ffffff",
-              weight: 2,
-              fillColor: severityColors[pin.severity],
-              fillOpacity: 0.95,
+              // Fill comes from the priority token in CSS; Leaflet only sets the class.
+              className: `map-pin map-pin-${priorities.get(pin.eventId) ?? "unassessed"}`,
               // Only an explicit incident pin is solid; reporter/unknown positions are dashed.
               dashArray: pin.reference === "incident" ? undefined : "3, 3",
             }}
@@ -230,7 +226,7 @@ export default function LeafletMap({
           </button>
           <p>{selection.title}</p>
           {selection.resources && (
-            <p className="mt-2 text-xs text-neutral-500">{resourceSummary(selection.resources)}</p>
+            <p className="mt-1 text-meta text-muted">{resourceSummary(selection.resources)}</p>
           )}
         </div>
       )}
@@ -253,10 +249,9 @@ function AmbulanceMarker({
   const civilGuard = unitId.startsWith("civil-guard-");
   const icon = divIcon({
     className: "",
-    iconSize: [40, 40],
-    iconAnchor: [20, 40],
-    popupAnchor: [0, -40],
-    html: `<div style="position:relative;display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:${selected ? "#1d4ed8" : "#fff"};color:${selected ? "#fff" : "#1d4ed8"};border:2px solid #1d4ed8;border-radius:12px;box-shadow:0 2px 8px #0003"><svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${medical ? '<path d="M10 10H6m2-2v4M3 17V5h11v12M14 9h4l3 4v4h-3M7 17h7M17 10v3h4"/><circle cx="5" cy="17" r="2"/><circle cx="16" cy="17" r="2"/>' : civilGuard ? '<path d="M12 3l8 4v5c0 5-8 9-8 9s-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/>' : '<path d="M12 3l8 4v5c0 5-8 9-8 9s-8-4-8-9V7z"/>'}</svg>${group.units.length > 1 ? `<span style="position:absolute;right:-6px;top:-6px;background:#1d4ed8;color:white;border-radius:99px;padding:1px 5px;font-size:11px">${group.units.length}</span>` : ""}</div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 34],
+    html: `<div class="unit-marker" data-selected="${selected}"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${medical ? '<path d="M10 10H6m2-2v4M3 17V5h11v12M14 9h4l3 4v4h-3M7 17h7M17 10v3h4"/><circle cx="5" cy="17" r="2"/><circle cx="16" cy="17" r="2"/>' : civilGuard ? '<path d="M12 3l8 4v5c0 5-8 9-8 9s-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/>' : '<path d="M12 3l8 4v5c0 5-8 9-8 9s-8-4-8-9V7z"/>'}</svg>${group.units.length > 1 ? `<span>${group.units.length}</span>` : ""}</div>`,
   });
   return (
     <Marker

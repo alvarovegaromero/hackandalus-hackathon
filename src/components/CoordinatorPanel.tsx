@@ -1,6 +1,5 @@
 "use client";
 
-import { TextSkeleton } from "./Skeleton";
 import { useEffect, useState } from "react";
 import { coordinatorStateSchema, type CoordinatorState } from "@/lib/contracts/coordinator";
 
@@ -40,51 +39,32 @@ export function useCoordinator() {
   return { state, error };
 }
 
-type PanelProps = { state: CoordinatorState | null; error: string | null };
-
-export function OverviewPanel({ state, error }: PanelProps) {
+/** Detail for the System card: the model's situation summary and full plan, on demand. */
+export default function SituationPanel({ state }: { state: CoordinatorState | null }) {
+  if (!state?.situationOverview && !state?.plan) return null;
   return (
-    <section className="dashboard-overview" aria-label="Overview">
-      <h2>Overview</h2>
-      {!state && !error ? (
-        <TextSkeleton />
-      ) : (
-        <p>
-          {state?.situationOverview ||
-            (error ? "Situation unavailable." : "Waiting for the first assessment.")}
-        </p>
-      )}
-      {error && (
-        <p role="alert" className="text-amber-800">
-          {error}
-        </p>
-      )}
-    </section>
-  );
-}
-
-export default function CoordinatorPanel({ state, error }: PanelProps) {
-  const plan = state?.plan;
-  return (
-    <section className="orchestrator-panel" aria-label="Orchestrator">
-      <h2>
-        <span className="agent-node" aria-hidden="true" /> Orchestrator
+    <section className="grid gap-2 border-b border-line pb-4" aria-labelledby="situation-title">
+      <h2 id="situation-title" className="text-body font-medium text-muted">
+        Situation
       </h2>
-      {!state && !error ? (
-        <TextSkeleton />
-      ) : plan ? (
-        <>
-          <p className="plan-objective">{plan.objective}</p>
-          <ol>
-            {plan.steps.map((step, index) => (
+      {state.situationOverview && (
+        <details className="group text-body">
+          <summary className="cursor-pointer list-none">
+            <span className="line-clamp-3 group-open:line-clamp-none">
+              {state.situationOverview}
+            </span>
+          </summary>
+        </details>
+      )}
+      {state.plan && (
+        <details className="text-meta text-muted">
+          <summary className="cursor-pointer">Plan: {state.plan.steps.length} steps</summary>
+          <ol className="mt-1 grid list-decimal gap-1 pl-5">
+            {state.plan.steps.map((step, index) => (
               <li key={index}>{step}</li>
             ))}
           </ol>
-        </>
-      ) : (
-        <p className="text-neutral-500">
-          {error ? "Plan unavailable." : "Waiting for report assessment."}
-        </p>
+        </details>
       )}
     </section>
   );

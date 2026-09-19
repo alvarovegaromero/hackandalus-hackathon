@@ -8,12 +8,42 @@ Reference guide for building the human interface of the crisis management system
 Addresses the requirements in `CHALLENGE.md`: see in two seconds what is happening and what has changed, understand what the system is doing, and intervene.
 Scenario-agnostic: applies to wildfire, flood, blackout, or others, as long as there are locations to render on a map.
 
+## 0. Implemented Dashboard (Current)
+
+This section describes what `/dashboard` renders today.
+Sections 1 to 12 remain the long-term target; where they disagree, this section describes the code.
+
+The panorama row answers three questions without hover, legend or scroll at 1440×900:
+
+1. **What is most severe now?** Critical and high counts, the rest in one line, and active events per arrival minute stacked by priority.
+   The chart only covers telemetry received since the page loaded (the stream replays its last 100 records), and its footer says so.
+2. **Do we have units left?** Free units out of 10 per force, a 10-cell strip (filled = assigned) and an `Exhausted` label at zero.
+3. **What is the system doing?** The plan objective and subagent missions counted by status, blocked and failed first.
+
+```
+┌ header: FARO · scenario · SIMULATION · updated HH:MM ─────────────────┐
+├ Severity (span 4) ─────┬ Resources (span 4) ─────┬ System (span 4) ───┤
+├ Events by priority (5) ┴──────── Map (4) ────────┴ Situation + missions (3) ┤
+└───────────────────────────────────────────────────────────────────────┘
+```
+
+- The breakdown row explains the panorama: priority queue with rationale on expand, map, then situation summary, plan steps and missions.
+- Reports discarded by the relevance filter collapse under one line; the filter decision is never colored.
+- The map is secondary: desaturated basemap, pins colored by coordinator priority, 24px unit markers.
+- Tokens live only in `src/app/(console)/dashboard-theme.css` and reach Tailwind through `@theme inline` (`text-critical`, `bg-panel`, `text-kpi`...).
+- Priority hues are reserved for priority: critical `#ff6b61`, high `#f59e42`, medium `#eed27a`, low `#7d8da0`, unassessed `#6b7280`.
+  Green `#07b37c` means brand, selection and focus; blue `#7cc4f0` means a running mission.
+  Warnings use an icon and ink text, never a hue.
+- Type scale: 11px meta, 13px body, 15px lead, 28px key numbers.
+  Spacing: 8px inside a group, 16px between cards, 24px between zones.
+- Charts use Recharts 3 through the shadcn primitives in `src/components/ui/chart.tsx`.
+
 ## 1. Initial Decisions
 
 | Topic        | Decision                                                                                   |
 | ------------ | ------------------------------------------------------------------------------------------ |
 | Audience     | An operator uses it on a laptop, and the same layout is projected before the jury.         |
-| Visual focus | Situation map in the center.                                                               |
+| Visual focus | The three panorama questions; the map is a secondary breakdown panel.                      |
 | Replanning   | Temporary highlighting of what changes, with decay over minutes and marks on the timeline. |
 | Intervention | Approve or cancel actions, reorder priorities, and inject events.                          |
 | Metrics      | Free/allocated resources, action status, affected/notified people, and temporal evolution. |
@@ -105,7 +135,7 @@ Answers: "what information matters?"
 
 Answers: "what is happening and where?"
 
-- **Technical implementation:** Rendered via **React Leaflet** (`src/components/LeafletMap.tsx`) loaded dynamically (`next/dynamic` without SSR) alongside a selector to toggle with the SVG regional diagram (`src/components/OperationsMap.tsx`).
+- **Technical implementation:** Rendered via **React Leaflet** (`src/components/LeafletMap.tsx`) loaded dynamically (`next/dynamic` without SSR).
 - **Cartographic base layer:** **OpenStreetMap** (`https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png`), without external API key dependencies or restrictive quotas.
 - **Operational focus:** Centered on **Sierra Bermeja / Serranía de Ronda** (`[36.525, -5.185]`), with dynamic thermal focus and 2.2 km radius.
 - **Critical transit routes:** Explicit tracing of the **A-397 road** (critical closure) and alternative route **MA-8301**.
