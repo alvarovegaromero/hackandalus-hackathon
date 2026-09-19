@@ -23,6 +23,18 @@ JSON persistence. Outbound communications default to mock mode.
 
 ## Contracts and integration work
 
+**Start implementation with the agreed [Initial POC](poc.md).** It defines the
+active scope, P0–P5 work packages, handoffs and demo acceptance. Its persisted
+activity/SSE path and bounded filter/triage/agent scope take precedence for the
+first delivery. [POC module contracts v1](poc-contracts.md) defines the interfaces
+and reuses the existing input/SSE work from `e2579a9`. Executable schemas,
+fixtures and that branch's port into `src/` remain pending.
+
+For the broader product, review [Architecture review](architecture-review.md): current
+and proposed diagrams, confirmed decisions, unresolved choices, and parallel work
+packages. [Contracts v0](contracts-v0.md) proposes the module boundaries and
+acceptance fixtures. Both are drafts awaiting validation, not approved APIs.
+
 The application now uses one `src/` tree. The active `/api/events` endpoint
 accepts a single command-center event. Reusable batch ingestion, scenario and
 Workflow modules remain in `src/lib/` and `src/workflows/`, but their old
@@ -51,8 +63,8 @@ input envelope used by the scenario adapter.
 - [Feature inventory](../thoughts/features.md): historical implementation and
   porting reference; use current source and TASKS.md for present status.
 
-The next architecture diagram should distinguish the served runtime, reusable
-modules awaiting integration, and external services awaiting configuration.
+The architecture review distinguishes the served runtime, reusable modules
+awaiting integration, and external services awaiting configuration.
 
 ## Development tooling
 

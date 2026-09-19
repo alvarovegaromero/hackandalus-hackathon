@@ -1,5 +1,9 @@
 # FARO
 
+**Start POC work here:** [scope and P0–P5 work packages](docs/poc.md) →
+[module contracts v1](docs/poc-contracts.md) → [current tasks](TASKS.md).
+These are mandatory implementation references under [PROJECT.md](PROJECT.md).
+
 > **SKETCH:** The dashboard is an exploratory prototype with demo scenario data
 > and partially connected controls. It is not an approved product design or an
 > operational emergency response system.
@@ -291,6 +295,11 @@ and `scripts/hooks.test.ts` covers hook guards. Command center tests share the
 process and call `resetSituation()` in `beforeEach`.
 
 ## Documentation
+
+For the initial implementation, follow [POC scope](docs/poc.md) and
+[module contracts v1](docs/poc-contracts.md). The broader
+[architecture review](docs/architecture-review.md) and [contracts v0](docs/contracts-v0.md)
+remain proposals for later product work and do not add POC prerequisites.
 
 | Document                                                                               | Contents                                                      |
 | -------------------------------------------------------------------------------------- | ------------------------------------------------------------- |

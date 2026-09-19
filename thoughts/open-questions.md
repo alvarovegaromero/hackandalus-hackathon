@@ -1,7 +1,16 @@
 # Open decisions
 
-Aligned with the current version of `HackSpain 2026 · Source of Truth del
-proyecto.md`. Ordered by the phase each item blocks. Confirmed items are at
+The [initial POC](../docs/poc.md) is agreed as of 2026-09-19. Use its final
+decision list for immediate blockers and P0–P5 for assignment. The phase lists
+below concern the broader product; Twin schema, resource coverage and five
+response-policy outcomes do not block the bounded POC relevance filter and
+triage. The POC uses persisted audit/activity with SSE and defers the full plan
+UI, subagents and priority effects from current asset incidents.
+
+Aligned with `HackSpain 2026 · Project Source of Truth.md` and PROJECT.md.
+Review [architecture proposals](../docs/architecture-review.md) and
+[contracts v0](../docs/contracts-v0.md) for the proposed resolutions; these remain
+unapproved. Ordered by the phase each item blocks. Confirmed items are at
 the end so nobody reopens them.
 
 ---
@@ -110,7 +119,6 @@ the end so nobody reopens them.
       number.
 - [ ] **Real time to the panel**: server-side relay with no operator
       authentication, or read policies for `authenticated` with a minimal login.
-- [ ] **Repository license.** Undecided.
 
 ## Staging
 
@@ -144,7 +152,9 @@ the end so nobody reopens them.
   Care home with 45 residents, rural school, campsite of 120. Roads A-397,
   MA-8301, AP-7. Hospitals Costa del Sol and Serranía.
 - **Name**: FARO.
-- **User**: the control-room chief of 112 Andalucía. Everything in Spanish.
+- **User**: the control-room chief of 112 Andalucía. Project documentation and
+  operator UI are in English, as required by PROJECT.md.
+- **Repository license**: MIT (`LICENSE`).
 - **Stack**: TypeScript, Zod, Next.js, Vercel AI SDK, Vercel Workflow,
   Supabase PostgreSQL and Realtime, HappyRobot, Jev. Out: Convex, Python, a
   separate worker, Supabase Queues.

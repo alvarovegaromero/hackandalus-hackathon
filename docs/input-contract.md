@@ -1,10 +1,21 @@
 # Report input contract
 
+For POC integration, [module contracts v1](poc-contracts.md) reuses the existing
+legacy input/SSE slice from `origin/event-pipeline-backend-frontend` (`e2579a9`).
+Its `/api/events` memory acknowledgement remains distinct from the durable
+`/api/signals` target below. P1 adapts both into the existing `NormalizedReport`;
+neither input contract is silently replaced. That branch is not yet integrated
+into this checkout.
+
 Confirmed on 2026-09-19. This is the target contract for report intake and the
 normalization boundary before triage. It supersedes the earlier requirement
 that a reporter supply `title`, `body`, `category`, `severity`, or confidence.
 The envelope schema (`src/lib/report.ts`) and the scenario adapter are implemented;
 public validation, intake and the route are not yet exposed by the running application.
+
+The [architecture review](architecture-review.md) and [contracts v0](contracts-v0.md)
+propose scheduling recovery and retry identity for team validation. Those drafts
+do not change the confirmed payload below.
 
 ## Reporter experience
 
@@ -15,11 +26,11 @@ fields; the person does not need to know the crisis UUID or classify the event.
 
 ```json
 {
-  "text": "Veo humo cerca del camping, hay gente dentro",
+  "text": "I see smoke near the campsite; there are people inside",
   "location": {
     "latitude": 36.537,
     "longitude": -5.046,
-    "description": "Entrada norte del camping",
+    "description": "North entrance of the campsite",
     "reference": "incident"
   }
 }
@@ -28,14 +39,14 @@ fields; the person does not need to know the crisis UUID or classify the event.
 These are also valid:
 
 ```json
-{ "text": "Veo humo desde mi casa" }
+{ "text": "I can see smoke from my house" }
 ```
 
 ```json
 {
-  "text": "La carretera está cortada",
+  "text": "The road is closed",
   "location": {
-    "description": "A-397, cerca del cruce de Benahavís",
+    "description": "A-397, near the Benahavís junction",
     "reference": "incident"
   }
 }

@@ -8,6 +8,10 @@ This is a project decision, not deferred work. Validate locally with
 validation first and blocks creation on failure. See [PROJECT.md](PROJECT.md).
 
 Read and follow [PROJECT.md](PROJECT.md) before working in this repository.
+For POC work, also read [the active scope](docs/poc.md),
+[module contracts v1](docs/poc-contracts.md) and [TASKS.md](TASKS.md) before
+planning or editing. Follow PROJECT.md's mandatory reading and contract-change
+rules; broader architecture drafts do not supersede these POC references.
 It is the single source of truth for project context, stack, commands, naming,
 English commit messages, Git permissions, branch protection and secret checks.
 These shared instructions apply to Codex, Claude Code, Cursor, Gemini,
