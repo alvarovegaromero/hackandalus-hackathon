@@ -35,10 +35,10 @@ export default function PriorityQueue({
 }) {
   const connecting = ["Connecting…", "Loading…"].includes(status);
   return (
-    <section className="flex min-h-0 flex-col gap-2" aria-labelledby="queue-title">
+    <section className="glass flex h-full min-h-0 flex-col gap-2 p-4" aria-labelledby="queue-title">
       <header className="flex items-baseline justify-between gap-3">
         <h2 id="queue-title" className="text-body font-medium text-muted">
-          Events by priority
+          Incidents by priority
         </h2>
         {status !== "Live" && (
           <span role="status" className="flex items-center gap-1 text-meta">
@@ -47,7 +47,7 @@ export default function PriorityQueue({
           </span>
         )}
       </header>
-      <div className="dashboard-scroll">
+      <div className="dashboard-scroll -mx-2 px-2">
         {!events.length &&
           (connecting ? (
             <TextSkeleton />
@@ -56,31 +56,44 @@ export default function PriorityQueue({
               No active events. New reports appear here as they arrive.
             </p>
           ))}
-        <ol className="divide-y divide-line" aria-live="polite" aria-relevant="additions">
-          {events.map((event) => (
+        <ol className="grid gap-0.5" aria-live="polite" aria-relevant="additions">
+          {events.map((event, index) => (
             <li key={event.id}>
+              {/* Rows are sorted by priority: one heading per group replaces a label per row. */}
+              {events[index - 1]?.priority !== event.priority && (
+                <p
+                  className={cn(
+                    "flex items-center gap-2 pb-1 text-meta text-muted",
+                    index > 0 && "mt-3",
+                  )}
+                  aria-hidden="true"
+                >
+                  <span className={mark({ priority: event.priority })} />
+                  {PRIORITY_LABELS[event.priority]}
+                  <span className="tabular-nums">
+                    {events.filter((e) => e.priority === event.priority).length}
+                  </span>
+                </p>
+              )}
               <details
                 className={cn(
-                  "group py-2",
-                  selectedId === event.id && "-mx-2 rounded-md bg-panel px-2",
+                  "group -mx-2 rounded-lg px-2 py-2 transition-colors hover:bg-ink/[0.03]",
+                  selectedId === event.id && "bg-ink/[0.06] hover:bg-ink/[0.06]",
                 )}
               >
                 <summary
-                  className="grid cursor-pointer list-none grid-cols-[5.5rem_minmax(0,1fr)_auto] items-baseline gap-2"
+                  className="grid cursor-pointer list-none grid-cols-[minmax(0,1fr)_auto] items-baseline gap-2"
                   onClick={() => onSelect(event.id)}
                 >
-                  <span className="flex items-center gap-2 text-meta text-muted">
-                    <span aria-hidden="true" className={mark({ priority: event.priority })} />
-                    {PRIORITY_LABELS[event.priority]}
-                  </span>
                   <span className="truncate text-body group-open:whitespace-normal">
+                    <span className="sr-only">{PRIORITY_LABELS[event.priority]}: </span>
                     {event.summary}
                   </span>
                   <span className="text-meta text-muted tabular-nums">
                     {event.at ? <time dateTime={event.at}>{clock(event.at)}</time> : null}
                   </span>
                 </summary>
-                <div className="mt-1 grid gap-1 pl-[6rem] text-meta text-muted">
+                <div className="mt-1 grid gap-1 text-meta text-muted">
                   {event.filterUnavailable && (
                     <p className="flex items-center gap-1 text-ink">
                       <TriangleAlert size={12} aria-hidden="true" /> Relevance filter unavailable;

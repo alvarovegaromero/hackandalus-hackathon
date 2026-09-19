@@ -151,7 +151,7 @@ export default function LeafletMap({
   const selectedZone = zones.find((zone) => zone.id === selectedZoneId);
 
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-lg">
+    <div className="relative h-full w-full overflow-hidden rounded-2xl">
       <MapContainer
         center={defaultCenter}
         zoom={11}
@@ -215,8 +215,9 @@ export default function LeafletMap({
           />
         ))}
       </MapContainer>
+      <div className="map-vignette" aria-hidden="true" />
       {selection && (
-        <div className="map-selection" role="region" aria-label="Selected location">
+        <div className="map-selection glass" role="region" aria-label="Selected location">
           <button
             type="button"
             aria-label="Close location details"
