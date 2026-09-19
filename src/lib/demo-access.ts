@@ -5,7 +5,7 @@ export const DEMO_PUBLIC_DURATION_MS = 26 * 60 * 60 * 1000;
 
 /** A single fixed window shared by every visitor and server instance. */
 export function publicDemoExpiresAt(): number | undefined {
-  if (process.env.ACTION_EXECUTION_MODE !== "mock") return;
+  if (!["mock", "happyrobot"].includes(process.env.ACTION_EXECUTION_MODE ?? "")) return;
   const activation = process.env.DEMO_PUBLIC_STARTED_AT;
   if (!activation) return;
   const startedAt = Date.parse(activation);
@@ -31,6 +31,9 @@ export function requireSameOrigin(request: Request): Response | undefined {
 export function authorizeDemoControl(request: Request): Response | undefined {
   const denied = requireSameOrigin(request);
   if (denied) return denied;
+  if (process.env.ACTION_EXECUTION_MODE === "happyrobot") {
+    return Response.json({ error: "Demo controls are disabled in live mode." }, { status: 403 });
+  }
   if (process.env.NODE_ENV === "development") return;
   if (!publicDemoExpiresAt()) {
     return Response.json({ error: "The public demo is closed." }, { status: 403 });
