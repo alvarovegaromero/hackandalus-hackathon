@@ -49,8 +49,8 @@ The log folds these into one green/red/amber row. Reconnect uses full bounded re
 `unavailable` notification; the browser retains its last records while retrying.
 
 The development **Reset & run events** button calls POST `/api/demo/reset` then
-POST `/api/demo/events`. Reset requires migration `202609190006_coordinator_reset.sql`;
-it clears coordinator reports, resets the plan and ten units, rotates stateId/runId,
+POST `/api/demo/events`. Reset uses migrations 006, 011 and 016;
+it clears coordinator reports, resets the plan and thirty units, rotates stateId/runId,
 and revokes the worker lease atomically. Audit history is retained. This affects the
 shared database, not just one browser. Routes require development mode and same-origin
 POSTs. The previous legacy `/api/demo/reset` situation-reset behavior is replaced.
@@ -151,3 +151,15 @@ Assigned units join SSE receipt coordinates by eventId; selecting a unit centers
 and opens its map marker. Units at the same coordinates share an ambulance marker
 with a count. These positions represent assigned reports, not live vehicle GPS.
 Missing coordinates disable map navigation rather than inventing a position.
+
+## Reset execution fencing (migration 016)
+
+Reset now returns `{ runId, state }`. Existing clients reading only `runId` remain
+compatible. The dashboard immediately applies `state`, invalidates earlier poll
+responses and reconnects SSE; it then starts fixtures through the existing events
+endpoint. Repeated starts use stable fixture IDs within a run.
+
+Apply `202609190016_reset_execution_fence.sql` after 015 for cross-process stale
+mission rejection and cancellation on reset. Local aborts stop model generation
+and late scheduling callbacks. Migration installation itself does not reset the
+demo. See [agentic review](agentic-review.md) for verification and recovery limits.

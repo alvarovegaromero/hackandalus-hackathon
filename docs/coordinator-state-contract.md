@@ -267,3 +267,14 @@ Migration 015 supersedes the automatic release introduced in 014. Mission
 completion preserves all resource assignments and counters. Subagents coordinate
 communications; they cannot infer when a patrol or ambulance finishes field work.
 Explicit operational release remains deferred. Prior releases are not reversed.
+
+## Reset execution fence (migration 016)
+
+The state schema is unchanged. POST `/api/demo/reset` adds the complete new `state`
+to its existing `{ runId }` response. Parent generation and scheduling callbacks
+are locally run-scoped; SQL reset revokes parent leases and, with 016, unfinished
+subagent leases. Mission database operations reject previous runs. Client polling
+cannot overwrite an applied reset with an older in-flight response.
+
+See [agentic review](agentic-review.md) for the remaining durable-execution and
+communication boundaries. Migration 016 is not yet installed on the shared demo.

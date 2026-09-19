@@ -36,13 +36,23 @@ export default function SeverityCard({
   const before = bins.slice(-10, -5).reduce((sum, bin) => sum + total(bin), 0);
   return (
     <Card aria-labelledby="severity-title">
-      <CardHeader>
+      <CardHeader className="items-center">
         <CardTitle id="severity-title">What is most severe now?</CardTitle>
-        <span className="text-meta text-muted">{events.length} active</span>
+        <span className="text-meta text-muted">
+          {loading ? <Skeleton className="h-[1.5em] w-12" /> : `${events.length} active`}
+        </span>
       </CardHeader>
       <CardContent className="flex items-end gap-6">
         {loading ? (
-          <Skeleton className="h-9 w-40" />
+          <>
+            {["critical", "high"].map((level) => (
+              <div key={level}>
+                <Skeleton className="h-[1em] w-8 text-kpi" />
+                <Skeleton className="mt-1 h-[1.5em] w-10 text-meta" />
+              </div>
+            ))}
+            <Skeleton className="mb-1 h-4 w-32" />
+          </>
         ) : (
           <>
             <Kpi value={counts.critical} label="Critical" tone="text-critical" />
@@ -53,8 +63,10 @@ export default function SeverityCard({
           </>
         )}
       </CardContent>
-      <CardContent>
-        {bins.length ? (
+      <CardContent className="h-18">
+        {loading ? (
+          <Skeleton className="h-full w-full" />
+        ) : bins.length ? (
           <figure>
             <ChartContainer
               config={chartConfig}
@@ -105,7 +117,9 @@ export default function SeverityCard({
             </figcaption>
           </figure>
         ) : (
-          <p className="text-meta text-muted">No reports received since this page loaded.</p>
+          <p className="flex h-full items-center text-meta text-muted">
+            No reports received since this page loaded.
+          </p>
         )}
       </CardContent>
       <CardFooter className="flex justify-between gap-3">

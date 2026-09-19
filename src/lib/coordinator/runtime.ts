@@ -53,15 +53,15 @@ export async function enqueueLegacyEvent(
   id: string = randomUUID(),
   expectedRunId?: string,
 ) {
-  const state = await readCoordinatorState();
-  if (expectedRunId && state.runId !== expectedRunId) throw new CoordinatorConflict("RUN_CONFLICT");
+  // The enqueue RPC validates the run atomically; avoid a read before every fixture.
+  const runId = expectedRunId ?? (await readCoordinatorState()).runId;
   const text = [payload.title, payload.description, payload.category, payload.zoneId]
     .filter(Boolean)
     .join("\n");
   return enqueueCoordinatorEvent({
     report: {
       id,
-      runId: state.runId,
+      runId,
       source: payload.source === "demo" ? "scenario" : (payload.source ?? "webhook"),
       channel: payload.source ?? "unknown",
       receivedAt: new Date().toISOString(),
@@ -114,6 +114,7 @@ export async function proposeCoordinatorState(
   state: CoordinatorState,
   observations: unknown[],
   trigger: string,
+  signal?: AbortSignal,
 ) {
   const selected = createPlannerModel(state.runId);
   const result = await generateText({
@@ -122,13 +123,16 @@ export async function proposeCoordinatorState(
     prompt: JSON.stringify({ trigger, state, observations, now: new Date().toISOString() }),
     output: Output.object({ schema: coordinatorProposalSchema }),
     maxRetries: 0,
-    abortSignal: AbortSignal.timeout(30_000),
+    abortSignal: signal
+      ? AbortSignal.any([signal, AbortSignal.timeout(30_000)])
+      : AbortSignal.timeout(30_000),
   });
   return validateCoordinatorProposal(state, result.output);
 }
 
 /** Filtering is independent of the model lease and never waits for a plan. */
-export async function prepareCoordinatorReport(rawInput: unknown) {
+export async function prepareCoordinatorReport(rawInput: unknown, signal?: AbortSignal) {
+  signal?.throwIfAborted();
   const input = coordinatorInputSchema.parse(rawInput);
   const context = {
     schemaVersion: 1 as const,
@@ -141,6 +145,7 @@ export async function prepareCoordinatorReport(rawInput: unknown) {
     report: input.report,
     evidence: [{ id: input.report.id }],
   });
+  signal?.throwIfAborted();
   const factors =
     input.factors ??
     impactFactorsSchema.parse(
@@ -176,13 +181,19 @@ export async function prepareCoordinatorReport(rawInput: unknown) {
 }
 
 /** One serialized model call; filtering can continue while this snapshot is planned. */
-export async function runCoordinatorCycle(trigger = "event.received") {
+export async function runCoordinatorCycle(
+  trigger = "event.received",
+  runId?: string,
+  signal?: AbortSignal,
+) {
+  if (signal?.aborted) return { outcome: "CANCELLED" };
   const token = randomUUID();
   const claim = await rpc("claim", token);
   if (claim.code !== "OK") return { outcome: claim.code };
   try {
     const db = createServerSupabase();
     const state = coordinatorStateSchema.parse(claim.state);
+    if (signal?.aborted || (runId && state.runId !== runId)) return { outcome: "CANCELLED" };
     if (!state.events.length) {
       await rpc("finish", token);
       return { outcome: "NO_ACTIVE_EVENTS" };
@@ -199,15 +210,18 @@ export async function runCoordinatorCycle(trigger = "event.received") {
     if (observations.error) throw new Error("Cannot read accepted observations.");
     const missions = await db
       .from("subagent_missions")
-      .select("mission_id,event_id,input,status,result")
+      .select("mission_id,event_id,input,status,result,operations")
       .eq("run_id", state.runId)
+      .order("created_at", { ascending: false })
       .limit(100);
     if (missions.error) throw new Error("Mission context unavailable.");
     const proposal = await proposeCoordinatorState(
       state,
       [...(observations.data ?? []), { missions: missions.data }],
       trigger,
+      signal,
     );
+    signal?.throwIfAborted();
     const committed = await rpc("commit", token, { trigger, proposal });
     console.info(
       JSON.stringify({
@@ -219,6 +233,7 @@ export async function runCoordinatorCycle(trigger = "event.received") {
     );
     return { outcome: committed.code, proposal, state: committed.state };
   } catch {
+    if (signal?.aborted) return { outcome: "CANCELLED" };
     await rpc("failure", token, { trigger }).catch(() => undefined);
     console.warn(JSON.stringify({ type: "coordinator.failed", code: "COORDINATOR_UNAVAILABLE" }));
     return { outcome: "COORDINATOR_UNAVAILABLE" };

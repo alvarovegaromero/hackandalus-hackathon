@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { processCoordinatorInBackground } from "@/lib/coordinator/background";
 import { after } from "next/server";
 import { setTimeout } from "node:timers/promises";
@@ -19,8 +20,10 @@ export async function POST(request: Request) {
     const processing: Promise<void>[] = [];
     for (const [index, event] of events.entries()) {
       try {
-        await enqueueLegacyEvent(event, undefined, runId);
-        processing.push(processCoordinatorInBackground());
+        const hex = createHash("sha256").update(`${runId}:fixture:${index}`).digest("hex");
+        const eventId = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-8${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+        const receipt = await enqueueLegacyEvent(event, eventId, runId);
+        if (!receipt.duplicate) processing.push(processCoordinatorInBackground());
       } catch {
         console.warn("Demo event sequence stopped: run changed or enqueue failed.");
         break;

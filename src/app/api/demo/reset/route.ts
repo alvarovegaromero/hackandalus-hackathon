@@ -1,3 +1,4 @@
+import { resetCoordinatorBackground } from "@/lib/coordinator/background";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { resetEventPipeline } from "@/lib/event-pipeline";
 import { authorizeDemoControl } from "@/lib/demo-access";
@@ -18,6 +19,7 @@ export async function POST(request: Request) {
       { status: 503 },
     );
   }
+  resetCoordinatorBackground(data.runId);
   resetEventPipeline();
-  return Response.json({ runId: data.runId });
+  return Response.json({ runId: data.runId, state: data });
 }

@@ -444,3 +444,12 @@ The coordinator now runs inside Next.js after report intake; no separate worker
 terminal is needed. Stop any old coordinator worker before trying this version.
 Jev continues filtering during LLM calls. See
 [frontend integration](docs/coordinator-frontend-integration.md) for current limits.
+
+### Agentic/reset review
+
+Reset returns the fresh coordinator state for immediate dashboard refresh. Fixture
+restarts deduplicate reports within the same run. Migration 016, after 015, adds
+cross-process fencing for old mission actions and cancellation of unfinished
+missions. It is prepared and verified in isolation, **not installed on the shared
+demo**. See [agentic review](docs/agentic-review.md) before connecting live workflows
+or relying on restart recovery.

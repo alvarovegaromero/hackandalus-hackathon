@@ -528,9 +528,20 @@ not durable across server restarts; the next intake resumes pending reports.
 ### Resource and mission integration
 
 The coordinator now manages ten ambulances, ten Policía patrols and ten Guardia
-Civil patrols. Apply migrations 009–012 after the existing coordinator migrations.
+Civil patrols. Apply migrations 009–015 after the existing coordinator migrations. Migration 016
+is prepared and isolated-schema verified; shared deployment is pending.
 State v2 adds police and civilGuard inventories; proposals add policeAssignments,
 civilGuardAssignments and missions. Existing ambulance IDs and assignments remain.
 Jev and parent planning stay in Next.js. Subagent missions execute after parent
-commits, with no communication tools granted; HappyRobot integration is deferred.
+commits, with acknowledged no-op communication tools; real HappyRobot integration is deferred.
 The dashboard uses the landing's dark/green palette and polls mission results.
+
+### Agentic review and reset execution fencing
+
+The [agentic review](docs/agentic-review.md) records the current lifecycle and known
+recovery boundaries. Local reset aborts run-scoped model execution and updates the
+client from its returned state. Migration 016 additionally fences stale mission
+actions and cancels unfinished old missions across processes. It is prepared and
+verified in an isolated rolled-back schema, not yet applied to the shared demo.
+Live HappyRobot requires callback/waiting-state integration and idempotency across
+mission revisions; durable handoff remains pending.

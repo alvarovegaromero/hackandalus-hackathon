@@ -14,6 +14,7 @@ export async function missionRpc(kind: string, token: string, data: unknown = {}
   return result.data as {
     code: string;
     mission?: unknown;
+    result?: unknown;
     operation?: unknown;
     operations?: unknown;
     duplicate?: boolean;

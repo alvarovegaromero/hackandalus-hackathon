@@ -60,9 +60,13 @@ export default function ResourcesCard({
                   {exhausted && <span className="sr-only"> free, exhausted</span>}
                 </span>
               ) : (
-                <Skeleton className="h-5 w-8 justify-self-end" />
+                <Skeleton className="h-[1.5em] w-8 justify-self-end text-lead" />
               )}
               <div className="flex items-center gap-1" role="group" aria-label={`${label} units`}>
+                {!inventory &&
+                  Array.from({ length: 10 }, (_, index) => (
+                    <Skeleton key={index} className="h-4 min-w-0 flex-1 rounded-[2px]" />
+                  ))}
                 {inventory?.units.map((unit) => {
                   const assigned = unit.status === "assigned";
                   const target = unit.eventId ? summaries.get(unit.eventId) : undefined;

@@ -77,6 +77,11 @@ export default function Dashboard({
         const result = await reset.json();
         throw new Error(result.error ?? "Could not reset the coordinator.");
       }
+      const resultReset = await reset.json();
+      coordinator.applyReset(resultReset.state);
+      telemetry.reset();
+      setSelectedEventId(null);
+      setSelectedZoneId(null);
       const response = await fetch("/api/demo/events", { method: "POST" });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? "Could not start demo events.");
@@ -205,7 +210,7 @@ export default function Dashboard({
           )}
         </div>
         <aside className="dashboard-agents" aria-label="Agent activity">
-          <SituationPanel state={coordinator.state} />
+          <SituationPanel state={coordinator.state} loading={coordinatorLoading} />
           <MissionsPanel
             missions={missions.missions}
             loading={missions.loading && !coordinator.error}

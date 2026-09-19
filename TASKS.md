@@ -361,3 +361,15 @@ Contract and limits: [docs/event-telemetry.md](docs/event-telemetry.md).
 - [x] Keep simulation wording out of generated plans while preserving evidence-based action claims.
 
 - [x] Restore the dashboard server/client boundary after the panorama redesign; preserve the public demo expiry gate, reload timer and hosted demo controls.
+
+## Agentic and reset robustness review
+
+- [x] Fence local background/model callbacks by run and immediately apply reset state in the dashboard.
+- [x] Deduplicate fixture intake and mission handoff retries with stable identities.
+- [x] Handle exhausted mission claims, recover queued missions on later intake and propagate handoff failures.
+- [x] Prepare migration 016; verify reset/stale mission invariants in an isolated rolled-back schema.
+- [ ] Apply migration 016 to the shared environment in a coordinated release.
+- [ ] Persist/replay parent-to-mission handoff and work wakeups across server termination.
+- [ ] Wire real communication callbacks, waiting-mission wakeups and operation idempotency across revisions.
+
+See [agentic review](docs/agentic-review.md) for findings and validation boundaries.

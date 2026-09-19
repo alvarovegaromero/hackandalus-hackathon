@@ -220,3 +220,16 @@ Parent handoff handles stale update/cancel and reservation conflicts per mission
 remaining changes are still submitted, then a mission.conflict cycle reloads the
 current state and mission results. A completed mission is never reopened by an
 outdated parent decision. Other handoff errors are logged per change.
+
+## Reset and recovery fencing (migration 016)
+
+Subagent RPC actions acquire a shared runtime lock before touching missions; reset
+uses the same lock order and revokes unfinished old missions. Old-run claims and
+actions return `RUN_CONFLICT`. The executor treats a terminal result returned by
+`claim` as a parent-visible change, without starting a model. Mission IDs generated
+from a committed proposal are stable for retries. Multi-event mission context
+uses the highest linked priority.
+
+The migration is prepared and verified in an isolated rolled-back schema, not
+applied to the shared demo. See [agentic review](agentic-review.md), especially
+revision-side effects, waiting missions and durable handoff before live workflows.

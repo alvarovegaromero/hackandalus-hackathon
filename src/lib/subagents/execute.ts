@@ -15,25 +15,44 @@ import {
 import { missionRpc } from "./repository";
 import { createMissionTools } from "./tools";
 
-export async function runSubagentCycle() {
+export async function runSubagentCycle(
+  runId?: string,
+  signal?: AbortSignal,
+  persistence: typeof missionRpc = missionRpc,
+  execute = executeMissionAgent,
+) {
+  if (signal?.aborted) return { outcome: "CANCELLED", changed: false };
   const token = randomUUID();
-  const claim = await missionRpc("claim", token);
+  const claim = await persistence("claim", token, runId ? { runId } : {});
   if (claim.code !== "OK") return { outcome: claim.code, changed: false };
-  const mission = missionInputSchema.parse(claim.mission);
+  // An exhausted lease is finalized by claim itself; there is no mission to execute.
+  if (claim.result) return { outcome: "SUBAGENT_FAILED", changed: true };
+  const parsed = missionInputSchema.safeParse(claim.mission);
+  if (!parsed.success) throw new Error("Invalid claimed mission.");
+  const mission = parsed.data;
+  if (signal?.aborted || (runId && mission.runId !== runId))
+    return { outcome: "CANCELLED", changed: false };
   try {
-    const { decision } = await executeMissionAgent(
+    const { decision } = await execute(
       mission,
       token,
       z.array(contactOperationSchema).parse(claim.operations ?? []),
+      persistence,
+      signal,
     );
-    const committed = await missionRpc("finish", token, { missionId: mission.missionId, decision });
+    signal?.throwIfAborted();
+    const committed = await persistence("finish", token, {
+      missionId: mission.missionId,
+      decision,
+    });
     return {
       outcome: committed.code,
       missionId: mission.missionId,
       changed: committed.code === "OK",
     };
   } catch {
-    const failed = await missionRpc("fail", token, { missionId: mission.missionId });
+    if (signal?.aborted) return { outcome: "CANCELLED", changed: false };
+    const failed = await persistence("fail", token, { missionId: mission.missionId });
     console.warn(
       JSON.stringify({ type: "subagent.failed", missionId: mission.missionId, code: failed.code }),
     );
@@ -51,7 +70,9 @@ export async function executeMissionAgent(
   token: string,
   existingOperations: unknown[],
   persistence: typeof missionRpc = missionRpc,
+  signal?: AbortSignal,
 ) {
+  signal?.throwIfAborted();
   const mission = missionInputSchema.parse(input);
   const selected = createPlannerModel(mission.runId);
   const agent = new ToolLoopAgent({
@@ -66,7 +87,10 @@ If tools, context or capacity are insufficient, return blocked with a concise ex
 Submit a coordination request describing the mission to the appropriate service. An acknowledged operation completes the communication request, not the real-world objective. Missing field observations are the reason for requesting verification, not a reason to skip the request. Only mark completed when communication requests are acknowledged and no resource request remains.
 Completed means the communication task ended, not field work. Assigned resources remain assigned. Never claim units are available again because a call or mission completed. With the current no-op, no real services were contacted.
 Summarize observed results and uncertainties. No private chain of thought. Keep the result summary to one short sentence, at most 180 characters, describing the latest outcome or concrete blocker. Put no report recap or exhaustive list of unknowns in the summary. Describe the acknowledged request concisely. Do not prefix summaries with "Simulación"; describe only the request acknowledgement. Never claim field verification, actual contact, dispatch or evacuation from a no-op acknowledgement.`,
-    tools: createMissionTools(mission, token, persistence),
+    tools: createMissionTools(mission, token, async (...args) => {
+      signal?.throwIfAborted();
+      return persistence(...args);
+    }),
     stopWhen: isStepCount(5),
     prepareStep: ({ stepNumber }) =>
       stepNumber >= 4
@@ -78,6 +102,7 @@ Summarize observed results and uncertainties. No private chain of thought. Keep 
   const generated = await agent.generate({
     prompt: JSON.stringify({ mission, existingOperations }),
     timeout: 45_000,
+    abortSignal: signal,
   });
   const snapshot = await persistence("inspect", token, { missionId: mission.missionId });
   if (snapshot.code !== "OK") throw new Error("Lease lost.");

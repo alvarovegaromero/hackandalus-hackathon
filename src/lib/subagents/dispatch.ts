@@ -1,6 +1,6 @@
 // OWNER: coordinator handoff to scoped subagent missions, with no-op communication tools.
 import "server-only";
-import { randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import type { CoordinatorState, CoordinatorProposal } from "../contracts/coordinator";
 import { submitReservedMission, missionRpc } from "./repository";
 import { runSubagentCycle } from "./execute";
@@ -12,11 +12,15 @@ export async function dispatchPlanMissions(
   rpc = missionRpc,
 ) {
   let needsReplan = false;
-  for (const requested of proposal.missions) {
+  for (const [index, requested] of proposal.missions.entries()) {
     try {
-      const event = state.events.find((e) => e.eventId === requested.eventIds[0]);
-      if (!event?.priority) continue;
-      const missionId = requested.missionId ?? randomUUID();
+      // Retrying the same committed proposal must identify the same mission.
+      const hex = createHash("sha256")
+        .update(`${state.runId}:${proposal.basedOnRevision}:mission:${index}`)
+        .digest("hex");
+      const missionId =
+        requested.missionId ??
+        `${hex.slice(0, 8)}-${hex.slice(8, 12)}-8${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
       if (requested.action === "cancel") {
         const result = await rpc("cancel", missionId, {
           missionId,
@@ -27,6 +31,15 @@ export async function dispatchPlanMissions(
         if (result.code !== "OK") throw new Error(result.code);
         continue;
       }
+      const linked = state.events.filter((event) => requested.eventIds.includes(event.eventId));
+      const event = linked.find((event) => event.eventId === requested.eventIds[0]);
+      if (!event?.priority) throw new Error("EVENT_CONFLICT");
+      const ranks = { low: 0, medium: 1, high: 2, critical: 3 };
+      const priority = linked.reduce(
+        (highest, item) =>
+          item.priority && ranks[item.priority] > ranks[highest] ? item.priority : highest,
+        event.priority,
+      );
       await submit({
         missionId,
         runId: state.runId,
@@ -41,7 +54,7 @@ export async function dispatchPlanMissions(
             .map((e) => e.summary)
             .join("\n")
             .slice(0, 4000),
-          priority: event.priority,
+          priority,
         },
         assignedResourceIds: [
           ...state.ambulances.units,
@@ -61,6 +74,7 @@ export async function dispatchPlanMissions(
       ) {
         needsReplan = true;
       } else {
+        needsReplan = true;
         console.warn("Mission handoff unavailable for one change; continuing remaining changes.");
       }
     }
@@ -68,22 +82,29 @@ export async function dispatchPlanMissions(
   return { needsReplan };
 }
 
-let running: Promise<void> | undefined;
-export function processSubagentMissions(onResult: () => void = () => {}) {
-  return (running ??= (async () => {
-    // Independent of Jev and parent planning; communication currently uses a no-op adapter.
-    for (let batch = 0; batch < 7; batch++) {
-      const outcomes = await Promise.allSettled(
-        Array.from({ length: 3 }, () => runSubagentCycle()),
+/** Each run owns its drain; old executions cannot hold up a freshly reset run. */
+export async function processSubagentMissions(
+  onResult: () => void = () => {},
+  runId?: string,
+  signal?: AbortSignal,
+) {
+  for (let batch = 0; batch < 7 && !signal?.aborted; batch++) {
+    const outcomes = await Promise.allSettled(
+      Array.from({ length: 3 }, () => runSubagentCycle(runId, signal)),
+    );
+    if (signal?.aborted) return;
+    if (outcomes.some((r) => r.status === "fulfilled" && r.value.changed)) onResult();
+    if (outcomes.some((r) => r.status === "rejected"))
+      console.warn(
+        "Some subagent executions failed; durable leases permit recovery on later intake.",
       );
-      if (outcomes.some((r) => r.status === "fulfilled" && r.value.changed)) onResult();
-      if (outcomes.every((r) => r.status === "rejected" || r.value.outcome === "IDLE")) break;
-    }
-  })()
-    .catch(() => {
-      console.warn("Subagent processing unavailable.");
-    })
-    .finally(() => {
-      running = undefined;
-    }));
+    if (
+      outcomes.every(
+        (r) =>
+          r.status === "rejected" ||
+          ["IDLE", "RUN_CONFLICT", "CANCELLED"].includes(r.value.outcome),
+      )
+    )
+      break;
+  }
 }

@@ -17,8 +17,8 @@ export function TextSkeleton() {
 }
 export function MapSkeleton() {
   return (
-    <div role="status" aria-label="Loading map">
-      <Skeleton className="h-full min-h-80 w-full rounded-lg" />
+    <div role="status" aria-label="Loading map" className="h-full w-full">
+      <Skeleton className="h-full w-full rounded-lg" />
     </div>
   );
 }
