@@ -1,5 +1,6 @@
 "use client";
 
+import { TextSkeleton } from "./Skeleton";
 import { filterResultSchema } from "@/lib/contracts/filter";
 import type { TelemetryRecord } from "@/lib/event-pipeline";
 
@@ -85,7 +86,13 @@ export default function EventLog({
         aria-live="polite"
         aria-relevant="additions text"
       >
-        {events.length === 0 ? (
+        {events.length === 0 && ["Connecting…", "Loading…"].includes(status) ? (
+          <li>
+            <TextSkeleton />
+          </li>
+        ) : events.length === 0 && status !== "Live" ? (
+          <li className="p-2">{status}</li>
+        ) : events.length === 0 ? (
           <li className="p-2 text-blueprint-light">
             Waiting for events… run <code>npm run mock:events</code>
           </li>

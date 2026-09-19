@@ -88,6 +88,31 @@ function FlyToSelected({ lat, lng }: { lat: number | undefined; lng: number | un
   return null;
 }
 
+// Follow genuinely new geolocated reports, not filtering updates or polling renders.
+function FollowEvents({ pins }: { pins: EventPin[] }) {
+  const map = useMap();
+  const seen = useRef(new Set<string>());
+  useEffect(() => {
+    if (!pins.length) {
+      seen.current.clear();
+      return;
+    }
+    const fresh = pins.filter((pin) => !seen.current.has(pin.id));
+    seen.current = new Set(pins.map((pin) => pin.id));
+    if (!fresh.length) return;
+    map.stop();
+    map.fitBounds(
+      pins.slice(-8).map((pin) => pin.position),
+      {
+        padding: [60, 60],
+        maxZoom: 15,
+        animate: false,
+      },
+    );
+  }, [map, pins]);
+  return null;
+}
+
 export default function LeafletMap({
   zones,
   events = [],
@@ -98,6 +123,7 @@ export default function LeafletMap({
   onTilesUnavailable,
 }: Props) {
   const tiles = useRef({ loaded: 0, failed: 0, reported: false });
+  const pins = eventPins(events);
   const locations = assignedEventLocations(events);
   const groups = new Map<
     string,
@@ -142,7 +168,9 @@ export default function LeafletMap({
 
         <FlyToSelected lat={selectedZone?.coordinates.lat} lng={selectedZone?.coordinates.lng} />
 
-        {eventPins(events).map((pin) => (
+        <FollowEvents pins={pins} />
+
+        {pins.map((pin) => (
           <CircleMarker
             key={pin.id}
             center={pin.position}
@@ -201,12 +229,15 @@ function AmbulanceMarker({
     map.setView([lat, lng], Math.max(map.getZoom(), 15), { animate: false });
     marker.current?.openPopup();
   }, [selected, focus?.request, lat, lng, map]);
+  const unitId = (group.units.find((unit) => unit.id === focus?.id) ?? group.units[0]).id;
+  const medical = unitId.startsWith("ambulance-");
+  const civilGuard = unitId.startsWith("civil-guard-");
   const icon = divIcon({
     className: "",
     iconSize: [40, 40],
     iconAnchor: [20, 40],
     popupAnchor: [0, -40],
-    html: `<div style="position:relative;display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:${selected ? "#1d4ed8" : "#fff"};color:${selected ? "#fff" : "#1d4ed8"};border:2px solid #1d4ed8;border-radius:12px;box-shadow:0 2px 8px #0003"><svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 10H6m2-2v4M3 17V5h11v12M14 9h4l3 4v4h-3M7 17h7M17 10v3h4"/><circle cx="5" cy="17" r="2"/><circle cx="16" cy="17" r="2"/></svg>${group.units.length > 1 ? `<span style="position:absolute;right:-6px;top:-6px;background:#1d4ed8;color:white;border-radius:99px;padding:1px 5px;font-size:11px">${group.units.length}</span>` : ""}</div>`,
+    html: `<div style="position:relative;display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:${selected ? "#1d4ed8" : "#fff"};color:${selected ? "#fff" : "#1d4ed8"};border:2px solid #1d4ed8;border-radius:12px;box-shadow:0 2px 8px #0003"><svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${medical ? '<path d="M10 10H6m2-2v4M3 17V5h11v12M14 9h4l3 4v4h-3M7 17h7M17 10v3h4"/><circle cx="5" cy="17" r="2"/><circle cx="16" cy="17" r="2"/>' : civilGuard ? '<path d="M12 3l8 4v5c0 5-8 9-8 9s-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/>' : '<path d="M12 3l8 4v5c0 5-8 9-8 9s-8-4-8-9V7z"/>'}</svg>${group.units.length > 1 ? `<span style="position:absolute;right:-6px;top:-6px;background:#1d4ed8;color:white;border-radius:99px;padding:1px 5px;font-size:11px">${group.units.length}</span>` : ""}</div>`,
   });
   return (
     <Marker
@@ -215,7 +246,9 @@ function AmbulanceMarker({
       icon={icon}
       zIndexOffset={selected ? 1100 : 1000}
       title={group.units.map((unit) => unit.id).join(", ")}
-      alt="Assigned ambulance"
+      alt={
+        medical ? "Assigned ambulance" : civilGuard ? "Assigned Guardia Civil" : "Assigned Policía"
+      }
       eventHandlers={{ click: () => onSelect?.(group.units[0].id) }}
     >
       <Popup autoPan={false}>

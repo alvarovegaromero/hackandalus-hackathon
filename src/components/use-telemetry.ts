@@ -25,7 +25,10 @@ export function useTelemetry() {
           : [record, ...previous].slice(0, MAX_RECORDS),
       );
     };
-    source.addEventListener("reset", () => setRecords([]));
+    source.addEventListener("reset", () => {
+      setRecords([]);
+      setStatus("Loading…");
+    });
     return () => source.close();
   }, []);
 

@@ -319,3 +319,26 @@ Contract and limits: [docs/event-telemetry.md](docs/event-telemetry.md).
 - [x] Parent plan mutation tool prepared with revision checks, audit and preserved inventory. Six local SQL rollback cases passed. Shared deployment and Person A wiring remain pending; see docs/parent-plan-tool.md.
 
 - [x] Add parent context tools for global state, mission results and activity; all scoped to the bound crisis. Existing model remains unchanged; Person A tool-loop integration remains pending.
+
+## Spanish coordination, patrols and landing alignment
+
+- [x] Request Spanish human-readable output from coordinator and subagents.
+- [x] Add ten Policía and ten Guardia Civil patrols, validated allocations and reset.
+- [x] Handoff coordinator missions to subagents and show current-run results in UI.
+- [x] Match dashboard colors, typography and brand to the Far0 landing.
+- [ ] Connect real HappyRobot workflow tools; explicitly deferred, no mock contacts added.
+
+- [x] Enable acknowledged no-op communication tools for new dashboard missions; isolate execution in the communication adapter. Real HappyRobot integration remains pending.
+
+- [x] Translate human demo reports into Spanish, preserving sensor payloads.
+- [x] Add multi-event mission create/update/cancel, on-demand activations and parent replanning on mission results (migration 013).
+- [ ] Real HappyRobot callbacks and durable restart recovery remain deferred.
+
+- [x] Concise Spanish overview/plan and proactive evidence-based mission instructions.
+- [x] Compact expandable mission rows; closed missions collapsed by default.
+- [x] Follow newly received geolocated reports on the map with closer framing.
+- [x] Keep resources assigned after communication missions complete (migration 015 supersedes automatic release in 014).
+
+- [x] Continue mission handoff after stale update/cancel conflicts and replan from fresh context.
+- [x] Distinct Policía/Guardia Civil icons in resource cards and map markers.
+- [x] Initial dashboard skeletons for overview, plan, resources, missions, events and map; empty states follow successful loads.

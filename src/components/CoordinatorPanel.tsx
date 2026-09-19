@@ -1,5 +1,6 @@
 "use client";
 
+import { TextSkeleton } from "./Skeleton";
 import { useEffect, useState } from "react";
 import { coordinatorStateSchema, type CoordinatorState } from "@/lib/contracts/coordinator";
 
@@ -73,15 +74,19 @@ export default function CoordinatorPanel({
           <h2 id="overview-heading" className="font-medium">
             Overview
           </h2>
-          <p
-            id="overview-content"
-            className={`mt-3 leading-relaxed ${overviewExpanded ? "" : "line-clamp-6"}`}
-          >
-            {state?.situationOverview ||
-              (error && !state
-                ? "State could not be loaded."
-                : "Waiting for the first assessment.")}
-          </p>
+          {!state && !error ? (
+            <TextSkeleton />
+          ) : (
+            <p
+              id="overview-content"
+              className={`mt-3 leading-relaxed ${overviewExpanded ? "" : "line-clamp-6"}`}
+            >
+              {state?.situationOverview ||
+                (error && !state
+                  ? "State could not be loaded."
+                  : "Waiting for the first assessment.")}
+            </p>
+          )}
           {state?.situationOverview ? (
             <button
               type="button"
@@ -101,7 +106,9 @@ export default function CoordinatorPanel({
           <h2 id="plan-heading" className="font-medium">
             Plan
           </h2>
-          {plan ? (
+          {!state && !error ? (
+            <TextSkeleton />
+          ) : plan ? (
             <>
               <p className="mt-3 font-medium leading-relaxed">{plan.objective}</p>
               <ol id="plan-steps" className="mt-3 list-decimal space-y-2 pl-5 text-neutral-700">
@@ -122,7 +129,11 @@ export default function CoordinatorPanel({
               ) : null}
             </>
           ) : (
-            <p className="mt-3 text-neutral-500">No plan yet. Waiting for report assessment.</p>
+            <p className="mt-3 text-neutral-500">
+              {error && !state
+                ? "Plan could not be loaded."
+                : "No plan yet. Waiting for report assessment."}
+            </p>
           )}
         </section>
       </div>

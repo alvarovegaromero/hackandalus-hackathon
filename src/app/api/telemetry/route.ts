@@ -65,7 +65,6 @@ export async function GET(request: Request) {
             sequence = 0;
             send('event: reset\nid:\ndata: {"reason":"Replaying current run"}\n\n');
           }
-          send("event: ready\ndata: {}\n\n");
           for (const row of data) {
             const report = row.input.report;
             if (report.runId !== runId) continue;
@@ -90,6 +89,7 @@ export async function GET(request: Request) {
             }
             seen.set(row.event_id, row.status);
           }
+          send("event: ready\ndata: {}\n\n");
           send(": heartbeat\n\n");
         } catch {
           send("event: unavailable\ndata: {}\n\n");

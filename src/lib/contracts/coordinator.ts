@@ -7,6 +7,28 @@ export const COORDINATOR_TICK_MS = 5000;
 export const ambulanceIdSchema = z.enum(
   Array.from({ length: 10 }, (_, i) => `ambulance-${i + 1}`) as [string, ...string[]],
 );
+export const policeIdSchema = z.enum(
+  Array.from({ length: 10 }, (_, i) => `police-${i + 1}`) as [string, ...string[]],
+);
+export const civilGuardIdSchema = z.enum(
+  Array.from({ length: 10 }, (_, i) => `civil-guard-${i + 1}`) as [string, ...string[]],
+);
+export const resourceIdSchema = z.union([ambulanceIdSchema, policeIdSchema, civilGuardIdSchema]);
+const patrolInventorySchema = (ids: typeof policeIdSchema) =>
+  z.strictObject({
+    total: z.literal(10),
+    available: z.number().int().min(0).max(10),
+    allocated: z.number().int().min(0).max(10),
+    units: z
+      .array(
+        z.strictObject({
+          id: ids,
+          status: z.enum(["available", "assigned"]),
+          eventId: z.uuid().nullable(),
+        }),
+      )
+      .length(10),
+  });
 const priority = z.enum(["low", "medium", "high", "critical"]);
 const revision = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
 export const globalPlanSchema = z.strictObject({
@@ -24,6 +46,22 @@ export const coordinatorProposalSchema = z.strictObject({
   priorities: z
     .array(z.strictObject({ eventId: z.uuid(), priority, rationale: z.string().min(1).max(2000) }))
     .max(100),
+  policeAssignments: z.array(z.strictObject({ unitId: policeIdSchema, eventId: z.uuid() })).max(10),
+  civilGuardAssignments: z
+    .array(z.strictObject({ unitId: civilGuardIdSchema, eventId: z.uuid() }))
+    .max(10),
+  missions: z
+    .array(
+      z.strictObject({
+        action: z.enum(["create", "update", "cancel"]),
+        missionId: z.uuid().nullable(),
+        expectedRevision: z.number().int().positive().nullable(),
+        eventIds: z.array(z.uuid()).min(1).max(100),
+        objective: z.string().min(1).max(2000),
+        instructions: z.string().min(1).max(4000),
+      }),
+    )
+    .max(20),
   assignments: z
     .array(z.strictObject({ ambulanceId: ambulanceIdSchema, eventId: z.uuid() }))
     .max(10),
@@ -52,6 +90,8 @@ export const coordinatorStateSchema = z
         }),
       )
       .max(100),
+    police: patrolInventorySchema(policeIdSchema),
+    civilGuard: patrolInventorySchema(civilGuardIdSchema),
     ambulances: z.strictObject({
       total: z.literal(10),
       available: z.number().int().min(0).max(10),
@@ -69,6 +109,17 @@ export const coordinatorStateSchema = z
   })
   .superRefine((state, ctx) => {
     const eventIds = new Set(state.events.map((e) => e.eventId));
+    for (const inventory of [state.police, state.civilGuard]) {
+      if (
+        new Set(inventory.units.map((u) => u.id)).size !== 10 ||
+        inventory.units.some((u) =>
+          u.status === "available" ? u.eventId !== null : !u.eventId || !eventIds.has(u.eventId),
+        ) ||
+        inventory.allocated !== inventory.units.filter((u) => u.status === "assigned").length ||
+        inventory.available + inventory.allocated !== 10
+      )
+        ctx.addIssue({ code: "custom", message: "Invalid patrol inventory" });
+    }
     const units = state.ambulances.units;
     if (
       eventIds.size !== state.events.length ||
@@ -108,5 +159,30 @@ export function validateCoordinatorProposal(
     )
   )
     throw new Error("Invalid or stale proposal, or attempted release/reassignment.");
+  for (const [inventory, allocations] of [
+    [state.police, proposal.policeAssignments],
+    [state.civilGuard, proposal.civilGuardAssignments],
+  ] as const) {
+    const assigned = new Map(allocations.map((a) => [a.unitId, a.eventId]));
+    if (
+      assigned.size !== allocations.length ||
+      allocations.some((a) => !events.has(a.eventId)) ||
+      inventory.units.some((u) => u.status === "assigned" && assigned.get(u.id) !== u.eventId)
+    )
+      throw new Error("Invalid patrol assignments");
+  }
+  if (
+    proposal.missions.some(
+      (m) =>
+        m.eventIds.some((id) => !events.has(id)) ||
+        new Set(m.eventIds).size !== m.eventIds.length ||
+        (m.action === "create"
+          ? m.missionId !== null || m.expectedRevision !== null
+          : !m.missionId || !m.expectedRevision),
+    ) ||
+    new Set(proposal.missions.filter((m) => m.missionId).map((m) => m.missionId)).size !==
+      proposal.missions.filter((m) => m.missionId).length
+  )
+    throw new Error("Invalid mission events");
   return proposal;
 }

@@ -114,3 +114,7 @@ Verification: automated tests cover ingestion, validation, ID deduplication,
 conflicts, live delivery, replay, cursor precedence, expiration and stream
 cleanup. Runtime/browser checks are performed on macOS; Linux and Windows are
 intended supported platforms, not verified by these checks.
+
+The ready SSE event is sent after the current replay batch, so clients can show
+loading placeholders until initial records have arrived. Reset starts loading
+again; ready with no records represents a genuine empty state.
