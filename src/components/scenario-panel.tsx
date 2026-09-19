@@ -70,7 +70,7 @@ function reduce(sim: Sim, action: Action): Sim {
   }
   try {
     const step = fire(pack, sim.engine, action.event);
-    if (step.fired.length === 0) return { ...sim, error: "Ese evento ya se ha lanzado." };
+    if (step.fired.length === 0) return { ...sim, error: "That event has already been triggered." };
     const label = typeof action.event === "string" ? labelOf(action.event) : action.event.label;
     return {
       ...sim,
@@ -80,7 +80,7 @@ function reduce(sim: Sim, action: Action): Sim {
       error: "",
     };
   } catch {
-    return { ...sim, error: "El evento no es válido para este escenario." };
+    return { ...sim, error: "The event is not valid for this scenario." };
   }
 }
 
@@ -163,21 +163,21 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
               event,
               plan: {
                 priority: event.severity,
-                rationale: "El workflow no devolvió resultado.",
-                actions: [{ kind: "review", description: "Revisar el aviso manualmente." }],
+                rationale: "Workflow returned no result.",
+                actions: [{ kind: "review", description: "Review alert manually." }],
               },
               status: "blocked",
-              note: `El agente falló: ${resultError ?? "sin detalle"}`,
+              note: `Agent failed: ${resultError ?? "no detail"}`,
             },
           ];
         const action = result.results[0];
-        const mode = result.mode === "ai" ? "IA" : "simulación determinista";
+        const mode = result.mode === "ai" ? "AI" : "deterministic simulation";
         return [
           {
             event,
             plan: result.plan,
             status: action?.status ?? "proposed",
-            note: `Agente (${mode})${action?.reason ? `: ${action.reason}` : ""}`,
+            note: `Agent (${mode})${action?.reason ? `: ${action.reason}` : ""}`,
           },
         ];
       });
@@ -189,10 +189,10 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
         duplicates: s.duplicates + body.duplicates.length,
         failed: s.failed + failed,
       }));
-      setAgentError(failed ? "Algunos avisos no se pudieron procesar." : "");
+      setAgentError(failed ? "Some alerts could not be processed." : "");
     } catch (error) {
       setStats((s) => ({ ...s, failed: s.failed + count }));
-      setAgentError(`Agente no disponible: ${error instanceof Error ? error.message : error}`);
+      setAgentError(`Agent unavailable: ${error instanceof Error ? error.message : error}`);
     } finally {
       setStats((s) => ({ ...s, pending: s.pending - count }));
     }
@@ -251,7 +251,7 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
         id,
         atMin: 0,
         kind: "chaos",
-        label: `${hoax ? "Bulo" : "Cambio"}: ${fact.entityLabel} → ${typed}`,
+        label: `${hoax ? "Hoax" : "Change"}: ${fact.entityLabel} → ${typed}`,
         effects,
       },
     });
@@ -260,23 +260,19 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
   return (
     <section className="panel scenario" aria-labelledby="scenario-title">
       <div className="entry-heading">
-        <h2 id="scenario-title">Escenario: {pack.name}</h2>
-        <span className="badge">DATOS SIMULADOS</span>
+        <h2 id="scenario-title">Scenario: {pack.name}</h2>
+        <span className="badge">SIMULATED DATA</span>
       </div>
       <p>
-        Genera avisos ruidosos (retrasos, duplicados, bulos) a partir de una realidad oculta. 1
-        minuto real equivale a 10 minutos de crisis. Semilla {SEED}.
+        Generates noisy alerts (delays, duplicates, hoaxes) from an underlying ground truth. 1 real
+        minute equals 10 crisis minutes. Seed {SEED}.
       </p>
       <div className="buttons">
         <strong className="clock" aria-live="polite">
           {minute(sim.engine.nowMin)} / {pack.durationMin} min
         </strong>
         <button onClick={() => dispatch({ type: "toggle" })}>
-          {sim.running
-            ? "Pausar escenario"
-            : sim.elapsedMs
-              ? "Reanudar escenario"
-              : "Iniciar escenario"}
+          {sim.running ? "Pause scenario" : sim.elapsedMs ? "Resume scenario" : "Start scenario"}
         </button>
         <button
           className="secondary"
@@ -286,23 +282,23 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
             setAgentError("");
           }}
         >
-          Reiniciar
+          Reset
         </button>
       </div>
       <label className="check">
         <input type="checkbox" checked={toAgent} onChange={(e) => setToAgent(e.target.checked)} />
-        Enviar los avisos nuevos al agente
+        Send new alerts to agent
       </label>
       <p aria-live="polite">
-        Agente: {stats.done} procesados · {stats.duplicates} duplicados · {stats.failed} fallidos
-        {stats.pending > 0 && ` · ${stats.pending} en curso`}
+        Agent: {stats.done} processed · {stats.duplicates} duplicates · {stats.failed} failed
+        {stats.pending > 0 && ` · ${stats.pending} in progress`}
       </p>
       {agentError && <p role="alert">{agentError}</p>}
 
       <div className="grid">
         <div>
-          <h3>Eventos del guion</h3>
-          <p>Lánzalos ahora, antes de su minuto previsto.</p>
+          <h3>Scripted events</h3>
+          <p>Trigger them now, ahead of scheduled time.</p>
           <div className="script">
             {pack.events.map((e) => (
               <button
@@ -316,9 +312,9 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
             ))}
           </div>
 
-          <h3>Improvisar evento</h3>
+          <h3>Improvise event</h3>
           <form onSubmit={improvise}>
-            <label htmlFor="scenario-fact">Hecho (ahora: {String(current)})</label>
+            <label htmlFor="scenario-fact">Fact (current: {String(current)})</label>
             <select id="scenario-fact" value={factId} onChange={(e) => chooseFact(e.target.value)}>
               {pack.facts.map((f) => (
                 <option key={f.id} value={f.id}>
@@ -326,7 +322,7 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
                 </option>
               ))}
             </select>
-            <label htmlFor="scenario-value">Nuevo valor</label>
+            <label htmlFor="scenario-value">New value</label>
             {numeric ? (
               <input
                 id="scenario-value"
@@ -345,7 +341,7 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
                 ))}
               </select>
             )}
-            <label htmlFor="scenario-source">Quién avisa</label>
+            <label htmlFor="scenario-source">Reporting source</label>
             <select
               id="scenario-source"
               value={sourceId}
@@ -357,7 +353,7 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
                 </option>
               ))}
             </select>
-            <label htmlFor="scenario-count">Número de avisos</label>
+            <label htmlFor="scenario-count">Number of alerts</label>
             <input
               id="scenario-count"
               type="number"
@@ -369,14 +365,14 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
             />
             <label className="check">
               <input type="checkbox" checked={hoax} onChange={(e) => setHoax(e.target.checked)} />
-              Es un bulo (no cambia la realidad)
+              It is a hoax (does not change reality)
             </label>
             {sim.error && <p role="alert">{sim.error}</p>}
-            <button type="submit">Lanzar evento improvisado</button>
+            <button type="submit">Trigger improvised event</button>
           </form>
 
-          <h3>Eventos lanzados</h3>
-          {sim.log.length === 0 && <p>Todavía ninguno.</p>}
+          <h3>Triggered events</h3>
+          {sim.log.length === 0 && <p>None yet.</p>}
           <ul className="log">
             {sim.log.map((l) => (
               <li key={l.id}>
@@ -388,9 +384,9 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
         </div>
 
         <div>
-          <h3>Avisos recibidos ({sim.feed.length})</h3>
+          <h3>Received alerts ({sim.feed.length})</h3>
           {sim.feed.length === 0 && (
-            <div className="empty">Inicia el escenario para recibir avisos.</div>
+            <div className="empty">Start the scenario to receive alerts.</div>
           )}
           <ol className="feed">
             {sim.feed.map((s) => (

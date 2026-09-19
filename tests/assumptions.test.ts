@@ -1,3 +1,5 @@
+// OWNER: live assumptions agent.
+
 import { describe, expect, it } from "vitest";
 import {
   MAX_SUPUESTOS,
@@ -15,7 +17,7 @@ const AHORA = "2026-02-14T10:00:00.000Z";
 const zonas = structuredClone(seedZones);
 const recursos = structuredClone(seedResources);
 
-/** Copia limpia del mundo semilla: viento del NE, todo abierto y operativo. */
+/** Clean copy of seed world: NE wind, everything open and operational. */
 function mundo(overrides: Partial<ReturnType<typeof clonarMundo>> = {}) {
   return { ...clonarMundo(), ...overrides };
 }
@@ -24,7 +26,7 @@ function clonarMundo() {
   return { ...structuredClone(seedWorld), updatedAt: AHORA };
 }
 
-/** Accion minima: solo se rellena lo que miran los supuestos. */
+/** Minimal action: only fields inspected by assumptions are populated. */
 function accion(overrides: Partial<Action> & Pick<Action, "id" | "zoneId" | "objective">): Action {
   const channel: ActionChannel = overrides.channel ?? "call";
   return {
@@ -46,9 +48,9 @@ function accion(overrides: Partial<Action> & Pick<Action, "id" | "zoneId" | "obj
 }
 
 /**
- * Situacion de referencia: el frente aprieta en Sierra Morena, un transporte
- * sube desde la costa, una ambulancia de Sevilla baja a la Costa del Sol y el
- * aviso a los nucleos sale por SMS.
+ * Reference situation: fire front advances in Sierra Morena, transport
+ * travels from coast, Seville ambulance heads to Costa del Sol, and
+ * public warning sent via SMS.
  */
 function acciones(): Action[] {
   return [
@@ -126,15 +128,15 @@ function variables(lista: Assumption[]) {
 }
 
 // ---------------------------------------------------------------------------
-// Derivacion
+// Derivation
 // ---------------------------------------------------------------------------
 
-describe("derivación de supuestos", () => {
-  it("declara de qué depende el plan a partir de sus propias decisiones", () => {
+describe("assumptions derivation", () => {
+  it("declares what the plan depends on from its own decisions", () => {
     const lista = supuestos();
 
-    // Viento (sostiene el orden), las dos rutas que cruzan medios, el hospital
-    // de destino de la evacuación sanitaria y los dos canales en uso.
+    // Wind (holds priority order), two routes crossing resources, target hospital
+    // for medical evacuation, and two channels in use.
     expect(variables(lista)).toEqual([
       "wind.direction",
       "road.A-397",
@@ -148,7 +150,7 @@ describe("derivación de supuestos", () => {
     expect(lista.every((assumption) => assumption.planVersion === 3)).toBe(true);
   });
 
-  it("nombra la decisión concreta que sostiene cada supuesto", () => {
+  it("names the concrete decision supporting each assumption", () => {
     const lista = supuestos();
     const carretera = lista.find((assumption) => assumption.variable === "road.A-397");
 
@@ -164,10 +166,10 @@ describe("derivación de supuestos", () => {
     expect(viento?.text).toContain("Sierra Morena");
   });
 
-  it("no declara un supuesto que ya es falso cuando se genera el plan", () => {
-    // La A-397 ya está cortada: el plan nuevo no puede apoyarse en ella. Y el
-    // Hospital de la Serranía tiene 8 camas, por debajo del umbral, así que
-    // tampoco se declara: se elige el hospital que sí sostiene la decisión.
+  it("does not declare an assumption that is already false when plan is generated", () => {
+    // A-397 is already blocked: new plan cannot rely on it. And Hospital de la
+    // Serranía has 8 beds, below threshold, so it is not declared either:
+    // selects hospital that supports decision.
     const lista = supuestos(mundo({ blockedRoads: ["A-397"] }));
 
     expect(variables(lista)).not.toContain("road.A-397");
@@ -175,7 +177,7 @@ describe("derivación de supuestos", () => {
     expect(variables(lista)).not.toContain("hospital.beds.hospital-serrania");
   });
 
-  it("no declara canales que el plan no usa", () => {
+  it("does not declare channels the plan does not use", () => {
     const soloVoz = acciones().filter((action) => action.channel === "call");
     const lista = deriveAssumptions(plan(), zonas, recursos, mundo(), soloVoz);
 
@@ -185,11 +187,11 @@ describe("derivación de supuestos", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Rotura por cambio del mundo
+// Breakage from world change
 // ---------------------------------------------------------------------------
 
-describe("roturas de supuestos", () => {
-  it("un giro de viento rompe el supuesto del viento y sólo ése", () => {
+describe("assumption breakages", () => {
+  it("a wind shift breaks the wind assumption and only that one", () => {
     const evento = senal({
       id: "evt-viento",
       zoneId: "zone-north",
@@ -202,7 +204,7 @@ describe("roturas de supuestos", () => {
     const despues = applyEventToWorld(antes, evento);
     expect(despues.windDirection).toBe("SO");
     expect(despues.windSpeedKmh).toBe(48);
-    expect(antes.windDirection).toBe("NE"); // no se muta el mundo recibido
+    expect(antes.windDirection).toBe("NE"); // received world is not mutated
 
     const check = checkAssumptions(supuestos(antes), despues, evento);
 
@@ -212,7 +214,7 @@ describe("roturas de supuestos", () => {
     expect(check.assumptions.filter((a) => a.status === "ok")).toHaveLength(5);
   });
 
-  it("un corte de carretera invalida la acción que dependía de ella y no las demás", () => {
+  it("a road blockage invalidates the action depending on it and not others", () => {
     const evento = senal({
       id: "evt-corte",
       zoneId: "zone-north",
@@ -234,7 +236,7 @@ describe("roturas de supuestos", () => {
     expect(consecuencias[0].reason).toContain("Sierra Morena");
   });
 
-  it("una señal de corte que no cita carretera usa la vía principal de la zona", () => {
+  it("a blockage signal that does not name a road uses the zone main route", () => {
     const evento = senal({
       id: "evt-corte-este",
       zoneId: "zone-east",
@@ -246,7 +248,7 @@ describe("roturas de supuestos", () => {
     expect(applyEventToWorld(mundo(), evento).blockedRoads).toEqual(["A-92"]);
   });
 
-  it("la caída de la mensajería rompe el supuesto del SMS y tumba el aviso que salía por ahí", () => {
+  it("messaging outage breaks SMS assumption and drops the notification routed through it", () => {
     const evento = senal({
       id: "evt-sms",
       zoneId: "zone-north",
@@ -267,7 +269,7 @@ describe("roturas de supuestos", () => {
     expect(consecuencias[0].reason).toContain("mensajería");
   });
 
-  it("las camas por debajo del umbral rompen el supuesto del hospital", () => {
+  it("beds below threshold break hospital assumption", () => {
     const evento = senal({
       id: "evt-camas",
       zoneId: "zone-south",
@@ -287,7 +289,7 @@ describe("roturas de supuestos", () => {
     expect(consecuencias[0].reason).toContain("Hospital Costa del Sol");
   });
 
-  it("si desaparece el dato de camas el supuesto queda en desconocido, no en roto", () => {
+  it("if bed data disappears assumption becomes unknown, not broken", () => {
     const evento = senal({
       id: "evt-sin-datos",
       zoneId: "zone-south",
@@ -305,7 +307,7 @@ describe("roturas de supuestos", () => {
     expect(check.unknown[0].brokenByEventId).toBeNull();
   });
 
-  it("una señal irrelevante deja el mundo igual y no rompe nada", () => {
+  it("an irrelevant signal leaves the world unchanged and breaks nothing", () => {
     const evento = senal({
       id: "evt-refugios",
       zoneId: "zone-south",
@@ -324,7 +326,7 @@ describe("roturas de supuestos", () => {
     expect(check.assumptions.every((assumption) => assumption.status === "ok")).toBe(true);
   });
 
-  it("un supuesto ya roto no se vuelve a romper ni resucita solo", () => {
+  it("an already broken assumption does not break again or resurrect on its own", () => {
     const giro = senal({
       id: "evt-giro",
       zoneId: "zone-north",
@@ -336,8 +338,8 @@ describe("roturas de supuestos", () => {
     const roto = checkAssumptions(supuestos(), applyEventToWorld(mundo(), giro), giro);
     expect(variables(roto.broken)).toEqual(["wind.direction"]);
 
-    // Segunda comprobación con el viento de vuelta al NE y otra señal: el
-    // supuesto sigue roto, conserva quién lo rompió y no se vuelve a anunciar.
+    // Second check with wind back to NE and another signal: assumption
+    // remains broken, preserves breaker event, and is not announced again.
     const otra = senal({ id: "evt-posterior", zoneId: "zone-north", category: "incendio" });
     const segunda = checkAssumptions(roto.assumptions, mundo(), otra);
 
@@ -352,11 +354,11 @@ describe("roturas de supuestos", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Explicacion
+// Explanation
 // ---------------------------------------------------------------------------
 
-describe("explicación de la invalidación", () => {
-  it("nombra el supuesto caído y la consecuencia, no el identificador", () => {
+describe("invalidation explanation", () => {
+  it("names the broken assumption and consequence, not identifier", () => {
     const carretera = supuestos().find((assumption) => assumption.variable === "road.A-397")!;
     const texto = explainInvalidation([{ ...carretera, status: "broken" }], plan());
 
@@ -367,7 +369,7 @@ describe("explicación de la invalidación", () => {
     expect(texto).not.toContain("zone-north");
   });
 
-  it("explica también el giro de viento y las camas en lenguaje de sala", () => {
+  it("also explains wind shift and beds in operations room language", () => {
     const lista = supuestos();
     const viento = lista.find((assumption) => assumption.variable === "wind.direction")!;
     const camas = lista.find((assumption) => assumption.variable.startsWith("hospital.beds."))!;
@@ -376,7 +378,7 @@ describe("explicación de la invalidación", () => {
     expect(textoViento).toContain(
       "daba por hecho que el viento seguiría del nordeste sobre Sierra Morena",
     );
-    // La frase abre oración, así que llega en mayúscula: se compara sin distinguirla.
+    // Sentence opens statement, so it arrives capitalized: compare case-insensitively.
     expect(textoViento.toLowerCase()).toContain("el orden de prioridades ya no se sostiene");
 
     const textoCamas = explainInvalidation([{ ...camas, status: "broken" }], plan());
@@ -384,7 +386,7 @@ describe("explicación de la invalidación", () => {
     expect(textoCamas).toContain("deja de caber");
   });
 
-  it("menciona los supuestos secundarios sin repetir la consecuencia principal", () => {
+  it("mentions secondary assumptions without repeating the primary consequence", () => {
     const lista = supuestos().map((assumption) => ({ ...assumption, status: "broken" as const }));
     const texto = explainInvalidation([lista[1], lista[4]], plan());
 
@@ -392,7 +394,7 @@ describe("explicación de la invalidación", () => {
     expect(texto).toContain("También ha caído: la mensajería seguía operativa");
   });
 
-  it("dice que el plan sigue en pie cuando no hay nada roto", () => {
+  it("states the plan holds when nothing is broken", () => {
     expect(explainInvalidation([], plan())).toBe(
       "El plan v3 sigue en pie: ninguno de sus supuestos se ha roto.",
     );
@@ -400,11 +402,11 @@ describe("explicación de la invalidación", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Orquestacion para el store
+// Store orchestration
 // ---------------------------------------------------------------------------
 
-describe("evaluación del plan contra el mundo", () => {
-  it("marca el plan como inválido, explica por qué y lista lo que se cae", () => {
+describe("plan evaluation against world", () => {
+  it("marks plan as invalid, explains why, and lists what drops", () => {
     const evento = senal({
       id: "evt-corte-2",
       zoneId: "zone-north",
@@ -426,11 +428,11 @@ describe("evaluación del plan contra el mundo", () => {
     expect(resultado.plan.valid).toBe(false);
     expect(resultado.plan.invalidatedReason).toContain("A-397");
     expect(resultado.consequences.map((c) => c.actionId)).toEqual(["act-evac-norte"]);
-    // El plan de entrada no se toca: la función es pura.
+    // Input plan is not touched: function is pure.
     expect(conSupuestos.valid).toBe(true);
   });
 
-  it("deja el plan válido mientras se sostengan todos los supuestos", () => {
+  it("leaves plan valid as long as all assumptions hold", () => {
     const conSupuestos = { ...plan(), assumptions: supuestos() };
     const resultado = evaluatePlanAgainstWorld(conSupuestos, mundo(), acciones());
 

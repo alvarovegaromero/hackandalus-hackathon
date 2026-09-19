@@ -1,15 +1,10 @@
-# Contribuir a Butterfish
+# Contributing to Butterfish
 
-Lee [PROJECT.md](PROJECT.md): es la fuente de verdad sobre el proyecto, las
-convenciones y los permisos. [README.md](README.md) explica el funcionamiento;
-[TASKS.md](TASKS.md) contiene las tareas completadas y pendientes.
+Read [PROJECT.md](PROJECT.md): it is the single source of truth for project conventions and permissions. [README.md](README.md) explains how the system works; [TASKS.md](TASKS.md) tracks completed and deferred tasks.
 
-## Preparar el entorno
+## Environment Setup
 
-Necesitas Git y Node.js 22.21+ (22.x) con el npm que incluye (10.9+); si usas
-Corepack, `corepack enable` activa el npm 11.6.1 fijado en `package.json`. En
-Windows instala Git for Windows; los hooks usan su intérprete. En macOS y Linux
-basta con Git y Node en el PATH. Usa npm y el lockfile del repositorio.
+You need Git and Node.js 22.21+ (22.x) with its bundled npm (10.9+); if you use Corepack, `corepack enable` activates npm 11.6.1 pinned in `package.json`. On Windows, install Git for Windows; hooks use its shell. On macOS and Linux, Git and Node on your PATH are sufficient. Use npm and the repository lockfile.
 
 ```sh
 git clone https://github.com/alvarovegaromero/hackandalus-hackathon.git
@@ -18,34 +13,27 @@ npm ci
 npm run dev
 ```
 
-Abre http://localhost:3000. La simulación arranca sin claves. `npm ci` instala
-los hooks locales; si instalaste sin scripts, ejecuta `npm run prepare`.
-VS Code y Cursor pueden usar la configuración y extensiones recomendadas en
-`.vscode`; otros editores deben respetar Prettier y EditorConfig.
+Open http://localhost:3000. The simulation starts without credentials. `npm ci` installs local hooks; if you installed without scripts, run `npm run prepare`. VS Code and Cursor can use the recommended configuration and extensions in `.vscode`; other editors must respect Prettier and EditorConfig.
 
-## Crear una contribución
+## Creating a Contribution
 
-Con el directorio de trabajo limpio, crea la rama desde el último `main` remoto:
+With a clean working tree, branch from the latest remote `main`:
 
 ```sh
 git fetch origin
 git switch -c feat/short-description origin/main
 ```
 
-Usa `feat/`, `fix/` o `chore/` según corresponda. Si ya tienes cambios,
-consérvalos antes de cambiar de rama.
+Use `feat/`, `fix/`, or `chore/` as appropriate. If you already have changes, save them before switching branches.
 
 ```sh
 npm run format
 npm run check
-git add <archivos-revisados>
+git add <reviewed-files>
 git commit -m "feat: describe the change in English"
 ```
 
-El pre-commit revisa secretos y archivos privados, aplica Prettier y ESLint a
-los archivos staged, y ejecuta tipos y tests. Revisa las modificaciones de
-formato. El pre-push ejecuta la comprobación completa con build. No saltes hooks
-para ocultar fallos. Las reglas de nomenclatura están en PROJECT.md.
+The pre-commit hook checks secrets and private files, applies Prettier and ESLint to staged files, and runs typechecks and tests. Review formatting changes. The pre-push hook runs the full verification including build. Do not skip hooks to hide failures. Naming rules are documented in PROJECT.md.
 
 After committing and publishing your feature branch, create a PR targeting
 `main` with the repository template and an authenticated GitHub CLI (`gh`):

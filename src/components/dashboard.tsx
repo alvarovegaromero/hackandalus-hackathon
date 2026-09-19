@@ -30,7 +30,7 @@ export function Dashboard() {
       source: "operator",
     });
     if (!parsed.success) {
-      setError("Escribe un evento de entre 1 y 2000 caracteres.");
+      setError("Enter an event between 1 and 2000 characters.");
       return;
     }
     setError("");
@@ -53,75 +53,75 @@ export function Dashboard() {
     <main>
       <header>
         <div>
-          <p className="eyebrow">HACKSPAIN 2026 / CENTRO DE OPERACIONES</p>
+          <p className="eyebrow">HACKSPAIN 2026 / OPERATIONS CENTER</p>
           <h1>
             Butterfish<span>.</span>
           </h1>
-          <p>Entender la situación. Coordinar la respuesta.</p>
+          <p>Understand the situation. Coordinate the response.</p>
         </div>
-        <span className="badge">SIMULACIÓN LOCAL</span>
+        <span className="badge">LOCAL SIMULATION</span>
       </header>
       <aside>
-        Sin conexiones externas: datos temporales en este navegador, decisiones deterministas y
-        acciones simuladas. El escenario de incendio en Sierra Bermeja genera avisos simulados.
+        No external connections: temporary data in this browser, deterministic decisions, and
+        simulated actions. The Sierra Bermeja fire scenario generates simulated alerts.
       </aside>
-      <section className="metrics" aria-label="Estado de la simulación">
+      <section className="metrics" aria-label="Simulation status">
         <article>
-          <small>EVENTOS RECIBIDOS</small>
+          <small>EVENTS RECEIVED</small>
           <strong>{entries.length}</strong>
         </article>
         <article>
-          <small>PRIORIDAD ACTUAL</small>
-          <strong>{entries[0]?.plan.priority ?? "Sin eventos"}</strong>
+          <small>CURRENT PRIORITY</small>
+          <strong>{entries[0]?.plan.priority ?? "No events"}</strong>
         </article>
         <article>
-          <small>CONTROL HUMANO</small>
-          <strong>{paused ? "En pausa" : "Activo"}</strong>
+          <small>HUMAN CONTROL</small>
+          <strong>{paused ? "Paused" : "Active"}</strong>
         </article>
       </section>
       <div className="grid">
         <section className="panel">
-          <h2>Nuevo evento</h2>
-          <p>Introduce información nueva para revisar las propuestas pendientes.</p>
+          <h2>New event</h2>
+          <p>Enter new information to review pending proposals.</p>
           <form onSubmit={injectEvent}>
-            <label htmlFor="summary">¿Qué ha cambiado?</label>
+            <label htmlFor="summary">What has changed?</label>
             <textarea
               id="summary"
               value={summary}
               onChange={(event) => setSummary(event.target.value)}
               maxLength={2000}
               required
-              placeholder="Ej.: se ha cortado el acceso a la zona afectada."
+              placeholder="E.g.: access to the affected area has been cut off."
             />
-            <label htmlFor="severity">Severidad</label>
+            <label htmlFor="severity">Severity</label>
             <select
               id="severity"
               value={severity}
               onChange={(event) => setSeverity(event.target.value as CrisisEvent["severity"])}
             >
-              <option value="low">Baja</option>
-              <option value="medium">Media</option>
-              <option value="high">Alta</option>
-              <option value="critical">Crítica</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
             </select>
             {error && <p role="alert">{error}</p>}
-            <button type="submit">Inyectar evento de demo</button>
+            <button type="submit">Inject demo event</button>
           </form>
           <hr />
-          <h2>Intervención humana</h2>
-          <p>La pausa bloquea la ejecución simulada. Puedes seguir recibiendo eventos.</p>
+          <h2>Human intervention</h2>
+          <p>Pausing blocks simulated execution. You can continue receiving events.</p>
           <button className="secondary" onClick={() => setPaused(!paused)}>
-            {paused ? "Reanudar simulación" : "Pausar simulación"}
+            {paused ? "Resume simulation" : "Pause simulation"}
           </button>
         </section>
         <section className="panel activity" aria-live="polite">
-          <h2>Actividad y decisiones</h2>
-          <p>Los nuevos eventos sustituyen las propuestas que siguen pendientes.</p>
+          <h2>Activity and decisions</h2>
+          <p>New events supersede pending proposals.</p>
           {entries.length === 0 && (
             <div className="empty">
-              Esperando el primer evento.
+              Waiting for the first event.
               <br />
-              La actividad de la simulación aparecerá aquí.
+              Simulation activity will appear here.
             </div>
           )}
           {entries.map(({ event, plan, status, note }) => (
@@ -136,16 +136,16 @@ export function Dashboard() {
               {status === "proposed" && (
                 <div className="buttons">
                   <button disabled={paused} onClick={() => updateStatus(event.id, "simulated")}>
-                    Simular acción
+                    Simulate action
                   </button>
                   <button className="secondary" onClick={() => updateStatus(event.id, "cancelled")}>
-                    Cancelar
+                    Cancel
                   </button>
                 </div>
               )}
               {note && <small>{note}</small>}
               {status === "simulated" && (
-                <small>Simulación completada. No se ha enviado ninguna comunicación.</small>
+                <small>Simulation completed. No communication was sent.</small>
               )}
             </article>
           ))}
@@ -153,7 +153,7 @@ export function Dashboard() {
       </div>
       <ScenarioPanel onAgentEntries={(fresh) => setEntries((current) => [...fresh, ...current])} />
       <footer>
-        AI SDK · Workflow · Supabase · HappyRobot — conexiones reales pendientes de configurar
+        AI SDK · Workflow · Supabase · HappyRobot — live connections pending configuration
       </footer>
     </main>
   );

@@ -58,12 +58,12 @@ export default function HeroSummary({
   const lastAudit = situation.audit[0] ?? null;
 
   return (
-    <section className="hero" aria-label="Resumen de la situación">
+    <section className="hero" aria-label="Situation summary">
       <article className={`hero-card hero-priority ${topZone?.status ?? "stable"}`}>
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.06em] text-blueprint-mid">
             <Flame size={14} className="text-danger" aria-hidden="true" />
-            <span>Prioridad ahora</span>
+            <span>Current priority</span>
           </div>
           {topZone ? (
             <Badge
@@ -88,10 +88,10 @@ export default function HeroSummary({
               {priority.reason}
             </p>
             <div className="hero-foot flex flex-wrap items-center gap-2 mt-3">
-              <Badge variant="outline">Puntuación {priority.score}</Badge>
+              <Badge variant="outline">Score {priority.score}</Badge>
               <Badge variant="outline" className="flex items-center gap-1">
                 <Users size={12} aria-hidden="true" />{" "}
-                {topZone.populationAtRisk.toLocaleString("es-ES")} personas
+                {topZone.populationAtRisk.toLocaleString("en-US")} people
               </Badge>
               <Button
                 variant="pill"
@@ -99,12 +99,12 @@ export default function HeroSummary({
                 className="h-7 text-[12px]"
                 onClick={() => onFocusZone(topZone.id)}
               >
-                Ver zona <ArrowRight size={12} aria-hidden="true" />
+                View zone <ArrowRight size={12} aria-hidden="true" />
               </Button>
             </div>
           </>
         ) : (
-          <h2 className="text-[16px] font-bold text-blueprint-dark">Sin zonas activas</h2>
+          <h2 className="text-[16px] font-bold text-blueprint-dark">No active zones</h2>
         )}
       </article>
 
@@ -114,17 +114,17 @@ export default function HeroSummary({
       >
         <header>
           <History size={16} aria-hidden="true" />
-          <span>Qué ha cambiado</span>
-          {planIsFresh ? <em className="flash-tag">Ahora mismo</em> : null}
+          <span>What has changed</span>
+          {planIsFresh ? <em className="flash-tag">Just now</em> : null}
         </header>
         <h2>
           Plan v{situation.plan.version}
           {situation.plan.previousVersion ? (
-            <small> · replanificado desde v{situation.plan.previousVersion}</small>
+            <small> · replanned from v{situation.plan.previousVersion}</small>
           ) : null}
         </h2>
         <p className="hero-reason">
-          Motivo: {situation.plan.trigger || "sin motivo registrado"} ·{" "}
+          Trigger: {situation.plan.trigger || "no trigger recorded"} ·{" "}
           {agoLabel(situation.plan.generatedAt, nowMs)}
         </p>
         {changes.length > 0 ? (
@@ -139,57 +139,57 @@ export default function HeroSummary({
             ))}
           </ul>
         ) : (
-          <p className="muted-note">Esta versión no registró diferencias respecto a la anterior.</p>
+          <p className="muted-note">This version recorded no differences from the previous one.</p>
         )}
         {lastAudit ? (
           <button className="link-button" onClick={onOpenAudit}>
-            Último registro: {lastAudit.summary} <ArrowRight size={14} aria-hidden="true" />
+            Latest entry: {lastAudit.summary} <ArrowRight size={14} aria-hidden="true" />
           </button>
         ) : null}
       </article>
 
       <div className="kpi-grid" aria-live="polite">
         <article className={criticalSignals.length > 0 ? "kpi alarm" : "kpi"}>
-          <span>Señales críticas</span>
+          <span>Critical signals</span>
           <strong>{criticalSignals.length}</strong>
-          <small>{unverifiedSignals.length} sin verificar</small>
+          <small>{unverifiedSignals.length} unverified</small>
         </article>
         <article className={troubled.length > 0 ? "kpi alarm" : "kpi"}>
-          <span>Acciones abiertas</span>
+          <span>Open actions</span>
           <strong>{openActions.length}</strong>
-          <small>{troubled.length} necesitan a alguien</small>
+          <small>{troubled.length} need attention</small>
         </article>
         <article className={availableResources.length === 0 ? "kpi alarm" : "kpi"}>
-          <span>Recursos libres</span>
+          <span>Available resources</span>
           <strong>
             {availableResources.length}
             <em>/{situation.resources.length}</em>
           </strong>
-          <small>{downResources.length} fuera de servicio</small>
+          <small>{downResources.length} out of service</small>
         </article>
         <article className="kpi">
-          <span>Personas en zonas activas</span>
-          <strong>{peopleAtRisk.toLocaleString("es-ES")}</strong>
+          <span>People in active zones</span>
+          <strong>{peopleAtRisk.toLocaleString("en-US")}</strong>
           <small>
-            {situation.zones.filter((zone) => zone.status !== "stable").length} zonas no estables
+            {situation.zones.filter((zone) => zone.status !== "stable").length} unstable zones
           </small>
         </article>
         <article className="kpi">
-          <span>Ejecución</span>
+          <span>Execution</span>
           <strong className={situation.integration.mode === "happyrobot" ? "live" : "mock"}>
-            {situation.integration.mode === "happyrobot" ? "Real" : "Simulada"}
+            {situation.integration.mode === "happyrobot" ? "Live" : "Simulated"}
           </strong>
           <small>
-            {situation.integration.liveActionsExecuted} reales ·{" "}
-            {situation.integration.mockActionsExecuted} simuladas
+            {situation.integration.liveActionsExecuted} live ·{" "}
+            {situation.integration.mockActionsExecuted} simulated
           </small>
         </article>
         <article className={situation.scenario.running ? "kpi running" : "kpi"}>
-          <span>Escenario</span>
-          <strong>{situation.scenario.running ? "En marcha" : "Parado"}</strong>
+          <span>Scenario</span>
+          <strong>{situation.scenario.running ? "Running" : "Stopped"}</strong>
           <small>
             {clockLabel(elapsedSeconds)} · {situation.scenario.firedBeatIds.length}/
-            {situation.scenario.beats.length} hitos
+            {situation.scenario.beats.length} beats
           </small>
         </article>
       </div>

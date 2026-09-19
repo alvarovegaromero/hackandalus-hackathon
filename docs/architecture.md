@@ -1,261 +1,260 @@
-# Arquitectura y decisiones
+# Architecture and Decisions
 
-Este documento explica **por qué** el sistema está construido así. El _qué_ está
-en el README; aquí quedan las decisiones y lo que cuestan.
+This document explains **why** the system is built this way. The _what_ is in the
+README; here are the decisions and their trade-offs.
 
-Contexto que condiciona todo lo demás: es un proyecto de hackathon de fin de
-semana, escrito en paralelo por varios agentes, y lo que se evalúa es una demo en
-directo de unos minutos. Casi todas las decisiones de abajo son un intercambio
-entre "correcto a largo plazo" y "demostrable el domingo sin que se caiga".
+Context that shapes everything else: this is a weekend hackathon project,
+written in parallel by multiple agents, and what is evaluated is a live demo lasting
+a few minutes. Almost all decisions below represent a trade-off between "long-term
+correct" and "demonstrable on Sunday without crashing."
 
 ---
 
-## Vista general
+## Overview
 
 ```
-      señales                    decisión                    ejecución
+       signals                     decision                    execution
   ┌───────────────┐        ┌───────────────────┐        ┌────────────────┐
   │ POST /events  │        │ priority.ts       │        │ happyrobot.ts  │
-  │ demo/inject   │ ─────► │ resources.ts      │ ─────► │  (único punto  │
-  │ scenario.ts   │        │ contacts.ts       │        │   de salida)   │
-  │ (guion)       │        │ escalation.ts     │        └───────┬────────┘
+  │ demo/inject   │ ─────► │ resources.ts      │ ─────► │ (single egress │
+  │ scenario.ts   │        │ contacts.ts       │        │     point)     │
+  │   (script)    │        │ escalation.ts     │        └───────┬────────┘
   └───────────────┘        └─────────┬─────────┘                │
                                      │                          │ webhook
-                              ┌──────▼──────┐                   │
-                              │  store.ts   │ ◄─────────────────┘
-                              │ (estado +   │   POST /actions/:id/status
-                              │  orquesta)  │
-                              └──────┬──────┘
-                                     │
-                        ┌────────────▼────────────┐
-                        │ GET /api/situation      │
-                        │ app/page.tsx (sondeo)   │
-                        │ humano aprueba/cancela  │
-                        └─────────────────────────┘
+                               ┌──────▼──────┐                   │
+                               │  store.ts   │ ◄─────────────────┘
+                               │  (state +   │   POST /actions/:id/status
+                               │ orchestrates)
+                               └──────┬──────┘
+                                      │
+                         ┌────────────▼────────────┐
+                         │ GET /api/situation      │
+                         │ app/page.tsx (polling)  │
+                         │ human approves/cancels  │
+                         └─────────────────────────┘
 ```
 
-Una regla vertebra el diseño: **`store.ts` mantiene el estado y orquesta, pero no
-decide**. Cada decisión vive en un módulo especializado al que `store.ts` llama.
+A core rule underpins the design: **`store.ts` maintains state and orchestrates, but does not make decisions**. Each decision lives in a specialized module that `store.ts` invokes.
 
 ---
 
-## Decisión 1 — El estado vive en memoria, con persistencia opcional en JSON
+## Decision 1 — State lives in memory, with optional JSON persistence
 
-`lib/store.ts` guarda toda la situación (señales, zonas, recursos, contactos,
-acciones, planes, auditoría) en un objeto colgado de `globalThis`. No hay base de
-datos.
+`lib/store.ts` stores the entire situation (signals, zones, resources, contacts,
+actions, plans, audit log) in an object attached to `globalThis`. There is no
+database.
 
-**Por qué.**
+**Why.**
 
-- Una base de datos añade un servicio que arrancar, un esquema que migrar y un
-  modo de fallo más el día de la demo. Ninguna de esas tres cosas suma puntos en
-  el reto.
-- La crisis dura lo que dura la demo. No hay ningún requisito de conservar el
-  estado entre sesiones, salvo el bonus de aprendizaje.
-- El estado completo cabe holgadamente en memoria: decenas de señales, zonas,
-  recursos y acciones. Reconstruir el plan entero en cada cambio es más simple y
-  más rápido que mantener índices incrementales, y elimina toda una familia de
-  bugs de estado desincronizado.
-- `globalThis` en vez de un módulo con estado suelto porque Next recarga los
-  módulos en caliente durante `npm run dev`: sin `globalThis` la situación se
-  reiniciaría sola cada vez que alguien guardase un fichero, en mitad de la demo.
+- A database introduces another service to start, a schema to migrate, and an
+  extra failure mode on demo day. None of those three things earn points in the
+  challenge.
+- The crisis lasts as long as the demo lasts. There is no requirement to persist
+  state across sessions, except for the learning bonus.
+- The entire state fits comfortably in memory: dozens of signals, zones,
+  resources, and actions. Rebuilding the entire plan on every change is simpler
+  and faster than maintaining incremental indices, and eliminates an entire class
+  of out-of-sync state bugs.
+- `globalThis` instead of a standalone module with state because Next hot-reloads
+  modules during `npm run dev`: without `globalThis`, the situation would reset
+  itself every time someone saved a file in the middle of the demo.
 
-**Lo que cuesta.**
+**The trade-offs.**
 
-- El estado se pierde al reiniciar el servidor. Es aceptable: `POST /api/demo/reset`
-  existe precisamente para volver al punto de partida a propósito.
-- No sobrevive a varias instancias del servidor. No hay despliegue horizontal, así
-  que da igual.
-- Los tests comparten estado dentro de un proceso, por eso `tests/` llama a
-  `resetSituation()` en `beforeEach`.
+- State is lost when restarting the server. This is acceptable: `POST /api/demo/reset`
+  exists precisely to return to the starting point intentionally.
+- Does not survive multiple server instances. There is no horizontal deployment,
+  so this does not matter.
+- Tests share state within a process, which is why `tests/` calls
+  `resetSituation()` in `beforeEach`.
 
-**La persistencia es opcional y está apagada por defecto.** `lib/persistence.ts`
-escribe JSON plano bajo `.data/` y solo actúa si `CRISIS_PERSISTENCE=on`. Es JSON
-en fichero y no SQLite para no meter dependencias nativas (compilación, binarios
-por plataforma) en un proyecto que tiene que arrancar en el portátil de cualquiera
-del equipo. Sus funciones no pueden lanzar nunca: un disco lleno no puede tumbar
-la demo, como mucho puede hacer que se pierda el historial.
+**Persistence is optional and disabled by default.** `lib/persistence.ts` writes
+plain JSON under `.data/` and only activates if `CRISIS_PERSISTENCE=on`. It uses
+JSON files rather than SQLite to avoid native dependencies (compilation,
+platform-specific binaries) in a project that must run on any team member's
+laptop. Its functions must never throw: a full disk cannot crash the demo; at
+worst, it might lose history.
 
-> Estado real a día de hoy: las funciones de `persistence.ts` son _stubs_
-> deliberados (`loadState` devuelve `null`, `saveState` no hace nada). El contrato
-> está fijado y `store.ts` ya lo llama; la implementación es trabajo pendiente del
-> agente propietario de ese módulo.
-
----
-
-## Decisión 2 — La prioridad es determinista, no la decide un modelo de lenguaje
-
-`lib/priority.ts` puntúa cada zona con una fórmula explícita: riesgo base de la
-zona, severidad y confianza de las señales vivas, si están confirmadas, población
-en riesgo, necesidades abiertas y recursos caídos. El resultado es un número y un
-desglose de factores (`PriorityFactor[]`) que la interfaz enseña tal cual.
-
-**Por qué no un LLM.**
-
-1. **Se puede explicar.** El reto pregunta "¿sabe qué va primero cuando todo
-   parece urgente?". Un número con su desglose responde a eso delante de un
-   jurado; un párrafo generado, no. La UI puede enseñar _por qué_ una zona subió
-   al primer puesto, factor a factor.
-2. **Se puede testear.** `tests/priority.test.ts` fija que una señal crítica y
-   confirmada supera a la prioridad inicial. Con un modelo detrás, ese test sería
-   inestable y habría que aflojarlo hasta dejar de comprobar nada.
-3. **Es reproducible en la demo.** El mismo guion da el mismo orden las veces que
-   haga falta ensayarlo. Un modelo puede cambiar de opinión entre el ensayo y la
-   presentación.
-4. **No añade latencia ni una dependencia que pueda caerse.** La replanificación
-   es síncrona y ocurre en cada cambio de estado: una llamada a un modelo en ese
-   camino significaría esperas de segundos y un modo de fallo nuevo cada vez que
-   entra una señal.
-5. **Coste cero por replanificación.** El escenario replanifica decenas de veces
-   en una demo de cinco minutos.
-
-**Dónde sí encaja un modelo:** en los bordes, no en el núcleo de la decisión.
-Clasificar texto libre de una llamada en `{zona, categoría, severidad}`, o
-redactar el briefing que se le lee a un contacto. Es decir, en convertir lenguaje
-en estructura, no en decidir a quién se salva primero.
-
-**Lo que cuesta.** Los pesos están ajustados a mano y son opinables. Se mitiga
-enseñando el desglose: si el jurado no está de acuerdo con la prioridad, al menos
-ve exactamente qué la produjo y puede discutirla.
+> Current real status: functions in `persistence.ts` are deliberate stubs
+> (`loadState` returns `null`, `saveState` does nothing). The contract is
+> established and `store.ts` already calls it; implementation is pending work
+> for the agent owning that module.
 
 ---
 
-## Decisión 3 — Toda acción externa pasa por aprobación humana
+## Decision 2 — Priority is deterministic, not decided by a language model
 
-Ninguna acción sale del sistema por sí sola. El ciclo es:
+`lib/priority.ts` scores each zone with an explicit formula: zone base risk,
+severity and confidence of live signals, whether they are confirmed, population
+at risk, open needs, and unavailable resources. The output is a number and a
+factor breakdown (`PriorityFactor[]`) that the interface displays as-is.
 
-1. El sistema **propone**: la acción nace en estado `pending` y aparece en la cola
-   de la interfaz con su objetivo, su destinatario, su zona y el motivo.
-2. Una persona **aprueba** (`POST /api/actions/:id/approve`).
-3. Solo entonces `happyrobot.ts` ejecuta, y la acción pasa a `running`.
-4. El resultado vuelve —por la respuesta o por el webhook de estado— y la acción
-   termina en `succeeded`, `failed`, `blocked` o `stalled`.
+**Why not an LLM.**
 
-**Por qué.**
+1. **It is explainable.** The challenge asks: "does it know what comes first when
+   everything seems urgent?". A number with its breakdown answers that in front of
+   a jury; a generated paragraph does not. The UI can show _why_ a zone moved to
+   first place, factor by factor.
+2. **It is testable.** `tests/priority.test.ts` asserts that a confirmed critical
+   signal takes precedence over initial priority. With a model behind it, that
+   test would be flaky and would have to be relaxed until it tests nothing.
+3. **It is reproducible in the demo.** The same script produces the same order
+   however many times it is rehearsed. A model can change its mind between
+   rehearsal and presentation.
+4. **No added latency or external point of failure.** Replanning is synchronous
+   and occurs on every state change: a model call in that path would mean
+   second-long pauses and a new failure mode every time a signal arrives.
+5. **Zero cost per replanning cycle.** The scenario replans dozens of times during
+   a five-minute demo.
 
-- El reto exige "una pantalla donde entender la situación, ver lo que hace el
-  sistema e intervenir cuando haga falta". Un botón de aprobar es la forma más
-  directa de que esa intervención sea real y no decorativa.
-- Las acciones reales llaman por teléfono, escriben y abren tickets a personas.
-  En una crisis simulada durante un hackathon, equivocarse de destinatario es un
-  incidente de verdad, no un bug.
-- La aprobación es el punto natural donde el estado se convierte en irreversible.
-  Concentrar ahí la comprobación deja una única frontera que auditar.
+**Where a model does fit:** at the edges, not in the decision core. Classifying
+free text from a call into `{zone, category, severity}`, or drafting the briefing
+read to a contact. That is, turning language into structure, not deciding whom to
+save first.
 
-**Salvaguardas encadenadas** (todas tienen que dar permiso para que salga algo):
-
-| Salvaguarda           | Dónde                                                | Qué hace                                                                                                                                                                       |
-| --------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Modo de ejecución     | `getExecutionMode()`                                 | Con `ACTION_EXECUTION_MODE` distinto de `happyrobot`, nada sale del proceso. Es el valor por defecto.                                                                          |
-| Credenciales          | `isHappyRobotConfigured()`                           | Sin clave, URL base y agente, la ejecución real falla con un error explícito en vez de intentarlo a medias.                                                                    |
-| Destinatario aprobado | `canReceiveLiveAction()` / `liveActionBlockReason()` | Un contacto sin `demoSafe` **degrada la acción a simulación** y explica por qué. En la semilla actual todos los contactos están marcados como no aptos.                        |
-| Aprobación humana     | `approveAction()`                                    | Sin aprobación no se ejecuta nada.                                                                                                                                             |
-| Idempotencia          | `idempotencyKey = "<id>:<intento>"`                  | Evita duplicar el aviso al reintentar o al recibir el mismo evento dos veces.                                                                                                  |
-| Honestidad en la UI   | `IntegrationState`, `simulated`, ids `mock-…`        | Se cuentan por separado las acciones reales y las simuladas, y lo simulado lleva el prefijo escrito en el propio identificador para que ni un log pueda presentarlo como real. |
-
-**Lo que cuesta.** El sistema no es completamente autónomo, y eso roza el criterio
-de "decide y actúa por su cuenta". Se compensa con el resto: el sistema decide,
-prioriza, asigna recursos, elige contacto y canal, y replanifica solo; lo único
-que pide es el visto bueno antes de tocar el mundo real. Ese es además el diseño
-que una sala de crisis de verdad querría.
+**The trade-offs.** Weights are tuned by hand and are debatable. This is
+mitigated by showing the breakdown: if the jury disagrees with the priority, they
+can at least see exactly what produced it and debate it.
 
 ---
 
-## Decisión 4 — Módulos con un propietario claro
+## Decision 3 — All external actions require human approval
 
-`lib/` está partido por responsabilidad y cada fichero declara su dueño en la
-primera línea:
+No action leaves the system on its own. The lifecycle is:
+
+1. The system **proposes**: the action originates in `pending` state and appears
+   in the interface queue with its objective, recipient, zone, and rationale.
+2. A human **approves** (`POST /api/actions/:id/approve`).
+3. Only then does `happyrobot.ts` execute, and the action transitions to `running`.
+4. The result returns—via the response or the status webhook—and the action ends
+   in `succeeded`, `failed`, `blocked`, or `stalled`.
+
+**Why.**
+
+- The challenge requires "a screen to understand the situation, see what the
+  system is doing, and intervene when necessary." An approve button is the most
+  direct way to make that intervention real rather than cosmetic.
+- Live actions make phone calls, send messages, and open tickets for real people.
+  In a simulated crisis during a hackathon, contacting the wrong recipient is a
+  real incident, not a bug.
+- Approval is the natural point where state becomes irreversible. Concentrating
+  the check there leaves a single boundary to audit.
+
+**Chained safeguards** (all must grant permission for anything to go out):
+
+| Safeguard          | Where                                                | What it does                                                                                                                                                 |
+| ------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Execution mode     | `getExecutionMode()`                                 | With `ACTION_EXECUTION_MODE` set to anything other than `happyrobot`, nothing leaves the process. This is the default.                                       |
+| Credentials        | `isHappyRobotConfigured()`                           | Without an API key, base URL, and agent, live execution fails with an explicit error instead of attempting partial dispatch.                                 |
+| Approved recipient | `canReceiveLiveAction()` / `liveActionBlockReason()` | A contact without `demoSafe` **degrades the action to simulation** and explains why. In the current seed, all contacts are marked as not approved.           |
+| Human approval     | `approveAction()`                                    | Nothing executes without human approval.                                                                                                                     |
+| Idempotency        | `idempotencyKey = "<id>:<attempt>"`                  | Prevents duplicate alerts when retrying or receiving the same event twice.                                                                                   |
+| Honesty in the UI  | `IntegrationState`, `simulated`, `mock-…` IDs        | Real and simulated actions are counted separately, and simulated actions carry the prefix in their identifier so that even logs cannot present them as live. |
+
+**The trade-offs.** The system is not fully autonomous, which brushes against the
+"decides and acts on its own" criterion. This is balanced by the rest: the system
+decides, prioritizes, allocates resources, chooses contacts and channels, and
+replans autonomously; it only asks for confirmation before touching the real world.
+This is also the exact design a real crisis command center would require.
+
+---
+
+## Decision 4 — Modules with a clear owner
+
+`lib/` is split by responsibility, and each file declares its owner on the first
+line:
 
 ```ts
 // PROPIETARIO: agente del motor de prioridad.
 ```
 
-| Módulo           | Responsabilidad                                                                                       |
+| Module           | Responsibility                                                                                        |
 | ---------------- | ----------------------------------------------------------------------------------------------------- |
-| `types.ts`       | Frontera entre módulos. Los tipos compartidos y nada más.                                             |
-| `validation.ts`  | Validación de entrada con zod y forma única de error para toda la API.                                |
-| `store.ts`       | Estado y orquestación. Coordinación; no lo editan los agentes de módulo.                              |
-| `priority.ts`    | Puntuar zonas y construir el plan.                                                                    |
-| `resources.ts`   | Elegir, asignar y liberar recursos.                                                                   |
-| `contacts.ts`    | A quién se avisa, por qué canal y con qué briefing.                                                   |
-| `escalation.ts`  | Cadenas de escalado: qué pasa si el primero no contesta.                                              |
-| `digitalTwin.ts` | Gemelo digital: estado percibido desde señales, divergencias y precisión frente a la verdad simulada. |
-| `happyrobot.ts`  | Único punto de salida al exterior.                                                                    |
-| `scenario.ts`    | El guion que hace que la situación cambie sola.                                                       |
-| `history.ts`     | Historial de planes, diferencias entre versiones y auditoría.                                         |
-| `learning.ts`    | Pesos aprendidos de ejecuciones anteriores (bonus).                                                   |
-| `persistence.ts` | Guardar y restaurar, opcional.                                                                        |
-| `seed.ts`        | Situación inicial y beats del guion.                                                                  |
+| `types.ts`       | Boundary between modules. Shared types and nothing else.                                              |
+| `validation.ts`  | Input validation with Zod and unified error formatting across the entire API.                         |
+| `store.ts`       | State and orchestration. Coordination; module agents do not edit this.                                |
+| `priority.ts`    | Scores zones and builds the plan.                                                                     |
+| `resources.ts`   | Selects, allocates, and releases resources.                                                           |
+| `contacts.ts`    | Whom to notify, via which channel, and with what briefing.                                            |
+| `escalation.ts`  | Escalation chains: what happens if the first contact does not answer.                                 |
+| `digitalTwin.ts` | Digital twin: state perceived from signals, divergences, and accuracy against simulated ground truth. |
+| `happyrobot.ts`  | Single egress point to the outside world.                                                             |
+| `scenario.ts`    | The script that drives situation changes automatically.                                               |
+| `history.ts`     | Plan history, version diffs, and audit trail.                                                         |
+| `learning.ts`    | Weights learned from previous runs (bonus).                                                           |
+| `persistence.ts` | Save and restore, optional.                                                                           |
+| `seed.ts`        | Initial situation and scenario beats.                                                                 |
 
-**Por qué.**
+**Why.**
 
-- Varios agentes escriben a la vez. Sin fronteras de fichero, dos de ellos editan
-  la misma función y el resultado es un conflicto o, peor, una fusión silenciosa
-  que rompe algo. Un fichero con un dueño hace imposible ese choque.
-- `types.ts` como contrato permite que un módulo se escriba contra la _forma_ de
-  otro sin esperar a que esté implementado. Por eso `persistence.ts` puede ser
-  hoy un conjunto de stubs sin bloquear a nadie.
-- Concentrar la orquestación en `store.ts` deja un único sitio donde entender el
-  ciclo completo. Cuando alguien pregunta "¿qué pasa cuando llega una señal?", la
-  respuesta está en un fichero.
-- Aísla el riesgo: si un módulo se rompe, se ve dónde y no contamina al resto.
+- Multiple agents write concurrently. Without file boundaries, two agents editing
+  the same function would result in conflicts or, worse, silent merges that break
+  functionality. A file with a single owner prevents these collisions.
+- `types.ts` as a contract allows a module to be written against the _shape_ of
+  another without waiting for its implementation. That is why `persistence.ts` can
+  currently exist as stubs without blocking anyone.
+- Concentrating orchestration in `store.ts` provides a single place to understand
+  the complete cycle. When someone asks "what happens when a signal arrives?", the
+  answer is in one file.
+- Isolates risk: if a module breaks, it is clear where it happened and does not
+  contaminate the rest.
 
-**Lo que cuesta.** `store.ts` es el fichero más grande y es un cuello de botella
-para los cambios que cruzan módulos. Es un intercambio consciente: preferimos un
-punto de coordinación grande y explícito a tener la coordinación repartida y
-que nadie sepa quién manda.
-
----
-
-## Decisión 5 — Sondeo desde el navegador, no websockets
-
-`app/page.tsx` pide `GET /api/situation` periódicamente y repinta. No hay canal en
-tiempo real.
-
-**Por qué.** El estado es pequeño, el servidor es local y una demo no nota la
-diferencia entre un sondeo de un segundo y un push. Un websocket añadiría gestión
-de conexión, reconexión y un modo de fallo visible en pantalla justo cuando más
-importa. El sondeo, además, se autorrepara solo: si una petición falla, la
-siguiente vuelve a traer la verdad entera.
-
-**Efecto lateral que el diseño busca:** el sondeo es el reloj del sistema.
-`GET /api/situation` llama a `pollSituation()`, que antes de devolver el estado
-avanza el guion (`scenario.ts`) y barre las acciones atascadas. El navegador, al
-preguntar, hace avanzar el tiempo.
-
-Como eso ataría el guion a que alguien tenga la pestaña abierta, `scenario.ts`
-mantiene además un latido de servidor (`ensureHeartbeat`) mientras el guion está
-en marcha, y `POST /api/scenario/tick` permite empujarlo a mano desde fuera. Tres
-relojes para el mismo motor, porque el que no puede fallar es el de la demo.
+**The trade-offs.** `store.ts` is the largest file and acts as a bottleneck for
+cross-module changes. This is a deliberate trade-off: we prefer a single, large,
+explicit coordination point over scattered coordination where nobody knows who
+is in charge.
 
 ---
 
-## Decisión 6 — El escenario está guionizado, pero se puede tocar a mano
+## Decision 5 — Browser polling, not WebSockets
 
-`lib/scenario.ts` reproduce guiones formados por _beats_ con marca de tiempo —hay
-tres: incendio, apagón e inundación—: el frente avanza, el viento gira, una
-carretera se corta, un recurso cae. Se arrancan, se pausan y se aceleran desde
-`/api/scenario/*`. Además, los botones de la interfaz permiten inyectar a mano
-cualquiera de esas averías en el momento que haga falta.
+`app/page.tsx` polls `GET /api/situation` periodically and re-renders. There is no
+real-time push channel.
 
-**Por qué las dos cosas.** El guion demuestra que el sistema se adapta sin que
-nadie lo empuje —el criterio de "entorno que cambia solo"—; los botones permiten
-provocar exactamente el cambio que el jurado acaba de preguntar. Ensayo
-reproducible y demo interactiva con el mismo motor detrás.
+**Why.** State is small, the server is local, and a demo cannot tell the
+difference between one-second polling and push. A WebSocket would add connection
+management, reconnection logic, and a visible failure mode on screen right when
+it matters most. Polling also self-heals: if a request fails, the next request
+retrieves the full ground truth again.
+
+**Side effect intended by the design:** polling acts as the system clock.
+`GET /api/situation` calls `pollSituation()`, which advances the scenario
+(`scenario.ts`) and sweeps stalled actions before returning state. The browser
+advancing time by querying.
+
+Because that would bind the script to having a tab open, `scenario.ts` also
+maintains a server heartbeat (`ensureHeartbeat`) while the script runs, and
+`POST /api/scenario/tick` allows advancing it manually from outside. Three
+clocks for the same engine, because the demo clock cannot fail.
 
 ---
 
-## Qué está implementado y qué no
+## Decision 6 — The scenario is scripted, but can be triggered manually
 
-| Pieza                                                                 | Estado                                                                                                           |
-| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Estado en memoria, replanificación, auditoría                         | Implementado                                                                                                     |
-| Motor de prioridad determinista con desglose                          | Implementado                                                                                                     |
-| Asignación de recursos, contactos, escalado                           | Implementado                                                                                                     |
-| Adaptador HappyRobot con reintentos, timeout e idempotencia           | Implementado (ruta y cuerpo **sin verificar** contra la documentación privada; ver `docs/happyDocumentation.md`) |
-| Aprobación humana y cola de acciones                                  | Implementado                                                                                                     |
-| Validación de entrada y errores homogéneos en toda la API             | Implementado                                                                                                     |
-| Guion que avanza solo, con tres escenarios y velocidad ajustable      | Implementado                                                                                                     |
-| Gemelo digital con métricas de precisión, divergencia e incertidumbre | Implementado                                                                                                     |
-| Persistencia en JSON                                                  | Contrato definido, implementación pendiente                                                                      |
-| Aprendizaje entre ejecuciones                                         | Contrato definido, acumula estadísticas en memoria; no influye todavía en la puntuación                          |
+`lib/scenario.ts` plays scripts made of timestamped _beats_—there are three:
+wildfire, blackout, and flood—the fire front advances, wind shifts, a road is cut,
+a resource goes down. They can be started, paused, and accelerated via
+`/api/scenario/*`. Additionally, UI buttons allow injecting any of these
+disruptions on demand at any moment.
+
+**Why both.** The script demonstrates that the system adapts without human
+prodding—the "autonomously changing environment" criterion; the buttons allow
+triggering the exact change the jury just asked about. Reproducible rehearsal
+and interactive demo powered by the same underlying engine.
+
+---
+
+## What is implemented and what is not
+
+| Component                                                              | Status                                                                                                         |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| In-memory state, replanning, audit trail                               | Implemented                                                                                                    |
+| Deterministic priority engine with factor breakdown                    | Implemented                                                                                                    |
+| Resource allocation, contacts, escalation chains                       | Implemented                                                                                                    |
+| HappyRobot adapter with retries, timeout, and idempotency              | Implemented (route and payload **unverified** against private documentation; see `docs/happyDocumentation.md`) |
+| Human approval and action queue                                        | Implemented                                                                                                    |
+| Input validation and homogeneous error responses across the entire API | Implemented                                                                                                    |
+| Self-advancing script with three scenarios and adjustable speed        | Implemented                                                                                                    |
+| Digital twin with accuracy, divergence, and uncertainty metrics        | Implemented                                                                                                    |
+| JSON persistence                                                       | Contract defined, implementation pending                                                                       |
+| Cross-execution learning                                               | Contract defined, accumulates statistics in memory; does not yet influence scoring                             |

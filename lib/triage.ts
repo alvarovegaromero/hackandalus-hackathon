@@ -1,100 +1,92 @@
-// PROPIETARIO: agente de triaje calibrado y verificación.
+// OWNER: calibrated triage and verification agent.
 //
-// Triaje de señales con tres salidas. El reto pregunta si el sistema decide
-// algo sensato SIN tener todos los datos, y una etiqueta de confianza
-// (baja/media/alta) sólo permite dos respuestas: la señal cuenta o no cuenta.
-// Falta la del medio, que es la interesante.
+// Signal triage with three outcomes. The challenge asks whether the system
+// decides something sensible WITHOUT having all the data, and a confidence
+// label (low/medium/high) only allows two answers: the signal counts or it doesn't.
+// The middle one is missing, which is the interesting one.
 //
-//   p ≥ 0,85  → "act"      se actúa sobre la señal.
-//   0,5 ≤ p   → "verify"   NO se espera: se genera una ACCIÓN DE VERIFICACIÓN,
-//                          es decir, se llama a alguien a preguntar. Verificar
-//                          es actuar, no esperar.
-//   p < 0,5   → "discard"  se descarta, con el motivo visible.
+//   p >= 0.85  -> "act"      act on the signal.
+//   0.5 <= p   -> "verify"   DO NOT wait: generate a VERIFICATION ACTION,
+//                            meaning, call someone to ask. Verifying is acting,
+//                            not waiting.
+//   p < 0.5    -> "discard"  discard, with visible reason.
 //
-// CÓMO SE DERIVA CADA PROBABILIDAD (todo determinista, sin modelo de lenguaje;
-// cada línea es explicable de viva voz ante el jurado):
+// HOW EACH PROBABILITY IS DERIVED (all deterministic, without language models;
+// every line can be explained verbally to the jury):
 //
-//   r        = fiabilidad aprendida de la fuente (SourceReliability), 0,6 si
-//              la fuente es desconocida.
-//   c        = confianza declarada de la señal: baja 0,50 · media 0,75 ·
-//              alta 0,95.
-//   k        = 1 + 0,5·ln(occurrences): repetir un aviso refuerza, con
-//              rendimientos decrecientes (mismo criterio que occurrenceFactor
-//              en lib/priority.ts).
-//   pClaim   = (1 − (1 − c)^k) · 0,7^(señales que la contradicen), suelo 0,4.
-//   pTruthful= pClaim · r, salvo que la señal ya esté resuelta: confirmada
-//              0,97 y descartada 0,03.
-//   pRelevant= base por gravedad (0,35 / 0,55 / 0,78 / 0,90)
-//              + estado de la zona (watch +0,02; active/critical +0,05)
-//              + corroboración (+0,06 por señal viva coherente, tope +0,12)
-//              − contradicción (−0,12 por señal descartada igual, tope −0,25)
-//              − 0,15 si la zona no existe en el mapa.
-//   urgency  = (base por gravedad + estado de zona + minutos hasta impacto)
-//              · frescura, con frescura = max(0,6; 0,5^(edad/45 min)).
-//   confidence = fusión de fuentes independientes:
-//              C = 1 − ∏(1 − p_i·r_i)  (ver fuseConfidence).
+//   r        = learned source reliability (SourceReliability), 0.6 if source is unknown.
+//   c        = reported confidence of signal: low 0.50, medium 0.75, high 0.95.
+//   k        = 1 + 0.5*ln(occurrences): repeated reports reinforce with diminishing
+//              returns (same criterion as occurrenceFactor in lib/priority.ts).
+//   pClaim   = (1 - (1 - c)^k) * 0.7^(contradicting signals), floor 0.4.
+//   pTruthful= pClaim * r, unless signal is already resolved: confirmed 0.97,
+//              discarded 0.03.
+//   pRelevant= base by severity (0.35 / 0.55 / 0.78 / 0.90)
+//              + zone status (watch +0.02; active/critical +0.05)
+//              + corroboration (+0.06 per consistent live signal, cap +0.12)
+//              - contradiction (-0.12 per identical discarded signal, cap -0.25)
+//              - 0.15 if zone does not exist on map.
+//   urgency  = (base by severity + zone status + minutes to impact)
+//              * freshness, with freshness = max(0.6; 0.5^(age / 45 min)).
+//   confidence = fusion of independent sources:
+//              C = 1 - PROD(1 - p_i * r_i)  (see fuseConfidence).
 //
-// UMBRALES QUE SE MUEVEN CON LA URGENCIA. Equivocarse callando ante una señal
-// crítica cuesta mucho más que equivocarse llamando, así que los umbrales
-// bajan con la urgencia:
+// THRESHOLDS THAT MOVE WITH URGENCY. Erring by staying silent in the face of a
+// critical signal costs far more than erring by calling, so thresholds
+// drop with urgency:
 //
-//   umbral de actuar     = 0,85 − 0,08·urgency
-//   umbral de verificar  = 0,50 − 0,15·urgency
+//   act threshold     = 0.85 - 0.08 * urgency
+//   verify threshold  = 0.50 - 0.15 * urgency
 //
-// El de verificar cede el doble porque preguntar es barato y callarse no. Es
-// coste asimétrico declarado, no relajar el criterio.
+// The verify threshold yields twice as much because asking is cheap and staying silent
+// is not. It is declared asymmetric cost, not relaxed criteria.
 //
-// FUSIÓN POR CERCANÍA Y TIEMPO. Varias señales del mismo punto y dentro de una
-// ventana corta se fusionan, y la confianza sube sólo si vienen de fuentes
-// independientes. El mapa de zonas NO está georreferenciado (las coordenadas
-// son unidades de tablero, no metros), así que la regla de los 500 m se aplica
-// a nivel de zona: por defecto sólo corrobora la misma zona, y
-// `nearbyZoneUnits` permite admitir zonas contiguas con descuento.
+// FUSION BY PROXIMITY AND TIME. Multiple signals at the same location and within a short
+// window are fused, and confidence increases only if they come from independent sources.
+// The zone map is NOT georeferenced (coordinates are grid units, not meters),
+// so the 500 m rule applies at zone level: by default only the same zone corroborates,
+// and `nearbyZoneUnits` allows accepting adjacent zones at a discount.
 //
-// ARQUITECTURA INTERCAMBIABLE. Este módulo cae entero en el lado de las
-// preguntas cerradas y masivas (¿es relevante?, ¿es duplicado?, ¿es urgente?,
-// ¿la llamada confirmó el incendio?), que es justo lo que se delega en un
-// clasificador rápido. Nunca planifica ni redacta mensajes.
+// SWAPPABLE ARCHITECTURE. This module falls entirely on the side of closed and massive
+// questions (is it relevant?, is it duplicate?, is it urgent?, did the call confirm
+// the fire?), which is precisely what is delegated to a fast classifier.
+// It never plans or drafts messages.
 //
-// La cadena de respaldo es: Jev → LLM pequeño con salida estructurada →
-// motor determinista. El determinista es el último escalón y siempre está
-// disponible, así que el triaje nunca deja de responder: si Jev se cae en
-// mitad de la demo o se agota el límite de uso, la decisión sigue saliendo.
+// The fallback chain is: Jev -> small LLM with structured output -> deterministic engine.
+// The deterministic engine is the final step and always available, so triage never fails
+// to respond: if Jev goes down mid-demo or runs out of quota, decisions continue.
 //
-// CONTRATO PARA QUIEN ENCHUFE JEV (o el LLM intermedio). Basta con implementar
-// `SignalAssessor` y registrarlo:
+// CONTRACT FOR CONNECTING JEV (or intermediate LLM). Simply implement `SignalAssessor`
+// and register it:
 //
 //   import { registerAssessor } from "@/lib/triage";
 //   registerAssessor({
-//     name: "jev",                       // "jev" | "llm"; se copia en assessedBy
-//     available: () => Boolean(cliente), // false => se pasa al siguiente escalón
-//     costPerSignalEur: 0.0004,          // opcional, para el coste en pantalla
+//     name: "jev",                       // "jev" | "llm"; copied into assessedBy
+//     available: () => Boolean(client),  // false => passes to next step
+//     costPerSignalEur: 0.0004,          // optional, for display cost
 //     assess: (signal, context) => ({ ...SignalAssessment })
 //   });
-//   // y arrancar con TRIAGE_ASSESSOR=jev  (o TRIAGE_ASSESSOR=jev,llm)
+//   // and start with TRIAGE_ASSESSOR=jev  (or TRIAGE_ASSESSOR=jev,llm)
 //
-// ENTRADA: `TriageSignal` (el payload crudo o un CrisisEvent ya normalizado) y
-// `TriageContext` (fiabilidad por fuente, señales vivas, zonas, umbrales e
-// instante de referencia). No hay más estado: la evaluación es una función
-// pura de esos dos argumentos.
+// INPUT: `TriageSignal` (raw payload or normalized CrisisEvent) and `TriageContext`
+// (reliability by source, live signals, zones, thresholds, reference timestamp).
+// No additional state: assessment is a pure function of these two arguments.
 //
-// SALIDA: un `SignalAssessment` completo (lib/types.ts), con
-// `pRelevant`, `pTruthful`, `urgency` y `confidence` en [0, 1];
-// `decision` en "act" | "verify" | "discard", coherente con los umbrales
-// resueltos por `resolveThresholds`; `rationale` en una línea en español;
-// `assessedBy` con el nombre REAL de quien evaluó (nunca firmar como Jev una
-// evaluación que hizo otro); `sourceReliability` la que se aplicó; y
-// `assessedAt` en ISO.
+// OUTPUT: a complete `SignalAssessment` (lib/types.ts), with
+// `pRelevant`, `pTruthful`, `urgency` and `confidence` in [0, 1];
+// `decision` in "act" | "verify" | "discard", consistent with thresholds
+// resolved by `resolveThresholds`; `rationale` in a single line in English;
+// `assessedBy` with the REAL name of whoever assessed (never sign as Jev an
+// assessment performed by another); applied `sourceReliability`; and `assessedAt` in ISO.
 //
-// REGLAS DEL IMPLEMENTADOR: debe ser rápido (se llama por cada señal), no debe
-// lanzar (si lanza, `assessSignal` cae al determinista y lo dice en el
-// rationale) y debe ser estable ante la misma entrada, porque la UI compara
-// evaluaciones entre replanificaciones.
+// IMPLEMENTER RULES: must be fast (called per signal), must not throw (if it throws,
+// `assessSignal` falls back to deterministic and notes it in rationale), and must be
+// stable for identical input, because the UI compares assessments across replannings.
 //
-// COSTE Y LATENCIA. `assessSignalTimed` mide cada decisión y `summarizeTriage`
-// resume la tanda ("40 señales triadas en 1,2 s por 0,0160 €"), que es el
-// argumento medible que se pinta en pantalla. El motor determinista cuesta 0 €
-// y sirve de referencia contra la que comparar el clasificador externo.
+// COST AND LATENCY. `assessSignalTimed` measures each decision and `summarizeTriage`
+// summarizes the batch ("40 signals triaged in 1.2 s for 0.0160 €"), which is the
+// measurable argument displayed on screen. The deterministic engine costs 0 € and
+// serves as a baseline against which to compare the external classifier.
 
 import { rolesForCategory, selectContactByRole } from "./contacts";
 import type {
@@ -114,29 +106,29 @@ import type {
 } from "./types";
 
 // ---------------------------------------------------------------------------
-// Umbrales y constantes
+// Thresholds and constants
 // ---------------------------------------------------------------------------
 
 export interface TriageThresholds {
-  /** Confianza a partir de la cual se actúa sin preguntar. */
+  /** Confidence threshold above which to act without asking. */
   act: number;
-  /** Confianza a partir de la cual se verifica en vez de descartar. */
+  /** Confidence threshold above which to verify instead of discarding. */
   verify: number;
   /**
-   * Cuánto baja el umbral de actuación con urgencia máxima. Coste asimétrico:
-   * callarse ante una señal crítica cuesta más que actuar de más.
+   * How much the act threshold drops with maximum urgency. Asymmetric cost:
+   * staying silent on a critical signal costs more than acting redundantly.
    */
   urgencyRelief: number;
   /**
-   * Cuánto baja el umbral de verificación con urgencia máxima. Es mayor que el
-   * de actuación porque preguntar es barato: cuanto más urgente sea la señal,
-   * más barato sale llamar y más caro sale callarse. El aprendizaje lo mueve:
-   * si las señales por encima de 0,8 se confirman siempre, se baja el umbral.
+   * How much the verify threshold drops with maximum urgency. Higher than act
+   * relief because asking is cheap: the more urgent the signal, the cheaper to
+   * call and the more expensive to stay silent. Learning adjusts it: if signals
+   * above 0.8 are always confirmed, threshold is lowered.
    */
   verifyUrgencyRelief: number;
-  /** Relevancia mínima para actuar. Por debajo, como mucho se verifica. */
+  /** Minimum relevance to act. Below this, at most verified. */
   relevanceForAct: number;
-  /** Relevancia mínima para molestar a alguien verificando. */
+  /** Minimum relevance to bother someone with verification. */
   relevanceForVerify: number;
 }
 
@@ -149,56 +141,55 @@ export const defaultTriageThresholds: TriageThresholds = {
   relevanceForVerify: 0.35,
 };
 
-/** Fiabilidad que se aplica a una fuente de la que no se sabe nada todavía. */
+/** Default reliability applied to a source with no history yet. */
 export const DEFAULT_SOURCE_RELIABILITY = 0.6;
 
 /**
- * Peso de una segunda señal de la MISMA fuente al fusionar. Dos partes del
- * mismo sensor no son dos testigos independientes: la correlación se descuenta
- * explícitamente en vez de multiplicar la confianza como si lo fueran.
+ * Weight of a second signal from the SAME source during fusion. Two reports from
+ * the same sensor are not two independent witnesses: correlation is explicitly
+ * discounted instead of multiplying confidence as if they were independent.
  */
 export const SAME_SOURCE_WEIGHT = 0.25;
 
 /**
- * Ventana en minutos dentro de la cual dos señales del mismo punto se
- * consideran el mismo hecho y se fusionan. Fuera de la ventana, una señal
- * antigua ya no corrobora a la nueva: puede estar hablando de otra cosa.
+ * Window in minutes within which two signals at the same location are considered
+ * the same event and fused. Outside the window, an older signal no longer
+ * corroborates a new one: it may refer to something else.
  */
 export const FUSION_WINDOW_MINUTES = 10;
 
 /**
- * Radio en unidades de mapa para admitir como corroboración señales de otra
- * zona. Por defecto 0: sólo corrobora la misma zona. El mapa no está
- * georreferenciado, así que no hay forma honesta de traducir los 500 metros de
- * la regla a estas unidades; se deja el parámetro abierto para el día que las
- * señales traigan coordenadas reales.
+ * Radius in map units to accept signals from another zone as corroboration.
+ * Default 0: only the same zone corroborates. The map is not georeferenced,
+ * so there is no honest way to translate the 500 meters rule into these units;
+ * the parameter is left open for when signals carry real coordinates.
  */
 export const DEFAULT_NEARBY_ZONE_UNITS = 0;
 
-/** Descuento de una corroboración que viene de una zona vecina, no del mismo punto. */
+/** Discount for corroboration coming from an adjacent zone rather than the same location. */
 export const NEARBY_ZONE_DISCOUNT = 0.6;
 
-/** Coste por señal del motor determinista: cero euros, y es el suelo a batir. */
+/** Cost per signal for deterministic engine: zero euros, the baseline to beat. */
 export const DETERMINISTIC_COST_EUR = 0;
 
-/** Observaciones mínimas antes de mover la fiabilidad de una fuente. */
+/** Minimum observations before adjusting source reliability. */
 export const MIN_SOURCE_SAMPLES = 4;
 
-/** Movimiento máximo de la fiabilidad por observación. */
+/** Maximum reliability adjustment per observation. */
 export const SOURCE_RELIABILITY_STEP = 0.05;
 
-/** Suelo y techo de la fiabilidad: ni una fuente miente siempre ni acierta siempre. */
+/** Floor and ceiling for reliability: no source always lies or is always right. */
 export const MIN_SOURCE_RELIABILITY = 0.15;
 export const MAX_SOURCE_RELIABILITY = 0.98;
 
-/** Confianza declarada traducida a probabilidad de que lo contado sea cierto. */
+/** Reported confidence translated to probability of claim being true. */
 const claimByConfidence: Record<Confidence, number> = {
   low: 0.5,
   medium: 0.75,
   high: 0.95,
 };
 
-/** Probabilidad base de que una señal sea relevante, por gravedad declarada. */
+/** Base probability that a signal is relevant, by reported severity. */
 const relevanceBySeverity: Record<Severity, number> = {
   low: 0.35,
   medium: 0.55,
@@ -206,7 +197,7 @@ const relevanceBySeverity: Record<Severity, number> = {
   critical: 0.9,
 };
 
-/** Urgencia base por gravedad declarada. */
+/** Base urgency by reported severity. */
 const urgencyBySeverity: Record<Severity, number> = {
   low: 0.2,
   medium: 0.45,
@@ -215,34 +206,34 @@ const urgencyBySeverity: Record<Severity, number> = {
 };
 
 const severityLabel: Record<Severity, string> = {
-  low: "baja",
-  medium: "media",
-  high: "alta",
-  critical: "crítica",
+  low: "low",
+  medium: "medium",
+  high: "high",
+  critical: "critical",
 };
 
 const confidenceLabel: Record<Confidence, string> = {
-  low: "baja",
-  medium: "media",
-  high: "alta",
+  low: "low",
+  medium: "medium",
+  high: "high",
 };
 
 const sourceLabel: Record<EventSource, string> = {
   happyrobot: "HappyRobot",
   sensor: "sensor",
-  operator: "operador",
-  public: "aviso ciudadano",
+  operator: "operator",
+  public: "citizen report",
   demo: "demo",
-  scenario: "escenario",
+  scenario: "scenario",
 };
 
 const roleLabel: Record<ContactRole, string> = {
-  "field-coordinator": "coordinación de campo",
-  "medical-lead": "jefatura sanitaria",
-  "public-safety": "seguridad pública",
-  volunteer: "voluntariado",
-  "operations-lead": "sala de coordinación",
-  authority: "autoridad de emergencias",
+  "field-coordinator": "field coordinator",
+  "medical-lead": "medical lead",
+  "public-safety": "public safety",
+  volunteer: "volunteer",
+  "operations-lead": "operations room",
+  authority: "emergency authority",
 };
 
 // ---------------------------------------------------------------------------
@@ -270,7 +261,7 @@ function resolveNow(now?: number | string | Date): number {
   return Number.isNaN(parsed) ? Date.now() : parsed;
 }
 
-/** Antigüedad en minutos, nunca negativa. Un timestamp ilegible cuenta como reciente. */
+/** Age in minutes, never negative. An unreadable timestamp counts as recent. */
 function ageInMinutes(iso: string | null | undefined, now: number): number {
   if (!iso) return 0;
   const at = Date.parse(iso);
@@ -278,7 +269,7 @@ function ageInMinutes(iso: string | null | undefined, now: number): number {
   return Math.max(0, (now - at) / 60000);
 }
 
-/** Categorías equivalentes: "evacuacion-costa" y "evacuacion" hablan de lo mismo. */
+/** Equivalent categories: "evacuacion-costa" and "evacuacion" discuss the same topic. */
 function sameTopic(a: string, b: string): boolean {
   const left = normalizeTopic(a);
   const right = normalizeTopic(b);
@@ -294,7 +285,7 @@ function normalizeTopic(category: string): string {
     .replace(/[\s_]+/g, "-");
 }
 
-/** Fiabilidad aprendida de una fuente, o el valor por defecto si no hay historial. */
+/** Learned reliability of a source, or default value if no history exists. */
 export function reliabilityOf(
   reliability: SourceReliability[] | undefined,
   source: EventSource,
@@ -308,12 +299,12 @@ export function reliabilityOf(
 }
 
 // ---------------------------------------------------------------------------
-// Entradas del triaje
+// Triage inputs
 // ---------------------------------------------------------------------------
 
 /**
- * Señal a evaluar. Vale tanto un payload crudo recién llegado como un
- * `CrisisEvent` ya normalizado por el store.
+ * Signal to assess. Can be a newly arrived raw payload or a
+ * `CrisisEvent` already normalized by the store.
  */
 export type TriageSignal = IncomingEventPayload & {
   id?: string;
@@ -322,22 +313,22 @@ export type TriageSignal = IncomingEventPayload & {
 };
 
 export interface TriageContext {
-  /** Fiabilidad aprendida por fuente (state.sourceReliability). */
+  /** Learned reliability by source (state.sourceReliability). */
   sourceReliability?: SourceReliability[];
-  /** Señales ya presentes, para corroborar o contradecir. */
+  /** Signals already present, to corroborate or contradict. */
   events?: CrisisEvent[];
-  /** Zonas conocidas, para saber si la señal apunta a algún sitio real. */
+  /** Known zones, to know if signal points to a real place. */
   zones?: CrisisZone[];
-  /** Umbrales a medida. Lo que no venga usa el valor por defecto. */
+  /** Custom thresholds. Unspecified fields use defaults. */
   thresholds?: Partial<TriageThresholds>;
-  /** Minutos dentro de los cuales otra señal corrobora. Por defecto, 10. */
+  /** Minutes within which another signal corroborates. Defaults to 10. */
   fusionWindowMinutes?: number;
   /**
-   * Radio en unidades de mapa para aceptar corroboración de zonas vecinas.
-   * Por defecto 0: sólo cuenta la misma zona.
+   * Radius in map units to accept corroboration from neighboring zones.
+   * Defaults to 0: only the same zone counts.
    */
   nearbyZoneUnits?: number;
-  /** Instante de referencia. Fijarlo hace la evaluación reproducible. */
+  /** Reference timestamp. Fixing it makes assessment reproducible. */
   now?: number | string | Date;
 }
 
@@ -347,30 +338,29 @@ export function resolveThresholds(partial?: Partial<TriageThresholds>): TriageTh
 }
 
 // ---------------------------------------------------------------------------
-// Fusión de confianza
+// Confidence fusion
 // ---------------------------------------------------------------------------
 
 export interface FusionSignal {
   source: EventSource;
-  /** Probabilidad de que lo que afirma la señal sea cierto, sin contar la fuente. */
+  /** Probability that what the signal asserts is true, excluding source reliability. */
   probability: number;
-  /** Fiabilidad de la fuente. Si falta, se usa el valor por defecto. */
+  /** Source reliability. If omitted, default value is used. */
   reliability?: number;
 }
 
 export interface FusionOptions {
-  /** Peso de las señales repetidas de una misma fuente. 0 = sólo cuenta la mejor. */
+  /** Weight of repeated signals from the same source. 0 = only the best one counts. */
   sameSourceWeight?: number;
 }
 
 /**
- * Fusiona fuentes independientes: C = 1 − ∏(1 − p_i·r_i).
+ * Fuses independent sources: C = 1 - PROD(1 - p_i * r_i).
  *
- * Dos testigos independientes pesan más que uno, pero con rendimientos
- * decrecientes. Dos señales de la MISMA fuente no son independientes: dentro
- * de una fuente sólo la más fuerte cuenta entera y las demás entran con peso
- * `sameSourceWeight`, así que nunca suben la confianza como si fueran dos
- * testigos distintos.
+ * Two independent witnesses carry more weight than one, but with diminishing
+ * returns. Two signals from the SAME source are not independent: within a source,
+ * only the strongest counts fully and the others enter with weight
+ * `sameSourceWeight`, so they never inflate confidence like two distinct witnesses.
  */
 export function fuseConfidence(signals: FusionSignal[], options: FusionOptions = {}): number {
   if (!signals || signals.length === 0) return 0;
@@ -389,9 +379,9 @@ export function fuseConfidence(signals: FusionSignal[], options: FusionOptions =
   let complement = 1;
   for (const group of bySource.values()) {
     const sorted = [...group].sort((a, b) => b - a);
-    // La primera señal de la fuente cuenta entera; las siguientes, descontadas
-    // por correlación. Con sameSourceWeight = 0 repetir la misma fuente no
-    // aporta absolutamente nada.
+    // First signal from the source counts fully; subsequent ones are discounted
+    // for correlation. With sameSourceWeight = 0, repeating the same source adds
+    // absolutely nothing.
     let groupComplement = 1 - sorted[0];
     for (const evidence of sorted.slice(1)) {
       groupComplement *= 1 - sameSourceWeight * evidence;
@@ -403,19 +393,19 @@ export function fuseConfidence(signals: FusionSignal[], options: FusionOptions =
 }
 
 // ---------------------------------------------------------------------------
-// Fiabilidad aprendida de las fuentes
+// Learned source reliability
 // ---------------------------------------------------------------------------
 
 /**
- * Incorpora el desenlace de una señal a la fiabilidad de su fuente.
+ * Incorporates signal outcome into its source reliability.
  *
- * Mismo criterio que lib/learning.ts: mínimo de muestras antes de concluir
- * nada y movimiento acotado por observación. Un sistema que sobrerreacciona a
- * un solo error es peor que uno que no aprende, así que el primer bulo de una
- * fuente se anota pero no mueve su fiabilidad.
+ * Same criterion as lib/learning.ts: minimum samples before concluding
+ * anything and bounded movement per observation. A system that overreacts to
+ * a single mistake is worse than one that does not learn, so the first false report
+ * from a source is noted but does not shift its reliability.
  *
- * Devuelve una lista nueva: el estado se clona al servirse por la API y
- * conviene no depender de mutaciones en sitio.
+ * Returns a new list: state is cloned when served via the API and
+ * in-place mutation should be avoided.
  */
 export function updateSourceReliability(
   reliability: SourceReliability[],
@@ -432,8 +422,8 @@ export function updateSourceReliability(
   const observations = current.observations + 1;
   const confirmed = current.confirmed + (wasConfirmed ? 1 : 0);
 
-  // Arranque en frío: se acumula la observación, pero la fiabilidad no se mueve
-  // hasta tener muestras suficientes.
+  // Cold start: observation accumulates, but reliability does not shift
+  // until sufficient samples exist.
   let next = current.reliability;
   if (observations >= MIN_SOURCE_SAMPLES) {
     const observedRate = confirmed / observations;
@@ -457,34 +447,34 @@ export function updateSourceReliability(
   return list;
 }
 
-/** Una línea legible de por qué una fuente vale lo que vale. */
+/** A human-readable line explaining why a source has its current reliability. */
 export function explainSourceReliability(entry: SourceReliability): string {
   if (entry.observations < MIN_SOURCE_SAMPLES) {
-    return `${sourceLabel[entry.source]}: fiabilidad ${percent(entry.reliability)} de partida; ${entry.observations} de ${MIN_SOURCE_SAMPLES} muestras necesarias para ajustarla.`;
+    return `${sourceLabel[entry.source]}: baseline reliability ${percent(entry.reliability)}; ${entry.observations} of ${MIN_SOURCE_SAMPLES} samples needed to adjust.`;
   }
-  return `${sourceLabel[entry.source]}: fiabilidad ${percent(entry.reliability)} tras ${entry.confirmed} confirmaciones de ${entry.observations} señales resueltas.`;
+  return `${sourceLabel[entry.source]}: reliability ${percent(entry.reliability)} after ${entry.confirmed} confirmations across ${entry.observations} resolved signals.`;
 }
 
 // ---------------------------------------------------------------------------
-// Motor determinista
+// Deterministic engine
 // ---------------------------------------------------------------------------
 
 interface Supporter {
   event: CrisisEvent;
-  /** 1 si es del mismo punto; descontado si viene de una zona vecina. */
+  /** 1 if from the same location; discounted if from a neighboring zone. */
   weight: number;
 }
 
 interface Corroboration {
-  /** Señales vivas del mismo punto y tema, dentro de la ventana de fusión. */
+  /** Live signals at same location and topic, within fusion window. */
   supporting: Supporter[];
-  /** Señales del mismo punto y tema que ya se descartaron por falsas. */
+  /** Signals at same location and topic already discarded as false. */
   contradicting: CrisisEvent[];
 }
 
 /**
- * Distancia entre la zona de la señal y la de otra señal, en unidades de mapa.
- * null si alguna de las dos zonas no está en el mapa.
+ * Distance between signal zone and another signal's zone, in map units.
+ * null if either zone is not on the map.
  */
 function zoneDistance(zones: CrisisZone[], a: string | undefined, b: string): number | null {
   const from = zones.find((zone) => zone.id === a);
@@ -496,11 +486,11 @@ function zoneDistance(zones: CrisisZone[], a: string | undefined, b: string): nu
 }
 
 /**
- * Señales que hablan del mismo hecho: mismo tema, mismo punto (misma zona o,
- * si se abre el radio, una zona vecina) y dentro de la ventana de fusión.
+ * Signals reporting the same event: same topic, same location (same zone or,
+ * if radius is expanded, a neighboring zone) and within the fusion window.
  *
- * Las que ya se descartaron por falsas cuentan contradigan cuando contradigan:
- * un bulo desmentido hace media hora sigue siendo un bulo desmentido.
+ * Those already discarded as false count regardless of when discarded:
+ * a debunked rumor from half an hour ago is still a debunked rumor.
  */
 function gatherCorroboration(
   signal: TriageSignal,
@@ -535,7 +525,7 @@ function gatherCorroboration(
       continue;
     }
 
-    // Fuera de la ventana de fusión no es el mismo hecho, es otro momento.
+    // Outside the fusion window it is not the same event, but a different moment.
     if (ageInMinutes(event.createdAt, now) > windowMinutes) continue;
     supporting.push({ event, weight });
   }
@@ -543,7 +533,7 @@ function gatherCorroboration(
   return { supporting, contradicting };
 }
 
-/** Probabilidad de que lo contado sea cierto, antes de aplicar la fuente. */
+/** Probability that the claim is true, before applying source reliability. */
 function claimProbability(
   confidence: Confidence,
   occurrences: number,
@@ -551,12 +541,12 @@ function claimProbability(
 ): number {
   const base = claimByConfidence[confidence] ?? claimByConfidence.medium;
   const count = Math.max(1, Math.floor(occurrences || 1));
-  // Repetir refuerza con rendimientos decrecientes: el complemento se eleva a
-  // k = 1 + 0,5·ln(n). Un aviso repetido tres veces no vale el triple.
+  // Repeating reinforces with diminishing returns: complement is raised to
+  // k = 1 + 0.5*ln(n). A report repeated three times is not worth three times as much.
   const k = 1 + 0.5 * Math.log(count);
   const reinforced = 1 - Math.pow(1 - base, k);
-  // Cada señal ya descartada sobre lo mismo resta credibilidad, con suelo:
-  // que alguien se equivocara antes no prueba que esto sea falso.
+  // Each already discarded signal on the same topic subtracts credibility, with floor:
+  // someone having been mistaken before does not prove this is false.
   const penalty = Math.max(0.4, Math.pow(0.7, contradictions));
   return clamp(reinforced * penalty);
 }
@@ -574,8 +564,7 @@ function relevanceProbability(
     if (zone.status === "active" || zone.status === "critical") value += 0.05;
     else if (zone.status === "watch") value += 0.02;
   } else if (zonesKnown) {
-    // Apunta a una zona que no existe en el mapa: puede ser relevante, pero
-    // no sabemos ni dónde ponerla.
+    // Points to a zone not on the map: could be relevant, but unknown where to place it.
     value -= 0.15;
   }
 
@@ -601,7 +590,7 @@ function urgencyEstimate(signal: TriageSignal, zone: CrisisZone | undefined, now
     }
   }
 
-  // Lo que sabías hace media hora ya no urge igual, pero nunca urge cero.
+  // What was known half an hour ago is less urgent, but urgency never drops to zero.
   const freshness = Math.max(0.6, Math.pow(0.5, ageInMinutes(signal.createdAt, now) / 45));
   return clamp(round(value * freshness));
 }
@@ -618,41 +607,43 @@ function buildRationale(input: {
   thresholds: TriageThresholds;
 }): string {
   const { signal, decision, confidence, pRelevant, reliability, corroboration } = input;
-  const source = sourceLabel[signal.source ?? "happyrobot"] ?? "fuente desconocida";
+  const source = sourceLabel[signal.source ?? "happyrobot"] ?? "unknown source";
   const confianza = confidenceLabel[signal.confidence ?? "medium"];
   const gravedad = severityLabel[signal.severity ?? "medium"];
 
   const partes: string[] = [
-    `${source} (fiabilidad ${percent(reliability)}), gravedad ${gravedad} y confianza declarada ${confianza}`,
+    `${source} (reliability ${percent(reliability)}), ${gravedad} severity and ${confianza} reported confidence`,
   ];
-  if ((signal.occurrences ?? 1) > 1) partes.push(`${signal.occurrences} avisos equivalentes`);
+  if ((signal.occurrences ?? 1) > 1) partes.push(`${signal.occurrences} equivalent reports`);
   if (corroboration.supporting.length > 0) {
-    partes.push(`${corroboration.supporting.length} señal(es) coherente(s) en la misma zona`);
+    partes.push(`${corroboration.supporting.length} consistent signal(s) in the same zone`);
   }
   if (corroboration.contradicting.length > 0) {
-    partes.push(`${corroboration.contradicting.length} señal(es) ya descartada(s) sobre lo mismo`);
+    partes.push(
+      `${corroboration.contradicting.length} signal(s) already discarded on the same matter`,
+    );
   }
-  if (signal.confirmed === true) partes.push("señal ya confirmada");
-  if (signal.confirmed === false) partes.push("señal ya descartada por un operador");
+  if (signal.confirmed === true) partes.push("signal already confirmed");
+  if (signal.confirmed === false) partes.push("signal already discarded by an operator");
 
   const cabecera = partes.join("; ");
 
   if (decision === "act") {
-    return `${cabecera}. Confianza fusionada ${percent(confidence)} sobre el umbral de ${percent(input.actThreshold)}: se actúa.`;
+    return `${cabecera}. Fused confidence ${percent(confidence)} above ${percent(input.actThreshold)} threshold: acting.`;
   }
   if (decision === "verify") {
     if (pRelevant < input.thresholds.relevanceForAct && confidence >= input.actThreshold) {
-      return `${cabecera}. Creíble (${percent(confidence)}) pero con relevancia ${percent(pRelevant)}: se verifica antes de mover recursos.`;
+      return `${cabecera}. Credible (${percent(confidence)}) but relevance ${percent(pRelevant)}: verifying before moving resources.`;
     }
-    return `${cabecera}. Confianza fusionada ${percent(confidence)}, entre ${percent(input.verifyThreshold)} y ${percent(input.actThreshold)}: no se espera, se verifica llamando.`;
+    return `${cabecera}. Fused confidence ${percent(confidence)} between ${percent(input.verifyThreshold)} and ${percent(input.actThreshold)}: verifying via call.`;
   }
   if (pRelevant < input.thresholds.relevanceForVerify) {
-    return `${cabecera}. Relevancia ${percent(pRelevant)} por debajo del mínimo para molestar a nadie: se descarta.`;
+    return `${cabecera}. Relevance below threshold: discarded.`;
   }
-  return `${cabecera}. Confianza fusionada ${percent(confidence)} por debajo del umbral de ${percent(input.verifyThreshold)}: se descarta.`;
+  return `${cabecera}. Fused confidence ${percent(confidence)} below ${percent(input.verifyThreshold)} threshold: discarded.`;
 }
 
-/** Evaluación determinista de una señal. Mismas entradas, misma salida. */
+/** Deterministic assessment of a signal. Same inputs, same output. */
 function assessDeterministic(signal: TriageSignal, context: TriageContext = {}): SignalAssessment {
   const thresholds = resolveThresholds(context.thresholds);
   const now = resolveNow(context.now);
@@ -663,7 +654,7 @@ function assessDeterministic(signal: TriageSignal, context: TriageContext = {}):
   const zone = zones.find((candidate) => candidate.id === signal.zoneId);
   const corroboration = gatherCorroboration(signal, context, now);
 
-  // 1. ¿Es cierto lo que cuenta?
+  // 1. Is what it reports true?
   const pClaim = claimProbability(
     signal.confidence ?? "medium",
     signal.occurrences ?? 1,
@@ -676,14 +667,14 @@ function assessDeterministic(signal: TriageSignal, context: TriageContext = {}):
         ? 0.03
         : clamp(pClaim * reliability);
 
-  // 2. ¿Importa para esta crisis?
+  // 2. Does it matter for this crisis?
   const pRelevant = relevanceProbability(signal, zone, zones.length > 0, corroboration);
 
-  // 3. ¿Corre prisa?
+  // 3. Is it urgent?
   const urgency = urgencyEstimate(signal, zone, now);
 
-  // 4. Confianza fusionada: esta señal más las que la corroboran, agrupadas por
-  //    fuente para no contar dos veces al mismo testigo.
+  // 4. Fused confidence: this signal plus corroborating ones, grouped by
+  //    source to avoid double-counting the same witness.
   const fusion: FusionSignal[] = [{ source, probability: pClaim, reliability }];
   for (const { event, weight } of corroboration.supporting) {
     fusion.push({
@@ -696,8 +687,8 @@ function assessDeterministic(signal: TriageSignal, context: TriageContext = {}):
     signal.confirmed === true ? 0.97 : signal.confirmed === false ? 0.03 : fuseConfidence(fusion);
   const confidence = round(clamp(fused));
 
-  // 5. Decisión. El umbral baja con la urgencia: equivocarse callando ante una
-  //    señal crítica cuesta más que equivocarse llamando.
+  // 5. Decision. Threshold drops with urgency: erring by staying silent
+  //    on a critical signal costs more than erring by calling.
   const actThreshold = round(clamp(thresholds.act - thresholds.urgencyRelief * urgency, 0.2, 1));
   const verifyThreshold = round(
     clamp(thresholds.verify - thresholds.verifyUrgencyRelief * urgency, 0.1, 1),
@@ -736,23 +727,23 @@ function assessDeterministic(signal: TriageSignal, context: TriageContext = {}):
 }
 
 // ---------------------------------------------------------------------------
-// Evaluadores intercambiables
+// Swappable assessors
 // ---------------------------------------------------------------------------
 
 /**
- * Contrato de un evaluador de señales. El motor determinista lo implementa y
- * es el respaldo permanente; un clasificador externo (Jev/TypeSafe) puede
- * implementarlo el día que haya acceso sin tocar nada más del sistema.
+ * Contract for a signal assessor. The deterministic engine implements it
+ * and serves as permanent fallback; an external classifier (Jev/TypeSafe) can
+ * implement it when access becomes available without touching the rest of the system.
  */
 export interface SignalAssessor {
-  /** Quién firma la evaluación. Se copia tal cual en `assessment.assessedBy`. */
+  /** Who signs the assessment. Copied as-is into `assessment.assessedBy`. */
   readonly name: Assessor;
-  /** Si devuelve false, no se usa y se cae al motor determinista. */
+  /** If returning false, skipped and falls back to deterministic engine. */
   available(): boolean;
   assess(signal: TriageSignal, context?: TriageContext): SignalAssessment;
 }
 
-/** Motor determinista: siempre disponible, es el predeterminado. */
+/** Deterministic engine: always available, default. */
 export const deterministicAssessor: SignalAssessor = {
   name: "deterministic",
   available: () => true,
@@ -760,45 +751,44 @@ export const deterministicAssessor: SignalAssessor = {
 };
 
 /**
- * Hueco para el clasificador externo. Mientras Jev esté en acceso anticipado
- * no hay cliente que llamar, así que este evaluador se declara NO disponible y
- * el sistema funciona exactamente igual sin él. No añade dependencias ni hace
- * llamadas de red.
+ * Placeholder for external classifier. While Jev is in early access,
+ * there is no client to call, so this assessor reports NOT available and
+ * the system works identically without it. Adds no dependencies or network calls.
  *
- * El día que haya acceso: implementar `SignalAssessor` en un módulo aparte,
- * registrarlo con `registerAssessor(...)` en el arranque y poner
- * TRIAGE_ASSESSOR=jev. Si el cliente falla o tarda, basta con que `available()`
- * devuelva false para volver al determinista sin tocar el store.
+ * When access is available: implement `SignalAssessor` in a separate module,
+ * register with `registerAssessor(...)` at startup, and set TRIAGE_ASSESSOR=jev.
+ * If the client fails or times out, returning false from `available()` falls
+ * back to deterministic without touching the store.
  */
 export const externalAssessorPlaceholder: SignalAssessor = {
   name: "jev",
   available: () => false,
   assess: (signal, context) => {
-    // Nunca miente sobre quién evaluó: sin cliente externo, la evaluación es
-    // la determinista y así se firma.
+    // Never lie about who assessed: without external client, assessment is
+    // deterministic and signed as such.
     const assessment = assessDeterministic(signal, context);
     return {
       ...assessment,
-      rationale: `Evaluador externo no disponible; respaldo determinista. ${assessment.rationale}`,
+      rationale: `External assessor unavailable; deterministic fallback. ${assessment.rationale}`,
     };
   },
 };
 
 let registeredAssessor: SignalAssessor | null = null;
 
-/** Enchufa (o quita, con null) el evaluador externo. */
+/** Connects (or disconnects, with null) the external assessor. */
 export function registerAssessor(assessor: SignalAssessor | null): void {
   registeredAssessor = assessor;
 }
 
-/** Nombre del evaluador pedido por entorno. Por defecto, el determinista. */
+/** Assessor name requested via environment. Defaults to deterministic. */
 export function requestedAssessorName(): string {
   return (process.env.TRIAGE_ASSESSOR ?? "deterministic").trim().toLowerCase();
 }
 
 /**
- * Evaluador efectivo: el registrado sólo si el entorno lo pide Y se declara
- * disponible. En cualquier otro caso, el determinista.
+ * Effective assessor: registered one only if requested by env AND declared
+ * available. Otherwise, deterministic.
  */
 export function selectAssessor(): SignalAssessor {
   const requested = requestedAssessorName();
@@ -813,9 +803,8 @@ export function selectAssessor(): SignalAssessor {
 }
 
 /**
- * Evalúa una señal y devuelve su triaje calibrado. Si el evaluador externo
- * falla por cualquier motivo, se cae al determinista: el triaje nunca deja de
- * responder.
+ * Assesses a signal and returns calibrated triage. If external assessor
+ * fails for any reason, falls back to deterministic: triage never stops responding.
  */
 export function assessSignal(signal: TriageSignal, context: TriageContext = {}): SignalAssessment {
   const assessor = selectAssessor();
@@ -826,35 +815,35 @@ export function assessSignal(signal: TriageSignal, context: TriageContext = {}):
     const fallback = assessDeterministic(signal, context);
     return {
       ...fallback,
-      rationale: `El evaluador ${assessor.name} falló; respaldo determinista. ${fallback.rationale}`,
+      rationale: `Assessor ${assessor.name} failed; deterministic fallback. ${fallback.rationale}`,
     };
   }
 }
 
 // ---------------------------------------------------------------------------
-// Petición de verificación
+// Verification request
 // ---------------------------------------------------------------------------
 
-/** Qué duda concreta tiene que resolver la llamada de verificación. */
+/** Specific doubt to resolve during verification call. */
 export type VerificationDoubt = "veracidad" | "relevancia" | "alcance";
 
 export interface VerificationRequest {
   eventId: string;
   zoneId: string;
-  /** Duda dominante: es lo que decide qué se pregunta. */
+  /** Dominant doubt: decides what is asked. */
   doubt: VerificationDoubt;
-  /** Rol al que se pregunta. */
+  /** Role being questioned. */
   role: ContactRole;
-  /** Contacto concreto, si se pasaron contactos en el contexto. */
+  /** Specific contact, if contacts were passed in context. */
   contactId: string | null;
-  /** Destinatario legible, listo para `Action.target`. */
+  /** Human-readable recipient, ready for `Action.target`. */
   target: string;
   channel: ActionChannel;
-  /** Dos o tres preguntas cerradas y concretas. */
+  /** Two or three concise, closed questions. */
   questions: string[];
-  /** Objetivo redactado, listo para `Action.objective`. */
+  /** Drafted objective, ready for `Action.objective`. */
   objective: string;
-  /** Motivo para `Action.reason`. */
+  /** Reason for `Action.reason`. */
   reason: string;
 }
 
@@ -864,11 +853,10 @@ export interface VerificationContext {
 }
 
 /**
- * Qué hay que preguntar y a quién para resolver la duda concreta de una señal.
+ * What to ask and whom to resolve the specific doubt about a signal.
  *
- * No es un cuestionario: dos o tres preguntas cerradas que se pueden responder
- * por teléfono en treinta segundos y que cambian la decisión según la
- * respuesta.
+ * Not a questionnaire: two or three closed questions that can be answered
+ * by phone in thirty seconds and alter the decision depending on the response.
  */
 export function buildVerificationRequest(
   event: CrisisEvent,
@@ -882,10 +870,9 @@ export function buildVerificationRequest(
     ? selectContactByRole(context.contacts, event.zoneId, role)
     : null;
 
-  // La duda dominante es la pata más floja: si dudamos de que sea cierto,
-  // preguntamos por los hechos; si dudamos de que importe, preguntamos por el
-  // encaje; si ambas van bien pero la señal es grave, preguntamos por el
-  // alcance para dimensionar la respuesta.
+  // Dominant doubt is the weakest pillar: doubt truth -> ask about facts;
+  // doubt relevance -> ask about fit; if both are solid but signal is severe,
+  // ask about scope to dimension the response.
   const doubt: VerificationDoubt =
     assessment.pTruthful <= assessment.pRelevant
       ? "veracidad"
@@ -897,33 +884,33 @@ export function buildVerificationRequest(
   const questions: string[] = [];
 
   if (doubt === "veracidad") {
-    questions.push(`¿Está viendo usted ahora mismo ${hecho.toLowerCase()} en ${zoneName}? (sí/no)`);
+    questions.push(`Are you currently witnessing ${hecho.toLowerCase()} in ${zoneName}? (yes/no)`);
     questions.push(
-      "¿Lo ha comprobado en persona o se lo han contado? (en persona/me lo han contado)",
+      "Did you verify this in person or was it reported to you? (in person/reported to me)",
     );
   } else if (doubt === "relevancia") {
     questions.push(
-      `¿Lo que ocurre está dentro de ${zoneName} o en otra zona? (esta zona/otra zona)`,
+      `Is this incident within ${zoneName} or in another zone? (this zone/other zone)`,
     );
-    questions.push(`¿Tiene que ver con ${event.category.replace(/-/g, " ")}? (sí/no)`);
+    questions.push(`Is it related to ${event.category.replace(/-/g, " ")}? (yes/no)`);
   } else {
-    questions.push(`¿Sigue activo ${hecho.toLowerCase()} en ${zoneName}? (sí/no)`);
+    questions.push(`Is ${hecho.toLowerCase()} still active in ${zoneName}? (yes/no)`);
   }
 
-  // Tercera pregunta: dimensionar o cronometrar, según lo que aún no sabemos.
+  // Third question: sizing or timing, depending on what remains unknown.
   if (event.severity === "high" || event.severity === "critical") {
-    questions.push("¿Cuántas personas están afectadas ahora mismo? (número aproximado)");
+    questions.push("How many people are currently affected? (approximate number)");
   } else if (assessment.urgency >= 0.5) {
-    questions.push("¿Necesita intervención en los próximos 15 minutos? (sí/no)");
+    questions.push("Is intervention needed within the next 15 minutes? (yes/no)");
   }
 
   const channel: ActionChannel = assessment.urgency >= 0.5 ? "call" : "sms";
-  const target = contact?.name ?? `Responsable de ${roleLabel[role]} en ${zoneName}`;
-  const canal = channel === "call" ? "Llamar" : "Escribir";
+  const target = contact?.name ?? `${roleLabel[role]} lead in ${zoneName}`;
+  const canal = channel === "call" ? "Call" : "Text";
 
-  const objective = `${canal} a ${target} para verificar "${event.title}" en ${zoneName}: ${questions.join(" ")}`;
+  const objective = `${canal} ${target} to verify "${event.title}" in ${zoneName}: ${questions.join(" ")}`;
 
-  const reason = `Triaje intermedio: confianza ${percent(assessment.confidence)}, relevancia ${percent(assessment.pRelevant)}. Verificar la ${doubt} antes de comprometer recursos.`;
+  const reason = `Intermediate triage: confidence ${percent(assessment.confidence)}, relevance ${percent(assessment.pRelevant)}. Verify ${doubt} before committing resources.`;
 
   return {
     eventId: event.id,
@@ -939,9 +926,9 @@ export function buildVerificationRequest(
   };
 }
 
-/** Atajo legible para la UI: etiqueta de la decisión. */
+/** UI shortcut: decision label. */
 export const decisionLabel: Record<TriageDecision, string> = {
-  act: "Actuar",
-  verify: "Verificar",
-  discard: "Descartar",
+  act: "Act",
+  verify: "Verify",
+  discard: "Discard",
 };

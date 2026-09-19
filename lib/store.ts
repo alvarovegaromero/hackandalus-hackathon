@@ -1,7 +1,7 @@
-// PROPIETARIO: coordinacion (no lo editan los agentes de modulo).
-// Orquestador del estado de crisis. Mantiene el estado y delega las decisiones
-// en los modulos especializados: priority, resources, contacts, escalation,
-// history, learning, persistence y scenario.
+// OWNER: coordination (not edited by module agents).
+// Crisis state orchestrator. Maintains state and delegates decisions
+// to specialized modules: priority, resources, contacts, escalation,
+// history, learning, persistence, and scenario.
 
 import { selectChannel, selectContact } from "./contacts";
 import { applyEventToWorld } from "./assumptions";
@@ -57,7 +57,7 @@ declare global {
   var crisisState: MutableState | undefined;
 }
 
-/** Segundos que una accion puede estar en curso antes de considerarse atascada. */
+/** Seconds an action can be in progress before being considered stalled. */
 const STALL_SECONDS = 90;
 
 function clone<T>(value: T): T {
@@ -73,7 +73,7 @@ function nowIso() {
 }
 
 // ---------------------------------------------------------------------------
-// Ciclo de vida del estado
+// State lifecycle
 // ---------------------------------------------------------------------------
 
 function createInitialState(): MutableState {
@@ -116,9 +116,9 @@ function createInitialState(): MutableState {
 }
 
 /**
- * Un estado restaurado de disco puede venir de una versión anterior del
- * esquema y no traer los campos nuevos. Rellenarlos aquí evita que el resto
- * del sistema tenga que defenderse de undefined en cada lectura.
+ * A state restored from disk might come from an earlier schema version
+ * and lack new fields. Populating them here avoids the rest
+ * of the system having to defend against undefined on every read.
  */
 function withDefaults(restored: SituationState): SituationState {
   return {
@@ -161,12 +161,12 @@ function persist() {
   try {
     saveState(getSituation());
   } catch {
-    // La persistencia nunca puede tumbar la demo.
+    // Persistence must never crash the demo.
   }
 }
 
 // ---------------------------------------------------------------------------
-// Auditoria y replanificacion
+// Audit and replanning
 // ---------------------------------------------------------------------------
 
 function audit(actor: Actor, kind: string, summary: string, ref?: string) {
@@ -209,7 +209,7 @@ function replan(trigger: string, invalidatedActionIds: string[] = []) {
 }
 
 // ---------------------------------------------------------------------------
-// Vigilante de acciones atascadas
+// Watchdog for stalled actions
 // ---------------------------------------------------------------------------
 
 function sweepStalledActions() {
@@ -237,7 +237,7 @@ function sweepStalledActions() {
 }
 
 // ---------------------------------------------------------------------------
-// Senales
+// Signals
 // ---------------------------------------------------------------------------
 
 function defaultZoneId() {
@@ -276,15 +276,15 @@ const riskDeltaBySeverity: Record<CrisisEvent["severity"], number> = {
 };
 
 /**
- * Aplica el efecto de una señal sobre su zona y anota en la propia señal qué
- * cambio provocó, de forma que descartarla pueda revertirlo exactamente.
+ * Applies signal effect to its zone and records on the signal itself what
+ * change was caused, so that discarding it can revert it exactly.
  *
- * INVARIANTE COMPARTIDA CON lib/priority.ts. Esta función sube zone.riskScore
- * y puede añadir una necesidad. El motor de prioridad DESCUENTA esos mismos
- * appliedRiskDelta y appliedNeed para volver a contarlos con credibilidad y
- * decaimiento temporal propios. Si cambias cómo se calcula o se anota el
- * delta, el motor contará la señal dos veces y ninguna señal envejecerá.
- * Cualquier cambio aquí exige revisar liveEventsForZone en lib/priority.ts.
+ * SHARED INVARIANT WITH lib/priority.ts. This function increases zone.riskScore
+ * and may add a need. The priority engine DISCOUNTS those same
+ * appliedRiskDelta and appliedNeed to recount them with its own credibility and
+ * time decay. If you change how delta is calculated or recorded,
+ * the engine will double-count the signal and no signal will age.
+ * Any change here requires reviewing liveEventsForZone in lib/priority.ts.
  */
 function applyEventToZone(zone: CrisisZone, event: CrisisEvent): CrisisZone {
   const statusBySeverity: Record<CrisisEvent["severity"], CrisisZone["status"]> = {
@@ -321,17 +321,17 @@ function applyEventToWorldState(event: CrisisEvent) {
   return true;
 }
 
-/** Necesidad que una señal implica para su zona. */
+/** Need that a signal implies for its zone. */
 function needOfEvent(event: CrisisEvent) {
   return event.category.replace(/-/g, " ");
 }
 
-/** Deshace el efecto de una señal descartada sobre su zona. */
+/** Reverts the effect of a discarded signal on its zone. */
 function revertEventFromZone(zone: CrisisZone, event: CrisisEvent): CrisisZone {
-  // La necesidad solo la registra la PRIMERA señal que la introduce, así que
-  // no basta con mirar appliedNeed de las demás: hay que comprobar si alguna
-  // otra señal viva de la zona implica esa misma necesidad. Si no, descartar
-  // la primera borraría una necesidad que otra señal sigue pidiendo.
+  // The need is only recorded by the FIRST signal that introduces it, so
+  // checking appliedNeed of others is not enough: we must check if any
+  // other live signal in the zone implies that same need. Otherwise, discarding
+  // the first would delete a need that another signal is still requesting.
   const stillNeeded = state().events.some(
     (other) =>
       other.id !== event.id &&
@@ -420,7 +420,7 @@ function proposeActionForEvent(event: CrisisEvent) {
 }
 
 // ---------------------------------------------------------------------------
-// API publica del store
+// Public store API
 // ---------------------------------------------------------------------------
 
 export function getSituation(): SituationState {
@@ -448,27 +448,27 @@ export function getSituation(): SituationState {
   });
 }
 
-/** Lectura viva: avanza el escenario y barre acciones atascadas antes de leer. */
+/** Live read: advances the scenario and sweeps stalled actions before reading. */
 export function pollSituation(): SituationState {
   tickScenario();
   sweepStalledActions();
   return getSituation();
 }
 
-/** Cierra la ejecución en curso y deja su lección disponible para la siguiente. */
+/** Closes the ongoing run and leaves its lesson available for the next one. */
 function closeRun() {
   if (!globalThis.crisisState) return;
   try {
     saveRun(buildRunRecord(getSituation()));
     saveWeights(weightsFromRuns(loadRuns()));
   } catch {
-    // Aprender es opcional; nunca puede impedir reiniciar la demo.
+    // Learning is optional; it must never prevent resetting the demo.
   }
 }
 
 export function resetSituation() {
-  // Se cierra ANTES de sustituir el estado: reiniciar es lo que más se pulsa
-  // en una demo, y sin esto se perdería el aprendizaje de toda la partida.
+  // Closed BEFORE replacing state: reset is the most frequently clicked
+  // action in a demo, and without this the learning from the whole run would be lost.
   closeRun();
   globalThis.crisisState = createInitialState();
   audit("operator", "reset", "La demo se reinició al estado inicial.");
@@ -528,8 +528,8 @@ export function markEvent(eventId: string, confirmed: boolean, actor: Actor = "o
   event.confirmed = confirmed;
 
   if (!confirmed) {
-    // Descartar una senal deshace su efecto sobre la zona y cancela las
-    // acciones que solo existian por ella.
+    // Discarding a signal reverts its effect on the zone and cancels
+    // actions that only existed because of it.
     current.zones = current.zones.map((zone) =>
       zone.id === event.zoneId ? revertEventFromZone(zone, event) : zone,
     );
@@ -609,9 +609,9 @@ export async function approveAction(actionId: string, actor: Actor = "operator")
   action.stalledAfter = new Date(Date.now() + STALL_SECONDS * 1000).toISOString();
   action.idempotencyKey = `${action.id}:${action.attempt}`;
 
-  // Si el recurso ya no está disponible hay que parar AQUÍ, antes de lanzar la
-  // llamada externa: de lo contrario se avisaría a alguien de que va en camino
-  // un recurso que no existe, y la acción acabaría marcada como completada.
+  // If the resource is no longer available, stop HERE before dispatching
+  // external call: otherwise someone would be notified that a non-existent
+  // resource is en route, and the action would end up marked as completed.
   if (action.resourceId) {
     const asignado = assignResource(
       current.resources,
@@ -645,8 +645,8 @@ export async function approveAction(actionId: string, actor: Actor = "operator")
       current.contacts.find((candidate) => candidate.id === action.contactId) ?? null;
     const result = await executeHappyRobotAction(action, contacto);
 
-    // El operador puede haber cancelado o reintentado mientras la llamada
-    // estaba en vuelo: en ese caso la respuesta tardia no puede pisar el estado.
+    // Operator may have cancelled or retried while call was in flight:
+    // in that case late response must not overwrite state.
     const settled = current.actions.find((candidate) => candidate.id === actionId);
     if (!settled || settled.attempt !== attemptAtDispatch || settled.status !== "running") {
       return settled ?? action;
@@ -730,9 +730,9 @@ export function retryAction(actionId: string, actor: Actor = "operator") {
   const action = current.actions.find((candidate) => candidate.id === actionId);
   if (!action) throw new Error("Action not found");
 
-  // Cada reintento es un intento nuevo con su propia clave de idempotencia,
-  // de forma que HappyRobot no deduplique un reintento legitimo contra el
-  // intento anterior.
+  // Each retry is a new attempt with its own idempotency key,
+  // preventing HappyRobot from deduplicating a legitimate retry against
+  // the previous attempt.
   action.attempt += 1;
   action.idempotencyKey = `${action.id}:${action.attempt}`;
   action.status = "pending";
@@ -765,7 +765,7 @@ export function updateResource(
 }
 
 // ---------------------------------------------------------------------------
-// Escenario
+// Scenario
 // ---------------------------------------------------------------------------
 
 export function startScenarioRun() {
@@ -784,7 +784,7 @@ export function stopScenarioRun() {
   return getSituation();
 }
 
-/** Aplica los beats del guion que ya tocaban. La UI lo dispara al refrescar. */
+/** Applies overdue script beats. The UI triggers this on refresh. */
 export function tickScenario() {
   const current = state();
   const due = dueBeats(current.scenario, Date.now());
@@ -797,15 +797,15 @@ export function tickScenario() {
 }
 
 // ---------------------------------------------------------------------------
-// Inyectores manuales de demo
+// Manual demo injectors
 // ---------------------------------------------------------------------------
 
 export function injectDemo(kind: DemoKind, actor: Actor = "operator") {
   const current = state();
 
   if (kind === "resource-down") {
-    // Tumbar un recurso solo es interesante si algo depende de el: se elige
-    // primero uno con acciones vivas, y solo si no hay ninguno se coge otro.
+    // Taking down a resource is only interesting if something depends on it:
+    // prefer one with live actions, and only if none pick another.
     const busyIds = new Set(
       current.actions
         .filter((action) => ["pending", "approved", "running"].includes(action.status))
@@ -847,8 +847,8 @@ export function injectDemo(kind: DemoKind, actor: Actor = "operator") {
       if (!action) continue;
 
       if (!move.toResourceId) {
-        // Sin sustituto posible. Se deja visible por qué esa zona espera, en
-        // lugar de que la acción se quede bloqueada sin explicación.
+        // No possible replacement. Keep visible why that zone is waiting,
+        // rather than the action staying blocked without explanation.
         action.error = move.reason;
         action.updatedAt = nowIso();
         continue;
@@ -857,8 +857,8 @@ export function injectDemo(kind: DemoKind, actor: Actor = "operator") {
       action.resourceId = move.toResourceId;
       action.status = "pending";
       action.error = undefined;
-      // El motivo anterior hablaba del recurso caído, así que se sustituye en
-      // lugar de concatenarse: si no, el texto se contradice a sí mismo.
+      // The previous reason spoke about the downed resource, so it is replaced
+      // instead of concatenated: otherwise text contradicts itself.
       action.reason = move.reason;
       action.updatedAt = nowIso();
     }
@@ -900,8 +900,8 @@ export function injectDemo(kind: DemoKind, actor: Actor = "operator") {
   }
 
   if (kind === "integration-failure") {
-    // Solo tiene sentido tumbar una accion que este realmente en vuelo o a la
-    // espera; marcar como fallida una ya completada seria mentir.
+    // Only makes sense to take down an action that is actually in flight or
+    // waiting; marking an already completed one as failed would be dishonest.
     const action =
       current.actions.find((candidate) => candidate.status === "running") ??
       current.actions.find((candidate) => ["approved", "pending"].includes(candidate.status));

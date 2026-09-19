@@ -1,64 +1,64 @@
-// PROPIETARIO: agente del escenario que avanza solo.
-// Motor del guion: hace que la situacion cambie sin que nadie pulse botones.
+// OWNER: self-advancing scenario agent.
+// Script engine: makes the situation evolve without anyone pressing buttons.
 //
-// Decisiones de diseno (documentadas porque condicionan la demo):
+// Design decisions (documented because they govern the demo):
 //
-// 1. RELOJ DE GUION, NO CONTADOR DE TICKS. El avance se calcula a partir del
-//    tiempo real transcurrido, no de cuantas veces se ha sondeado. Sondear mas
-//    a menudo no acelera la crisis y sondear poco no la congela: al volver a
-//    mirar, el reloj ya esta donde toca.
-// 2. COMO MUCHO UN BEAT POR TICK. Si nadie sondea durante un minuto, la version
-//    anterior disparaba de golpe todos los beats atrasados: seis cambios de
-//    mundo en el mismo instante, un diff de plan ilegible y un registro de
-//    auditoria que parece un error. Ahora se drena de uno en uno.
-// 3. LOS BEATS VIEJOS SE OMITEN, NO SE REPRODUCEN. Un beat describe el estado
-//    del mundo en un momento; si han pasado mas de STALE_AFTER_SECONDS de guion
-//    y ademas hay un beat posterior ya vencido, ese beat antiguo esta superado:
-//    se marca como omitido en runtime.skippedBeatIds (queda trazado, no se
-//    borra) en lugar de reproducir historia pasada. El beat mas reciente
-//    vencido nunca se omite: el sistema salta al presente de la crisis.
-// 4. PAUSA REAL. Parar conserva los segundos de guion consumidos; arrancar de
-//    nuevo reanuda donde estaba en vez de volver a cero. Para empezar de cero
-//    hay que pedirlo explicitamente (restart) o cambiar de guion.
-// 5. VELOCIDAD. Un multiplicador permite ensayar a 4x y presentar a 1x sin
-//    tocar el guion. Al cambiarlo se rebasa el reloj para no perder ni regalar
-//    tiempo ya consumido.
+// 1. SCRIPT CLOCK, NOT TICK COUNTER. Progress is calculated from
+//    elapsed real time, not from how many times it has been polled. Polling more
+//    often does not accelerate the crisis and polling less does not freeze it:
+//    upon checking again, the clock is already where it belongs.
+// 2. AT MOST ONE BEAT PER TICK. If no one polls for a minute, the previous
+//    version fired all overdue beats at once: six world changes
+//    in the same instant, an unreadable plan diff, and an audit log
+//    that looks like an error. Now it drains one by one.
+// 3. OLD BEATS ARE SKIPPED, NOT REPLAYED. A beat describes the state
+//    of the world at a given time; if more than STALE_AFTER_SECONDS of script time
+//    have passed and there is a subsequent overdue beat, that older beat is superseded:
+//    it is marked as skipped in runtime.skippedBeatIds (tracked, not
+//    deleted) instead of replaying past history. The most recent
+//    overdue beat is never skipped: the system jumps to the crisis present.
+// 4. REAL PAUSE. Stopping preserves consumed script seconds; starting
+//    again resumes where it was instead of returning to zero. To start from scratch,
+//    it must be explicitly requested (restart) or switch scripts.
+// 5. SPEED. A multiplier allows rehearsing at 4x and presenting at 1x without
+//    touching the script. Changing it rebases the clock so as not to lose or gift
+//    time already consumed.
 //
-// 6. RELOJ VISIBLE COHERENTE. La interfaz pinta el cronometro como
-//    (ahora - scenario.startedAt), asi que startedAt se mantiene como un inicio
-//    *virtual*: el instante en que habria arrancado un guion sin pausas para
-//    estar donde esta. El arranque real queda en runtime.startedAtReal.
+// 6. COHERENT VISIBLE CLOCK. The UI renders the timer as
+//    (now - scenario.startedAt), so startedAt is maintained as a *virtual*
+//    start: the instant at which a script would have started without pauses
+//    to be where it is now. The real start remains in runtime.startedAtReal.
 //
-// El tipo ScenarioState vive en lib/types.ts y no se puede tocar, asi que el
-// estado extra viaja en una unica clave `runtime` adosada al objeto. Sobrevive
-// al clonado JSON del store, a la persistencia y llega a la UI.
+// The ScenarioState type lives in lib/types.ts and cannot be modified, so extra
+// state travels in a single `runtime` key attached to the object. It survives
+// JSON cloning by the store, persistence, and reaches the UI.
 
 import { seedScenarioBeats } from "./seed";
 import type { ScenarioBeat, ScenarioState } from "./types";
 
 // ---------------------------------------------------------------------------
-// Parametros del motor
+// Engine parameters
 // ---------------------------------------------------------------------------
 
-/** Nunca se disparan dos beats en el mismo tick: la historia se cuenta en orden. */
+/** Two beats are never fired in the same tick: the story is told in order. */
 const MAX_BEATS_PER_TICK = 1;
 
 /**
- * Segundos de guion que puede acumular un beat vencido antes de considerarse
- * superado por otro posterior. Con beats separados 35 s, un sondeo normal
- * (cada 2-5 s) jamas omite nada.
+ * Script seconds an overdue beat can accumulate before being considered
+ * superseded by a subsequent one. With beats separated by 35s, normal polling
+ * (every 2-5s) never skips anything.
  */
 const STALE_AFTER_SECONDS = 60;
 
-/** Limites del multiplicador de velocidad. */
+/** Speed multiplier limits. */
 export const MIN_SPEED = 0.25;
 export const MAX_SPEED = 10;
 
-/** Cadencia por defecto del latido de servidor. */
+/** Default server heartbeat cadence. */
 export const DEFAULT_HEARTBEAT_MS = 5000;
 
 // ---------------------------------------------------------------------------
-// Guiones disponibles
+// Available scripts
 // ---------------------------------------------------------------------------
 
 export interface ScenarioScript {
@@ -69,8 +69,8 @@ export interface ScenarioScript {
 }
 
 /**
- * Guion por defecto: incendio en Sierra Morena. Los beats viven en lib/seed.ts
- * (fichero de otro modulo) y se respetan tal cual.
+ * Default script: wildfire in Sierra Morena. Beats live in lib/seed.ts
+ * (another module's file) and are respected as-is.
  */
 const wildfireScript: ScenarioScript = {
   id: "wildfire-andalucia",
@@ -80,7 +80,7 @@ const wildfireScript: ScenarioScript = {
   beats: seedScenarioBeats,
 };
 
-/** Guion alternativo: apagon en cascada sobre el valle del Guadalquivir. */
+/** Alternative script: cascading blackout in the Guadalquivir valley. */
 const blackoutScript: ScenarioScript = {
   id: "blackout-guadalquivir",
   name: "Apagón en cascada en el valle del Guadalquivir",
@@ -172,7 +172,7 @@ const blackoutScript: ScenarioScript = {
   ],
 };
 
-/** Guion alternativo: crecida del Guadalquivir y temporal en el litoral. */
+/** Alternative script: Guadalquivir flood and coastal storm. */
 const floodScript: ScenarioScript = {
   id: "flood-guadalquivir",
   name: "Crecida del Guadalquivir y temporal en el litoral",
@@ -283,29 +283,29 @@ export function listScenarioScripts() {
 }
 
 // ---------------------------------------------------------------------------
-// Estado extra del motor
+// Extra engine state
 // ---------------------------------------------------------------------------
 
 export interface ScenarioRuntime {
-  /** Guion en curso. */
+  /** Current script. */
   scriptId: string;
-  /** Multiplicador de velocidad: 1 = tiempo real, 4 = ensayo rapido. */
+  /** Speed multiplier: 1 = real time, 4 = fast rehearsal. */
   speed: number;
-  /** El guion esta pausado a mitad (no terminado). */
+  /** Script is paused midway (not finished). */
   paused: boolean;
   pausedAt: string | null;
-  /** Segundos de guion consumidos en tramos ya cerrados. */
+  /** Script seconds consumed in closed segments. */
   accumulatedSeconds: number;
-  /** Instante real (epoch ms) en que empezo el tramo en curso. */
+  /** Real instant (epoch ms) when current segment started. */
   segmentStartedAtMs: number | null;
-  /** Beats que se dieron por superados sin llegar a ejecutarse. */
+  /** Beats deemed superseded without executing. */
   skippedBeatIds: string[];
-  /** Instante en que se agoto el guion. */
+  /** Instant when the script finished. */
   finishedAt: string | null;
   /**
-   * Instante real del arranque original de la ejecucion. `scenario.startedAt`
-   * es un inicio *virtual* (ver syncVirtualStart), asi que el dato honesto de
-   * "cuando empezo todo esto" vive aqui.
+   * Real instant of the original execution start. `scenario.startedAt`
+   * is a *virtual* start (see syncVirtualStart), so honest data on
+   * "when all this started" lives here.
    */
   startedAtReal: string | null;
 }
@@ -327,8 +327,8 @@ function defaultRuntime(scriptId: string): ScenarioRuntime {
 }
 
 /**
- * Adosa (o repara) el estado extra. Es tolerante con estados restaurados de
- * persistencia que se guardaron con una version anterior del motor.
+ * Attaches (or repairs) extra state. Tolerant of states restored from
+ * persistence saved with an older engine version.
  */
 export function withRuntime(scenario: ScenarioState, nowMs = Date.now()): ScenarioStateWithRuntime {
   const target = scenario as ScenarioStateWithRuntime;
@@ -360,8 +360,8 @@ export function withRuntime(scenario: ScenarioState, nowMs = Date.now()): Scenar
         : (scenario.startedAt ?? null),
   };
 
-  // Un estado restaurado puede decir "corriendo" sin tramo abierto: se abre uno
-  // ahora en vez de calcular un tiempo transcurrido imposible.
+  // A restored state may say "running" without an open segment: one is opened
+  // now instead of calculating impossible elapsed time.
   if (target.running && target.runtime.segmentStartedAtMs === null) {
     target.runtime.segmentStartedAtMs = nowMs;
   }
@@ -375,7 +375,7 @@ function isUsableSpeed(value: unknown): value is number {
   );
 }
 
-/** Normaliza una velocidad recibida de fuera. Devuelve null si no es valida. */
+/** Normalizes an external speed value. Returns null if invalid. */
 export function parseSpeed(value: unknown): number | null {
   if (typeof value !== "number" || !Number.isFinite(value)) return null;
   const rounded = Math.round(value * 100) / 100;
@@ -384,12 +384,12 @@ export function parseSpeed(value: unknown): number | null {
 }
 
 // ---------------------------------------------------------------------------
-// Configuracion pendiente
+// Pending configuration
 // ---------------------------------------------------------------------------
 
-// Las rutas HTTP no pueden alcanzar el objeto de escenario vivo (vive dentro de
-// lib/store.ts, que no es de este modulo), asi que dejan aqui la configuracion
-// y el motor la consume en el siguiente startScenario/dueBeats.
+// HTTP routes cannot reach the live scenario object (it lives inside
+// lib/store.ts, which is outside this module), so they leave configuration here
+// and the engine consumes it in the next startScenario/dueBeats.
 
 export interface ScenarioConfig {
   speed?: number;
@@ -410,14 +410,14 @@ export function configureScenario(config: ScenarioConfig): void {
   if (config.restart === true) pendingConfig.restart = true;
 }
 
-/** Limpia configuracion pendiente y latido. Pensado para tests y reinicios. */
+/** Clears pending configuration and heartbeat. Intended for tests and resets. */
 export function resetScenarioEngine(): void {
   pendingConfig = {};
   stopHeartbeat();
 }
 
 // ---------------------------------------------------------------------------
-// Reloj de guion
+// Script clock
 // ---------------------------------------------------------------------------
 
 function segmentSeconds(runtime: ScenarioRuntime, nowMs: number): number {
@@ -426,7 +426,7 @@ function segmentSeconds(runtime: ScenarioRuntime, nowMs: number): number {
   return realSeconds * runtime.speed;
 }
 
-/** Segundos de guion consumidos hasta `nowMs`. */
+/** Script seconds consumed up to `nowMs`. */
 export function scriptSeconds(scenario: ScenarioState, nowMs = Date.now()): number {
   const target = withRuntime(scenario, nowMs);
   const runtime = target.runtime;
@@ -434,7 +434,7 @@ export function scriptSeconds(scenario: ScenarioState, nowMs = Date.now()): numb
   return runtime.accumulatedSeconds + segmentSeconds(runtime, nowMs);
 }
 
-/** Cierra el tramo en curso acumulando su tiempo. No cambia running. */
+/** Closes current segment accumulating its time. Does not change running. */
 function rebase(target: ScenarioStateWithRuntime, nowMs: number): void {
   const runtime = target.runtime;
   if (target.running) runtime.accumulatedSeconds += segmentSeconds(runtime, nowMs);
@@ -442,14 +442,14 @@ function rebase(target: ScenarioStateWithRuntime, nowMs: number): void {
 }
 
 /**
- * Mantiene `scenario.startedAt` como un inicio VIRTUAL: el instante en que
- * habria arrancado un guion a 1x sin pausas para estar justo donde esta ahora.
+ * Maintains `scenario.startedAt` as a VIRTUAL start: the instant at which
+ * a script at 1x would have started without pauses to be right where it is now.
  *
- * La interfaz calcula su cronometro como (ahora - startedAt), asi que si
- * startedAt fuese el arranque real, una pausa de cinco minutos pintaria 5:20
- * mientras el guion va por 0:40 y el proximo beat pareceria eternamente
- * atrasado. Con el inicio virtual el cronometro cuadra sin tocar la interfaz.
- * El arranque real queda en runtime.startedAtReal.
+ * The UI calculates its timer as (now - startedAt), so if startedAt were the
+ * real start, a five-minute pause would display 5:20 while the script is at
+ * 0:40 and the next beat would seem perpetually overdue. With the virtual
+ * start, the timer aligns without touching the UI. The real start remains in
+ * runtime.startedAtReal.
  */
 function syncVirtualStart(target: ScenarioStateWithRuntime, nowMs: number, seconds: number): void {
   target.startedAt = new Date(nowMs - Math.max(0, seconds) * 1000).toISOString();
@@ -460,7 +460,7 @@ function applyPendingSpeed(target: ScenarioStateWithRuntime, nowMs: number): voi
   const speed = pendingConfig.speed;
   pendingConfig.speed = undefined;
   if (speed === target.runtime.speed) return;
-  // Se cierra el tramo con la velocidad vieja para no perder ni regalar tiempo.
+  // Close the segment with the old speed to avoid losing or gifting time.
   rebase(target, nowMs);
   target.runtime.speed = speed;
 }
@@ -474,9 +474,9 @@ function cloneBeats(beats: ScenarioBeat[]): ScenarioBeat[] {
 }
 
 /**
- * Orden determinista: primero por instante, y ante empate por la posicion
- * original en el guion. Dos beats con el mismo atSeconds siempre se disparan en
- * el mismo orden, ejecucion tras ejecucion.
+ * Deterministic ordering: first by instant, and on tie by original
+ * script position. Two beats with the same atSeconds always fire in
+ * the same order across runs.
  */
 export function orderedBeats(scenario: ScenarioState): ScenarioBeat[] {
   return scenario.beats
@@ -500,7 +500,7 @@ function finishIfExhausted(target: ScenarioStateWithRuntime, nowMs: number): voi
 }
 
 // ---------------------------------------------------------------------------
-// API que consume lib/store.ts
+// API consumed by lib/store.ts
 // ---------------------------------------------------------------------------
 
 export function createScenarioState(scriptId: string = DEFAULT_SCRIPT_ID): ScenarioState {
@@ -527,12 +527,12 @@ function applyScript(target: ScenarioStateWithRuntime, script: ScenarioScript): 
 }
 
 /**
- * Arranca o REANUDA el guion.
+ * Starts or RESUMES the script.
  *
- * Empieza de cero solo si se pide explicitamente (configureScenario con
- * restart), si se cambia de guion, si nunca habia arrancado o si ya habia
- * terminado. En cualquier otro caso reanuda conservando el tiempo consumido:
- * pulsar "parar" y "arrancar" es pausa/reanudacion, no un reinicio encubierto.
+ * Starts from scratch only if explicitly requested (configureScenario with
+ * restart), if switching scripts, if never started, or if already finished.
+ * In any other case, it resumes preserving consumed time: pressing "stop"
+ * and "start" is pause/resume, not a covert restart.
  */
 export function startScenario(scenario: ScenarioState, at: string): ScenarioState {
   const parsed = Date.parse(at);
@@ -547,7 +547,7 @@ export function startScenario(scenario: ScenarioState, at: string): ScenarioStat
   pendingConfig.scriptId = undefined;
   pendingConfig.restart = undefined;
 
-  // No perder el tramo abierto si ya estaba corriendo.
+  // Do not lose open segment if already running.
   if (target.running) rebase(target, atMs);
 
   const script = requestedScriptId ? findScript(requestedScriptId) : undefined;
@@ -579,8 +579,8 @@ export function startScenario(scenario: ScenarioState, at: string): ScenarioStat
 }
 
 /**
- * Pausa el guion conservando el tiempo consumido. Reanudar con startScenario
- * continua desde el mismo punto del relato.
+ * Pauses the script preserving consumed time. Resuming with startScenario
+ * continues from the same point in the story.
  */
 export function stopScenario(scenario: ScenarioState, atMs = Date.now()): ScenarioState {
   const target = withRuntime(scenario, atMs);
@@ -599,13 +599,13 @@ export function stopScenario(scenario: ScenarioState, atMs = Date.now()): Scenar
 }
 
 /**
- * Devuelve los beats que deben dispararse en este instante y los marca como
- * disparados. store.ts se encarga de aplicarlos.
+ * Returns beats that should fire at this instant and marks them as
+ * fired. store.ts applies them.
  *
- * Politica ante un sondeo interrumpido: como mucho un beat por llamada; los
- * beats vencidos hace mas de STALE_AFTER_SECONDS que ya tienen otro posterior
- * vencido se marcan como omitidos, porque describen un mundo que ya quedo
- * atras. El resto se drena en orden, un beat por tick.
+ * Policy on interrupted polling: at most one beat per call; beats
+ * overdue by more than STALE_AFTER_SECONDS with a subsequent overdue beat
+ * are marked as skipped because they describe a superseded world.
+ * The rest is drained in order, one beat per tick.
  */
 export function dueBeats(scenario: ScenarioState, nowMs: number): ScenarioBeat[] {
   const target = withRuntime(scenario, nowMs);
@@ -621,7 +621,7 @@ export function dueBeats(scenario: ScenarioState, nowMs: number): ScenarioBeat[]
   );
   if (due.length === 0) return [];
 
-  // El ultimo vencido nunca se omite: representa el presente de la crisis.
+  // The last overdue beat is never skipped: it represents the crisis present.
   const superseded = due
     .slice(0, -1)
     .filter((beat) => seconds - beat.atSeconds > STALE_AFTER_SECONDS)
@@ -635,7 +635,7 @@ export function dueBeats(scenario: ScenarioState, nowMs: number): ScenarioBeat[]
   return fired;
 }
 
-/** Resumen legible del estado del motor, util para la UI y para depurar. */
+/** Readable summary of engine state, useful for UI and debugging. */
 export function scenarioStatus(scenario: ScenarioState, nowMs = Date.now()) {
   const target = withRuntime(scenario, nowMs);
   const total = target.beats.length;
@@ -656,21 +656,21 @@ export function scenarioStatus(scenario: ScenarioState, nowMs = Date.now()) {
 }
 
 // ---------------------------------------------------------------------------
-// Latido de servidor
+// Server heartbeat
 // ---------------------------------------------------------------------------
 
-// Una crisis no espera a que alguien mire la pantalla: mientras el guion corre,
-// un unico intervalo empuja el reloj aunque nadie sondee. Precauciones:
-//  - El handle vive en globalThis, asi que una recarga de modulo en desarrollo
-//    no deja dos intervalos vivos: ensureHeartbeat siempre limpia el anterior
-//    antes de instalar el suyo (y ademas el nuevo cierre apunta al modulo
-//    recien cargado, no al viejo).
-//  - unref(): el intervalo jamas mantiene vivo el proceso.
-//  - Se apaga solo en cuanto el guion deja de correr, y cualquier excepcion en
-//    el tick lo apaga tambien. Un temporizador con fugas es peor que ninguno.
-//  - Desactivado en tests y con SCENARIO_AUTOTICK=0.
-// El motor sigue siendo correcto sin latido (el reloj es por tiempo real); el
-// latido solo hace que los cambios se materialicen sin espectadores.
+// A crisis does not wait for someone to look at the screen: while the script runs,
+// a single interval advances the clock even if no one polls. Safeguards:
+//  - The handle lives in globalThis, so a development module reload does not
+//    leave two active intervals: ensureHeartbeat always clears the previous one
+//    before installing its own (and the new closure points to the newly
+//    loaded module, not the old one).
+//  - unref(): the interval never keeps the process alive.
+//  - Auto-shuts off as soon as the script stops running, and any exception in
+//    the tick shuts it off too. A leaky timer is worse than none.
+//  - Disabled in tests and when SCENARIO_AUTOTICK=0.
+// The engine remains correct without a heartbeat (clock is real-time); the
+// heartbeat only ensures changes materialize without observers.
 
 interface ScenarioHeartbeat {
   timer: ReturnType<typeof setInterval>;
@@ -701,8 +701,8 @@ export function stopHeartbeat(): void {
 }
 
 /**
- * Instala el latido. `tick` debe avanzar el escenario y devolver si el guion
- * sigue corriendo; en cuanto devuelva false (o lance), el latido se apaga.
+ * Installs the heartbeat. `tick` must advance the scenario and return whether
+ * the script is still running; as soon as it returns false (or throws), the heartbeat stops.
  */
 export function ensureHeartbeat(
   tick: () => boolean,
@@ -710,8 +710,8 @@ export function ensureHeartbeat(
 ): "started" | "disabled" {
   if (!heartbeatEnabled()) return "disabled";
 
-  // Siempre se reemplaza: garantiza un unico intervalo y que el cierre activo
-  // sea el del modulo mas reciente tras una recarga en caliente.
+  // Always replaced: guarantees a single interval and that the active closure
+  // is from the newest module after a hot reload.
   stopHeartbeat();
 
   const safeInterval = Math.min(Math.max(Math.round(intervalMs), 1000), 60_000);

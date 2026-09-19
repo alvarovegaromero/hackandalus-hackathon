@@ -22,29 +22,29 @@ interface Props {
 const buttons: ChaosButton[] = [
   {
     id: "wind",
-    label: "Girar el viento",
-    effect: "El frente cambia de dirección",
+    label: "Shift wind",
+    effect: "Fire front changes direction",
     icon: "wind",
     accent: "text-danger bg-danger-soft",
   },
   {
     id: "road",
-    label: "Cortar la carretera",
-    effect: "Se pierde la vía A-397",
+    label: "Block road",
+    effect: "Route A-397 is lost",
     icon: "road",
     accent: "text-warn bg-warn-soft",
   },
   {
     id: "sms",
-    label: "Tumbar el SMS",
-    effect: "Cae el canal de mensajería",
+    label: "Down SMS",
+    effect: "Messaging channel goes down",
     icon: "sms",
     accent: "text-violet bg-violet-soft",
   },
   {
     id: "people",
-    label: "+50 personas",
-    effect: "Llegan más desplazados de los previstos",
+    label: "+50 evacuees",
+    effect: "More displaced people arrive than expected",
     icon: "people",
     accent: "text-info bg-info-soft",
   },
@@ -68,13 +68,13 @@ export default function ChaosBar({ busy, onFire }: Props) {
   return (
     <section
       className="rounded-[16px] border border-line bg-white p-4 shadow-xs tracking-[-0.15px]"
-      aria-label="Romper algo en directo"
+      aria-label="Live scenario disruption"
     >
       <div className="flex items-center justify-between mb-3">
         <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-blueprint-mid">
-          Romper algo en directo
+          Live scenario disruption
         </p>
-        <span className="text-[12px] text-blueprint-light">Pulsa para alterar el escenario</span>
+        <span className="text-[12px] text-blueprint-light">Click to disrupt the scenario</span>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
         {buttons.map((button) => (

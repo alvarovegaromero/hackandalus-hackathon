@@ -1,3 +1,5 @@
+// OWNER: graduated autonomy and opportunity cost agent.
+
 import { describe, expect, it } from "vitest";
 import {
   autonomyDecisionFor,
@@ -16,7 +18,7 @@ const reglas = structuredClone(seedAutonomyRules);
 
 let contador = 0;
 
-/** Acción mínima de prueba; solo se rellena lo que mira el motor de autonomía. */
+/** Minimal test action; only fields inspected by autonomy engine are populated. */
 function accion(overrides: Partial<Action> & Pick<Action, "objective" | "zoneId">): Action {
   contador += 1;
   const at = new Date(Date.UTC(2026, 0, 1, 0, 0, contador)).toISOString();
@@ -46,13 +48,13 @@ function recursos(): Resource[] {
 }
 
 // ---------------------------------------------------------------------------
-// Clasificación
+// Classification
 // ---------------------------------------------------------------------------
 
-describe("clasificación del tipo de acción", () => {
-  it("saca la categoría del objetivo que redacta el store", () => {
-    // store.ts escribe siempre "Coordinar respuesta de <categoría> en <zona>",
-    // así que la palabra "coordinar" no distingue nada: la señal es la categoría.
+describe("action type classification", () => {
+  it("extracts category from objective written by store", () => {
+    // store.ts always writes "Coordinar respuesta de <categoría> en <zona>",
+    // so the word "coordinar" does not distinguish anything: the signal is the category.
     const objetivo = "Coordinar respuesta de incendio en Sierra Morena.";
     expect(categoriaDeAccion({ objective: objetivo })).toBe("incendio");
     expect(
@@ -60,12 +62,12 @@ describe("clasificación del tipo de acción", () => {
     ).toBe("asignar-recurso");
   });
 
-  it("no clasifica como aviso cualquier objetivo por empezar con Coordinar", () => {
+  it("does not classify any objective as notification just because it starts with Coordinar", () => {
     const evacuacion = "Coordinar respuesta de evacuacion en Granada y Almería.";
     expect(classifyAction({ objective: evacuacion, channel: "call" })).toBe("evacuar");
   });
 
-  it("clasifica igual con acentos y sin ellos", () => {
+  it("classifies identically with and without accents", () => {
     expect(
       classifyAction({
         objective: "Coordinar respuesta de evacuación en Almería.",
@@ -80,7 +82,7 @@ describe("clasificación del tipo de acción", () => {
     ).toBe("asignar-recurso");
   });
 
-  it("una acción de verificación abierta sobre una señal se clasifica como verificar", () => {
+  it("classifies an open verification action on a signal as verify", () => {
     expect(
       classifyAction({
         objective: "Coordinar respuesta de coordinacion en Sevilla Hub.",
@@ -90,7 +92,7 @@ describe("clasificación del tipo de acción", () => {
     ).toBe("verificar");
   });
 
-  it("un mensaje de difusión a un colectivo es aviso masivo aunque no lo diga", () => {
+  it("classifies broadcast message to a group as mass notification even if not explicitly stated", () => {
     expect(
       classifyAction({
         objective: "Instrucciones de autoprotección",
@@ -100,7 +102,7 @@ describe("clasificación del tipo de acción", () => {
     ).toBe("aviso-masivo");
   });
 
-  it("devuelve null cuando no hay señal suficiente", () => {
+  it("returns null when signal is insufficient", () => {
     expect(
       classifyAction({
         objective: "Gestionar el asunto de siempre.",
@@ -113,48 +115,48 @@ describe("clasificación del tipo de acción", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Nivel de autonomía por tipo de acción
+// Autonomy level by action type
 // ---------------------------------------------------------------------------
 
-describe("nivel de autonomía por tipo de acción", () => {
+describe("autonomy level by action type", () => {
   const casos = [
     {
-      nombre: "verificar un dato: lo hace sola, es reversible",
+      nombre: "verify a data point: executes automatically, is reversible",
       objetivo: "Verificar con el vigilante la columna de humo antes de movilizar.",
       canal: "call" as ActionChannel,
       tipo: "verificar" as const,
       nivel: "auto" as const,
     },
     {
-      nombre: "avisar a un responsable: lo hace sola y avisa",
+      nombre: "notify a lead: executes automatically and notifies",
       objetivo: "Coordinar respuesta de coordinacion en Sevilla Hub.",
       canal: "call" as ActionChannel,
       tipo: "avisar" as const,
       nivel: "auto-notify" as const,
     },
     {
-      nombre: "mover un recurso: lo hace sola y se puede deshacer",
+      nombre: "move a resource: executes automatically and can be undone",
       objetivo: "Coordinar respuesta de incendio en Sierra Morena.",
       canal: "call" as ActionChannel,
       tipo: "asignar-recurso" as const,
       nivel: "auto-notify" as const,
     },
     {
-      nombre: "aviso masivo sin confianza conocida: lo aprueba una persona",
+      nombre: "mass notification without known confidence: requires human approval",
       objetivo: "Aviso masivo a la población de Costa del Sol.",
       canal: "sms" as ActionChannel,
       tipo: "aviso-masivo" as const,
       nivel: "approval" as const,
     },
     {
-      nombre: "ordenar una evacuación: siempre lo aprueba una persona",
+      nombre: "order an evacuation: always requires human approval",
       objetivo: "Coordinar respuesta de evacuacion en Granada y Almería.",
       canal: "call" as ActionChannel,
       tipo: "evacuar" as const,
       nivel: "approval" as const,
     },
     {
-      nombre: "pedir refuerzos externos: siempre lo aprueba una persona",
+      nombre: "request external reinforcements: always requires human approval",
       objetivo: "Coordinar respuesta de resource-shortage en Sevilla Hub.",
       canal: "ticket" as ActionChannel,
       tipo: "escalar" as const,
@@ -171,7 +173,7 @@ describe("nivel de autonomía por tipo de acción", () => {
     });
   }
 
-  it("el motivo se puede enseñar a un jurado", () => {
+  it("reason can be presented to an evaluation panel", () => {
     const decision = decideAutonomy(
       { objective: "Coordinar respuesta de coordinacion en Sevilla Hub.", channel: "call" },
       reglas,
@@ -182,16 +184,16 @@ describe("nivel de autonomía por tipo de acción", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Umbral de confianza
+// Confidence threshold
 // ---------------------------------------------------------------------------
 
-describe("aviso masivo y umbral de confianza", () => {
+describe("mass notification and confidence threshold", () => {
   const avisoMasivo = {
     objective: "Aviso masivo a la población de Costa del Sol.",
     channel: "sms" as ActionChannel,
   };
 
-  it("por debajo del umbral espera aprobación humana", () => {
+  it("waits for human approval below threshold", () => {
     const decision = decideAutonomy(avisoMasivo, reglas, { confidence: 0.75 });
     expect(decision.actionKind).toBe("aviso-masivo");
     expect(decision.level).toBe("approval");
@@ -199,25 +201,25 @@ describe("aviso masivo y umbral de confianza", () => {
     expect(decision.reason).toContain("90 %");
   });
 
-  it("por encima del umbral se ejecuta sola y avisa", () => {
+  it("executes automatically and notifies above threshold", () => {
     const decision = decideAutonomy(avisoMasivo, reglas, { confidence: 0.95 });
     expect(decision.level).toBe("auto-notify");
     expect(decision.reason).toContain("supera");
   });
 
-  it("justo en el umbral se automatiza; un pelo por debajo, no", () => {
+  it("automates exactly at threshold; slightly below does not", () => {
     expect(decideAutonomy(avisoMasivo, reglas, { confidence: 0.9 }).level).toBe("auto-notify");
     expect(decideAutonomy(avisoMasivo, reglas, { confidence: 0.899 }).level).toBe("approval");
   });
 
-  it("sin confianza conocida se elige el nivel más conservador", () => {
+  it("chooses the most conservative level without known confidence", () => {
     const decision = decideAutonomy(avisoMasivo, reglas, {});
     expect(decision.confidence).toBeNull();
     expect(decision.level).toBe("approval");
     expect(decision.reason).toContain("no se conoce la confianza");
   });
 
-  it("una señal confirmada de confianza alta supera el umbral sin triaje calibrado", () => {
+  it("a confirmed high-confidence signal exceeds threshold without calibrated triage", () => {
     const decision = decideAutonomy(avisoMasivo, reglas, {
       event: { category: "alerta publica", confidence: "high", confirmed: true },
     });
@@ -225,7 +227,7 @@ describe("aviso masivo y umbral de confianza", () => {
     expect(decision.level).toBe("auto-notify");
   });
 
-  it("la misma señal sin verificar se queda esperando aprobación", () => {
+  it("the same unverified signal remains waiting for approval", () => {
     const decision = decideAutonomy(avisoMasivo, reglas, {
       event: { category: "alerta publica", confidence: "high", confirmed: null },
     });
@@ -234,11 +236,11 @@ describe("aviso masivo y umbral de confianza", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Barandillas
+// Guardrails
 // ---------------------------------------------------------------------------
 
-describe("barandillas de la autonomía", () => {
-  it("una acción sin clasificar cae en aprobación humana", () => {
+describe("autonomy guardrails", () => {
+  it("an unclassified action falls back to human approval", () => {
     const decision = decideAutonomy(
       { objective: "Gestionar el asunto de siempre.", channel: "ticket", target: "Equipo" },
       reglas,
@@ -248,7 +250,7 @@ describe("barandillas de la autonomía", () => {
     expect(decision.reason).toContain("no se ha podido clasificar");
   });
 
-  it("sin reglas cargadas no se automatiza nada", () => {
+  it("automates nothing without loaded rules", () => {
     expect(decideAutonomy({ objective: "Verificar el dato.", channel: "call" }, []).level).toBe(
       "approval",
     );
@@ -257,7 +259,7 @@ describe("barandillas de la autonomía", () => {
     );
   });
 
-  it("el interruptor general fuerza aprobación en todos los tipos de acción", () => {
+  it("master switch forces approval on all action types", () => {
     const objetivos = [
       "Verificar con el vigilante la columna de humo antes de movilizar.",
       "Coordinar respuesta de coordinacion en Sevilla Hub.",
@@ -277,7 +279,7 @@ describe("barandillas de la autonomía", () => {
     }
   });
 
-  it("una acción irreversible no se automatiza ni con confianza 1", () => {
+  it("an irreversible action is not automated even with confidence 1", () => {
     const evacuacion = decideAutonomy(
       { objective: "Coordinar respuesta de evacuacion en Granada y Almería.", channel: "call" },
       reglas,
@@ -295,7 +297,7 @@ describe("barandillas de la autonomía", () => {
     expect(escalado.level).toBe("approval");
   });
 
-  it("aunque una regla suelta diga auto, lo irreversible sigue esperando a una persona", () => {
+  it("even if a loose rule says auto, irreversible actions still wait for a human", () => {
     const reglaFloja = [
       {
         actionKind: "evacuar" as const,
@@ -313,7 +315,7 @@ describe("barandillas de la autonomía", () => {
     expect(decision.level).toBe("approval");
   });
 
-  it("una acción ya aprobada por una persona no la degrada el motor", () => {
+  it("an action already approved by a human is not downgraded by the engine", () => {
     const decision = decideAutonomy(
       {
         objective: "Coordinar respuesta de evacuacion en Granada y Almería.",
@@ -329,13 +331,13 @@ describe("barandillas de la autonomía", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Guardián de despacho
+// Dispatch guardian
 // ---------------------------------------------------------------------------
 
 describe("canAutoDispatch", () => {
   const estado = { autonomyRules: reglas, autonomyPaused: false, events: [] };
 
-  it("deja salir sola una verificación recién propuesta", () => {
+  it("allows a newly proposed verification to dispatch automatically", () => {
     const action = accion({
       objective: "Verificar con el vigilante la columna de humo antes de movilizar.",
       zoneId: "zone-north",
@@ -344,7 +346,7 @@ describe("canAutoDispatch", () => {
     expect(autonomyDecisionFor(action, estado).level).toBe("auto");
   });
 
-  it("frena una evacuación aunque todo lo demás esté en orden", () => {
+  it("holds an evacuation even if everything else is in order", () => {
     const action = accion({
       objective: "Coordinar respuesta de evacuacion en Granada y Almería.",
       zoneId: "zone-east",
@@ -352,12 +354,12 @@ describe("canAutoDispatch", () => {
     expect(canAutoDispatch(action, estado)).toBe(false);
   });
 
-  it("devuelve false ante cualquier falta de información", () => {
+  it("returns false on any missing information", () => {
     const action = accion({ objective: "Verificar el dato.", zoneId: "zone-north" });
     expect(canAutoDispatch(null, estado)).toBe(false);
     expect(canAutoDispatch(action, null)).toBe(false);
     expect(canAutoDispatch(action, { autonomyRules: [], autonomyPaused: false })).toBe(false);
-    // Un estado sin interruptor no es un estado con la autonomía encendida.
+    // State without switch is not state with autonomy on.
     expect(
       canAutoDispatch(action, {
         autonomyRules: reglas,
@@ -367,7 +369,7 @@ describe("canAutoDispatch", () => {
     expect(canAutoDispatch({ ...action, objective: "" }, estado)).toBe(false);
   });
 
-  it("no vuelve a despachar una acción que ya no está pendiente", () => {
+  it("does not re-dispatch an action that is no longer pending", () => {
     const action = accion({
       objective: "Verificar el dato.",
       zoneId: "zone-north",
@@ -376,12 +378,12 @@ describe("canAutoDispatch", () => {
     expect(canAutoDispatch(action, estado)).toBe(false);
   });
 
-  it("con la autonomía en pausa no sale nada", () => {
+  it("dispatches nothing when autonomy is paused", () => {
     const action = accion({ objective: "Verificar el dato.", zoneId: "zone-north" });
     expect(canAutoDispatch(action, { ...estado, autonomyPaused: true })).toBe(false);
   });
 
-  it("usa la señal de la zona para medir la confianza del aviso masivo", () => {
+  it("uses zone signal to measure confidence of mass notification", () => {
     const action = accion({
       objective: "Coordinar respuesta de alerta publica en Sevilla Hub.",
       zoneId: "zone-central",
@@ -417,11 +419,11 @@ describe("canAutoDispatch", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Política legible
+// Policy summary
 // ---------------------------------------------------------------------------
 
-describe("resumen de la política", () => {
-  it("cuenta cuántos tipos salen solos y cuántos firma una persona", () => {
+describe("policy summary", () => {
+  it("counts how many types dispatch automatically and how many require human signature", () => {
     const resumen = describeAutonomy(reglas);
     expect(resumen.lines).toHaveLength(6);
     expect(resumen.headline).toContain("3 de 6");
@@ -429,11 +431,11 @@ describe("resumen de la política", () => {
     expect(resumen.headline).toContain("2 los firma siempre una persona");
   });
 
-  it("dice claramente cuando la autonomía está en pausa", () => {
+  it("clearly states when autonomy is paused", () => {
     expect(describeAutonomy(reglas, { paused: true }).headline).toContain("Autonomía en pausa");
   });
 
-  it("cada línea explica nivel, reversibilidad y motivo", () => {
+  it("each line explains level, reversibility, and reason", () => {
     const linea = describeAutonomy(reglas).lines.find((item) => item.actionKind === "aviso-masivo");
     expect(linea).toBeDefined();
     expect(linea!.text).toContain("parcialmente reversible");
@@ -442,12 +444,12 @@ describe("resumen de la política", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Coste de oportunidad
+// Waiting list
 // ---------------------------------------------------------------------------
 
-describe("lista de espera", () => {
-  it("con dos zonas peleándose un recurso, una espera y se dice cuánto y por qué", () => {
-    // Solo queda la brigada de extinción y hay dos incendios abiertos.
+describe("waiting list", () => {
+  it("with two zones contending for a resource, one waits with estimated time and reason", () => {
+    // Only the firefighting crew remains and there are two open fires.
     const brigada = recursos().filter((resource) => resource.id === "res-field-1");
     const sevilla = accion({
       id: "act-sevilla",
@@ -462,7 +464,7 @@ describe("lista de espera", () => {
 
     const espera = buildWaitingList([sevilla, sierra], brigada, zones);
 
-    // Sevilla Hub es más urgente (activa, más población), así que se lleva la brigada.
+    // Sevilla Hub is more urgent (active, more population), so it gets the crew.
     expect(espera).toHaveLength(1);
     expect(espera[0].actionId).toBe("act-sierra");
     expect(espera[0].zoneId).toBe("zone-north");
@@ -473,7 +475,7 @@ describe("lista de espera", () => {
     expect(espera[0].reason).toContain("Espera estimada: ~45 min");
   });
 
-  it("la tercera zona en la cola espera más que la segunda", () => {
+  it("third zone in queue waits longer than second", () => {
     const brigada = recursos().filter((resource) => resource.id === "res-field-1");
     const acciones = [
       accion({
@@ -500,7 +502,7 @@ describe("lista de espera", () => {
     expect(espera[1].reason).toContain("por delante en la cola");
   });
 
-  it("sin ningún recurso capaz, la espera no es estimable y lo dice", () => {
+  it("without any capable resource, wait is not estimable and states so", () => {
     const soloComunicaciones = recursos().filter((resource) => resource.id === "res-comms-1");
     const accionIncendio = accion({
       objective: "Coordinar respuesta de incendio en Sierra Morena.",
@@ -514,7 +516,7 @@ describe("lista de espera", () => {
     expect(espera[0].reason).toContain("apoyo externo");
   });
 
-  it("con recursos de sobra la lista de espera queda vacía", () => {
+  it("waiting list is empty when surplus resources exist", () => {
     const accionTriaje = accion({
       objective: "Coordinar respuesta de triaje sanitario en Sevilla Hub.",
       zoneId: "zone-central",
@@ -522,7 +524,7 @@ describe("lista de espera", () => {
     expect(buildWaitingList([accionTriaje], recursos(), zones)).toEqual([]);
   });
 
-  it("las acciones cerradas no ocupan sitio en la cola", () => {
+  it("closed actions do not occupy space in queue", () => {
     const brigada = recursos().filter((resource) => resource.id === "res-field-1");
     const cerrada = accion({
       id: "act-cerrada",

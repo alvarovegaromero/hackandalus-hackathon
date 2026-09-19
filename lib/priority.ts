@@ -1,34 +1,34 @@
-// PROPIETARIO: agente del motor de prioridad.
+// OWNER: priority engine agent.
 //
-// Motor de prioridad del centro de mando. Decide qué zona se atiende primero
-// cuando la información es parcial, contradictoria y envejece deprisa.
+// Command center priority engine. Decides which zone is attended to first
+// when information is partial, contradictory, and ages quickly.
 //
-// La puntuación de una zona es una suma de factores explicables:
+// A zone's score is a sum of explainable factors:
 //
-//   puntuación = riesgo base
-//              + señales vivas (con credibilidad, repetición y decaimiento)
-//              + población en riesgo
-//              + necesidades abiertas
-//              + recursos caídos
-//              - alivio por acciones completadas con éxito
+//   score = base risk
+//         + live signals (with credibility, repetition, and decay)
+//         + population at risk
+//         + open needs
+//         + downed resources
+//         - relief from successfully completed actions
 //
-// Cuatro ideas sostienen el diseño:
+// Four ideas underpin the design:
 //
-//  1. El ruido no puede ganar a la señal. Muchas señales flojas, sin verificar
-//     y de baja confianza suman con rendimientos decrecientes y casi no mueven
-//     la aguja; una sola señal crítica confirmada sí.
-//  2. Lo que sabías hace media hora ya no vale igual. Cada señal decae con la
-//     edad, con vida media según su gravedad.
-//  3. Resolver algo baja la presión. Las acciones completadas con éxito restan
-//     puntuación a su zona, así que el ranking puede bajar y no solo subir.
-//  4. Todo se explica. El desglose que devolvemos suma exactamente la
-//     puntuación, para poder justificar cada decisión ante un humano.
+//  1. Noise cannot beat signal. Many weak, unverified, low-confidence signals
+//     aggregate with diminishing returns and barely move the needle;
+//     a single confirmed critical signal does.
+//  2. What was known half an hour ago is not worth the same. Each signal decays
+//     with age, with half-life based on its severity.
+//  3. Resolving something relieves pressure. Successfully completed actions
+//     subtract score from their zone, so rankings can drop, not just rise.
+//  4. Everything is explainable. The breakdown returned sums exactly to the
+//     score, justifying each decision to a human operator.
 //
-// Nota sobre doble contabilidad: el store ya aplica el efecto de cada señal
-// sobre `zone.riskScore` y `zone.needs`. Aquí deshacemos ese efecto (restando
-// `appliedRiskDelta` y descontando las necesidades nacidas de señales vivas)
-// para volver a contarlo con nuestras propias reglas de credibilidad y
-// decaimiento. Sin esto, una señal cuenta dos veces y nunca envejece.
+// Note on double counting: the store already applies each signal's effect
+// to `zone.riskScore` and `zone.needs`. Here we undo that effect (subtracting
+// `appliedRiskDelta` and discounting needs born from live signals) to recount
+// with our own rules of credibility and decay. Without this, a signal counts
+// twice and never ages.
 
 import type {
   Action,
@@ -43,46 +43,46 @@ import type {
 } from "./types";
 
 // ---------------------------------------------------------------------------
-// Pesos
+// Weights
 // ---------------------------------------------------------------------------
 
 export interface PriorityWeights {
-  /** Peso bruto por gravedad, antes de credibilidad y decaimiento. */
+  /** Raw weight by severity, before credibility and decay. */
   severity: Record<Severity, number>;
-  /** Cuánto creemos a una señal según su confianza declarada. */
+  /** How much a signal is trusted based on declared confidence. */
   confidence: Record<Confidence, number>;
-  /** Castigo extra si la señal no está verificada (`confirmed === null`). */
+  /** Extra penalty if signal is unverified (`confirmed === null`). */
   unverified: Record<Confidence, number>;
-  /** Amortiguación al apilar señales en la misma zona: el enésimo peso vale 1/(1+d*n). */
+  /** Damping when stacking signals in same zone: n-th weight counts 1/(1+d*n). */
   stackingDamping: number;
-  /** Techo de la presión total por señales de una zona. */
+  /** Cap on total signal pressure for a zone. */
   signalCap: number;
-  /** Vida media en minutos de una señal, por gravedad. */
+  /** Half-life in minutes of a signal, by severity. */
   halfLifeMinutes: Record<Severity, number>;
-  /** Suelo de decaimiento de una señal confirmada: nunca se olvida del todo. */
+  /** Decay floor for confirmed signal: never completely forgotten. */
   decayFloorConfirmed: number;
-  /** Suelo de decaimiento de una señal sin verificar. */
+  /** Decay floor for unverified signal. */
   decayFloorUnverified: number;
-  /** Ganancia logarítmica por repeticiones (`occurrences`). */
+  /** Logarithmic gain from repetitions (`occurrences`). */
   occurrenceBoost: number;
-  /** Techo del multiplicador por repeticiones. */
+  /** Cap on multiplier from repetitions. */
   occurrenceCap: number;
   populationDivisor: number;
   populationCap: number;
-  /** Peso de una necesidad estructural, no nacida de una señal viva. */
+  /** Weight of structural need, not born from a live signal. */
   baseNeedWeight: number;
-  /** Peso de una necesidad que nació de una señal viva (ya contada como señal). */
+  /** Weight of need born from live signal (already counted as signal). */
   signalNeedWeight: number;
   signalNeedCap: number;
   needCap: number;
   resourceGapWeight: number;
   resourceGapCap: number;
-  /** Alivio que aporta una acción completada con éxito, recién terminada. */
+  /** Relief provided by successfully completed action, newly finished. */
   reliefPerAction: number;
-  /** Vida media del alivio: resolver algo hace media hora ya calma menos. */
+  /** Half-life of relief: resolving something half an hour ago relieves less now. */
   reliefHalfLifeMinutes: number;
   reliefDamping: number;
-  /** El alivio nunca puede borrar más de esta fracción de la presión de la zona. */
+  /** Relief can never erase more than this fraction of zone pressure. */
   reliefShareCap: number;
 }
 
@@ -112,9 +112,9 @@ export const defaultPriorityWeights: PriorityWeights = {
 };
 
 export interface PriorityOptions {
-  /** Instante de referencia para el decaimiento. Por defecto, ahora. */
+  /** Reference timestamp for decay. Defaults to now. */
   now?: number | string | Date;
-  /** Pesos aprendidos o de prueba. Cada clave sustituye a la de por defecto. */
+  /** Learned or test weights. Each key overrides default. */
   weights?: Partial<PriorityWeights>;
 }
 
@@ -132,14 +132,14 @@ function resolveNow(options?: PriorityOptions): number {
 }
 
 // ---------------------------------------------------------------------------
-// Utilidades
+// Utilities
 // ---------------------------------------------------------------------------
 
 export function buildDedupeKey(event: Pick<CrisisEvent, "zoneId" | "category" | "severity">) {
   return `${event.zoneId}:${event.category.toLowerCase()}:${event.severity}`;
 }
 
-/** Antigüedad en minutos, nunca negativa. Un timestamp ilegible cuenta como reciente. */
+/** Age in minutes, never negative. Unparseable timestamp counts as recent. */
 function ageInMinutes(iso: string | null | undefined, now: number) {
   if (!iso) return 0;
   const at = Date.parse(iso);
@@ -148,9 +148,9 @@ function ageInMinutes(iso: string | null | undefined, now: number) {
 }
 
 /**
- * Suma con rendimientos decrecientes: se ordena de mayor a menor y el enésimo
- * valor cuenta 1/(1 + damping*n). Así ocho señales flojas no valen ocho veces
- * una señal floja, pero la más fuerte siempre cuenta entera.
+ * Sum with diminishing returns: sorted descending, n-th value counts
+ * 1/(1 + damping*n). Thus eight weak signals are not worth eight times
+ * one weak signal, but the strongest always counts fully.
  */
 function dampedSum(values: number[], damping: number, cap: number) {
   const total = [...values]
@@ -160,10 +160,10 @@ function dampedSum(values: number[], damping: number, cap: number) {
 }
 
 // ---------------------------------------------------------------------------
-// Peso de una señal
+// Signal weight
 // ---------------------------------------------------------------------------
 
-/** Cuánto nos creemos la señal: confianza declarada, castigada si no está verificada. */
+/** How much signal is believed: declared confidence, penalized if unverified. */
 export function credibilityFactor(event: CrisisEvent, options?: PriorityOptions) {
   const weights = resolveWeights(options);
   const base = weights.confidence[event.confidence] ?? weights.confidence.medium;
@@ -171,14 +171,14 @@ export function credibilityFactor(event: CrisisEvent, options?: PriorityOptions)
   return base * (weights.unverified[event.confidence] ?? weights.unverified.medium);
 }
 
-/** Cinco avisos iguales son más creíbles que uno, pero no cinco veces más. */
+/** Five identical reports are more credible than one, but not five times more. */
 export function occurrenceFactor(occurrences: number, options?: PriorityOptions) {
   const weights = resolveWeights(options);
   const count = Math.max(1, Math.floor(occurrences || 1));
   return Math.min(weights.occurrenceCap, 1 + Math.log(count) * weights.occurrenceBoost);
 }
 
-/** Lo que sabías a las 12:00 ya no vale a las 12:20. Decaimiento exponencial por gravedad. */
+/** What was known at 12:00 is worth less at 12:20. Exponential decay by severity. */
 export function decayFactor(event: CrisisEvent, options?: PriorityOptions) {
   const weights = resolveWeights(options);
   const now = resolveNow(options);
@@ -189,7 +189,7 @@ export function decayFactor(event: CrisisEvent, options?: PriorityOptions) {
   return Math.min(1, Math.max(floor, raw));
 }
 
-/** Peso final de una señal viva sobre su zona. */
+/** Final weight of a live signal on its zone. */
 export function signalWeight(event: CrisisEvent, options?: PriorityOptions) {
   const weights = resolveWeights(options);
   const severity = weights.severity[event.severity] ?? weights.severity.medium;
@@ -201,13 +201,13 @@ export function signalWeight(event: CrisisEvent, options?: PriorityOptions) {
   );
 }
 
-/** Señales que siguen contando: las de la zona que no han sido descartadas. */
+/** Signals that continue counting: those of the zone not yet discarded. */
 export function liveEventsForZone(zone: CrisisZone, events: CrisisEvent[]) {
   return events.filter((event) => event.zoneId === zone.id && event.confirmed !== false);
 }
 
 // ---------------------------------------------------------------------------
-// Puntuación explicada
+// Explained score
 // ---------------------------------------------------------------------------
 
 export interface ZoneExplanation {
@@ -230,8 +230,8 @@ const confidenceLabel: Record<Confidence, string> = {
 };
 
 /**
- * Desglose completo de la puntuación de una zona. Los factores devueltos suman
- * exactamente `score`, para que la UI pueda justificar la decisión sin mentir.
+ * Complete breakdown of a zone's score. Returned factors sum
+ * exactly to `score`, so the UI can justify the decision truthfully.
  */
 export function explainZone(
   zone: CrisisZone,
@@ -244,28 +244,28 @@ export function explainZone(
   const now = resolveNow(options);
   const live = liveEventsForZone(zone, events);
 
-  // 1. Riesgo base: el riesgo estructural de la zona, sin el empujón que el
-  //    store ya aplicó por cada señal viva (eso se recuenta abajo, con
-  //    credibilidad y decaimiento).
+  // 1. Base risk: structural risk of the zone, without the boost that the
+  //    store already applied for each live signal (recounted below, with
+  //    credibility and decay).
   const appliedBySignals = live.reduce((acc, event) => acc + (event.appliedRiskDelta || 0), 0);
   const baseRisk = Math.max(0, Math.min(zone.riskScore, zone.riskScore - appliedBySignals));
 
-  // 2. Señales vivas, con rendimientos decrecientes al apilarse.
+  // 2. Live signals, with diminishing returns when stacked.
   const signalPressure = dampedSum(
     live.map((event) => signalWeight(event, options)),
     weights.stackingDamping,
     weights.signalCap,
   );
 
-  // 3. Población expuesta.
+  // 3. Exposed population.
   const population = Math.min(
     weights.populationCap,
     zone.populationAtRisk / Math.max(1, weights.populationDivisor),
   );
 
-  // 4. Necesidades abiertas. Las que nacieron de una señal viva ya están
-  //    contadas como señal: aportan una miseria y con techo propio, para que
-  //    abrir categorías nuevas no infle la zona a perpetuidad.
+  // 4. Open needs. Those born from live signals are already counted as
+  //    signals: contribute minimal amount with own cap, so opening new
+  //    categories does not inflate zone indefinitely.
   const signalNeeds = new Set(
     live.map((event) => event.appliedNeed).filter((need): need is string => Boolean(need)),
   );
@@ -277,15 +277,15 @@ export function explainZone(
       Math.min(weights.signalNeedCap, signalNeedCount * weights.signalNeedWeight),
   );
 
-  // 5. Recursos caídos en la zona: menos capacidad, más presión.
+  // 5. Downed resources in the zone: less capacity, more pressure.
   const downResources = resources.filter(
     (resource) => resource.zoneId === zone.id && resource.status === "unavailable",
   ).length;
   const resourceGap = Math.min(weights.resourceGapCap, downResources * weights.resourceGapWeight);
 
-  // 6. Alivio: si el sistema resolvió algo aquí, la presión baja. El alivio
-  //    también caduca, porque una zona atendida hace media hora puede haberse
-  //    vuelto a degradar.
+  // 6. Relief: if the system resolved something here, pressure drops. Relief
+  //    also decays, because a zone attended to half an hour ago may have
+  //    degraded again.
   const resolved = actions.filter(
     (action) => action.zoneId === zone.id && action.status === "succeeded",
   );
@@ -305,8 +305,8 @@ export function explainZone(
   const pressure = baseRisk + signalPressure + population + needScore + resourceGap;
   const relief = Math.min(rawRelief, pressure * weights.reliefShareCap);
 
-  // Redondeamos factor a factor y la puntuación es su suma, para que el
-  // desglose cuadre al punto con el número que ve el jurado.
+  // Rounded factor by factor and score is their sum, so breakdown matches
+  // number seen by operators.
   const roundedBase = Math.round(baseRisk);
   const roundedSignals = Math.round(signalPressure);
   const roundedPopulation = Math.round(population);
@@ -315,7 +315,7 @@ export function explainZone(
   const positive = roundedBase + roundedSignals + roundedPopulation + roundedNeeds + roundedGap;
 
   let roundedRelief = Math.round(relief);
-  // Una acción resuelta siempre tiene que notarse, aunque su alivio redondee a cero.
+  // A resolved action must always be noticeable, even if its relief rounds to zero.
   if (resolved.length > 0 && roundedRelief === 0 && positive > 0) roundedRelief = 1;
   roundedRelief = Math.min(roundedRelief, positive);
 
@@ -339,7 +339,7 @@ export function explainZone(
   };
 }
 
-/** Frase corta y honesta de por qué esta zona puntúa lo que puntúa. */
+/** Short, honest statement of why this zone scores as it does. */
 function buildReason(
   zone: CrisisZone,
   live: CrisisEvent[],
@@ -382,8 +382,8 @@ function buildReason(
 }
 
 /**
- * Puntuación de una zona. `actions` y `options` son opcionales para no romper
- * a quien solo quiera una estimación rápida sin historial de acciones.
+ * Zone score. `actions` and `options` are optional for callers
+ * needing a quick estimate without action history.
  */
 export function scoreZone(
   zone: CrisisZone,
@@ -400,8 +400,8 @@ export function scoreZone(
 // ---------------------------------------------------------------------------
 
 /**
- * Construye el plan completo. `changes` y `trigger` los reescribe el store
- * justo después, así que aquí devolvemos valores por defecto.
+ * Builds complete plan. `changes` and `trigger` are overwritten by store
+ * immediately after, so default values are returned here.
  */
 export function buildPlan(
   version: number,
@@ -422,8 +422,7 @@ export function buildPlan(
         reason: explanation.reason,
       };
     })
-    // Empates resueltos por identificador: el orden nunca depende del azar ni
-    // del orden de llegada.
+    // Ties resolved by identifier: ordering never depends on chance or arrival order.
     .sort((a, b) => b.score - a.score || a.zoneId.localeCompare(b.zoneId));
 
   const topPriority = priorities[0];

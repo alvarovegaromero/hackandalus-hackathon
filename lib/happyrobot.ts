@@ -1,12 +1,12 @@
-// PROPIETARIO: agente de integración HappyRobot, contactos y escalado.
-// Adaptador hacia HappyRobot: es la única pieza que habla con el exterior.
+// OWNER: HappyRobot integration, contacts, and escalation agent.
+// HappyRobot adapter: the only piece that speaks to the outside world.
 //
-// Honestidad primero. `docs/happyDocumentation.md` deja constancia de que la
-// documentación privada (docs.happyrobot.ai) está restringida, así que la ruta
-// y la forma del cuerpo NO están verificadas contra el contrato real. Por eso
-// todo lo que puede cambiar cuando se tenga acceso a esa documentación es
-// configurable por variable de entorno, con el valor actual como defecto: el
-// día de la demo basta con tocar `.env.local`, nunca este fichero.
+// Honesty first. `docs/happyDocumentation.md` notes that private documentation
+// (docs.happyrobot.ai) is restricted, so endpoint paths and payload shapes
+// are NOT verified against the real contract. Therefore, everything that might
+// change once access is granted is configurable via environment variables,
+// with current values as defaults: on demo day, adjusting `.env.local` suffices,
+// never this file.
 
 import { timingSafeEqual } from "node:crypto";
 import {
@@ -18,15 +18,15 @@ import {
 import type { Action, ActionChannel, Contact, ExecutionMode } from "./types";
 
 // ---------------------------------------------------------------------------
-// Resultado y errores
+// Results and errors
 // ---------------------------------------------------------------------------
 
 export interface HappyRobotResult {
   externalActionId: string;
   mode: ExecutionMode;
-  /** true siempre que no haya salido nada del proceso hacia el exterior. */
+  /** true whenever nothing has left the process to the outside world. */
   simulated: boolean;
-  /** Explicación en castellano de qué se hizo y por qué. Acaba en la UI. */
+  /** Explanation of what was done and why. Displayed in UI. */
   detail: string;
 }
 
@@ -39,7 +39,7 @@ export type HappyRobotErrorKind =
   | "network"
   | "unreadable-response";
 
-/** Error con causa clasificada, para que la UI y los reintentos sepan que paso. */
+/** Error with classified cause, for UI and retry logic to understand what happened. */
 export class HappyRobotError extends Error {
   readonly kind: HappyRobotErrorKind;
   readonly status?: number;
@@ -59,7 +59,7 @@ export class HappyRobotError extends Error {
 }
 
 // ---------------------------------------------------------------------------
-// Configuración
+// Configuration
 // ---------------------------------------------------------------------------
 
 function envNumber(name: string, fallback: number): number {
@@ -74,24 +74,24 @@ export interface HappyRobotConfig {
   apiKey: string;
   agentId: string;
   workflowId: string;
-  /** Ruta del endpoint de acción. Admite {agentId} y {workflowId}. */
+  /** Action endpoint path. Supports {agentId} and {workflowId}. */
   actionPath: string;
   authHeader: string;
   authScheme: string;
   idempotencyHeader: string;
-  /** Forma del cuerpo: `flat` (por defecto), `wrapped` o `trigger`. */
+  /** Payload shape: `flat` (default), `wrapped`, or `trigger`. */
   payloadShape: "flat" | "wrapped" | "trigger";
-  /** Rutas separadas por comas donde buscar el id externo en la respuesta. */
+  /** Comma-separated paths where external ID is searched in response. */
   responseIdPaths: string[];
   timeoutMs: number;
   maxAttempts: number;
   retryBaseMs: number;
-  /** Traduccion de canal local a canal HappyRobot, p. ej. "call=voice". */
+  /** Translation of local channel to HappyRobot channel, e.g. "call=voice". */
   channelMap: Partial<Record<ActionChannel, string>>;
 }
 
 function parseChannelMap(raw: string | undefined): Partial<Record<ActionChannel, string>> {
-  // Defecto: nuestra "call" es "voice" en la nomenclatura pública de HappyRobot.
+  // Default: our "call" is "voice" in HappyRobot public nomenclature.
   const map: Partial<Record<ActionChannel, string>> = { call: "voice" };
   if (!raw) return map;
   for (const pair of raw.split(",")) {
@@ -106,7 +106,7 @@ function parseShape(raw: string | undefined): HappyRobotConfig["payloadShape"] {
   return "flat";
 }
 
-/** Lee la configuración viva. No se cachea: los tests cambian el entorno. */
+/** Reads live configuration. Not cached: tests alter environment. */
 export function happyRobotConfig(): HappyRobotConfig {
   return {
     baseUrl: (process.env.HAPPYROBOT_BASE_URL ?? "https://api.happyrobot.ai").replace(/\/$/, ""),
@@ -141,7 +141,7 @@ export function isHappyRobotConfigured() {
   );
 }
 
-/** URL completa del endpoint de acción, con las plantillas ya resueltas. */
+/** Complete URL of action endpoint, with templates resolved. */
 export function actionEndpoint(config = happyRobotConfig()): string {
   const path = config.actionPath
     .replace("{agentId}", encodeURIComponent(config.agentId))
@@ -150,23 +150,22 @@ export function actionEndpoint(config = happyRobotConfig()): string {
 }
 
 // ---------------------------------------------------------------------------
-// Secreto del webhook
+// Webhook secret
 // ---------------------------------------------------------------------------
 
-/** Cabecera donde HappyRobot envia el secreto compartido. */
+/** Header where HappyRobot sends shared secret. */
 export const WEBHOOK_SECRET_HEADER = "x-happyrobot-secret";
 
 export function isWebhookSecretConfigured(): boolean {
   return Boolean(process.env.HAPPYROBOT_WEBHOOK_SECRET);
 }
 
-/** Comparacion en tiempo constante, para no filtrar el secreto por tiempos. */
+/** Constant-time comparison to avoid timing leaks. */
 function safeEqual(received: string, expected: string): boolean {
   const a = Buffer.from(received, "utf8");
   const b = Buffer.from(expected, "utf8");
   if (a.length !== b.length) {
-    // Se compara igualmente contra si mismo para que el coste no dependa de
-    // si las longitudes coinciden.
+    // Compare against self anyway so cost does not depend on length matching.
     timingSafeEqual(a, a);
     return false;
   }
@@ -174,9 +173,9 @@ function safeEqual(received: string, expected: string): boolean {
 }
 
 /**
- * Validacion estricta para endpoints públicos: si no hay secreto configurado,
- * la petición se rechaza. Un webhook abierto a internet sin secreto es una
- * puerta abierta para inyectar señales falsas en el centro de mando.
+ * Strict validation for public endpoints: if no secret is configured,
+ * the request is rejected. A webhook open to the internet without a secret
+ * is an open door to inject false signals into the command center.
  */
 export function verifyWebhookSecret(request: Request): { ok: boolean; reason?: string } {
   const expected = process.env.HAPPYROBOT_WEBHOOK_SECRET;
@@ -198,11 +197,11 @@ export function verifyWebhookSecret(request: Request): { ok: boolean; reason?: s
 }
 
 /**
- * Variante permisiva heredada: devuelve true cuando no hay secreto configurado.
- * Se mantiene para no romper a quien ya la usa, pero NO debe usarse en rutas
- * públicas nuevas. Para eso está `verifyWebhookSecret`.
+ * Permissive legacy variant: returns true when no secret is configured.
+ * Preserved for backward compatibility, but must NOT be used on new
+ * public routes. Use `verifyWebhookSecret` instead.
  *
- * @deprecated Usa `verifyWebhookSecret`.
+ * @deprecated Use `verifyWebhookSecret`.
  */
 export function validateWebhookSecret(request: Request) {
   const expected = process.env.HAPPYROBOT_WEBHOOK_SECRET;
@@ -213,7 +212,7 @@ export function validateWebhookSecret(request: Request) {
 }
 
 // ---------------------------------------------------------------------------
-// Construccion del cuerpo
+// Payload construction
 // ---------------------------------------------------------------------------
 
 export interface ActionPayloadCore {
@@ -226,9 +225,9 @@ export interface ActionPayloadCore {
 }
 
 /**
- * Cuerpo de la petición según la forma configurada. La forma `flat` es la que
- * documentamos como contrato interno en `docs/happyDocumentation.md`; las otras dos
- * existen para poder adaptarse sin tocar código cuando se confirme la real.
+ * Request body according to configured shape. The `flat` shape is documented
+ * as the internal contract in `docs/happyDocumentation.md`; the other two exist
+ * to adapt without code changes once the real contract is confirmed.
  */
 export function buildActionPayload(
   action: Action,
@@ -281,13 +280,13 @@ function readPath(body: unknown, path: string): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// Ejecución
+// Execution
 // ---------------------------------------------------------------------------
 
 function mockResult(action: Action, detail: string): HappyRobotResult {
   return {
-    // El prefijo deja el caracter simulado escrito en el propio identificador,
-    // para que ni la UI ni un log puedan presentarlo como ejecución real.
+    // Prefix writes simulated character into identifier itself, so neither
+    // UI nor logs can present it as real execution.
     externalActionId: `mock-simulado-${action.id}`,
     mode: "mock",
     simulated: true,
@@ -300,10 +299,10 @@ function sleep(ms: number) {
 }
 
 /**
- * Busca el contacto de la acción en el estado vivo. Se hace con import
- * diferido porque `store.ts` ya importa este módulo: en tiempo de llamada el
- * módulo ya está inicializado, así que el ciclo no es un problema. Si algo
- * falla se devuelve null y la salvaguarda degrada a simulación.
+ * Looks up the action contact in live state. Done via deferred import
+ * because `store.ts` already imports this module: at call time the
+ * module is already initialized, so the cycle is not an issue. If lookup
+ * fails, returns null and safeguard downgrades to simulation.
  */
 async function resolveContact(action: Action): Promise<Contact | null> {
   if (!action.contactId) return null;
@@ -316,11 +315,11 @@ async function resolveContact(action: Action): Promise<Contact | null> {
 }
 
 /**
- * Ejecuta una acción. En modo `mock` no sale nada del proceso. En modo
- * `happyrobot` solo se llama de verdad si el contacto está aprobado para la
- * demo; en cualquier otro caso se degrada a simulación y se explica por qué.
+ * Executes an action. In `mock` mode nothing leaves the process. In `happyrobot`
+ * mode it only makes real calls if contact is approved for demo;
+ * in any other case it downgrades to simulation and explains why.
  *
- * @param contact contacto ya resuelto. Si no se pasa, se busca en el estado.
+ * @param contact resolved contact. If omitted, looked up in state.
  */
 export async function executeHappyRobotAction(
   action: Action,
@@ -335,13 +334,13 @@ export async function executeHappyRobotAction(
   if (!isHappyRobotConfigured()) {
     throw new HappyRobotError(
       "missing-credentials",
-      // El sufijo en inglés se mantiene por compatibilidad con tests de otro
-      // módulo; el texto útil para el operador es el castellano.
+      // English suffix preserved for compatibility with tests in another module;
+      // primary text for operator is Spanish.
       "Faltan credenciales de HappyRobot: define HAPPYROBOT_API_KEY, HAPPYROBOT_BASE_URL y HAPPYROBOT_AGENT_ID en .env.local (HappyRobot credentials are missing).",
     );
   }
 
-  // SALVAGUARDA: sin contacto aprobado para demo no sale nada al exterior.
+  // SAFEGUARD: without demo-approved contact nothing leaves to the outside world.
   const resolved = contact !== undefined ? contact : await resolveContact(action);
   const bloqueo = liveActionBlockReason(resolved);
   if (bloqueo || !resolved || !canReceiveLiveAction(resolved)) {
@@ -359,15 +358,15 @@ export async function executeHappyRobotAction(
   const headers: Record<string, string> = {
     "content-type": "application/json",
     accept: "application/json",
-    // Clave de idempotencia canónica: la que gestiona el store y que cambia
-    // en cada reintento del operador, no una inventada aquí.
+    // Canonical idempotency key: managed by store and changing on each
+    // operator retry, not invented here.
     [config.idempotencyHeader]: action.idempotencyKey,
     [config.authHeader]: config.authScheme
       ? `${config.authScheme} ${config.apiKey}`
       : config.apiKey,
   };
 
-  /** Un único intento, con su propio temporizador de cancelacion. */
+  /** Single attempt, with its own abort timer. */
   const dispatchOnce = async (attempt: number): Promise<HappyRobotResult> => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), config.timeoutMs);
@@ -385,8 +384,8 @@ export async function executeHappyRobotAction(
       if (!response.ok) {
         const recorte = text.slice(0, 300);
         if (response.status >= 400 && response.status < 500) {
-          // Un 4xx es culpa nuestra (ruta, credenciales, cuerpo o permisos):
-          // reintentarlo solo repite el mismo error.
+          // A 4xx is our fault (route, credentials, body, or permissions):
+          // retrying only repeats the same error.
           throw new HappyRobotError(
             "client-error",
             `HappyRobot rechazó la acción con ${response.status}: revisa la ruta (${config.actionPath}), la clave o el formato del cuerpo. Respuesta: ${recorte || "sin cuerpo"}`,
@@ -404,8 +403,8 @@ export async function executeHappyRobotAction(
       try {
         parsed = text.length > 0 ? JSON.parse(text) : {};
       } catch {
-        // La acción puede haberse ejecutado: no la damos por buena, pero
-        // avisamos de que un reintento podría duplicar el aviso.
+        // The action may have executed: we do not accept it as valid, but
+        // warn that a retry could duplicate notification.
         throw new HappyRobotError(
           "unreadable-response",
           `HappyRobot aceptó la petición (${response.status}) pero devolvió una respuesta ilegible. Comprueba en HappyRobot si la acción salió antes de reintentar. Respuesta: ${text.slice(0, 200)}`,
@@ -436,15 +435,15 @@ export async function executeHappyRobotAction(
     } catch (error) {
       const clasificado = classifyError(error, attempt, config);
       ultimoError = clasificado;
-      // Solo se reintenta lo que puede salir bien al repetirlo: fallo de red,
-      // tiempo de espera agotado y 5xx. Un 4xx nunca se reintenta.
+      // Only retry what could succeed on repetition: network failure,
+      // timeout, and 5xx. A 4xx is never retried.
       const reintentable =
         clasificado.kind === "server-error" ||
         clasificado.kind === "network" ||
         clasificado.kind === "timeout";
       if (!reintentable || attempt === config.maxAttempts) throw clasificado;
-      // Backoff exponencial. La clave de idempotencia no cambia entre
-      // reintentos internos, así que HappyRobot puede deduplicarlos.
+      // Exponential backoff. Idempotency key does not change between
+      // internal retries, so HappyRobot can deduplicate them.
       await sleep(config.retryBaseMs * 2 ** (attempt - 1));
     }
   }

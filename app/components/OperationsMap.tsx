@@ -20,9 +20,7 @@ const LeafletMap = dynamic(() => import("./LeafletMap"), {
   loading: () => (
     <div className="w-full h-[480px] rounded-[16px] border border-line bg-ink flex flex-col items-center justify-center text-white tracking-[-0.15px] gap-2">
       <div className="w-8 h-8 rounded-full border-2 border-t-transparent border-white animate-spin" />
-      <span className="text-[13px] font-medium text-neutral-300">
-        Cargando el mapa de Sierra Bermeja…
-      </span>
+      <span className="text-[13px] font-medium text-neutral-300">Loading Sierra Bermeja map…</span>
     </div>
   ),
 });
@@ -48,7 +46,7 @@ export default function OperationsMap({ zones, plan, world, selectedZoneId, onSe
         <div
           className="flex items-center gap-1 bg-neutral-100 p-0.5 rounded-full border border-neutral-200"
           role="group"
-          aria-label="Vista del mapa"
+          aria-label="Map view"
         >
           <Button
             size="sm"
@@ -58,7 +56,7 @@ export default function OperationsMap({ zones, plan, world, selectedZoneId, onSe
             onClick={() => setViewMode("tactical")}
           >
             <MapPin size={12} aria-hidden="true" />
-            Táctico
+            Tactical
           </Button>
           <Button
             size="sm"
@@ -75,7 +73,7 @@ export default function OperationsMap({ zones, plan, world, selectedZoneId, onSe
 
       {tilesDown ? (
         <p className="px-1 text-[12px] text-warn" role="status">
-          No hay conexión con el mapa base: se muestra el esquema regional.
+          No connection to base map: displaying regional schematic.
         </p>
       ) : null}
 
@@ -90,12 +88,12 @@ export default function OperationsMap({ zones, plan, world, selectedZoneId, onSe
         />
       ) : (
         <div className="map">
-          <div className="map-label">Andalucía · cobertura de la demo regional</div>
+          <div className="map-label">Andalucía · regional demo coverage</div>
           <svg
             className="region-shape"
             viewBox="0 0 760 520"
             role="img"
-            aria-label="Mapa esquemático de Andalucía"
+            aria-label="Schematic map of Andalucía"
           >
             <path
               className="map-land andalucia"
@@ -126,9 +124,9 @@ export default function OperationsMap({ zones, plan, world, selectedZoneId, onSe
                 className={`zone-marker ${zone.status} ${selected ? "selected" : ""}`}
                 style={{ left: `${zone.coordinates.x}%`, top: `${zone.coordinates.y}%` }}
                 aria-pressed={selected}
-                aria-label={`${zone.name}. Estado ${zoneStatusLabels[zone.status]}. Puntuación ${score}${
-                  rank ? `. Prioridad número ${rank}` : ""
-                }. Abrir el detalle de la zona.`}
+                aria-label={`${zone.name}. Status ${zoneStatusLabels[zone.status]}. Score ${score}${
+                  rank ? `. Priority number ${rank}` : ""
+                }. Open zone details.`}
                 onClick={() => onSelect(zone.id)}
               >
                 {rank ? <em className="marker-rank">{rank}</em> : null}

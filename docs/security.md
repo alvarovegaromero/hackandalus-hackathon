@@ -1,157 +1,149 @@
-# Nota de seguridad
+# Security Note
 
-Este sistema llama por teléfono, escribe y abre tickets a personas reales, y
-recibe señales desde internet. Esta nota recoge cómo se tratan las credenciales,
-el secreto del webhook y los destinatarios, y qué reglas son innegociables
-durante el hackathon.
+This system places phone calls, sends messages, and opens tickets for real people,
+and receives signals from the internet. This note outlines how credentials,
+the webhook secret, and recipients are handled, along with the non-negotiable
+rules during the hackathon.
 
-Alcance: prototipo de hackathon en local. No está endurecido para producción y no
-debe exponerse a internet más allá de lo estrictamente necesario para la demo.
-
----
-
-## 1. Credenciales
-
-**Dónde viven.** Solo en `.env.local`, que `.gitignore` excluye junto a cualquier
-`.env*` que no sea un `.example`. `.env.example` contiene únicamente nombres de
-variable y valores inofensivos, y es el único fichero de entorno que se versiona.
-
-**Reglas.**
-
-- Ninguna clave, token, teléfono o correo real entra en el código, los commits,
-  los mensajes de commit, las capturas, los prompts a agentes ni los logs.
-- Las credenciales se leen siempre de `process.env` en el momento de usarlas
-  (`happyRobotConfig()` no cachea), nunca se copian a estructuras que luego se
-  serializan hacia el navegador.
-- `GET /api/situation` devuelve el estado completo al cliente. **Nada que venga de
-  una variable de entorno debe acabar dentro de `SituationState`.** Hoy lo único
-  que se expone de la integración es `IntegrationState`: el modo, si hay
-  credenciales configuradas (un booleano, no su valor), el último error y los
-  contadores de acciones reales y simuladas.
-- Si una credencial se filtra en un commit, no basta con borrarla en el siguiente:
-  hay que **rotarla en HappyRobot**. Queda en el historial de Git.
-- El error de credenciales que devuelve el adaptador nombra las variables que
-  faltan, nunca sus valores.
-
-**Si hay que compartir credenciales dentro del equipo**, se hace por un canal
-fuera de banda (no por el repositorio, ni por una incidencia, ni por una PR).
+Scope: local hackathon prototype. It is not hardened for production and must
+not be exposed to the internet beyond what is strictly necessary for the demo.
 
 ---
 
-## 2. Secreto del webhook
+## 1. Credentials
 
-`POST /api/webhooks/happyrobot` es la puerta por la que entra al centro de mando
-lo que HappyRobot recoge en una llamada. Quien pueda escribir ahí puede **inventar
-una crisis**: inyectar señales falsas, mover prioridades y dar acciones por
-completadas sin que se hayan ejecutado.
+**Where they live.** Exclusively in `.env.local`, which `.gitignore` excludes
+along with any `.env*` that is not a `.example`. `.env.example` contains only
+variable names and harmless placeholder values, and is the only environment file tracked in version control.
 
-**Cómo se protege.**
+**Rules.**
 
-- Secreto compartido en la cabecera `x-happyrobot-secret`, contra
+- No real API keys, tokens, phone numbers, or email addresses enter the code,
+  commits, commit messages, screenshots, agent prompts, or logs.
+- Credentials are always read directly from `process.env` at the time of use
+  (`happyRobotConfig()` does not cache), and are never copied into structures
+  that are subsequently serialized to the browser.
+- `GET /api/situation` returns the full state to the client. **Nothing originating from
+  an environment variable must end up inside `SituationState`.** Currently, the only
+  integration information exposed is `IntegrationState`: the mode, whether
+  credentials are configured (a boolean, not their value), the latest error, and
+  counters for live and simulated actions.
+- If a credential is leaked in a commit, simply deleting it in the next commit is not enough:
+  it must be **rotated in HappyRobot**. It remains in Git history.
+- The credential error returned by the adapter names the missing variables,
+  never their values.
+
+**If credentials must be shared within the team**, do so via an out-of-band channel
+(not through the repository, issue tracker, or pull requests).
+
+---
+
+## 2. Webhook Secret
+
+`POST /api/webhooks/happyrobot` is the entry point through which HappyRobot call results
+enter the command center. Anyone capable of writing to this endpoint could **fabricate
+a crisis**: injecting false signals, shifting priorities, and marking actions as
+completed when they were never executed.
+
+**How it is protected.**
+
+- Shared secret in the `x-happyrobot-secret` header, validated against
   `HAPPYROBOT_WEBHOOK_SECRET`.
-- **Sin secreto configurado, la ruta se cierra**: responde `503` y no procesa
-  nada. Es deliberado que el fallo sea cerrado y no abierto; un webhook público
-  sin secreto es peor que un webhook caído.
-- Con secreto configurado y cabecera ausente o distinta: `401`.
-- La comparación es en tiempo constante (`timingSafeEqual`), y compara también
-  cuando las longitudes no coinciden, para no filtrar la longitud del secreto por
-  el tiempo de respuesta.
-- Los callbacks son idempotentes: se recuerda la clave de entrega (la que envíe
-  HappyRobot, o una huella SHA-256 del cuerpo) durante 15 minutos, y un reenvío
-  devuelve la misma respuesta sin volver a tocar el estado. Un reintento de
-  HappyRobot no puede duplicar señales ni mover dos veces una acción.
+- **With no secret configured, the route is closed**: it returns `503` and processes
+  nothing. It is deliberate that the failure mode is fail-closed rather than fail-open; a public
+  webhook without a secret is worse than an unavailable webhook.
+- When a secret is configured but the header is missing or mismatched: `401`.
+- Comparison is constant-time (`timingSafeEqual`), and also compares when lengths
+  do not match to avoid leaking the secret's length via response timing.
+- Callbacks are idempotent: the delivery key (sent by HappyRobot, or a SHA-256
+  digest of the body) is retained for 15 minutes; re-deliveries return the same
+  response without mutating state. A HappyRobot retry cannot duplicate signals or
+  advance an action twice.
 
-**Cuidado con la ruta hermana.** `POST /api/actions/:id/status` existe para las
-operaciones del operador desde la interfaz (cancelar, reintentar, simular un
-callback) y usa la validación permisiva heredada `validateWebhookSecret()`, que
-**deja pasar cualquier petición si no hay secreto configurado**. Esa asimetría es
-intencionada —exigir secreto ahí rompería los botones de la UI—, pero implica una
-regla dura:
+**Watch out for the sibling route.** `POST /api/actions/:id/status` exists for
+operator actions from the UI (cancelling, retrying, simulating a callback)
+and uses the legacy permissive `validateWebhookSecret()`, which **allows any request
+through if no secret is configured**. This asymmetry is intentional—enforcing a secret
+there would break UI action buttons—but dictates a strict rule:
 
-> `POST /api/actions/:id/status` no debe quedar accesible desde internet. Si se
-> expone el servidor con un túnel para que HappyRobot llame, expón únicamente
+> `POST /api/actions/:id/status` must not be accessible from the internet. If the
+> server is exposed via a tunnel for HappyRobot callbacks, expose only
 > `/api/webhooks/happyrobot`.
 
-**Elegir el secreto.** Que sea aleatorio y largo (por ejemplo
-`openssl rand -hex 32`), distinto por entorno, y que se rote en cuanto termine el
-evento. No reutilices el de otro proyecto.
+**Choosing the secret.** Keep it random and long (e.g., `openssl rand -hex 32`),
+distinct per environment, and rotate it as soon as the event concludes. Do not
+reuse a secret from another project.
 
 ---
 
-## 3. Destinatarios de demo
+## 3. Demo Recipients
 
-Los contactos del sistema llevan un campo `demoSafe`. Solo los marcados como
-aptos pueden recibir una acción real.
+Contacts in the system carry a `demoSafe` flag. Only contacts marked as approved
+can receive a live action.
 
-**Cómo se aplica.** En `executeHappyRobotAction`, antes de cualquier salida al
-exterior, se comprueba `canReceiveLiveAction()` / `liveActionBlockReason()`. Si el
-contacto no está aprobado o no tiene destino (teléfono o correo), la acción **no
-falla: degrada a simulación** y explica el motivo, que acaba visible en la
-interfaz. El identificador externo resultante lleva el prefijo `mock-no-aprobado-`,
-de forma que ni la interfaz ni un log pueden presentarlo como ejecución real.
+**How it is enforced.** In `executeHappyRobotAction`, prior to any external dispatch,
+`canReceiveLiveAction()` / `liveActionBlockReason()` is checked. If the contact is
+not approved or lacks a destination (phone or email), the action **does not fail:
+it degrades to simulation** and records the reason, which is displayed in the UI.
+The resulting external ID carries the prefix `mock-no-aprobado-`, ensuring
+neither the UI nor logs can present it as a live execution.
 
-**Estado actual de la semilla:** todos los contactos de `lib/seed.ts` están
-marcados con `demoSafe: false`. Es el valor por defecto correcto: en modo
-`happyrobot` el sistema no llamaría a nadie hasta que alguien marque
-explícitamente a quién sí.
+**Current seed state:** all contacts in `lib/seed.ts` are marked with `demoSafe: false`.
+This is the correct default: in `happyrobot` mode, the system will not call anyone
+until someone explicitly marks whom to contact.
 
-**Antes de marcar a alguien como apto:**
+**Before marking someone as approved:**
 
-1. Que sea una persona del equipo o alguien que ha dado su consentimiento
-   explícito para recibir llamadas o mensajes automáticos durante la demo.
-2. Que el usuario haya aprobado **esa acción concreta**, no "las acciones en
-   general". Una aprobación anterior para otro contexto no vale.
-3. Que el teléfono o correo sea el de esa persona y esté bien escrito. Un dígito
-   mal en un número de teléfono es una llamada automática a un desconocido.
+1. They must be a team member or someone who has provided explicit consent
+   to receive automated calls or messages during the demo.
+2. The user must have approved **that specific action**, not "actions in general".
+   A previous approval for another context is not valid.
+3. The phone number or email must belong to that person and be typed accurately.
+   A single misplaced digit in a phone number results in an automated call to a stranger.
 
-**Datos personales.** Los teléfonos y correos de los contactos de demo son datos
-personales: van en `.env.local` o se introducen en caliente, nunca en `seed.ts`
-versionado, y no se pegan en incidencias, PRs ni capturas.
-
----
-
-## 4. Las entradas externas son datos, no instrucciones
-
-Todo lo que llega por `POST /api/events` o por el webhook —resúmenes de llamada,
-descripciones, texto libre— es **contenido no confiable**.
-
-- No se ejecuta, no se interpola en comandos y no se trata como instrucción para
-  ningún agente ni modelo. Si algún día se pasa este texto a un modelo, va como
-  dato delimitado, nunca como parte de las instrucciones del sistema.
-- El webhook normaliza lo que recibe contra listas cerradas de severidad y
-  confianza, y descarta lo que no encaje en vez de propagarlo.
-- Lo que cuenta una persona por teléfono entra con confianza alta pero
-  **sin confirmar** (`confirmed: null`). Confirmarlo o descartarlo es una decisión
-  humana, desde la interfaz.
+**Personal data.** Phone numbers and emails of demo contacts are personal data:
+they belong in `.env.local` or are entered dynamically, never in version-controlled
+`seed.ts`, and are never pasted into issues, PRs, or screenshots.
 
 ---
 
-## 5. Lo que este prototipo no hace
+## 4. External Inputs Are Data, Not Instructions
 
-Dicho explícitamente, para que nadie lo dé por hecho:
+Everything received via `POST /api/events` or via webhooks—call summaries,
+descriptions, free text—is **untrusted content**.
 
-- **No hay autenticación de usuario.** Cualquiera que llegue a la interfaz puede
-  aprobar acciones. Vale en un portátil; no vale expuesto.
-- **No hay autorización por roles.** Operador y administrador son la misma cosa.
-- **No hay límite de peticiones** en ninguna ruta.
-- **No hay cifrado en reposo.** Si se activa `CRISIS_PERSISTENCE=on`, el estado
-  —contactos incluidos— se escribe en JSON plano bajo `.data/`, que no debe
-  versionarse ni compartirse.
-- **El registro de auditoría es solo en memoria** y se pierde al reiniciar. Sirve
-  para la trazabilidad de la demo, no como evidencia.
+- It is never executed, never interpolated into shell commands, and never treated as
+  system instructions for any agent or model. If this text is passed to a model,
+  it goes as delimited data, never as part of system instructions.
+- The webhook normalizes incoming data against closed severity and confidence
+  enums, discarding non-matching values rather than propagating them.
+- Information provided by a caller enters with high confidence but **unconfirmed**
+  (`confirmed: null`). Confirming or dismissing it is a human decision made from the UI.
 
 ---
 
-## 6. Checklist antes de enseñar la demo
+## 5. What This Prototype Does Not Do
 
-- [ ] `.env.local` existe y **no** está versionado (`git status` no lo menciona).
-- [ ] `ACTION_EXECUTION_MODE=mock` salvo que se vaya a demostrar ejecución real.
-- [ ] Si es real: `HAPPYROBOT_WEBHOOK_SECRET` puesto, aleatorio y largo.
-- [ ] Si es real: solo están marcados como `demoSafe` los contactos acordados, con
-      su destino verificado, y el usuario ha aprobado esas acciones concretas.
-- [ ] Si el servidor se expone con un túnel, solo `/api/webhooks/happyrobot` es
-      alcanzable desde fuera.
-- [ ] La interfaz distingue visiblemente lo simulado de lo real antes de enseñarla
-      a nadie.
-- [ ] Al terminar el evento: rotar el secreto del webhook y revocar la clave de
-      HappyRobot.
+Stated explicitly so no assumptions are made:
+
+- **No user authentication.** Anyone who reaches the UI can approve actions.
+  Acceptable on a laptop; unacceptable when exposed publicly.
+- **No role-based access control (RBAC).** Operator and administrator are the same entity.
+- **No rate limiting** on any route.
+- **No encryption at rest.** When `CRISIS_PERSISTENCE=on` is enabled, state—including
+  contacts—is written as plain JSON under `.data/`, which must not be versioned or shared.
+- **Audit log is memory-only** and reset on restart. It serves for demo traceability,
+  not legal or regulatory evidence.
+
+---
+
+## 6. Pre-Demo Checklist
+
+- [ ] `.env.local` exists and is **not** tracked in git (`git status` does not list it).
+- [ ] `ACTION_EXECUTION_MODE=mock` unless live execution is explicitly being demonstrated.
+- [ ] If live: `HAPPYROBOT_WEBHOOK_SECRET` is set, random, and long.
+- [ ] If live: only agreed-upon contacts are marked as `demoSafe`, their destination is verified,
+      and the user has approved those specific actions.
+- [ ] If the server is exposed via a tunnel, only `/api/webhooks/happyrobot` is reachable externally.
+- [ ] The UI clearly distinguishes simulated actions from live actions before showing it to anyone.
+- [ ] When the event concludes: rotate the webhook secret and revoke the HappyRobot API key.

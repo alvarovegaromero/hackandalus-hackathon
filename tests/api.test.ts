@@ -1,7 +1,7 @@
-// PROPIETARIO: agente de endurecimiento de la API y validacion de entrada.
+// OWNER: API hardening and input validation agent.
 //
-// Cubre el comportamiento de las rutas HTTP: contrato de exito, validacion de
-// entrada, codigos de estado y proteccion de las rutas de demo.
+// Covers HTTP route behavior: success contract, input validation,
+// status codes, and demo route protection.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as actionsPost } from "@/app/api/actions/route";
@@ -14,7 +14,7 @@ import { POST as resetPost } from "@/app/api/demo/reset/route";
 import { GET as situationGet } from "@/app/api/situation/route";
 import { getSituation, resetSituation } from "@/lib/store";
 
-/** Peticion JSON con las cabeceras que enviaria la interfaz. */
+/** JSON request with headers that the UI would send. */
 function jsonRequest(url: string, body: unknown, headers: Record<string, string> = {}) {
   return new Request(url, {
     method: "POST",
@@ -81,8 +81,8 @@ describe("crisis API routes", () => {
   });
 
   it("accepts operator-driven status changes", async () => {
-    // Esta ruta es de interfaz: el callback externo de HappyRobot vive en
-    // /api/webhooks/happyrobot y no pasa por aqui.
+    // This route is for the UI: the external HappyRobot callback lives in
+    // /api/webhooks/happyrobot and does not pass through here.
     const action = getSituation().actions[0];
     const response = await statusPost(
       jsonRequest("http://localhost", {
@@ -100,8 +100,8 @@ describe("crisis API routes", () => {
   });
 });
 
-describe("validacion de entrada", () => {
-  it("rechaza un JSON malformado con 400 en vez de reventar con 500", async () => {
+describe("input validation", () => {
+  it("rejects malformed JSON with 400 instead of crashing with 500", async () => {
     const response = await eventPost(
       jsonRequest("http://localhost/api/events", "{ esto no es json"),
     );
@@ -112,7 +112,7 @@ describe("validacion de entrada", () => {
     expect(typeof body.error).toBe("string");
   });
 
-  it("rechaza una zona inexistente en vez de aceptar una señal huérfana", async () => {
+  it("rejects non-existent zone instead of accepting orphaned signal", async () => {
     const before = getSituation().events.length;
     const response = await eventPost(
       jsonRequest("http://localhost/api/events", {
@@ -129,7 +129,7 @@ describe("validacion de entrada", () => {
     expect(getSituation().events.length).toBe(before);
   });
 
-  it("rechaza valores fuera del enumerado y campos desconocidos", async () => {
+  it("rejects values outside enum and unknown fields", async () => {
     const response = await eventPost(
       jsonRequest("http://localhost/api/events", {
         zoneId: "zone-south",
@@ -145,7 +145,7 @@ describe("validacion de entrada", () => {
     expect(typo.status).toBe(400);
   });
 
-  it("rechaza un cuerpo vacío donde hacen falta campos", async () => {
+  it("rejects an empty body when fields are required", async () => {
     const response = await eventPost(jsonRequest("http://localhost/api/events", {}));
     expect(response.status).toBe(400);
 
@@ -156,7 +156,7 @@ describe("validacion de entrada", () => {
     expect((await mark.json()).code).toBe("cuerpo_vacio");
   });
 
-  it("rechaza un Content-Type que no es JSON y un cuerpo desmesurado", async () => {
+  it("rejects non-JSON Content-Type and oversized body", async () => {
     const tipo = await eventPost(
       new Request("http://localhost/api/events", {
         method: "POST",
@@ -175,7 +175,7 @@ describe("validacion de entrada", () => {
     expect(gigante.status).toBe(413);
   });
 
-  it("valida el cuerpo de la creación manual de acciones", async () => {
+  it("validates body for manual action creation", async () => {
     const incompleta = await actionsPost(
       jsonRequest("http://localhost/api/actions", { channel: "call" }),
     );
@@ -206,7 +206,7 @@ describe("validacion de entrada", () => {
     expect(valida.status).toBe(201);
   });
 
-  it("distingue 404 de 400 y responde 405 a un método no permitido", async () => {
+  it("distinguishes 404 from 400 and responds 405 to disallowed method", async () => {
     const inexistente = await statusPost(jsonRequest("http://localhost", { operation: "cancel" }), {
       params: Promise.resolve({ id: "act-no-existe" }),
     });
@@ -219,10 +219,10 @@ describe("validacion de entrada", () => {
   });
 });
 
-describe("operaciones de interfaz sobre acciones", () => {
-  it("cancela y reintenta aunque HAPPYROBOT_WEBHOOK_SECRET esté definido", async () => {
-    // Regresion: antes esta ruta exigia el secreto del webhook y los botones de
-    // la interfaz devolvian 401 en cuanto se configuraba la integracion.
+describe("UI operations on actions", () => {
+  it("cancels and retries even when HAPPYROBOT_WEBHOOK_SECRET is defined", async () => {
+    // Regression: previously this route required the webhook secret and UI
+    // buttons returned 401 as soon as the integration was configured.
     process.env.HAPPYROBOT_WEBHOOK_SECRET = "secreto-de-demo";
     const action = getSituation().actions[0];
 
@@ -241,7 +241,7 @@ describe("operaciones de interfaz sobre acciones", () => {
     expect(reintentada.attempt).toBe(2);
   });
 
-  it("responde 409 cuando la operación no encaja con el estado actual", async () => {
+  it("responds 409 when operation does not match current state", async () => {
     const action = getSituation().actions[0];
     await approvePost(new Request("http://localhost"), {
       params: Promise.resolve({ id: action.id }),
@@ -255,8 +255,8 @@ describe("operaciones de interfaz sobre acciones", () => {
   });
 });
 
-describe("proteccion de las rutas de demo", () => {
-  it("funciona sin fricción en desarrollo cuando no hay token configurado", async () => {
+describe("demo route protection", () => {
+  it("works without friction in development when no token is configured", async () => {
     const inject = await injectPost(
       jsonRequest("http://localhost/api/demo/inject", { kind: "incident" }),
     );
@@ -266,7 +266,7 @@ describe("proteccion de las rutas de demo", () => {
     expect(reset.status).toBe(200);
   });
 
-  it("exige el token cuando DEMO_API_TOKEN está configurado", async () => {
+  it("requires token when DEMO_API_TOKEN is configured", async () => {
     process.env.DEMO_API_TOKEN = "token-de-demo";
 
     const sinToken = await injectPost(
@@ -288,7 +288,7 @@ describe("proteccion de las rutas de demo", () => {
     expect(conToken.status).toBe(200);
   });
 
-  it("desactiva las rutas de demo en producción si no hay token", async () => {
+  it("disables demo routes in production if no token", async () => {
     vi.stubEnv("NODE_ENV", "production");
     try {
       const response = await resetPost(jsonRequest("http://localhost/api/demo/reset", {}));
@@ -299,7 +299,7 @@ describe("proteccion de las rutas de demo", () => {
     }
   });
 
-  it("rechaza una avería de demo desconocida", async () => {
+  it("rejects unknown demo fault", async () => {
     const response = await injectPost(
       jsonRequest("http://localhost/api/demo/inject", { kind: "terremoto" }),
     );

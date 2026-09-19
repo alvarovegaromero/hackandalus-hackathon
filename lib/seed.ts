@@ -19,7 +19,7 @@ export const seedZones: CrisisZone[] = [
     status: "watch",
     populationAtRisk: 1200,
     riskScore: 42,
-    needs: ["evaluacion de monte"],
+    needs: ["wildfire assessment"],
     coordinates: { x: 39, y: 32, lat: 36.565, lng: -5.215 },
     lastUpdatedAt: now,
   },
@@ -29,7 +29,7 @@ export const seedZones: CrisisZone[] = [
     status: "active",
     populationAtRisk: 3100,
     riskScore: 68,
-    needs: ["alerta publica", "triaje sanitario"],
+    needs: ["public alert", "medical triage"],
     coordinates: { x: 32, y: 52, lat: 36.544, lng: -5.234 },
     lastUpdatedAt: now,
   },
@@ -39,7 +39,7 @@ export const seedZones: CrisisZone[] = [
     status: "stable",
     populationAtRisk: 900,
     riskScore: 24,
-    needs: ["vigilancia de rutas"],
+    needs: ["route surveillance"],
     coordinates: { x: 72, y: 55, lat: 36.512, lng: -5.187 },
     lastUpdatedAt: now,
   },
@@ -49,7 +49,7 @@ export const seedZones: CrisisZone[] = [
     status: "watch",
     populationAtRisk: 1750,
     riskScore: 35,
-    needs: ["capacidad de refugios"],
+    needs: ["shelter capacity"],
     coordinates: { x: 54, y: 76, lat: 36.427, lng: -5.145 },
     lastUpdatedAt: now,
   },
@@ -59,7 +59,7 @@ export const seedZones: CrisisZone[] = [
     status: "stable",
     populationAtRisk: 640,
     riskScore: 18,
-    needs: ["enlace logistico"],
+    needs: ["logistics link"],
     coordinates: { x: 22, y: 71, lat: 36.444, lng: -5.273 },
     lastUpdatedAt: now,
   },
@@ -69,7 +69,7 @@ export const seedResources: Resource[] = [
   {
     id: "res-med-1",
     name: "EPES Sevilla Alpha",
-    type: "sanitario",
+    type: "medical",
     capacity: 24,
     status: "available",
     zoneId: "zone-central",
@@ -81,7 +81,7 @@ export const seedResources: Resource[] = [
   {
     id: "res-field-1",
     name: "INFOCA Sierra Bravo",
-    type: "campo",
+    type: "field",
     capacity: 12,
     status: "available",
     zoneId: "zone-north",
@@ -93,7 +93,7 @@ export const seedResources: Resource[] = [
   {
     id: "res-transport-1",
     name: "Transporte Costa Uno",
-    type: "transporte",
+    type: "transport",
     capacity: 80,
     status: "available",
     zoneId: "zone-south",
@@ -105,7 +105,7 @@ export const seedResources: Resource[] = [
   {
     id: "res-comms-1",
     name: "Enlace 112",
-    type: "comunicaciones",
+    type: "communications",
     capacity: 1,
     status: "available",
     zoneId: null,
@@ -117,7 +117,7 @@ export const seedResources: Resource[] = [
   {
     id: "res-med-2",
     name: "EPES Granada Delta",
-    type: "sanitario",
+    type: "medical",
     capacity: 18,
     status: "available",
     zoneId: "zone-east",
@@ -129,9 +129,9 @@ export const seedResources: Resource[] = [
 ];
 
 /**
- * Contactos de demo. Solo los marcados con demoSafe pueden recibir acciones
- * reales a traves de HappyRobot; el resto se queda siempre en modo simulado.
- * Los telefonos y correos son marcadores de posicion, nunca datos reales.
+ * Demo contacts. Only those marked demoSafe can receive real actions
+ * via HappyRobot; the rest remain in simulated mode.
+ * Phone numbers and emails are placeholders, never real data.
  */
 export const seedContacts: Contact[] = [
   {
@@ -212,8 +212,8 @@ export const seedEvents: CrisisEvent[] = [
   {
     id: "evt-seed-1",
     source: "operator",
-    title: "Sevilla Hub comunica aumento de presión",
-    description: "Varias entradas indican mayor necesidad de triaje y orientación pública.",
+    title: "Sevilla Hub reports increased pressure",
+    description: "Multiple reports indicate higher need for triage and public guidance.",
     zoneId: "zone-central",
     category: "coordinacion",
     severity: "high",
@@ -232,10 +232,10 @@ export const seedActions: Action[] = [
   {
     id: "act-seed-1",
     channel: "call",
-    target: "Coordinador Sevilla Hub",
-    objective: "Confirmar capacidad de triaje y pedir próxima ventana de actualización.",
+    target: "Sevilla Hub Coordinator",
+    objective: "Confirm triage capacity and request next update window.",
     status: "pending",
-    reason: "Sevilla Hub tiene la mayor puntuación de riesgo inicial y demanda confirmada.",
+    reason: "Sevilla Hub has the highest initial risk score and confirmed demand.",
     zoneId: "zone-central",
     resourceId: "res-comms-1",
     contactId: "con-med-central",
@@ -252,19 +252,18 @@ export const seedActions: Action[] = [
 ];
 
 /**
- * Guion por defecto del escenario que avanza solo: un incendio forestal que
- * cambia de frente, corta una carretera y tumba un recurso mientras el sistema
- * esta ejecutando acciones.
+ * Default script for the self-advancing scenario: a wildfire that shifts fronts,
+ * cuts off a road, and disables a resource while the system is executing actions.
  */
 export const seedScenarioBeats: ScenarioBeat[] = [
   {
     id: "beat-1",
     atSeconds: 20,
-    label: "Columna de humo confirmada en Sierra Morena",
+    label: "Smoke column confirmed in Sierra Morena",
     event: {
       source: "scenario",
-      title: "Columna de humo confirmada en Sierra Morena",
-      description: "Vigilancia forestal confirma frente activo avanzando hacia el sur.",
+      title: "Smoke column confirmed in Sierra Morena",
+      description: "Forest watch confirms active front advancing south.",
       zoneId: "zone-north",
       category: "incendio",
       severity: "high",
@@ -275,11 +274,11 @@ export const seedScenarioBeats: ScenarioBeat[] = [
   {
     id: "beat-2",
     atSeconds: 55,
-    label: "El viento gira y el frente amenaza núcleos habitados",
+    label: "Wind shifts and front threatens inhabited areas",
     event: {
       source: "scenario",
-      title: "Cambio de viento hacia núcleos habitados",
-      description: "El frente gira al suroeste. La evacuación preventiva pasa a ser urgente.",
+      title: "Wind shift towards inhabited areas",
+      description: "Front turns southwest. Preventive evacuation becomes urgent.",
       zoneId: "zone-north",
       category: "evacuacion",
       severity: "critical",
@@ -290,23 +289,23 @@ export const seedScenarioBeats: ScenarioBeat[] = [
   {
     id: "beat-3",
     atSeconds: 90,
-    label: "Carretera de acceso cortada",
+    label: "Access road blocked",
     demoKind: "route-blocked",
   },
   {
     id: "beat-4",
     atSeconds: 125,
-    label: "Un recurso asignado queda fuera de servicio",
+    label: "Assigned resource out of service",
     demoKind: "resource-down",
   },
   {
     id: "beat-5",
     atSeconds: 160,
-    label: "Saturación de refugios en la costa",
+    label: "Shelter saturation on the coast",
     event: {
       source: "scenario",
-      title: "Refugios de la Costa del Sol al límite",
-      description: "Llegan más desplazados de los previstos y la capacidad de refugio se agota.",
+      title: "Costa del Sol shelters at capacity",
+      description: "More displaced people arrive than expected and shelter capacity is exhausted.",
       zoneId: "zone-south",
       category: "refugio",
       severity: "high",
@@ -317,14 +316,14 @@ export const seedScenarioBeats: ScenarioBeat[] = [
   {
     id: "beat-6",
     atSeconds: 200,
-    label: "Caída de la integración de mensajería",
+    label: "Messaging integration failure",
     demoKind: "integration-failure",
   },
 ];
 
 /**
- * Estado inicial del mundo simulado. Es lo que el motor de escenario mueve y
- * lo que, al cambiar, rompe los supuestos que el plan declaró.
+ * Initial state of the simulated world. What the scenario engine moves and
+ * what, upon changing, breaks the assumptions declared by the plan.
  */
 export const seedWorld: WorldState = {
   windDirection: "NE",
@@ -340,29 +339,30 @@ export const seedWorld: WorldState = {
 };
 
 /**
- * Autonomía graduada. El criterio es la reversibilidad: lo que se puede
- * deshacer lo hace el sistema solo, lo que no siempre pasa por una persona.
- * Un sistema que pide permiso para todo no es agéntico; uno que no lo pide
- * para nada no es supervisable.
+ * Graduated autonomy. The criterion is reversibility: what can be undone
+ * the system does autonomously; what cannot always passes through a human.
+ * A system that asks permission for everything is not agentic; one that asks
+ * for nothing is not supervisable.
  */
 export const seedAutonomyRules: AutonomyRule[] = [
   {
     actionKind: "verificar",
     reversibility: "reversible",
     level: "auto",
-    rationale: "Llamar para comprobar un dato no compromete nada y reduce la incertidumbre.",
+    rationale: "Calling to verify a data point commits nothing and reduces uncertainty.",
   },
   {
     actionKind: "avisar",
     reversibility: "reversible",
     level: "auto-notify",
-    rationale: "Informar a un responsable es reversible; queda anotado para que se pueda revisar.",
+    rationale: "Notifying a lead is reversible; logged for subsequent review.",
   },
   {
     actionKind: "asignar-recurso",
     reversibility: "reversible",
     level: "auto-notify",
-    rationale: "Mover un medio se puede deshacer, y esperar aprobación cuesta minutos que no hay.",
+    rationale:
+      "Moving a resource is reversible, and waiting for approval costs unavailable minutes.",
   },
   {
     actionKind: "aviso-masivo",
@@ -370,26 +370,26 @@ export const seedAutonomyRules: AutonomyRule[] = [
     level: "approval",
     confidenceThreshold: 0.9,
     rationale:
-      "Un aviso a la población no se puede retirar. Se automatiza solo con confianza muy alta; por debajo, lo aprueba una persona.",
+      "A public alert cannot be withdrawn. Automated only with very high confidence; below that, approved by a person.",
   },
   {
     actionKind: "evacuar",
     reversibility: "irreversible",
     level: "approval",
-    rationale:
-      "Ordenar una evacuación mueve a personas vulnerables. Siempre lo decide una persona.",
+    rationale: "Ordering an evacuation moves vulnerable people. Always decided by a person.",
   },
   {
     actionKind: "escalar",
     reversibility: "irreversible",
     level: "approval",
-    rationale: "Pedir refuerzos externos compromete recursos ajenos y no se deshace.",
+    rationale:
+      "Requesting external reinforcements commits external resources and cannot be undone.",
   },
 ];
 
 /**
- * Fiabilidad de partida por fuente. El aprendizaje la corrige con lo observado
- * en ejecuciones anteriores.
+ * Initial reliability per source. Learning adjusts it based on observations
+ * across previous executions.
  */
 export const seedSourceReliability: SourceReliability[] = [
   { source: "sensor", reliability: 0.9, observations: 0, confirmed: 0 },

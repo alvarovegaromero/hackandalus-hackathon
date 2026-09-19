@@ -14,11 +14,11 @@ interface Props {
 }
 
 const statusLabels: Record<DigitalTwinFactStatus, string> = {
-  confirmed: "Confirmado",
-  inferred: "Inferido",
-  unknown: "Sin evidencia",
-  stale: "Obsoleto",
-  mismatch: "Diverge",
+  confirmed: "Confirmed",
+  inferred: "Inferred",
+  unknown: "No evidence",
+  stale: "Stale",
+  mismatch: "Mismatch",
 };
 
 const statusIcons: Record<DigitalTwinFactStatus, typeof CheckCircle2> = {
@@ -30,8 +30,8 @@ const statusIcons: Record<DigitalTwinFactStatus, typeof CheckCircle2> = {
 };
 
 function confidenceLabel(confidence: number) {
-  if (confidence <= 0) return "sin confianza";
-  return `${Math.round(confidence * 100)}% confianza`;
+  if (confidence <= 0) return "no confidence";
+  return `${Math.round(confidence * 100)}% confidence`;
 }
 
 export default function DigitalTwinPanel({ twin, nowMs }: Props) {
@@ -43,29 +43,29 @@ export default function DigitalTwinPanel({ twin, nowMs }: Props) {
         <div className="flex items-center gap-2">
           <BrainCircuit size={16} aria-hidden="true" />
           <h2 className="text-[14px] font-bold text-blueprint-dark tracking-[-0.15px]">
-            Gemelo digital
+            Digital Twin
           </h2>
         </div>
         <span className="text-[12px] text-blueprint-mid">
-          Percepción reconstruida desde señales
+          Perception reconstructed from signals
         </span>
       </div>
 
       <div className="twin-summary">
         <article>
-          <span>Precisión</span>
+          <span>Accuracy</span>
           <strong>{twin.accuracy}%</strong>
         </article>
         <article className={twin.mismatches > 0 ? "alarm" : ""}>
-          <span>Divergencias</span>
+          <span>Mismatches</span>
           <strong>{twin.mismatches}</strong>
         </article>
         <article>
-          <span>Sin evidencia</span>
+          <span>No evidence</span>
           <strong>{twin.unknownFacts}</strong>
         </article>
         <article>
-          <span>Obsoletos</span>
+          <span>Stale</span>
           <strong>{twin.staleFacts}</strong>
         </article>
       </div>
@@ -96,14 +96,14 @@ export default function DigitalTwinPanel({ twin, nowMs }: Props) {
                   </Badge>
                 </div>
                 <small>
-                  FARO cree: {fact.perceived} · verdad simulada: {fact.truth}
+                  FARO believes: {fact.perceived} · simulated truth: {fact.truth}
                 </small>
                 <small>
                   {confidenceLabel(fact.confidence)}
-                  {fact.updatedAt ? ` · actualizado ${agoLabel(fact.updatedAt, nowMs)}` : ""}
+                  {fact.updatedAt ? ` · updated ${agoLabel(fact.updatedAt, nowMs)}` : ""}
                   {fact.evidenceEventIds.length > 0
-                    ? ` · ${fact.evidenceEventIds.length} señal(es)`
-                    : " · sin señales"}
+                    ? ` · ${fact.evidenceEventIds.length} signal(s)`
+                    : " · no signals"}
                 </small>
                 <small className="twin-impact">{fact.impact}</small>
               </div>

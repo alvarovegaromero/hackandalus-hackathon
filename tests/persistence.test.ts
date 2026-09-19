@@ -1,11 +1,11 @@
-// PROPIETARIO: agente de persistencia, historial, auditoria y aprendizaje.
+// OWNER: persistence, history, audit, and learning agent.
 //
-// Cubre las tres cosas que pueden arruinar una demo: un fichero de estado
-// corrupto que impide arrancar, un dato personal escrito en disco, y un
-// aprendizaje que se dispara con dos muestras.
+// Covers three things that can ruin a demo: a corrupted state file
+// that prevents startup, personal data written to disk, and
+// learning triggered with only two samples.
 //
-// Todo se escribe en un directorio temporal via CRISIS_DATA_DIR: estos tests
-// nunca tocan el `.data` del repositorio.
+// Everything is written to a temporary directory via CRISIS_DATA_DIR: these tests
+// never touch `.data` in the repository.
 
 import fs from "node:fs";
 import os from "node:os";
@@ -40,7 +40,7 @@ import { addEvent, getSituation, resetSituation } from "@/lib/store";
 import type { Action, IntegrationState, Plan, RunRecord, SituationState } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
-// Utillaje
+// Test tooling
 // ---------------------------------------------------------------------------
 
 let tempDir = "";
@@ -270,11 +270,11 @@ afterEach(() => {
 });
 
 // ---------------------------------------------------------------------------
-// Persistencia
+// Persistence
 // ---------------------------------------------------------------------------
 
-describe("persistencia del estado", () => {
-  it("guarda y recupera el estado completo", () => {
+describe("state persistence", () => {
+  it("saves and recovers complete state", () => {
     const state = makeState();
     saveState(state);
     flushState();
@@ -285,20 +285,20 @@ describe("persistencia del estado", () => {
     expect(restored?.zones).toHaveLength(2);
     expect(restored?.events[0].id).toBe("evt-1");
     expect(restored?.planHistory[0].version).toBe(2);
-    // store.ts hace exactamente esto al arrancar: no puede reventar.
+    // store.ts does exactly this on startup: must not throw.
     expect(restored!.plan.version + 1).toBe(4);
   });
 
-  it("devuelve null si no hay fichero", () => {
+  it("returns null if file does not exist", () => {
     expect(loadState()).toBeNull();
   });
 
-  it("descarta un fichero corrupto en vez de propagar basura", () => {
+  it("discards a corrupted file instead of propagating garbage", () => {
     writeRawState("{{{ esto no es json");
     expect(loadState()).toBeNull();
   });
 
-  it("descarta un fichero truncado a mitad de escritura", () => {
+  it("discards a file truncated mid-write", () => {
     saveState(makeState());
     flushState();
     const complete = fs.readFileSync(statePath(), "utf8");
@@ -306,7 +306,7 @@ describe("persistencia del estado", () => {
     expect(loadState()).toBeNull();
   });
 
-  it("descarta un estado de una version anterior del esquema", () => {
+  it("discards state from previous schema version", () => {
     writeRawState(
       JSON.stringify({
         schemaVersion: SCHEMA_VERSION - 1,
@@ -317,7 +317,7 @@ describe("persistencia del estado", () => {
     expect(loadState()).toBeNull();
   });
 
-  it("descarta un estado sin plan, que reventaría a store.ts al arrancar", () => {
+  it("discards state without plan, which would crash store.ts on startup", () => {
     const sinPlan = makeState() as unknown as Record<string, unknown>;
     delete sinPlan.plan;
     writeRawState(
@@ -327,7 +327,7 @@ describe("persistencia del estado", () => {
     expect(validateState(sinPlan)).toBeNull();
   });
 
-  it("descarta un estado guardado con zonas sin lat/lng, que dejaría el mapa sin posiciones", () => {
+  it("discards state saved with zones lacking lat/lng, which would leave map without positions", () => {
     const antiguo = makeState();
     const zonas = antiguo.zones.map((zona) => ({
       ...zona,
@@ -337,13 +337,13 @@ describe("persistencia del estado", () => {
     expect(validateState(antiguo)).not.toBeNull();
   });
 
-  it("descarta un estado con arrays que no son arrays", () => {
+  it("discards state with non-array arrays", () => {
     const roto = makeState() as unknown as Record<string, unknown>;
     roto.actions = "ninguna";
     expect(validateState(roto)).toBeNull();
   });
 
-  it("no escribe teléfonos ni correos en disco", () => {
+  it("does not write phone numbers or emails to disk", () => {
     saveState(makeState());
     flushState();
     const raw = fs.readFileSync(statePath(), "utf8");
@@ -359,11 +359,11 @@ describe("persistencia del estado", () => {
     const persisted = JSON.parse(raw).payload as SituationState;
     expect(persisted.contacts[0].phone).toBeNull();
     expect(persisted.contacts[0].email).toBeNull();
-    // Lo operativo sí se conserva: sin esto no se podría restaurar el plan.
+    // Operational data is preserved: without this, plan could not be restored.
     expect(persisted.contacts[0].channels).toEqual(["call", "sms"]);
   });
 
-  it("no escribe nada si la persistencia está apagada", () => {
+  it("writes nothing if persistence is off", () => {
     delete process.env.CRISIS_PERSISTENCE;
     saveState(makeState());
     flushState();
@@ -371,19 +371,18 @@ describe("persistencia del estado", () => {
     expect(loadState()).toBeNull();
   });
 
-  it("agrupa las escrituras y conserva el último estado", () => {
-    // Una replanificacion detras de otra no debe machacar el disco, pero lo
-    // ultimo guardado no se puede perder.
+  it("coalesces writes and preserves the latest state", () => {
+    // Rapid successive replannings should not hammer disk, but latest state cannot be lost.
     saveState(makeState({ plan: makePlan(10) }));
     saveState(makeState({ plan: makePlan(11) }));
     saveState(makeState({ plan: makePlan(12) }));
-    expect(fs.existsSync(statePath())).toBe(false); // aún no ha tocado el disco
+    expect(fs.existsSync(statePath())).toBe(false); // has not touched disk yet
 
     flushState();
     expect(loadState()?.plan.version).toBe(12);
   });
 
-  it("no lanza nunca, ni con un directorio imposible", () => {
+  it("never throws, even with an impossible directory", () => {
     process.env.CRISIS_DATA_DIR = path.join(tempDir, "fichero-no-directorio", "sub");
     fs.writeFileSync(path.join(tempDir, "fichero-no-directorio"), "soy un fichero", "utf8");
 
@@ -393,8 +392,8 @@ describe("persistencia del estado", () => {
   });
 });
 
-describe("persistencia de ejecuciones y pesos", () => {
-  it("guarda y recupera ejecuciones, y actualiza por id sin duplicar", () => {
+describe("runs and weights persistence", () => {
+  it("saves and restores runs, updating by id without duplicates", () => {
     saveRun(makeRun("run-1", ["stat:channel:call:3/4"]));
     saveRun(makeRun("run-2", ["stat:channel:sms:1/2"]));
     saveRun(makeRun("run-1", ["stat:channel:call:4/4"]));
@@ -404,7 +403,7 @@ describe("persistencia de ejecuciones y pesos", () => {
     expect(runs.find((run) => run.id === "run-1")?.notes).toEqual(["stat:channel:call:4/4"]);
   });
 
-  it("descarta ejecuciones rotas sin perder el resto del historial", () => {
+  it("discards broken runs without losing remaining history", () => {
     saveRun(makeRun("run-1", ["stat:channel:call:3/4"]));
     const file = path.join(resolveDataDir(), "runs.json");
     const envelope = JSON.parse(fs.readFileSync(file, "utf8"));
@@ -416,7 +415,7 @@ describe("persistencia de ejecuciones y pesos", () => {
     expect(runs[0].id).toBe("run-1");
   });
 
-  it("guarda y recupera los pesos aprendidos", () => {
+  it("saves and restores learned weights", () => {
     const weights = emptyWeights();
     weights.channelStats.call = { attempts: 10, successes: 8 };
     weights.runsAnalyzed = 4;
@@ -429,11 +428,11 @@ describe("persistencia de ejecuciones y pesos", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Reinicio real, a traves del store
+// Real restart, through store
 // ---------------------------------------------------------------------------
 
-describe("reinicio del proceso con CRISIS_PERSISTENCE=on", () => {
-  it("recupera el estado y el plan tras simular un reinicio", () => {
+describe("process restart with CRISIS_PERSISTENCE=on", () => {
+  it("recovers state and plan after simulated restart", () => {
     resetSituation();
     addEvent({
       source: "operator",
@@ -447,9 +446,9 @@ describe("reinicio del proceso con CRISIS_PERSISTENCE=on", () => {
     });
 
     const antes = getSituation();
-    flushState(); // el volcado diferido se fuerza, como haría el cierre del proceso
+    flushState(); // deferred flush is forced, as process shutdown would do
 
-    // Simulamos el reinicio: se pierde toda la memoria del proceso.
+    // Simulate restart: all in-memory state is cleared.
     (globalThis as { crisisState?: unknown }).crisisState = undefined;
 
     const despues = getSituation();
@@ -458,12 +457,12 @@ describe("reinicio del proceso con CRISIS_PERSISTENCE=on", () => {
     expect(despues.zones).toHaveLength(antes.zones.length);
     expect(despues.audit.length).toBeGreaterThan(0);
 
-    // Y la siguiente replanificacion continua la numeracion, no la reinicia.
+    // And subsequent replanning continues version numbering, does not reset.
     addEvent({ zoneId: "zone-central", category: "refugio", severity: "medium" });
     expect(getSituation().plan.version).toBeGreaterThan(antes.plan.version);
   });
 
-  it("arranca limpio si el fichero está corrupto, sin tumbar la aplicación", () => {
+  it("starts clean if file is corrupted, without crashing the application", () => {
     resetSituation();
     flushState();
     writeRawState("no soy json");
@@ -475,7 +474,7 @@ describe("reinicio del proceso con CRISIS_PERSISTENCE=on", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Diferencias entre planes
+// Plan diffs
 // ---------------------------------------------------------------------------
 
 describe("diffPlans", () => {
@@ -484,11 +483,11 @@ describe("diffPlans", () => {
     { id: "zone-central", name: "Sevilla Hub", status: "active" as const },
   ];
 
-  it("no inventa cambios cuando no hay plan anterior", () => {
+  it("does not invent changes when there is no previous plan", () => {
     expect(diffPlans(null, makePlan(1))).toEqual([]);
   });
 
-  it("detecta un adelantamiento en el ranking y lo cuenta con nombres", () => {
+  it("detects priority overtake and reports with names", () => {
     const previous = makePlan(1);
     const next = makePlan(2, {
       priorities: [
@@ -506,11 +505,11 @@ describe("diffPlans", () => {
     expect(subida?.detail).toContain("del puesto 2 al 1");
     expect(subida?.detail).toContain("el giro del viento");
     expect(bajada?.label).toContain("Sevilla Hub");
-    // Nada de identificadores técnicos en pantalla.
+    // No technical identifiers displayed.
     expect(subida?.label).not.toContain("zone-");
   });
 
-  it("detecta acciones nuevas y acciones invalidadas", () => {
+  it("detects new actions and invalidated actions", () => {
     const previous = makePlan(1, { proposedActionIds: ["act-1"] });
     const next = makePlan(2, {
       proposedActionIds: ["act-1", "act-2"],
@@ -542,7 +541,7 @@ describe("diffPlans", () => {
     expect(anulada?.label).toBe("Acción anulada: Llamada a Jefatura sanitaria");
   });
 
-  it("detecta una acción que sale del plan porque la cancelaron", () => {
+  it("detects an action leaving the plan because it was cancelled", () => {
     const previous = makePlan(1, { proposedActionIds: ["act-1", "act-9"] });
     const next = makePlan(2, { proposedActionIds: ["act-1"] });
 
@@ -557,7 +556,7 @@ describe("diffPlans", () => {
     ).toBe(true);
   });
 
-  it("no reporta como invalidada una acción que terminó bien", () => {
+  it("does not report an action that finished successfully as invalidated", () => {
     const previous = makePlan(1, { proposedActionIds: ["act-1", "act-9"] });
     const next = makePlan(2, { proposedActionIds: ["act-1"] });
 
@@ -568,7 +567,7 @@ describe("diffPlans", () => {
     expect(changes.some((change) => change.kind === "action-invalidated")).toBe(false);
   });
 
-  it("detecta un cambio de estado de zona y dice si agrava o mejora", () => {
+  it("detects a zone status change and notes whether it worsens or improves", () => {
     const changes = diffPlans(makePlan(1), makePlan(2), {
       previousZones: zones,
       nextZones: [{ ...zones[0], status: "critical" }, zones[1]],
@@ -580,7 +579,7 @@ describe("diffPlans", () => {
     expect(cambio?.detail).toContain("en vigilancia");
   });
 
-  it("detecta caídas y recuperaciones de la integración", () => {
+  it("detects integration outages and recoveries", () => {
     const caida = diffPlans(makePlan(1), makePlan(2), {
       previousIntegration: makeIntegration(),
       nextIntegration: makeIntegration({ lastExternalError: "502 desde la plataforma" }),
@@ -597,7 +596,7 @@ describe("diffPlans", () => {
     expect(vuelta.some((change) => change.label.includes("vuelve a responder"))).toBe(true);
   });
 
-  it("detecta la reasignación de un recurso", () => {
+  it("detects resource reassignment", () => {
     const changes = diffPlans(makePlan(1), makePlan(2), {
       previousResources: [
         { id: "res-1", name: "EPES Sevilla Alpha", zoneId: "zone-central", status: "available" },
@@ -614,11 +613,11 @@ describe("diffPlans", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Aprendizaje
+// Learning
 // ---------------------------------------------------------------------------
 
-describe("aprendizaje entre ejecuciones", () => {
-  it("no mueve ningún peso sin ejecuciones anteriores", () => {
+describe("cross-run learning", () => {
+  it("does not move any weights without previous runs", () => {
     const weights = weightsFromRuns([]);
     expect(weights.runsAnalyzed).toBe(0);
     expect(weights.unconfirmedPenalty).toBe(0);
@@ -626,7 +625,7 @@ describe("aprendizaje entre ejecuciones", () => {
     expect(weights.contactStats).toEqual({});
   });
 
-  it("con dos ejecuciones y pocas muestras no publica ningún peso", () => {
+  it("with two runs and few samples publishes no weights", () => {
     const runs = [
       makeRun("run-1", [
         "stat:channel:call:1/2",
@@ -642,14 +641,14 @@ describe("aprendizaje entre ejecuciones", () => {
 
     const weights = weightsFromRuns(runs);
     expect(weights.runsAnalyzed).toBe(2);
-    // 4 intentos por llamada < 5, 3 avisos al contacto < 4: nada se publica.
+    // 4 call attempts < 5, 3 contact alerts < 4: nothing is published.
     expect(weights.channelStats.call).toBeUndefined();
     expect(weights.contactStats["con-1"]).toBeUndefined();
-    // Y con 2 ejecuciones (< 3) la penalización no se mueve aunque haya falsos.
+    // And with 2 runs (< 3) penalty does not move even with false reports.
     expect(weights.unconfirmedPenalty).toBe(0);
   });
 
-  it("publica la tasa por canal y por contacto al superar el mínimo", () => {
+  it("publishes rate per channel and contact upon exceeding minimum", () => {
     const runs = [
       makeRun("run-1", ["stat:channel:call:2/3", "stat:contact:con-1:1/2"]),
       makeRun("run-2", ["stat:channel:call:1/3", "stat:contact:con-1:2/3"]),
@@ -659,12 +658,12 @@ describe("aprendizaje entre ejecuciones", () => {
     const weights = weightsFromRuns(runs);
     expect(weights.channelStats.call).toEqual({ attempts: 6, successes: 3 });
     expect(weights.contactStats["con-1"]).toEqual({ attempts: 5, successes: 3 });
-    // El canal sms sigue por debajo del mínimo y no se expone.
+    // SMS channel remains below minimum and is not exposed.
     expect(weights.channelStats.sms).toBeUndefined();
   });
 
-  it("sube la penalización de señales sin confirmar de forma gradual y acotada", () => {
-    // Todas las señales verificadas resultaron falsas: el caso extremo.
+  it("increases unconfirmed signal penalty gradually and within bounds", () => {
+    // All verified signals turned out false: the extreme case.
     const todasFalsas = (id: string) => makeRun(id, ["stat:unconfirmed:todas:5/5"]);
 
     const tres = weightsFromRuns([todasFalsas("r1"), todasFalsas("r2"), todasFalsas("r3")]);
@@ -679,20 +678,20 @@ describe("aprendizaje entre ejecuciones", () => {
     expect(tres.unconfirmedPenalty).toBeGreaterThan(0);
     expect(cinco.unconfirmedPenalty).toBeGreaterThan(tres.unconfirmedPenalty);
     expect(cinco.unconfirmedPenalty).toBeLessThanOrEqual(MAX_UNCONFIRMED_PENALTY);
-    // Ni siquiera con el peor historial posible se pasa del tope.
+    // Even with worst possible history it never exceeds cap.
     const muchas = weightsFromRuns(
       Array.from({ length: 30 }, (_, index) => todasFalsas(`r${index}`)),
     );
     expect(muchas.unconfirmedPenalty).toBe(MAX_UNCONFIRMED_PENALTY);
   });
 
-  it("no penaliza si las señales sin confirmar resultaron ciertas", () => {
+  it("does not penalize if unconfirmed signals turned out true", () => {
     const ciertas = (id: string) => makeRun(id, ["stat:unconfirmed:todas:0/6"]);
     const weights = weightsFromRuns([ciertas("r1"), ciertas("r2"), ciertas("r3"), ciertas("r4")]);
     expect(weights.unconfirmedPenalty).toBe(0);
   });
 
-  it("acumula el desenlace de las acciones durante la ejecución", () => {
+  it("accumulates action outcomes during execution", () => {
     let weights = emptyWeights();
     weights = recordActionOutcome(weights, makeAction({ status: "succeeded", contactId: "con-1" }));
     weights = recordActionOutcome(weights, makeAction({ status: "failed", contactId: "con-1" }));
@@ -702,7 +701,7 @@ describe("aprendizaje entre ejecuciones", () => {
     expect(weights.updatedAt).not.toBeNull();
   });
 
-  it("resume una ejecución en notas reutilizables", () => {
+  it("summarizes a run into reusable notes", () => {
     const state = makeState({
       actions: [
         makeAction({ id: "a1", status: "succeeded", contactId: "con-1" }),
@@ -720,13 +719,13 @@ describe("aprendizaje entre ejecuciones", () => {
     expect(run.notes).toContain("stat:contact:con-1:1/2");
     expect(run.notes).toContain("stat:unconfirmed:todas:1/1");
 
-    // El ciclo se cierra: las notas vuelven a convertirse en pesos.
+    // The loop closes: notes turn back into weights.
     const weights = weightsFromRuns([run, run, run]);
     expect(weights.channelStats.call).toEqual({ attempts: 6, successes: 3 });
     expect(weights.runsAnalyzed).toBe(MIN_RUNS_TO_LEARN);
   });
 
-  it("explica por qué cambió cada peso y por qué otros no", () => {
+  it("explains why each weight changed and why others did not", () => {
     const sinHistorial = explainWeights(emptyWeights(), []);
     expect(sinHistorial[0].detail).toContain("sin historial");
 

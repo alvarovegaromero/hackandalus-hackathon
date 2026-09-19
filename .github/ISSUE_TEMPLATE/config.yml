@@ -1,8 +1,8 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Brief del reto
+  - name: Challenge brief
     url: https://github.com/alvarovegaromero/hackandalus-hackathon/blob/main/CHALLENGE.md
-    about: Requisitos y criterios de puntuación del reto de HappyRobot. Léelo antes de proponer nada.
-  - name: Convenciones para agentes y personas
+    about: Requirements and scoring criteria for the HappyRobot challenge. Read it before proposing anything.
+  - name: Conventions for agents and humans
     url: https://github.com/alvarovegaromero/hackandalus-hackathon/blob/main/AGENTS.md
-    about: Flujo de ramas, propiedad de módulos y reglas de verificación.
+    about: Branch workflow, module ownership, and verification rules.

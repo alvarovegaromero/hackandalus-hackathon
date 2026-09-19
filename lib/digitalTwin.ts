@@ -1,9 +1,9 @@
-// PROPIETARIO: agente del gemelo digital.
+// OWNER: digital twin agent.
 //
-// Gemelo digital operativo: FARO mantiene una imagen percibida del mundo a
-// partir de señales. En la demo también existe una verdad simulada (`world`),
-// que sirve para medir precisión sin convertirla en una fuente mágica para la
-// decisión. Este módulo es puro: recibe señales y mundo, devuelve métricas.
+// Operational digital twin: FARO maintains a perceived picture of the world
+// from signals. In the demo there is also a simulated truth (`world`),
+// which serves to measure accuracy without becoming a magic source for
+// decision-making. This module is pure: receives signals and world, returns metrics.
 
 import { applyEventToWorld } from "./assumptions";
 import { seedWorld } from "./seed";

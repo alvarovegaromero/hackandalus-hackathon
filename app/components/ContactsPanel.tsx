@@ -20,7 +20,7 @@ export default function ContactsPanel({ contacts, chains, zones, nowMs }: Props)
     <div className="contacts-grid">
       <div>
         <h3 className="section-head">
-          Contactos ({contacts.length}) · {safeCount} aprobados para ejecución real
+          Contacts ({contacts.length}) · {safeCount} approved for live execution
         </h3>
         <div className="contact-list">
           {contacts.map((contact) => {
@@ -30,19 +30,19 @@ export default function ContactsPanel({ contacts, chains, zones, nowMs }: Props)
                 <div>
                   <h4>{contact.name}</h4>
                   <p>
-                    {roleLabels[contact.role]} · {zone?.name ?? "toda la región"}
+                    {roleLabels[contact.role]} · {zone?.name ?? "entire region"}
                   </p>
                   <p className="action-trace">
-                    Canales por preferencia:{" "}
+                    Preferred channels:{" "}
                     {contact.channels.map((channel) => channelLabels[channel]).join(" › ")} ·
-                    responde el {Math.round(contact.responsiveness * 100)}% de las veces
+                    responds {Math.round(contact.responsiveness * 100)}% of the time
                     {contact.lastContactedAt
-                      ? ` · último aviso ${agoLabel(contact.lastContactedAt, nowMs)}`
+                      ? ` · last contacted ${agoLabel(contact.lastContactedAt, nowMs)}`
                       : ""}
                   </p>
                 </div>
                 <span className={contact.demoSafe ? "pill live" : "pill mock"}>
-                  {contact.demoSafe ? "Apto para ejecución real" : "Solo simulación"}
+                  {contact.demoSafe ? "Approved for live execution" : "Simulation only"}
                 </span>
               </article>
             );
@@ -51,9 +51,9 @@ export default function ContactsPanel({ contacts, chains, zones, nowMs }: Props)
       </div>
 
       <div>
-        <h3 className="section-head">Cadenas de escalado ({chains.length})</h3>
+        <h3 className="section-head">Escalation chains ({chains.length})</h3>
         {chains.length === 0 ? (
-          <p className="muted-note">Ninguna cadena de escalado abierta ahora mismo.</p>
+          <p className="muted-note">No active escalation chains right now.</p>
         ) : null}
         <div className="chain-list">
           {chains.map((chain) => {
@@ -67,9 +67,9 @@ export default function ContactsPanel({ contacts, chains, zones, nowMs }: Props)
                   </span>
                 </header>
                 <p className="action-trace">
-                  {zone?.name ?? chain.zoneId} · escalón{" "}
-                  {Math.min(chain.currentStep + 1, chain.steps.length)} de {chain.steps.length} ·
-                  actualizada {agoLabel(chain.updatedAt, nowMs)}
+                  {zone?.name ?? chain.zoneId} · step{" "}
+                  {Math.min(chain.currentStep + 1, chain.steps.length)} of {chain.steps.length} ·
+                  updated {agoLabel(chain.updatedAt, nowMs)}
                 </p>
                 <ol className="chain-steps">
                   {chain.steps.map((step, index) => {
@@ -85,12 +85,11 @@ export default function ContactsPanel({ contacts, chains, zones, nowMs }: Props)
                         <div>
                           <strong>{contact?.name ?? step.contactId}</strong>
                           <small>
-                            {channelLabels[step.channel]} · espera {step.waitSeconds}s ·{" "}
-                            {step.reason}
+                            {channelLabels[step.channel]} · wait {step.waitSeconds}s · {step.reason}
                           </small>
                         </div>
                         <span className={contact?.demoSafe ? "pill live" : "pill mock"}>
-                          {contact?.demoSafe ? "Real" : "Simulada"}
+                          {contact?.demoSafe ? "Live" : "Simulated"}
                         </span>
                       </li>
                     );

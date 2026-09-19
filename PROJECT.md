@@ -15,11 +15,12 @@ scoring criteria.
 
 Product: FARO, an agentic command center for a wildfire in Sierra Bermeja
 (Málaga), operated by the 112 Andalucía control room. Everything the operator
-sees must be in English; translate existing Spanish UI text when encountered.
-The product vision, scenario, demo script and build phases
-live in `HackSpain 2026 · Source of Truth del proyecto.md` at the repository
-root; `thoughts/` holds the data model proposal, the inventory of features
-built on the `feat/crisis-command-center` branch, and the open decisions.
+sees is in English; proper geographic and agency names such as Sierra Bermeja
+and 112 Andalucía remain as proper nouns.
+The product vision, scenario, demo script and build phases live in
+`HackSpain 2026 · Project Source of Truth.md` at the repository root; `thoughts/`
+holds the data model proposal, the inventory of features built on the
+`feat/crisis-command-center` branch, and the open decisions.
 
 Status: two trees live in one Next.js project. The served application is the
 command center at the repository root (`app/`, `lib/`, `tests/`): operator panel,
@@ -71,8 +72,7 @@ invented values. Track follow-up work in TASKS.md.
 - `app/`, `lib/`, `tests/`: the served command center. `app/` holds the operator
   panel, HTTP API, shadcn/ui-inspired primitives (`app/components/ui/`), and the
   tactical React Leaflet map (`app/components/LeafletMap.tsx`) with OpenStreetMap;
-  each `lib/` module states its owner in a `// OWNER:` line (translate legacy
-  Spanish owner labels when encountered, preserving attribution); `tests/` is its
+  each `lib/` module states its owner in a `// OWNER:` line; `tests/` is its
   Vitest suite.
 - `src/app`, `src/components`: platform-base endpoints and dashboard (not served
   while the root `app/` exists; covered by tests).
@@ -183,9 +183,9 @@ When extending the scaffolding:
   `AGENTS.md`. Prettier handles formatting, not identifier naming or commit language.
 - English is mandatory for all project output, even when the conversation is
   in Spanish: code identifiers, comments, prompts, UI text, messages, tests,
-  documentation, filenames, commits and PRs. The only document that stays in
-  Spanish is `HackSpain 2026 · Source of Truth del proyecto.md`, the master
-  product source of truth; `PROJECT.md` stays in English.
+  documentation, filenames, commits and PRs. All documents including
+  `HackSpain 2026 · Project Source of Truth.md` and `PROJECT.md` are in English.
+  Real-world proper nouns (e.g. Sierra Bermeja, 112 Andalucía, INFOCA) are retained.
 - Whenever you encounter Spanish in project code or other maintained content
   while working, translate it into English in the same change. Update affected
   references and tests together so translations preserve behavior and contracts.

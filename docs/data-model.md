@@ -1,209 +1,207 @@
-# FARO · Propuesta de modelo de datos
+# FARO · Data Model Proposal
 
-Estado: propuesta para discusión en equipo. Base: rama `chore-scaffold-typescript-vercel`
+Status: proposal for team discussion. Base: `chore-scaffold-typescript-vercel` branch
 (Next 16, Supabase Postgres + Realtime, Zod, Vercel Workflow, AI SDK).
 
-Este documento propone el modelo de datos completo del centro de mando. Es
-deliberadamente verboso: cada tabla lleva su propósito, su DDL, la explicación
-campo a campo y las decisiones que la motivan, para que se pueda discutir sin
-tener que abrir el código. La versión corta está en la sección 3, el diagrama.
+This document proposes the complete data model for the command center. It is
+deliberately verbose: each table includes its purpose, DDL, field-by-field
+explanation, and motivating decisions so it can be discussed without having to
+open code. The summary is in section 3, the diagram.
 
 ---
 
-## 1. Qué tiene que soportar el modelo
+## 1. What the Model Must Support
 
-El enunciado del reto obliga a responder seis preguntas en pantalla, y cada una
-impone algo al modelo de datos:
+The challenge prompt requires answering six questions on screen, each imposing
+requirements on the data model:
 
-| Pregunta del reto         | Lo que exige del modelo                                                                      |
-| ------------------------- | -------------------------------------------------------------------------------------------- |
-| Qué información importa   | Señales con probabilidad, deduplicación, fusión en incidentes, y motivo de descarte guardado |
-| Qué va primero            | Ranking versionado con el desglose de la puntuación, no solo el número                       |
-| A quién se avisa y cuándo | Contactos por rol, canales con fiabilidad medida, cadenas de escalado con espera             |
-| Dónde van los recursos    | Asignaciones con motivo, y la lista de quién se queda esperando y por qué                    |
-| Qué se hace ahora         | Acciones con nivel de autonomía, intento, idempotencia y resultado real                      |
-| Cuándo tirar el plan      | Supuestos declarados por plan y el evento exacto que los rompió                              |
+| Challenge Question       | Data Model Requirement                                                                  |
+| ------------------------ | --------------------------------------------------------------------------------------- |
+| What information matters | Signals with probability, deduplication, incident fusion, and stored dismissal reason   |
+| What comes first         | Versioned ranking with score breakdown, not just the number                             |
+| Whom to notify and when  | Contacts by role, channels with measured reliability, escalation chains with wait times |
+| Where resources go       | Assignments with rationale, and the list of who remains waiting and why                 |
+| What is being done now   | Actions with autonomy level, attempt, idempotency, and real outcome                     |
+| When to discard the plan | Declared assumptions per plan and the exact event that invalidated them                 |
 
-Y el documento fuente añade cuatro requisitos transversales:
+And the source document adds four cross-cutting requirements:
 
-- **Log de eventos inmutable** del que cuelga todo, para reproducir una
-  ejecución y aprender de ella.
-- **Aprendizaje entre ejecuciones** con lecciones validadas por una persona.
-- **Honestidad sobre lo simulado**: en cada acción tiene que quedar escrito si
-  salió al mundo real o no.
-- **Provenance de la IA**: qué modelo propuso qué, con qué entrada, a qué coste.
+- **Immutable event log** from which everything hangs, to replay an execution and
+  learn from it.
+- **Cross-execution learning** with lessons validated by a human.
+- **Honesty regarding simulation**: each action must explicitly record whether it
+  reached the real world or not.
+- **AI provenance**: which model proposed what, with what input, at what cost.
 
 ---
 
-## 2. Principios de diseño
+## 2. Design Principles
 
-### 2.1 El registro es la verdad; las tablas de estado son proyecciones cómodas
+### 2.1 The Log Is the Truth; State Tables Are Convenient Projections
 
-`domain_events` es append-only y ordenado. Todo lo demás (`signals`, `plans`,
-`actions`…) es estado corriente que se puede reconstruir desde el registro. En
-la práctica escribimos las dos cosas en la misma transacción, porque leer el
-estado corriente es lo que hace el panel doscientas veces por minuto. Pero la
-regla de oro es: **si el registro y una tabla de estado discrepan, manda el
-registro**.
+`domain_events` is append-only and ordered. Everything else (`signals`, `plans`,
+`actions`…) is current state that can be reconstructed from the log. In
+practice, we write both in the same transaction because reading current state
+is what the dashboard does two hundred times a minute. But the golden rule is:
+**if the log and a state table disagree, the log takes precedence**.
 
-Esto compra tres cosas que el reto puntúa: reproducir una demo paso a paso,
-auditar quién decidió qué, y alimentar el aprendizaje sin instrumentar nada más.
+This buys three things the challenge scores: replaying a demo step-by-step,
+auditing who decided what, and feeding learning without instrumenting anything
+extra.
 
-### 2.2 Una señal descartada no se borra: se excluye
+### 2.2 A Dismissed Signal Is Not Deleted: It Is Excluded
 
-Aprendizaje de la rama de dominio. Allí, cada señal _mutaba_ el riesgo de su
-zona al llegar, y al descartarla había que revertir esa mutación con contabilidad
-explícita. Funcionaba, pero era frágil y obligó a un contrato delicado entre
-dos módulos. Aquí la presión sobre un incidente **se deriva** de sus señales
-vivas en el momento de calcular. Descartar es cambiar un estado; el motor de
-prioridad simplemente deja de contarla. Sin reversiones.
+Learnings from the domain branch. There, each arriving signal _mutated_ the
+risk of its zone, and dismissing it required reversing that mutation with
+explicit bookkeeping. It worked, but it was fragile and forced a delicate
+contract between two modules. Here, the pressure on an incident **is derived**
+from its live signals at calculation time. Dismissing is simply changing a
+state; the priority engine stops counting it. No rollbacks.
 
-### 2.3 Probabilidades, no etiquetas
+### 2.3 Probabilities, Not Labels
 
-Las señales llevan `p_relevant`, `p_truthful`, `urgency` y `fused_confidence`
-como numéricos en [0, 1], además de la etiqueta que declare la fuente. Es lo que
-permite las tres salidas del triaje (actuar, verificar, descartar) y la fusión de
-confianza entre fuentes independientes.
+Signals carry `p_relevant`, `p_truthful`, `urgency`, and `fused_confidence` as
+numbers in [0, 1], in addition to the label declared by the source. This enables
+the three triage outcomes (act, verify, discard) and confidence fusion across
+independent sources.
 
-### 2.4 Todo lo que decide el sistema deja motivo y desglose
+### 2.4 Everything Decided by the System Leaves a Rationale and Breakdown
 
 `plan_priorities.factors`, `assignments.reason`, `actions.reason`,
-`assumptions.consequence`, `decisions.why`. No son adornos: son lo que el panel
-enseña al jurado para justificar cada decisión. Si una función del dominio no
-puede rellenar el motivo, es señal de que la decisión no está bien definida.
+`assumptions.consequence`, `decisions.why`. These are not decorations: they are
+what the dashboard displays to the jury to justify every decision. If a domain
+function cannot supply the reason, it indicates the decision is not well
+defined.
 
-### 2.5 Idempotencia por intento
+### 2.5 Per-Attempt Idempotency
 
-Cada `action` lleva `attempt` e `idempotency_key = "<action_id>:<attempt>"`. Un
-reintento del operador estrena clave; un reintento interno del adaptador
-(timeout, 5xx) reutiliza la misma. Así HappyRobot deduplica lo que debe y no lo
-que no debe. Los webhooks de entrada se deduplican aparte en
-`webhook_deliveries`.
+Each `action` carries `attempt` and `idempotency_key = "<action_id>:<attempt>"`.
+An operator retry generates a new key; an internal adapter retry (timeout, 5xx)
+reuses the same key. This ensures HappyRobot deduplicates what it should and
+does not deduplicate what it shouldn't. Inbound webhooks are deduplicated
+separately in `webhook_deliveries`.
 
-### 2.6 Zod es el contrato; SQL lo materializa
+### 2.6 Zod Is the Contract; SQL Materializes It
 
-Los esquemas Zod viven en `src/lib/domain/*.ts` y son la única definición de
-forma que ven frontend, route handlers, workflows y agentes. La migración SQL
-los materializa con `check` constraints que espejan los `z.enum`. Elegimos
-`check` y no `create type … as enum` porque añadir un valor a un enum de
-Postgres dentro de una transacción tiene restricciones molestas y en un
-hackathon vamos a añadir valores.
+Zod schemas live in `src/lib/domain/*.ts` and are the sole definition of shape
+seen by frontend, route handlers, workflows, and agents. The SQL migration
+materializes them with `check` constraints that mirror the `z.enum`s. We choose
+`check` rather than `create type … as enum` because adding a value to a Postgres
+enum within a transaction has annoying restrictions, and in a hackathon we will
+be adding values.
 
-### 2.7 JSONB con versión, para lo que evoluciona rápido
+### 2.7 Versioned JSONB for Rapidly Evolving Structures
 
-`factors`, `changes`, `state` del mundo, `structured` de un resultado de
-llamada, `interpreted` de una directiva. Son estructuras que van a cambiar
-varias veces el fin de semana. Van en `jsonb`, validadas por Zod al escribir y
-al leer, y acompañadas de una columna de versión de fórmula o esquema donde
-importa (`plan_priorities.formula_version`, `world_state_versions.schema_version`).
+`factors`, `changes`, world `state`, `structured` call results, `interpreted`
+directives. These structures will change multiple times over the weekend. They
+live in `jsonb`, validated by Zod on write and read, accompanied by a formula or
+schema version column where relevant (`plan_priorities.formula_version`,
+`world_state_versions.schema_version`).
 
-### 2.8 Multi-tenancy por ejecución
+### 2.8 Multi-Tenancy by Execution Run
 
-Todo cuelga de `runs`. Una ejecución es una crisis gestionada de principio a
-fin: en la demo, una partida; en un operativo real, un incendio. Eso da
-aislamiento de datos, permite comparar ejecuciones para aprender, y es el eje
-natural de las políticas de seguridad a nivel de fila cuando entre la
-autenticación de operadores.
+Everything hangs off `runs`. A run represents a crisis managed from start to
+finish: in the demo, a single session; in real operations, a wildfire. This
+provides data isolation, allows comparing runs for learning, and serves as the
+natural axis for row-level security policies when operator authentication is
+introduced.
 
-### 2.9 Datos personales: separados, mínimos y nunca en semillas
+### 2.9 Personal Data: Segregated, Minimal, and Never in Seeds
 
-Los teléfonos y correos viven **solo** en `contact_channels.address`. Ninguna
-otra tabla los copia. Las semillas versionadas llevan `null` o marcadores. Antes
-de la demo se cargan a mano los destinatarios aprobados, con `consent_note`
-rellena. Es el mismo criterio de `AGENTS.md` y de la salvaguarda `demo_safe`.
+Phone numbers and emails live **only** in `contact_channels.address`. No other
+table copies them. Version-controlled seeds contain `null` or placeholders.
+Before the demo, approved recipients are populated manually with `consent_note`
+filled in. This adheres to `AGENTS.md` and the `demo_safe` safeguard.
 
 ---
 
-## 3. Vista general
+## 3. Overview
 
-Dos diagramas: el bucle de decisión y las tablas de control, registro y
-aprendizaje.
+Two diagrams: the decision loop and the control, audit, and learning tables.
 
 ```mermaid
 erDiagram
-  runs ||--o{ areas : contiene
-  runs ||--o{ world_state_versions : versiona
-  runs ||--o{ scenario_beats : guion
-  areas ||--o{ vulnerable_sites : tiene
-  runs ||--o{ signals : recibe
-  areas ||--o{ signals : localiza
-  incidents ||--o{ signals : fusiona
-  areas ||--o{ incidents : ubica
-  runs ||--o{ contacts : conoce
-  contacts ||--o{ contact_channels : canales
-  runs ||--o{ resources : dispone
-  resources ||--o{ assignments : se_asigna
-  incidents ||--o{ assignments : recibe
-  runs ||--o{ plans : planifica
-  plans ||--o{ plan_priorities : ordena
-  plans ||--o{ assumptions : depende_de
-  plans ||--o{ unmet_demands : deja_esperando
-  plans ||--o{ escalation_chains : abre
-  escalation_chains ||--o{ escalation_steps : escalones
-  plans ||--o{ actions : propone
-  actions ||--o{ action_results : resultados
-  signals ||--o| actions : verificada_por
+  runs ||--o{ areas : contains
+  runs ||--o{ world_state_versions : versions
+  runs ||--o{ scenario_beats : script
+  areas ||--o{ vulnerable_sites : has
+  runs ||--o{ signals : receives
+  areas ||--o{ signals : locates
+  incidents ||--o{ signals : fuses
+  areas ||--o{ incidents : places
+  runs ||--o{ contacts : knows
+  contacts ||--o{ contact_channels : channels
+  runs ||--o{ resources : provides
+  resources ||--o{ assignments : assigned_to
+  incidents ||--o{ assignments : receives
+  runs ||--o{ plans : plans
+  plans ||--o{ plan_priorities : ranks
+  plans ||--o{ assumptions : depends_on
+  plans ||--o{ unmet_demands : leaves_waiting
+  plans ||--o{ escalation_chains : opens
+  escalation_chains ||--o{ escalation_steps : steps
+  plans ||--o{ actions : proposes
+  actions ||--o{ action_results : results
+  signals ||--o| actions : verified_by
 ```
 
 ```mermaid
 erDiagram
-  runs ||--o{ domain_events : registra
-  domain_events ||--o| decisions : justifica
-  runs ||--o{ approvals : pide
-  actions ||--o| approvals : requiere
-  runs ||--o{ directives : recibe_ordenes
-  runs ||--o{ autonomy_rules : politica
-  runs ||--o{ ai_invocations : llama_modelo
-  plans }o--o| ai_invocations : propuesto_por
-  runs ||--o{ lessons : genera
-  webhook_deliveries }o--o| actions : cierra
+  runs ||--o{ domain_events : records
+  domain_events ||--o| decisions : justifies
+  runs ||--o{ approvals : requests
+  actions ||--o| approvals : requires
+  runs ||--o{ directives : receives_orders
+  runs ||--o{ autonomy_rules : policy
+  runs ||--o{ ai_invocations : calls_model
+  plans }o--o| ai_invocations : proposed_by
+  runs ||--o{ lessons : generates
+  webhook_deliveries }o--o| actions : closes
   source_reliability
   learned_weights
 ```
 
-**Mapa módulo → tablas.** Cada módulo escribe solo sus tablas; el resto las lee.
+**Module → Tables Map.** Each module writes only its designated tables; other modules read them.
 
-| Módulo      | Escribe                                                                               | Lee                                              |
+| Module      | Writes                                                                                | Reads                                            |
 | ----------- | ------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| `scenario`  | `runs` (reloj), `world_state_versions`, `scenario_beats`, `areas`, `vulnerable_sites` | —                                                |
-| `ingest`    | `signals` (alta), `webhook_deliveries`                                                | `runs`, `areas`                                  |
-| `triage`    | `signals` (columnas de triaje), `source_reliability` (lectura)                        | `contacts`                                       |
+| `scenario`  | `runs` (clock), `world_state_versions`, `scenario_beats`, `areas`, `vulnerable_sites` | —                                                |
+| `ingest`    | `signals` (creation), `webhook_deliveries`                                            | `runs`, `areas`                                  |
+| `triage`    | `signals` (triage columns), `source_reliability` (read)                               | `contacts`                                       |
 | `incidents` | `incidents`, `signals.incident_id`                                                    | `signals`, `vulnerable_sites`                    |
 | `resources` | `resources`, `assignments`, `unmet_demands`                                           | `incidents`, `plans`                             |
-| `planning`  | `plans`, `plan_priorities`, `assumptions`                                             | todo lo anterior, `world_state_versions`         |
+| `planning`  | `plans`, `plan_priorities`, `assumptions`                                             | all previous, `world_state_versions`             |
 | `execution` | `actions`, `action_results`, `escalation_chains`, `escalation_steps`                  | `contacts`, `contact_channels`, `autonomy_rules` |
 | `control`   | `approvals`, `directives`, `autonomy_rules`, `runs.autonomy_paused`                   | `actions`                                        |
 | `audit`     | `domain_events`, `decisions`                                                          | —                                                |
 | `learning`  | `lessons`, `learned_weights`, `source_reliability`                                    | `domain_events`, `action_results`, `signals`     |
-| `agents`    | `ai_invocations`                                                                      | lo que le pase el coordinador                    |
+| `agents`    | `ai_invocations`                                                                      | passed by coordinator                            |
 
 ---
 
-## 4. Convenciones
+## 4. Conventions
 
-- **Identificadores SQL en inglés y `snake_case`; tipos TypeScript en
-  `camelCase`.** El mapeo lo hace una sola función por entidad
-  (`rowToSignal`, `signalToRow`). Prosa, motivos y textos de pantalla en
-  español.
-- **Claves primarias `uuid` con `gen_random_uuid()`**, salvo `domain_events`,
-  que usa `bigint generated always as identity` porque necesita orden total
-  barato. Las entidades que el guion y los tests referencian por nombre estable
-  (áreas, recursos, contactos de semilla) llevan además un `slug` único por
-  ejecución.
-- **Dos tiempos donde importa**: `occurred_at` (cuándo pasó en el mundo) y
-  `received_at` o `recorded_at` (cuándo lo supimos). El decaimiento temporal y
-  la reproducción de una ejecución dependen de distinguirlos.
-- **`created_at` y `updated_at`** en toda tabla mutable, con el trigger
-  `set_updated_at`. Las tablas append-only no tienen `updated_at`.
-- **Estados como `text` con `check`**, espejo exacto de un `z.enum`. Cuando se
-  añade un valor, se toca el Zod y la migración en el mismo commit.
-- **Sin borrados en tablas de dominio.** Todo transita de estado
-  (`dismissed`, `cancelled`, `superseded`). Las FK van con `on delete restrict`.
-- **Referencias cruzadas circulares** (`signals ↔ actions`, `plans ↔
-assumptions`) se añaden al final de la migración con `alter table … add
-constraint`, para que el orden de creación no importe.
-- **Numéricos de probabilidad** como `numeric` acotado `between 0 and 1`. Los
-  costes en micro-unidades enteras (`cost_micros bigint`), nunca `float`.
+- **SQL identifiers in English and `snake_case`; TypeScript types in
+  `camelCase`.** Mapping is handled by a single function per entity
+  (`rowToSignal`, `signalToRow`). Prose, reasons, and UI text in English.
+- **Primary keys are `uuid` with `gen_random_uuid()`**, except `domain_events`,
+  which uses `bigint generated always as identity` because it requires cheap
+  total ordering. Entities referenced by stable names in scripts and tests
+  (areas, resources, seed contacts) also carry a unique `slug` per run.
+- **Two timestamps where it matters**: `occurred_at` (when it happened in the
+  real world) and `received_at` or `recorded_at` (when we learned of it).
+  Temporal decay and execution replay depend on distinguishing them.
+- **`created_at` and `updated_at`** on all mutable tables, with the
+  `set_updated_at` trigger. Append-only tables do not have `updated_at`.
+- **States as `text` with `check` constraints**, exactly mirroring a `z.enum`.
+  When adding a value, both Zod and the migration are updated in the same commit.
+- **No hard deletes in domain tables.** Everything transitions state
+  (`dismissed`, `cancelled`, `superseded`). FKs use `on delete restrict`.
+- **Circular cross-references** (`signals ↔ actions`, `plans ↔ assumptions`)
+  are added at the end of the migration using `alter table … add constraint`, so
+  table creation order does not matter.
+- **Probability numbers** as `numeric` constrained `between 0 and 1`. Costs in
+  integer micro-units (`cost_micros bigint`), never `float`.
 
 ```sql
 create or replace function public.set_updated_at() returns trigger
@@ -216,16 +214,16 @@ end $$;
 
 ---
 
-## 5. Entidades
+## 5. Entities
 
-Orden de lectura: primero el contenedor y el mundo, luego percepción, gente y
-medios, plan, acción, control, registro, aprendizaje e IA.
+Reading order: first the container and world, then perception, people and
+assets, plan, action, control, logging, learning, and AI.
 
-### 5.1 `runs` — la ejecución
+### 5.1 `runs` — The Execution Run
 
-Contenedor de todo. Una fila por crisis gestionada. Sustituye a la tabla
-`incidents` del andamiaje, que hacía este papel con otro nombre; ese nombre lo
-reservamos para las subincidencias, como pide el documento fuente.
+Container for everything. One row per managed crisis. Replaces the `incidents`
+table from the scaffolding, which played this role under a different name; that
+name is now reserved for sub-incidents, as requested by the source document.
 
 ```sql
 create table public.runs (
@@ -250,20 +248,20 @@ create trigger runs_updated before update on public.runs
   for each row execute function public.set_updated_at();
 ```
 
-| Campo             | Para qué                                                                                                                                                         |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `kind`            | `demo` es una partida ante el jurado; `drill` un ensayo del que también aprendemos; `live` queda reservado. Permite filtrar qué ejecuciones alimentan lecciones. |
-| `scenario_id`     | Guion usado (`wildfire-sierra-bermeja`). `null` si no hay guion.                                                                                                 |
-| `clock_speed`     | Multiplicador del reloj del escenario. El documento habla de reloj comprimido, 1 minuto real ≈ 10 de crisis.                                                     |
-| `alert_level`     | Nivel de alerta 1–3. Fija cuánto coste por hora se permite gastar en recursos.                                                                                   |
-| `autonomy_paused` | Interruptor general. Cuando está a `true`, toda acción pasa a exigir aprobación. Es el mando más fuerte del operador.                                            |
-| `summary`         | Métricas de cierre: señales triadas, llamadas, confirmaciones, tiempo medio de replanificación, coste de triaje. Se rellena al cerrar.                           |
+| Field             | Purpose                                                                                                                                             |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `kind`            | `demo` is a session before the jury; `drill` is a rehearsal from which we also learn; `live` is reserved. Allows filtering which runs feed lessons. |
+| `scenario_id`     | Script used (`wildfire-sierra-bermeja`). `null` if no script.                                                                                       |
+| `clock_speed`     | Scenario clock multiplier. The document specifies compressed time: 1 real minute ≈ 10 crisis minutes.                                               |
+| `alert_level`     | Alert level 1–3. Sets maximum hourly cost allowed for resource expenditure.                                                                         |
+| `autonomy_paused` | Master switch. When `true`, every action requires approval. The operator's strongest control.                                                       |
+| `summary`         | Wrap-up metrics: triaged signals, calls, confirmations, average replan time, triage cost. Populated upon closing.                                   |
 
-### 5.2 `areas` — zonas geográficas
+### 5.2 `areas` — Geographic Zones
 
-Municipios, urbanizaciones, parajes. Son el "dónde" de todo: señales,
-incidentes, recursos y puntos vulnerables se ubican en un área. En la demo:
-Estepona, Jubrique, Genalguacil, Benahavís y Los Pinares.
+Municipalities, developments, landscapes. They are the "where" for everything:
+signals, incidents, resources, and vulnerable sites are located in an area. In
+the demo: Estepona, Jubrique, Genalguacil, Benahavís, and Los Pinares.
 
 ```sql
 create table public.areas (
@@ -287,18 +285,17 @@ create trigger areas_updated before update on public.areas
   for each row execute function public.set_updated_at();
 ```
 
-| Campo                      | Para qué                                                                                                                                                                           |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `slug`                     | Identificador estable (`estepona`, `los-pinares`) que usan el guion, las semillas y los tests. Las UUID cambian por ejecución; el slug no.                                         |
-| `base_risk`                | Riesgo estructural de la zona, independiente de las señales vivas. Es la única parte del riesgo que se guarda: el resto se deriva.                                                 |
-| `centroid_x`, `centroid_y` | Coordenadas del mapa del panel, en el sistema que use el SVG. Suficiente para la distancia entre zonas que necesita la asignación de recursos.                                     |
-| `geometry`                 | GeoJSON opcional del polígono. Cuando haya tiempo, se sustituye por `geography(Polygon, 4326)` de PostGIS, que Supabase trae instalado; la columna `jsonb` permite empezar sin él. |
+| Field                      | Purpose                                                                                                                                                                               |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `slug`                     | Stable identifier (`estepona`, `los-pinares`) used by scripts, seeds, and tests. UUIDs change per run; slugs do not.                                                                  |
+| `base_risk`                | Structural risk of the area, independent of live signals. The only stored part of risk: the rest is derived.                                                                          |
+| `centroid_x`, `centroid_y` | Map coordinates for the dashboard, in whatever coordinate system the SVG uses. Sufficient for calculating inter-zone distances needed for resource allocation.                        |
+| `geometry`                 | Optional GeoJSON polygon. When time permits, replaced with PostGIS `geography(Polygon, 4326)` (which comes pre-installed in Supabase); the `jsonb` column allows starting without it. |
 
-### 5.3 `vulnerable_sites` — puntos vulnerables
+### 5.3 `vulnerable_sites` — Vulnerable Locations
 
-Residencia de mayores, colegio rural, camping. Son lo que dispara el
-multiplicador de vulnerabilidad de la fórmula de prioridad y lo que convierte
-una evacuación en irreversible.
+Nursing homes, rural schools, campsites. They trigger the vulnerability
+multiplier in the priority formula and make an evacuation irreversible.
 
 ```sql
 create table public.vulnerable_sites (
@@ -321,16 +318,16 @@ create table public.vulnerable_sites (
 create index vulnerable_sites_area_idx on public.vulnerable_sites (area_id);
 ```
 
-`multiplier` sigue el documento: 1 por defecto, 1,5 colegio, 2 residencia. Es
-un dato, no una constante en código, porque el aprendizaje puede moverlo
-("el operador priorizó tres veces el colegio").
+`multiplier` follows the specification: 1 by default, 1.5 for schools, 2 for
+nursing homes. It is data, not a hardcoded constant, so learning can adjust it
+("the operator prioritized the school three times").
 
-### 5.4 `world_state_versions` — el mundo simulado, versionado
+### 5.4 `world_state_versions` — Versioned Simulated World
 
-Viento, carreteras cortadas, estado de los canales, camas de hospital. Cada
-cambio crea una versión nueva; nunca se actualiza en sitio. Es contra lo que se
-contrastan los supuestos, y versionarlo es lo que permite decir "el supuesto se
-rompió en la versión 7, provocada por la señal X".
+Wind, road closures, channel statuses, hospital beds. Each change creates a new
+version; never updated in place. This is what assumptions are evaluated
+against, and versioning allows stating "the assumption broke in version 7,
+triggered by signal X."
 
 ```sql
 create table public.world_state_versions (
@@ -349,7 +346,7 @@ create table public.world_state_versions (
 create index world_state_run_idx on public.world_state_versions (run_id, version desc);
 ```
 
-Forma de `state`, validada por `worldStateSchema`:
+Shape of `state`, validated by `worldStateSchema`:
 
 ```ts
 export const worldStateSchema = z
@@ -371,12 +368,11 @@ export const worldStateSchema = z
   .strict();
 ```
 
-### 5.5 `scenario_beats` — el guion
+### 5.5 `scenario_beats` — The Script
 
-Eventos programados del escenario y botones de caos. Guardar los disparos en
-base de datos, y no solo en memoria, es lo que permite que el guion sobreviva a
-un reinicio del servidor a mitad de demo y que el aprendizaje sepa qué pasó y
-cuándo.
+Scheduled scenario events and chaos buttons. Storing triggers in the database,
+rather than solely in memory, ensures the script survives a server restart
+mid-demo and allows the learning module to know what happened and when.
 
 ```sql
 create table public.scenario_beats (
@@ -398,17 +394,17 @@ create index scenario_beats_due_idx on public.scenario_beats (run_id, at_seconds
   where fired_at is null and skipped = false;
 ```
 
-`kind = 'chaos'` con `fired_by = 'jury'` es exactamente el momento "el jurado
-elige qué rompemos", y queda registrado como tal. `noise_burst` es el aluvión
-de cuarenta mensajes con tres relevantes: el payload lleva la lista de señales a
-generar.
+`kind = 'chaos'` with `fired_by = 'jury'` represents the exact "the jury
+chooses what we break" moment, logged as such. `noise_burst` is the flood of
+forty messages containing only three relevant ones: the payload carries the list
+of signals to generate.
 
-### 5.6 `signals` — señales
+### 5.6 `signals` — Signals
 
-Todo lo que entra: llamadas, SMS, sensores, webhooks de HappyRobot, el guion.
-Es la tabla más escrita y la primera que el triaje procesa. Sustituye a la tabla
-`events` del andamiaje, que tenía este papel y un nombre que ahora reservamos
-para el registro de dominio.
+Everything entering the system: calls, SMS, sensors, HappyRobot webhooks, the
+script. It is the most heavily written table and the first processed by triage.
+Replaces the `events` table from the scaffolding, which held this role and a
+name now reserved for domain logging.
 
 ```sql
 create table public.signals (
@@ -435,7 +431,7 @@ create table public.signals (
   occurrences           integer not null default 1 check (occurrences >= 1),
   merged_into_id        uuid references public.signals(id),
 
-  -- triaje calibrado
+  -- calibrated triage
   p_relevant            numeric check (p_relevant between 0 and 1),
   p_truthful            numeric check (p_truthful between 0 and 1),
   urgency               numeric check (urgency between 0 and 1),
@@ -449,7 +445,7 @@ create table public.signals (
   triage_cost_micros    bigint,
   triaged_at            timestamptz,
 
-  -- verificación
+  -- verification
   verification_status   text not null default 'unverified'
                         check (verification_status in ('unverified', 'verifying', 'confirmed', 'refuted')),
   verification_action_id uuid,
@@ -471,28 +467,28 @@ create trigger signals_updated before update on public.signals
   for each row execute function public.set_updated_at();
 ```
 
-| Campo                                                        | Para qué                                                                                                                                                                                   |
+| Field                                                        | Purpose                                                                                                                                                                                    |
 | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `source` / `channel`                                         | Fuente lógica y canal físico. `public` es un vecino; `happyrobot` es lo que devuelve una llamada del sistema. La fiabilidad aprendida cuelga de `source`.                                  |
-| `external_ref`                                               | Identificador en el sistema de origen: id de llamada en HappyRobot, id de mensaje. Permite enlazar con la transcripción.                                                                   |
-| `category`                                                   | Catálogo abierto (`incendio`, `evacuacion`, `route-blocked`, `refugio`). Es la clave que usan la asignación de recursos y la elección de contacto; por eso es texto sin acentos y estable. |
-| `occurred_at` / `received_at`                                | El decaimiento temporal usa `occurred_at`; la ordenación del panel y la deduplicación usan `received_at`.                                                                                  |
-| `dedupe_key`, `occurrences`, `merged_into_id`                | Una señal repetida dentro de la ventana no crea fila nueva: incrementa `occurrences` de la original. Si sí se creó y luego se detecta, apunta a la original con `merged_into_id`.          |
-| `p_*`, `fused_confidence`, `triage_decision`                 | Las tres salidas del triaje. La banda intermedia genera una acción de verificación y `verification_status` pasa a `verifying`.                                                             |
-| `triage_assessor`, `triage_latency_ms`, `triage_cost_micros` | Quién evaluó y cuánto costó. Es el dato de "40 señales triadas en X segundos por Y euros" que el documento quiere en pantalla.                                                             |
-| `triage_details`                                             | Lo que no merece columna: desglose de la fusión, alternativas descartadas, versión del evaluador.                                                                                          |
-| `verification_*`                                             | Resultado de la verificación por llamada o del operador. `refuted` es lo que antes llamábamos "descartada por una persona".                                                                |
-| `raw`                                                        | El payload original íntegro. No se toca nunca. Es lo que permite re-triar con un evaluador mejor sin pedir el dato otra vez.                                                               |
+| `source` / `channel`                                         | Logical source and physical channel. `public` is a resident; `happyrobot` is what a system call returns. Learned reliability attaches to `source`.                                         |
+| `external_ref`                                               | Identifier in source system: call ID in HappyRobot, message ID. Allows linking to transcript.                                                                                              |
+| `category`                                                   | Open catalog (`incendio`, `evacuacion`, `route-blocked`, `refugio`). Used by resource allocation and contact selection; hence stable, unaccented text.                                     |
+| `occurred_at` / `received_at`                                | Temporal decay uses `occurred_at`; dashboard sorting and deduplication use `received_at`.                                                                                                  |
+| `dedupe_key`, `occurrences`, `merged_into_id`                | A repeated signal within the window does not create a new row: it increments `occurrences` on the original. If created and later detected, it points to the original via `merged_into_id`. |
+| `p_*`, `fused_confidence`, `triage_decision`                 | The three triage outcomes. The intermediate band generates a verification action and `verification_status` becomes `verifying`.                                                            |
+| `triage_assessor`, `triage_latency_ms`, `triage_cost_micros` | Who assessed and at what cost. Provides the "40 signals triaged in X seconds for Y euros" metric shown on screen.                                                                          |
+| `triage_details`                                             | What doesn't warrant its own column: fusion breakdown, discarded alternatives, evaluator version.                                                                                          |
+| `verification_*`                                             | Result of phone verification or operator input. `refuted` is what was previously called "dismissed by a human".                                                                            |
+| `raw`                                                        | The untouched original payload. Never modified. Allows re-triaging with an upgraded evaluator without re-fetching data.                                                                    |
 
-Índices parciales (`signals_untriaged_idx`, `signals_live_idx`) porque las dos
-consultas calientes son "qué queda por triar" y "qué señales vivas tiene esta
-zona", y ambas son una fracción pequeña de la tabla.
+Partial indices (`signals_untriaged_idx`, `signals_live_idx`) because the hot
+queries are "what remains to be triaged" and "what live signals exist in this
+zone", both representing a small fraction of the table.
 
-### 5.7 `incidents` — subincidencias
+### 5.7 `incidents` — Sub-Incidents
 
-Un incidente agrupa señales coherentes en un lugar: "frente activo en la ladera
-norte de Los Pinares". Es lo que se prioriza y a lo que se asignan recursos.
-Una señal pertenece a un incidente como mucho.
+An incident groups coherent signals in a location: "active front on the northern
+slope of Los Pinares." This is what gets prioritized and assigned resources.
+A signal belongs to at most one incident.
 
 ```sql
 create table public.incidents (
@@ -523,17 +519,17 @@ create trigger incidents_updated before update on public.incidents
   for each row execute function public.set_updated_at();
 ```
 
-Los cinco campos `gravity`, `people_exposed`, `vulnerability_multiplier`,
-`minutes_to_impact` y `fused_confidence` son exactamente las variables G, N, V,
-t y C de la fórmula de prioridad del documento. `minutes_to_impact` admite
-`null` a propósito: "desconocido" es una respuesta válida y el panel debe
-enseñarla como tal, no como cero.
+The five fields `gravity`, `people_exposed`, `vulnerability_multiplier`,
+`minutes_to_impact`, and `fused_confidence` correspond exactly to variables G,
+N, V, t, and C in the priority formula. `minutes_to_impact` allows `null`
+intentionally: "unknown" is a valid answer and the dashboard must display it as
+such, not as zero.
 
-### 5.8 `contacts` y `contact_channels` — a quién se avisa
+### 5.8 `contacts` and `contact_channels` — Whom to Notify
 
-Separamos el contacto de sus canales porque la fiabilidad se mide **por canal**:
-"Bomberos Estepona no coge llamadas de noche pero responde SMS en 40 segundos"
-es una lección sobre un canal, no sobre una persona.
+We decouple the contact from their communication channels because reliability
+is measured **per channel**: "Estepona Fire Department does not answer night calls
+but responds to SMS in 40 seconds" is a lesson about a channel, not a person.
 
 ```sql
 create table public.contacts (
@@ -574,14 +570,14 @@ create table public.contact_channels (
 create index contact_channels_contact_idx on public.contact_channels (contact_id, priority);
 ```
 
-| Campo                                             | Para qué                                                                                                                                                                                       |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `role`                                            | El mensaje y el canal dependen del rol: a un vecino se le manda SMS, a un coordinador se le llama, a una autoridad se le escribe. Incluye `alcalde` porque es quien hace el jurado en la demo. |
-| `demo_safe` + `consent_note`                      | Un contacto solo puede recibir una acción real si está aprobado **y** consta quién lo autorizó y para qué. El `check` obliga a las dos cosas a la vez.                                         |
-| `address`                                         | El único sitio del modelo con datos personales. Nunca en semillas versionadas. Cuando Supabase Vault esté configurado, se cifra a nivel de columna.                                            |
-| `attempts`, `successes`, `avg_seconds_to_confirm` | La fiabilidad medida por canal. Con mínimo de muestras antes de usarse, como ya hace el módulo de aprendizaje.                                                                                 |
+| Field                                             | Purpose                                                                                                                                                                                                  |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `role`                                            | Message and channel depend on role: residents receive SMS, coordinators receive calls, authorities receive written reports. Includes `alcalde` (mayor) because that is who the jury acts as in the demo. |
+| `demo_safe` + `consent_note`                      | A contact can only receive live actions if approved **and** authorized with recorded consent. The `check` constraint enforces both simultaneously.                                                       |
+| `address`                                         | The only place in the model holding personal data. Never in versioned seeds. When Supabase Vault is configured, it is encrypted at the column level.                                                     |
+| `attempts`, `successes`, `avg_seconds_to_confirm` | Reliability measured per channel. Requires a minimum sample count before being utilized, as handled by the learning module.                                                                              |
 
-### 5.9 `resources` y `assignments` — dónde van los medios
+### 5.9 `resources` and `assignments` — Where Assets Go
 
 ```sql
 create table public.resources (
@@ -630,19 +626,19 @@ create unique index assignments_one_active_per_resource
 create index assignments_incident_idx on public.assignments (incident_id) where status = 'active';
 ```
 
-| Campo                                | Para qué                                                                                                                                                                               |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `capabilities`                       | Lo que el recurso sabe cubrir, como `text[]` con índice GIN. Es lo que evita asignar una brigada forestal a una emergencia sanitaria; la rama de dominio lo comprobó con un caso real. |
-| `min_reserve`                        | Reserva mínima del tipo. No se baja de ella salvo prioridad 1, y si se hace, se marca en rojo.                                                                                         |
-| `cost_per_hour` × `runs.alert_level` | El nivel de alerta fija cuánto se permite gastar.                                                                                                                                      |
-| `assignments.reason` y `score`       | Por qué este recurso y no el más cercano. Es texto de pantalla.                                                                                                                        |
-| Índice único parcial                 | Un recurso tiene como mucho una asignación activa. La base de datos lo garantiza, no el código.                                                                                        |
+| Field                                | Purpose                                                                                                                                                                       |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `capabilities`                       | What the resource can handle, as `text[]` with a GIN index. Prevents assigning a forestry brigade to a medical emergency; verified with a real scenario in the domain branch. |
+| `min_reserve`                        | Minimum reserve for that resource type. Never violated unless priority 1, and flagged in red if breached.                                                                     |
+| `cost_per_hour` × `runs.alert_level` | Alert level dictates allowed spending.                                                                                                                                        |
+| `assignments.reason` and `score`     | Why this resource and not the closest one. Displayed on screen.                                                                                                               |
+| Partial unique index                 | A resource has at most one active assignment. Enforced by the database, not application code.                                                                                 |
 
-### 5.10 `plans`, `plan_priorities`, `assumptions`, `unmet_demands` — el plan
+### 5.10 `plans`, `plan_priorities`, `assumptions`, `unmet_demands` — The Plan
 
-El plan es **versionado e inmutable**: cada replanificación crea una fila nueva
-y marca la anterior como `superseded` o `invalid`. Solo una está `current` por
-ejecución, garantizado por índice.
+The plan is **versioned and immutable**: each replanning creates a new row and
+marks the previous one as `superseded` or `invalid`. Only one is `current` per
+run, enforced by index.
 
 ```sql
 create table public.plans (
@@ -714,17 +710,17 @@ create table public.unmet_demands (
 create index unmet_demands_plan_idx on public.unmet_demands (plan_id);
 ```
 
-| Campo                                          | Para qué                                                                                                                                                                                                                                                                |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `plans.changes`                                | El diff con la versión anterior, ya redactado para pantalla: `[{ kind, label, detail }]`. La barra de cambios del panel lee esto.                                                                                                                                       |
-| `plans.trigger`                                | Por qué se replanificó, en una frase.                                                                                                                                                                                                                                   |
-| `plans.mode`                                   | `deterministic` es el núcleo; `ai` cuando el coordinador propuso y el código validó; `simulation` para ejecuciones sin modelo. Nunca se mezcla en la misma fila.                                                                                                        |
-| `plan_priorities.factors` + `formula_version`  | El desglose real de la puntuación. El modelo es agnóstico a la fórmula: `[{ key, label, value, op: "add" \| "mul" }]`. La rama de dominio usa factores aditivos; el documento propone una fórmula multiplicativa. Ambas caben, y `formula_version` dice cuál se aplicó. |
-| `assumptions.variable`, `operator`, `expected` | El supuesto de forma evaluable contra `world_state_versions.state`: `("wind.direction", "eq", "NE")`, `("roads.A-397", "eq", "open")`, `("hospitals.costa-del-sol.beds", "gte", 10)`.                                                                                   |
-| `assumptions.consequence`                      | Qué deja de tener sentido si cae: "los autobuses por la A-397 hacia el pabellón".                                                                                                                                                                                       |
-| `unmet_demands`                                | Quién se queda esperando en esta versión del plan, qué quería, quién se lo llevó y qué riesgo se acepta. Es el pilar 3 del documento hecho tabla.                                                                                                                       |
+| Field                                          | Purpose                                                                                                                                                                                                                                                          |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `plans.changes`                                | Diff against previous version, formatted for display: `[{ kind, label, detail }]`. Read by the dashboard change feed.                                                                                                                                            |
+| `plans.trigger`                                | Why replanning occurred, in a single sentence.                                                                                                                                                                                                                   |
+| `plans.mode`                                   | `deterministic` is core; `ai` when coordinator proposed and code validated; `simulation` for model-free runs. Never mixed in the same row.                                                                                                                       |
+| `plan_priorities.factors` + `formula_version`  | Actual score breakdown. The model is formula-agnostic: `[{ key, label, value, op: "add" \| "mul" }]`. The domain branch uses additive factors; the specification suggests a multiplicative formula. Both fit, and `formula_version` specifies which was applied. |
+| `assumptions.variable`, `operator`, `expected` | Assumption evaluated against `world_state_versions.state`: `("wind.direction", "eq", "NE")`, `("roads.A-397", "eq", "open")`, `("hospitals.costa-del-sol.beds", "gte", 10)`.                                                                                     |
+| `assumptions.consequence`                      | What ceases to make sense if breached: "buses along A-397 to the sports center."                                                                                                                                                                                 |
+| `unmet_demands`                                | Who remains waiting in this plan version, what was needed, who took the resource, and what risk was accepted. Pillar 3 of the challenge materialized as a table.                                                                                                 |
 
-### 5.11 `escalation_chains`, `escalation_steps`, `actions`, `action_results`, `webhook_deliveries` — ejecutar
+### 5.11 `escalation_chains`, `escalation_steps`, `actions`, `action_results`, `webhook_deliveries` — Execution
 
 ```sql
 create table public.escalation_chains (
@@ -836,20 +832,20 @@ create table public.webhook_deliveries (
 );
 ```
 
-| Campo                             | Para qué                                                                                                                                                                                    |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `actions.kind`                    | Tipo a efectos de autonomía. Extiende los tres del andamiaje (`review`, `notify`, `allocate` → `assign`) con los que exige el documento: `verify`, `mass_alert`, `evacuate`, `escalate`.    |
-| `autonomy_level`, `reversibility` | Con qué nivel se despachó y por qué. Se copian de la regla en el momento de crear la acción, para que cambiar la política después no reescriba la historia.                                 |
-| `execution_mode`                  | `simulated` o `live`. No hay tercer valor. El panel lo enseña en cada fila.                                                                                                                 |
-| `attempt`, `idempotency_key`      | Ver principio 2.5. La unicidad la garantiza la base de datos.                                                                                                                               |
-| `workflow_run_id`                 | Enlace con la ejecución de Vercel Workflow que lleva esta acción. Workflow persiste su propio estado; nosotros guardamos la referencia.                                                     |
-| `stalled_after`                   | Cuándo pasa a considerarse atascada si no llega resultado. Un índice parcial hace barato el barrido.                                                                                        |
-| `verifies_signal_id`              | La acción de verificación apunta a la señal cuya duda resuelve. Al llegar el resultado, se actualiza `signals.verification_status`.                                                         |
-| `action_results.structured`       | Los campos que devuelve el agente de HappyRobot: "confirma humo", "dirección", "personas". Lo que se convierte en señales nuevas queda en `new_signal_ids`.                                 |
-| `action_results.transcript`       | La transcripción de la llamada. Materia prima del aprendizaje.                                                                                                                              |
-| `webhook_deliveries`              | Deduplicación de entrada: el mismo callback reenviado devuelve la misma respuesta y no mueve nada. Clave `(provider, delivery_id)`; si el proveedor no manda id, se usa el hash del cuerpo. |
+| Field                             | Purpose                                                                                                                                                                           |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `actions.kind`                    | Type for autonomy purposes. Extends scaffolding types (`review`, `notify`, `allocate` → `assign`) with challenge requirements: `verify`, `mass_alert`, `evacuate`, `escalate`.    |
+| `autonomy_level`, `reversibility` | Dispatched level and rationale. Copied from rule at action creation time so changing policies later does not rewrite history.                                                     |
+| `execution_mode`                  | `simulated` or `live`. No third option. Displayed on every row in the dashboard.                                                                                                  |
+| `attempt`, `idempotency_key`      | See principle 2.5. Uniqueness enforced by database.                                                                                                                               |
+| `workflow_run_id`                 | Link to the Vercel Workflow execution running this action. Workflow persists its own state; we store the reference.                                                               |
+| `stalled_after`                   | When an action is considered stalled if no result arrives. Partial index enables cheap sweeping.                                                                                  |
+| `verifies_signal_id`              | Verification action points to the signal whose uncertainty it resolves. Updates `signals.verification_status` upon completion.                                                    |
+| `action_results.structured`       | Fields returned by the HappyRobot agent: "confirms smoke", "direction", "people". Extracted new signals are stored in `new_signal_ids`.                                           |
+| `action_results.transcript`       | Call transcript. Raw material for learning.                                                                                                                                       |
+| `webhook_deliveries`              | Inbound deduplication: the same callback redelivered returns the same response and mutates nothing. Key `(provider, delivery_id)`; if provider sends no ID, body SHA-256 is used. |
 
-### 5.12 `autonomy_rules`, `approvals`, `directives` — control humano
+### 5.12 `autonomy_rules`, `approvals`, `directives` — Human Control
 
 ```sql
 create table public.autonomy_rules (
@@ -900,13 +896,13 @@ create table public.directives (
 create index directives_active_idx on public.directives (run_id) where status = 'active';
 ```
 
-| Campo                                 | Para qué                                                                                                                                                                                                                                            |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `autonomy_rules.run_id` nulo          | Regla global por defecto; con `run_id`, la sobreescribe para esa ejecución. El operador puede subir o bajar niveles desde steering sin tocar la global.                                                                                             |
-| `approvals.consequence_preview`       | Lo que pasa si se aprueba y si se rechaza: qué zona queda descubierta, qué recurso se mueve. El documento quiere que el humano vea la consecuencia **antes** de confirmar.                                                                          |
-| `directives.raw_text` / `interpreted` | "Prioriza el colegio" tal cual lo escribió el operador, y la restricción estructurada en que se convirtió: `{ kind: "boost", target: { vulnerable_site: "colegio-rural" }, factor: 1.5 }`. Se guardan las dos para poder auditar la interpretación. |
+| Field                                 | Purpose                                                                                                                                                                                                                   |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `autonomy_rules.run_id` null          | Global default rule; with `run_id`, overrides for that run. The operator can raise or lower levels from steering without affecting globals.                                                                               |
+| `approvals.consequence_preview`       | What happens if approved vs. rejected: which zone is left unprotected, which resource moves. The document requires humans to see the consequence **before** confirming.                                                   |
+| `directives.raw_text` / `interpreted` | "Prioritize the school" as typed by the operator, and the structured constraint it produced: `{ kind: "boost", target: { vulnerable_site: "colegio-rural" }, factor: 1.5 }`. Both are stored for interpretation auditing. |
 
-### 5.13 `domain_events` y `decisions` — el registro
+### 5.13 `domain_events` and `decisions` — The Audit Trail
 
 ```sql
 create table public.domain_events (
@@ -945,18 +941,18 @@ create table public.decisions (
 create index decisions_run_idx on public.decisions (run_id, decided_at desc);
 ```
 
-`domain_events` es append-only de verdad: además de no tener `updated_at`, se
-revocan `update` y `delete` incluso al rol de servicio y se conceden solo
-`insert` y `select`. `type` sigue la convención `entidad.verbo`:
+`domain_events` is truly append-only: in addition to lacking `updated_at`,
+`update` and `delete` privileges are revoked even from the service role; only
+`insert` and `select` are granted. `type` follows `entity.verb` convention:
 `signal.received`, `signal.triaged`, `plan.invalidated`, `action.dispatched`,
 `approval.decided`, `chaos.fired`.
 
-`decisions` es la versión legible del registro: qué, por qué, con qué
-confianza, quién, con qué entradas. Es lo que el panel de auditoría enseña y
-lo que el aprendizaje lee. `inputs` lleva los ids de señales, recursos y
-supuestos que se usaron, para poder reproducir la decisión.
+`decisions` is the human-readable version of the log: what, why, with what
+confidence, who, with what inputs. Displayed by the audit panel and consumed by
+learning. `inputs` stores IDs of signals, resources, and assumptions used,
+ensuring decisions are reproducible.
 
-### 5.14 `lessons`, `source_reliability`, `learned_weights` — aprender
+### 5.14 `lessons`, `source_reliability`, `learned_weights` — Learning
 
 ```sql
 create table public.lessons (
@@ -1003,19 +999,18 @@ create table public.learned_weights (
 );
 ```
 
-| Campo                            | Para qué                                                                                                                                                                                                                                                |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lessons.change`                 | Un parche estructurado, no prosa: `{ target: "contact_channel", contact: "bomberos-estepona", set: { preferred: "sms" } }`. Es lo que la siguiente ejecución **aplica** al cargar.                                                                      |
-| `lessons.metric` + `evidence`    | La cifra que la justifica y los ids que lo prueban. Sin métrica no hay lección, y el panel enseña las dos.                                                                                                                                              |
-| `lessons.status`                 | Las lecciones las valida una persona antes de activarse. `applied` cuando una ejecución las cargó, con `applied_in_run_id`. Es lo que permite etiquetar en el feed "SMS en vez de llamada · lección #3".                                                |
-| `source_reliability.min_samples` | Por debajo del mínimo la fiabilidad no se publica. Un sistema que sobrerreacciona a un solo error es peor que uno que no aprende.                                                                                                                       |
-| `learned_weights`                | Pesos derivados de ejecuciones pasadas con su explicación: `triage.verify_threshold`, `channel.sms.success_rate`, `vulnerability.colegio.multiplier`. Se reconstruyen desde cero al arrancar sumando `runs` cerradas, para que reiniciar no infle nada. |
+| Field                            | Purpose                                                                                                                                                                                                                                           |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lessons.change`                 | Structured patch, not prose: `{ target: "contact_channel", contact: "bomberos-estepona", set: { preferred: "sms" } }`. What the next run **applies** on startup.                                                                                  |
+| `lessons.metric` + `evidence`    | Supporting metric and proving IDs. No metric, no lesson; the dashboard displays both.                                                                                                                                                             |
+| `lessons.status`                 | Lessons require human validation before activation. `applied` when a run loads them, with `applied_in_run_id`. Allows tagging the feed: "SMS instead of call · lesson #3".                                                                        |
+| `source_reliability.min_samples` | Below the minimum, reliability is not published. A system overreacting to a single error is worse than one that does not learn.                                                                                                                   |
+| `learned_weights`                | Weights derived from past runs with explanation: `triage.verify_threshold`, `channel.sms.success_rate`, `vulnerability.colegio.multiplier`. Reconstructed from scratch on startup by aggregating closed `runs`, preventing drift across restarts. |
 
-### 5.15 `ai_invocations` — provenance del modelo
+### 5.15 `ai_invocations` — Model Provenance
 
-Cada llamada al AI SDK deja fila. Sin excepción. Es lo que permite responder
-"¿y si el modelo se equivoca?" con datos, y enseñar coste y latencia en
-pantalla.
+Every AI SDK call leaves a row. No exceptions. Answers "what if the model is
+wrong?" with empirical data, displaying cost and latency on screen.
 
 ```sql
 create table public.ai_invocations (
@@ -1040,14 +1035,14 @@ create table public.ai_invocations (
 create index ai_invocations_run_idx on public.ai_invocations (run_id, created_at desc);
 ```
 
-`valid = false` con `validation_error` es el caso "el modelo devolvió algo que
-Zod rechazó": se registra, se reintenta o se cae al determinista, y queda
-constancia. `input_hash` permite cachear y detectar que el mismo prompt dio
-salidas distintas.
+`valid = false` with `validation_error` handles the case where the model
+returned something Zod rejected: logged, retried, or fell back to
+deterministic, with full traceability. `input_hash` enables caching and
+detects when the same prompt produced different outputs.
 
-### 5.16 Restricciones cruzadas
+### 5.16 Cross-Table Constraints
 
-Se añaden al final de la migración, cuando todas las tablas existen.
+Added at the end of the migration once all tables exist.
 
 ```sql
 alter table public.signals
@@ -1086,12 +1081,12 @@ alter table public.decisions
 
 ---
 
-## 6. Esquemas Zod del contrato
+## 6. Contract Zod Schemas
 
-Solo los que cruzan la frontera entre frontend, route handlers, workflows y
-agentes. El resto son internos y siguen el mismo patrón. Viven en
-`src/lib/domain/`, un fichero por entidad, y exportan tanto el esquema de
-**entrada** (lo que acepta la API) como el de **fila** (lo que hay en la tabla).
+Only those crossing the boundary between frontend, route handlers, workflows,
+and agents. The rest are internal and follow the same pattern. They live in
+`src/lib/domain/`, one file per entity, exporting both the **input** schema
+(what the API accepts) and the **row** schema (what exists in the table).
 
 ```ts
 // src/lib/domain/shared.ts
@@ -1235,7 +1230,7 @@ export const assumptionSchema = z
   })
   .strict();
 
-/** Salida del planificador (AI SDK). El código la valida antes de persistir nada. */
+/** Output of the planner (AI SDK). Application code validates it before persisting anything. */
 export const plannerOutputSchema = z
   .object({
     summary: z.string().min(1).max(600),
@@ -1342,91 +1337,88 @@ export const interpretedDirectiveSchema = z.discriminatedUnion("kind", [
 ]);
 ```
 
-**Tipos TypeScript**: `z.infer` de cada esquema. Para las filas, se genera
-`Database` con `supabase gen types typescript` y se mantiene la función de
-mapeo `rowTo*` como único punto donde `snake_case` se convierte en
-`camelCase`.
+**TypeScript types**: `z.infer` for each schema. For database rows, `Database`
+is generated via `supabase gen types typescript`, with `rowTo*` mapping
+functions acting as the single point where `snake_case` converts to `camelCase`.
 
 ---
 
-## 7. Flujos y qué tablas tocan
+## 7. Workflows and Affected Tables
 
-Cada flujo es una transacción, salvo donde se indica. Todos escriben
+Each workflow is a single transaction, except where noted. All write to
 `domain_events`.
 
-**Entrada y triaje.**
-`webhook_deliveries` (dedupe) → `signals` (alta con `raw`) → triaje rellena
-`p_*`, `triage_decision` → si `discard`, fin; si `verify`, `actions` (kind
-`verify`, `verifies_signal_id`) y `signals.verification_status = 'verifying'`;
-si `act`, fusión en `incidents` (`signals.incident_id`) y recálculo de
-`fused_confidence`. `decisions` con kind `triage` y `fusion`.
+**Ingest and triage.**
+`webhook_deliveries` (dedup) → `signals` (creation with `raw`) → triage populates
+`p_*`, `triage_decision` → if `discard`, end; if `verify`, `actions` (kind
+`verify`, `verifies_signal_id`) and `signals.verification_status = 'verifying'`;
+if `act`, fusion into `incidents` (`signals.incident_id`) and recalculation of
+`fused_confidence`. `decisions` with kind `triage` and `fusion`.
 
-**Replanificación.**
-Disparada por: señal en `act`, resultado de acción, supuesto roto, directiva
-nueva, recurso caído. Lee `incidents` abiertos, `signals` vivas, `resources`,
-`world_state_versions` actual, `directives` activas, `learned_weights`. Escribe
-`plans` (versión nueva, la anterior a `superseded`), `plan_priorities`,
-`assumptions`, `assignments` (nuevas `active`, las que cambian a `superseded`),
-`unmet_demands`, `actions` propuestas, y `decisions` con kind `priority`,
-`assignment`, `replan`. Si intervino el coordinador, `ai_invocations` primero y
-`plans.ai_invocation_id` después.
+**Replanning.**
+Triggered by: signal set to `act`, action result, broken assumption, new
+directive, unavailable resource. Reads open `incidents`, live `signals`,
+`resources`, current `world_state_versions`, active `directives`,
+`learned_weights`. Writes `plans` (new version, previous marked `superseded`),
+`plan_priorities`, `assumptions`, `assignments` (new `active`, changed to
+`superseded`), `unmet_demands`, proposed `actions`, and `decisions` with kind
+`priority`, `assignment`, `replan`. If coordinator intervened, `ai_invocations`
+first, followed by `plans.ai_invocation_id`.
 
-**Rotura de supuesto.**
-Nueva `world_state_versions` o señal en `act` → se evalúan `assumptions` con
-`status = 'ok'` del plan `current` → las que fallan pasan a `broken` con
-`broken_by_*` → `plans.status = 'invalid'`, `invalidated_by_assumption_id` →
-`decisions` kind `invalidation` → replanificación inmediata. Las acciones del
-plan inválido que dependían del supuesto pasan a `cancelled` con `error`
-explicando por qué.
+**Assumption breach.**
+New `world_state_versions` or signal set to `act` → evaluates `assumptions`
+where `status = 'ok'` for `current` plan → failed assumptions become `broken`
+with `broken_by_*` → `plans.status = 'invalid'`, `invalidated_by_assumption_id`
+→ `decisions` kind `invalidation` → immediate replanning. Actions from the
+invalid plan that depended on the assumption become `cancelled` with `error`
+explaining why.
 
-**Despacho de una acción.**
-`autonomy_rules` + `runs.autonomy_paused` deciden `autonomy_level`. Si
-`approval`, fila en `approvals` y estado `awaiting_approval`; el Workflow espera
-el evento. Si `auto` o `auto_notify`, estado `running`, `dispatched_at`,
-`stalled_after`, `execution_mode` según `contacts.demo_safe` y la
-configuración. El adaptador envía con `idempotency_key`. `decisions` kind
-`autonomy` y `channel`.
+**Action dispatch.**
+`autonomy_rules` + `runs.autonomy_paused` determine `autonomy_level`. If
+`approval`, row in `approvals` and status `awaiting_approval`; Workflow awaits
+the event. If `auto` or `auto_notify`, status `running`, `dispatched_at`,
+`stalled_after`, `execution_mode` based on `contacts.demo_safe` and config.
+Adapter sends with `idempotency_key`. `decisions` kind `autonomy` and `channel`.
 
-**Resultado de una acción.**
+**Action outcome.**
 `webhook_deliveries` → `action_results` → `actions.status`, `completed_at`,
-`result_summary` → `contact_channels.attempts/successes` → si trae
-`newInformation`, señales nuevas con `source = 'happyrobot'` → si era
-verificación, `signals.verification_status` → replanificación si algo cambió.
-Si `no_answer` y hay `chain_step_id`, `escalation_chains.current_step` avanza
-y se crea la acción del escalón siguiente.
+`result_summary` → `contact_channels.attempts/successes` → if returning
+`newInformation`, new signals with `source = 'happyrobot'` → if verification,
+`signals.verification_status` → replan if anything changed. If `no_answer` and
+`chain_step_id` exists, `escalation_chains.current_step` advances and the next
+step's action is created.
 
-**Cierre de ejecución.**
-`runs.status = 'closed'`, `ended_at`, `summary` con métricas. El módulo de
-aprendizaje lee `domain_events`, `decisions`, `action_results` y `signals` de
-la ejecución y escribe `lessons` en `proposed`, y recalcula `source_reliability`
-y `learned_weights` desde todas las ejecuciones cerradas de `kind` en
-(`demo`, `drill`). Nada de esto toca la ejecución siguiente hasta que una
-persona pase la lección a `accepted`.
+**Run closure.**
+`runs.status = 'closed'`, `ended_at`, `summary` with metrics. Learning module
+reads `domain_events`, `decisions`, `action_results`, and `signals` from the run
+and writes `lessons` in `proposed`, recalculating `source_reliability` and
+`learned_weights` from all closed runs of kind (`demo`, `drill`). None of this
+affects the next run until a human moves the lesson to `accepted`.
 
 ---
 
-## 8. Seguridad a nivel de fila y tiempo real
+## 8. Row-Level Security and Realtime
 
-**Fase 1, la de la demo.** Igual que el andamiaje: RLS activado en todas las
-tablas, permisos revocados a `anon` y `authenticated`, todo concedido a
-`service_role`. El navegador no habla con Supabase; habla con los route
-handlers, que usan la clave de servicio. Tiempo real en esta fase: el servidor
-se suscribe a `postgres_changes` y reemite al navegador por Server-Sent Events
-desde un route handler, filtrado por `run_id`. Es una pieza pequeña y evita
-abrir la base de datos al navegador antes de tener autenticación.
+**Phase 1, the demo phase.** Same as scaffolding: RLS enabled on all tables,
+permissions revoked for `anon` and `authenticated`, all granted to
+`service_role`. Browser does not speak to Supabase; it speaks to route handlers
+using the service key. Realtime in this phase: server subscribes to
+`postgres_changes` and re-emits to browser via Server-Sent Events from a route
+handler, filtered by `run_id`. Small surface area avoiding exposing the
+database to the browser prior to authentication.
 
 ```sql
 alter table public.runs enable row level security;
--- … idem para las 30 tablas restantes …
+-- … idem for the remaining 30 tables …
 revoke all on all tables in schema public from anon, authenticated;
 grant all on all tables in schema public to service_role;
 revoke update, delete on public.domain_events from service_role;
 grant insert, select on public.domain_events to service_role;
 ```
 
-**Fase 2, con operadores autenticados.** Se añade `run_members (run_id,
-user_id, role)` y políticas de lectura por pertenencia. Entonces el navegador
-puede suscribirse directo a Realtime.
+**Phase 2, with authenticated operators.** Adds `run_members (run_id, user_id,
+role)` and membership-based read policies. Browser can then subscribe directly
+to Realtime.
 
 ```sql
 create policy "members read signals" on public.signals
@@ -1434,9 +1426,9 @@ create policy "members read signals" on public.signals
   using (run_id in (select run_id from public.run_members where user_id = auth.uid()));
 ```
 
-**Publicación de Realtime.** Estrecha a propósito. El andamiaje publicaba
-`events`; aquí se publican las tablas cuyo cambio debe repintar el panel sin
-esperar al siguiente sondeo, y no las de alto volumen.
+**Realtime Publication.** Deliberately narrow. Scaffolding published `events`;
+here we publish tables whose updates must repaint the dashboard without waiting
+for the next poll, excluding high-volume tables.
 
 ```sql
 alter publication supabase_realtime add table
@@ -1444,99 +1436,96 @@ alter publication supabase_realtime add table
   public.actions, public.approvals, public.world_state_versions, public.runs;
 ```
 
-`signals` y `domain_events` **no** se publican: en un aluvión de cuarenta
-mensajes saturarían el canal. El panel las recarga cuando `plans` cambia, que
-es cuando de verdad ha pasado algo.
+`signals` and `domain_events` are **not** published: a burst of forty messages
+would saturate the channel. The dashboard reloads them when `plans` changes,
+which is when meaningful updates occur.
 
 ---
 
-## 9. Escalabilidad
+## 9. Scalability
 
-Lo que se hace ahora porque es barato, y lo que se deja preparado.
+What is done now because it is cheap, and what is prepared for later.
 
-- **Índices parciales en los caminos calientes**: señales sin triar, señales
-  vivas por zona, acciones abiertas, aprobaciones pendientes, supuestos en pie,
-  beats por disparar. Son las consultas que el panel y el Workflow hacen en
-  bucle, y cada una toca una fracción pequeña de su tabla.
-- **`domain_events` con identidad `bigint`**: orden total sin `order by
-occurred_at`, cursores baratos (`where id > $last`) para el feed y para
-  reproducir una ejecución. Cuando crezca, se particiona por `run_id` con
-  `partition by hash`; la clave ya está en todas las consultas.
-- **Retención**: `runs.kind = 'drill'` se puede purgar por antigüedad sin tocar
-  las demo; `ai_invocations.input/output` se puede vaciar pasado un tiempo
-  conservando `input_hash`, coste y latencia.
-- **JSONB solo donde no se filtra**: `factors`, `changes`, `state`,
-  `structured`. Lo que se filtra o se ordena tiene columna propia. Si hace
-  falta buscar dentro de `state`, índice GIN con `jsonb_path_ops` en esa
-  columna concreta, no en todas.
-- **Sin arrays crecientes sin tope**: `new_signal_ids` y `derived_from_run_ids`
-  son cortos por construcción. Las relaciones muchos a muchos de verdad tienen
-  tabla.
-- **Serverless y conexiones**: los route handlers y los pasos de Workflow usan
-  el pooler de Supabase en modo transacción. Ninguna función mantiene la
-  conexión abierta entre invocaciones.
-- **Vistas para el panel**: `v_run_situation(run_id)` agrupa plan actual,
-  prioridades, acciones abiertas, aprobaciones pendientes, supuestos y espera
-  en una sola consulta. Empieza como vista normal; si el panel lo necesita, se
-  materializa y se refresca en el trigger de `plans`.
-- **PostGIS cuando toque**: `areas.geometry` y `signals.location` pasan a
-  `geography` con índice GiST cuando el mapa deje de ser un SVG. La columna
-  `jsonb` de ahora se convierte con una migración de datos, no de esquema.
-
----
-
-## 10. Plan de migración desde el andamiaje
-
-La migración `202609180001_initial_schema.sql` del andamiaje está **escrita
-pero no aplicada en ningún entorno** (así lo dice su `TASKS.md`). Por tanto no
-hay nada que migrar: se sustituye por la de este documento, en el mismo
-fichero o en `202609180002_faro_schema.sql` borrando la anterior.
-
-Renombrados respecto al andamiaje, para que el equipo no se confunda leyendo
-código antiguo:
-
-| Andamiaje                    | Aquí                                   | Por qué                                                                                      |
-| ---------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `incidents` (contenedor)     | `runs`                                 | El documento fuente usa "incidente" para la subincidencia priorizable.                       |
-| `events` (entradas)          | `signals`                              | "Evento" queda para el registro de dominio, como pide el módulo `audit`.                     |
-| `results`                    | `action_results`                       | Explícito sobre a qué pertenece.                                                             |
-| `actions.kind` `allocate`    | `assign`                               | Alineado con la autonomía y con el motor de recursos.                                        |
-| `actions.status` `simulated` | `actions.execution_mode = 'simulated'` | Simulado no es un estado del ciclo de vida; una acción simulada también se completa o falla. |
-
-Lo que se conserva tal cual del andamiaje: RLS activado por defecto con
-permisos revocados a `anon` y `authenticated`, `idempotency_key` único en
-acciones, `plans.mode` con la distinción simulación/IA, y la disciplina de que
-el adaptador HappyRobot devuelva `blocked` explícito cuando no está
-configurado.
-
-Orden de trabajo propuesto:
-
-1. `src/lib/domain/*.ts` con los esquemas Zod de la sección 6 y sus tests.
-2. La migración con las 31 tablas, restricciones cruzadas, RLS y publicación.
-3. `supabase gen types` y las funciones `rowTo*` / `*ToRow`.
-4. Semillas de Sierra Bermeja (`areas`, `vulnerable_sites`, `resources`,
-   `contacts` sin `address`, `autonomy_rules` globales, `scenario_beats`).
-5. Repositorios por módulo, cada uno escribiendo solo sus tablas.
+- **Partial indices on hot paths**: untriaged signals, live signals by zone,
+  open actions, pending approvals, valid assumptions, pending beats. These are
+  queries polled by the dashboard and Workflow, each touching a small fraction
+  of its table.
+- **`domain_events` with `bigint` identity**: total ordering without `order by
+occurred_at`, cheap cursors (`where id > $last`) for feeds and replaying
+  runs. As it grows, partition by `run_id` with `partition by hash`; the key is
+  already in all queries.
+- **Retention**: `runs.kind = 'drill'` can be purged by age without touching
+  demo runs; `ai_invocations.input/output` can be cleared over time while
+  preserving `input_hash`, cost, and latency.
+- **JSONB only where not filtered**: `factors`, `changes`, `state`,
+  `structured`. Filtered or sorted attributes have dedicated columns. If
+  searching inside `state` becomes necessary, use a GIN index with
+  `jsonb_path_ops` on that specific column, not across all.
+- **No unbounded growing arrays**: `new_signal_ids` and `derived_from_run_ids`
+  are short by construction. True many-to-many relationships have dedicated
+  join tables.
+- **Serverless and connection pooling**: route handlers and Workflow steps use
+  the Supabase pooler in transaction mode. No function keeps connections open
+  between invocations.
+- **Views for dashboard**: `v_run_situation(run_id)` combines current plan,
+  priorities, open actions, pending approvals, assumptions, and unmet demands in
+  a single query. Starts as a standard view; if needed by the dashboard,
+  materialized and refreshed via trigger on `plans`.
+- **PostGIS when appropriate**: `areas.geometry` and `signals.location` convert
+  to `geography` with GiST indices when the map moves beyond SVG. The current
+  `jsonb` column converts via data migration, not schema overhaul.
 
 ---
 
-## 11. Decisiones abiertas
+## 10. Migration Plan from Scaffolding
 
-- **Fórmula de prioridad.** El modelo admite factores aditivos y
-  multiplicativos con `formula_version`. Hay que elegir una para la demo. La
-  multiplicativa del documento es más fácil de contar en una frase; la aditiva
-  de la rama de dominio tiene 49 tests y decaimiento temporal probado.
-- **Cifrado de `contact_channels.address`.** Supabase Vault está disponible;
-  configurarlo cuesta media hora. Propuesta: antes de cargar el número del
-  jurado.
-- **Realtime en fase 1.** Server-Sent Events desde un route handler, como se
-  propone, o abrir ya políticas de lectura para `authenticated` con un login
-  mínimo. Lo segundo es más "Supabase"; lo primero no exige autenticación en
-  la demo.
-- **Tickets.** El documento los menciona como tabla propia en Supabase. Aquí
-  son `actions` con `kind = 'ticket'` y `channel = 'ticket'`. Si hace falta
-  un flujo de tickets con responsable y vencimiento, se saca a tabla.
-- **Ruido del escenario.** `scenario_beats.kind = 'noise_burst'` genera las
-  señales al disparar. Alternativa: pregenerarlas como filas de `signals` con
-  `received_at` futuro. La primera es más simple; la segunda permite
-  inspeccionar el aluvión antes de la demo.
+Migration `202609180001_initial_schema.sql` from the scaffolding was **written
+but never applied in any environment** (noted in its `TASKS.md`). Therefore
+there is nothing to migrate: it is replaced by this document's schema, either in
+the same file or as `202609180002_faro_schema.sql` deleting the prior one.
+
+Renaming relative to scaffolding, to avoid confusion when reading older code:
+
+| Scaffolding                  | Here                                   | Why                                                                             |
+| ---------------------------- | -------------------------------------- | ------------------------------------------------------------------------------- |
+| `incidents` (container)      | `runs`                                 | Source document uses "incident" for the prioritizable sub-incident.             |
+| `events` (inputs)            | `signals`                              | "Event" is reserved for domain logging, as required by the `audit` module.      |
+| `results`                    | `action_results`                       | Explicit about what it belongs to.                                              |
+| `actions.kind` `allocate`    | `assign`                               | Aligned with autonomy and the resource engine.                                  |
+| `actions.status` `simulated` | `actions.execution_mode = 'simulated'` | Simulated is not a lifecycle state; a simulated action also completes or fails. |
+
+Preserved as-is from scaffolding: RLS enabled by default with permissions
+revoked for `anon` and `authenticated`, unique `idempotency_key` on actions,
+`plans.mode` distinguishing simulation/AI, and HappyRobot adapter returning
+explicit `blocked` when unconfigured.
+
+Proposed work order:
+
+1. `src/lib/domain/*.ts` with section 6 Zod schemas and tests.
+2. Migration with 31 tables, cross-table constraints, RLS, and publication.
+3. `supabase gen types` and `rowTo*` / `*ToRow` mapping functions.
+4. Sierra Bermeja seeds (`areas`, `vulnerable_sites`, `resources`,
+   `contacts` without `address`, global `autonomy_rules`, `scenario_beats`).
+5. Per-module repositories, each writing only its designated tables.
+
+---
+
+## 11. Open Decisions
+
+- **Priority formula.** The model supports additive and multiplicative factors
+  via `formula_version`. One must be chosen for the demo. The multiplicative
+  formula from the document is easier to explain in a sentence; the additive
+  formula from the domain branch has 49 tests and verified temporal decay.
+- **Encryption of `contact_channels.address`.** Supabase Vault is available;
+  configuration takes half an hour. Proposed: before loading jury phone numbers.
+- **Realtime in phase 1.** Server-Sent Events from a route handler, as proposed,
+  or open read policies for `authenticated` with minimal login. The latter is
+  more "Supabase"; the former avoids authentication requirements during the demo.
+- **Tickets.** The document mentions tickets as a dedicated Supabase table.
+  Here they are `actions` with `kind = 'ticket'` and `channel = 'ticket'`. If a
+  ticketing workflow with assignee and due dates is needed, it can be split into
+  a table.
+- **Scenario noise.** `scenario_beats.kind = 'noise_burst'` generates signals
+  upon trigger. Alternative: pre-generate as `signals` rows with future
+  `received_at`. The former is simpler; the latter allows inspecting the noise
+  burst before the demo.

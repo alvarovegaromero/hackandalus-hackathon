@@ -1,33 +1,32 @@
-// PROPIETARIO: agente de persistencia, historial, auditoria y aprendizaje.
+// OWNER: persistence, history, audit, and learning agent.
 //
-// Ajustes aprendidos a partir de ejecuciones anteriores. Es el bonus del reto:
-// "revisa llamadas y decisiones de ejecuciones pasadas, ve que funciono y que
-// no, y ajusta como actua la proxima vez".
+// Learned adjustments from previous runs. Addresses the challenge bonus:
+// "reviews calls and decisions from past runs, sees what worked and what
+// did not, and adjusts how it acts next time".
 //
-// Tres reglas gobiernan todo este modulo:
+// Three rules govern this entire module:
 //
-//  1. ARRANQUE EN FRIO. Con cero o dos ejecuciones no se puede concluir nada.
-//     Ningun peso se mueve hasta alcanzar un minimo de muestras, y lo que no
-//     llega al minimo ni siquiera se expone: asi un consumidor descuidado no
-//     puede penalizar a un contacto por una sola llamada fallida.
-//  2. GRADUAL Y ACOTADO. El ajuste tiene tope duro y solo puede avanzar un
-//     paso por ejecucion analizada. Un sistema que sobrerreacciona a una
-//     llamada fallida es peor que uno que no aprende.
-//  3. EXPLICABLE. Todo peso aprendido lleva su porque, con las muestras que lo
-//     sostienen (`explainWeights`). Aprender sin poder ensenar que se aprendio
-//     no puntua.
+//  1. COLD START. With zero or two runs nothing can be concluded.
+//     No weight moves until reaching minimum samples, and what does not
+//     reach the minimum is not even exposed: thus a careless consumer
+//     cannot penalize a contact for a single failed call.
+//  2. GRADUAL AND BOUNDED. Adjustments have hard caps and can only advance
+//     one step per analyzed run. A system that overreacts to a single failed
+//     call is worse than one that does not learn.
+//  3. EXPLAINABLE. Every learned weight carries its rationale, with the samples
+//     that support it (`explainWeights`). Learning without being able to show
+//     what was learned earns no points.
 //
-// FLUJO DE DATOS, para que nada se cuente dos veces:
+// DATA FLOW, so nothing is counted twice:
 //
-//     durante la ejecucion  ->  recordActionOutcome() acumula en state.learning
-//     al cerrar la ejecucion ->  buildRunRecord() resume la ejecucion LEYENDO
-//                                el estado (no el acumulador) y se guarda como
-//                                RunRecord en runs.json
-//     al arrancar            ->  weightsFromRuns(loadRuns()) reconstruye los
-//                                pesos desde cero sumando los RunRecord
+//     during execution      ->  recordActionOutcome() accumulates in state.learning
+//     at execution close    ->  buildRunRecord() summarizes execution by READING
+//                               state (not accumulator) and saves as RunRecord in runs.json
+//     at startup            ->  weightsFromRuns(loadRuns()) reconstructs weights
+//                               from scratch by aggregating RunRecords
 //
-// Como la reconstruccion siempre parte de los RunRecord, reiniciar el proceso
-// no infla ningun contador.
+// Because reconstruction always starts from RunRecords, restarting the process
+// does not inflate any counters.
 
 import type {
   Action,
@@ -39,33 +38,32 @@ import type {
 } from "./types";
 
 // ---------------------------------------------------------------------------
-// Umbrales de aprendizaje
+// Learning thresholds
 // ---------------------------------------------------------------------------
 
-/** Intentos minimos antes de fiarse de la tasa de exito de un canal. */
+/** Minimum attempts before trusting channel success rate. */
 export const MIN_CHANNEL_SAMPLES = 5;
 
-/** Intentos minimos antes de fiarse de la capacidad de respuesta de un contacto. */
+/** Minimum attempts before trusting contact responsiveness. */
 export const MIN_CONTACT_SAMPLES = 4;
 
-/** Ejecuciones minimas antes de mover la penalizacion de senales sin confirmar. */
+/** Minimum runs before moving unconfirmed signal penalty. */
 export const MIN_RUNS_TO_LEARN = 3;
 
-/** Senales sin confirmar ya resueltas que hacen falta para concluir algo. */
+/** Resolved unconfirmed signals needed to conclude anything. */
 export const MIN_UNCONFIRMED_SAMPLES = 8;
 
 /**
- * Tope de la penalizacion. `unconfirmedPenalty` es un descuento multiplicativo
- * en [0, 0.4]: el motor de prioridad multiplica la credibilidad de una senal
- * sin verificar por (1 - unconfirmedPenalty). Nunca borra una senal, como
- * mucho le quita el 40% del peso.
+ * Penalty ceiling. `unconfirmedPenalty` is a multiplicative discount
+ * in [0, 0.4]: priority engine multiplies unverified signal credibility
+ * by (1 - unconfirmedPenalty). Never erases a signal, at most reduces 40% weight.
  */
 export const MAX_UNCONFIRMED_PENALTY = 0.4;
 
-/** Cuanto puede moverse la penalizacion por cada ejecucion analizada. */
+/** Maximum penalty movement per analyzed run. */
 export const UNCONFIRMED_PENALTY_STEP = 0.08;
 
-/** Estados que cuentan como intento real de contactar con alguien. */
+/** Statuses that count as an actual attempt to contact someone. */
 const ATTEMPT_STATUSES: Action["status"][] = ["succeeded", "failed", "stalled"];
 
 export function emptyWeights(): LearnedWeights {
@@ -95,14 +93,14 @@ function round(value: number, decimals = 3): number {
 }
 
 // ---------------------------------------------------------------------------
-// Acumulacion dentro de la ejecucion en curso
+// Accumulation within current run
 // ---------------------------------------------------------------------------
 
 /**
- * Incorpora el desenlace de una accion a los pesos aprendidos.
+ * Incorporates action outcome into learned weights.
  *
- * Devuelve un objeto nuevo: el estado se clona al servirse por la API, asi que
- * conviene no depender de mutaciones en sitio.
+ * Returns a new object: state is cloned when served via API, so
+ * in-place mutation should be avoided.
  */
 export function recordActionOutcome(weights: LearnedWeights, action: Action): LearnedWeights {
   const succeeded = action.status === "succeeded";
@@ -131,12 +129,11 @@ export function recordActionOutcome(weights: LearnedWeights, action: Action): Le
 }
 
 // ---------------------------------------------------------------------------
-// Resumen de una ejecucion
+// Run summary
 // ---------------------------------------------------------------------------
 
-// Las notas estructuradas ("stat:...") son las que se vuelven a leer para
-// reconstruir los pesos. El resto de notas son texto para humanos y se ignoran
-// al parsear, asi que se pueden anadir libremente.
+// Structured notes ("stat:...") are what is re-read to reconstruct weights.
+// Remaining notes are human text ignored during parsing, so they can be added freely.
 const STAT_PREFIX = "stat:";
 
 function statNote(kind: string, key: string, successes: number, attempts: number): string {
@@ -163,8 +160,8 @@ function parseStatNote(note: string): ParsedStat | null {
 }
 
 /**
- * Resume una ejecucion en un `RunRecord`. Lee el estado, no el acumulador, para
- * que volver a llamarlo con el mismo estado dé exactamente el mismo resultado.
+ * Summarizes a run into a `RunRecord`. Reads state, not accumulator, so that
+ * re-calling with the same state produces the exact same result.
  */
 export function buildRunRecord(
   state: SituationState,
@@ -178,7 +175,7 @@ export function buildRunRecord(
     (action) => action.status === "failed" || action.status === "stalled",
   );
 
-  // Exito por canal y por contacto, contando solo intentos que llegaron a salir.
+  // Success by channel and contact, counting only attempts that were actually dispatched.
   const channelStats: Partial<Record<ActionChannel, ChannelStat>> = {};
   const contactStats: Record<string, ChannelStat> = {};
   for (const action of actions) {
@@ -190,7 +187,7 @@ export function buildRunRecord(
     }
   }
 
-  // Senales sin confirmar que acabaron resolviendose: cuantas eran falsas.
+  // Unconfirmed signals that were eventually resolved: how many were false.
   const resolved = events.filter((event) => event.confirmed !== null);
   const falseSignals = resolved.filter((event) => event.confirmed === false);
 
@@ -207,7 +204,7 @@ export function buildRunRecord(
     notes.push(statNote("contact", contactId, stat.successes, stat.attempts));
   }
 
-  // Una linea legible para el jurado, junto a las notas estructuradas.
+  // A readable line for evaluation panel, alongside structured notes.
   notes.push(
     `Resumen: ${succeeded.length} de ${actions.length} acciones completadas, ${failed.length} fallidas, ` +
       `${resolved.length} señales verificadas de las cuales ${falseSignals.length} resultaron falsas.`,
@@ -229,7 +226,7 @@ export function buildRunRecord(
 }
 
 // ---------------------------------------------------------------------------
-// Derivacion de pesos a partir del historial
+// Derivation of weights from history
 // ---------------------------------------------------------------------------
 
 interface UnconfirmedEvidence {
@@ -252,7 +249,7 @@ function gatherEvidence(runs: RunRecord[]) {
       } else if (stat.kind === "contact") {
         contactRaw[stat.key] = addStat(contactRaw[stat.key], stat.attempts, stat.successes);
       } else if (stat.kind === "unconfirmed") {
-        // Aqui "successes" son las senales que resultaron FALSAS.
+        // Here "successes" are signals that turned out FALSE.
         unconfirmed.resolved += stat.attempts;
         unconfirmed.falseSignals += stat.successes;
       }
@@ -263,11 +260,11 @@ function gatherEvidence(runs: RunRecord[]) {
 }
 
 /**
- * Penalizacion aprendida para las senales sin confirmar.
+ * Learned penalty for unconfirmed signals.
  *
- * Sube solo si hay bastantes ejecuciones Y bastantes senales ya verificadas, y
- * aun asi avanza como maximo un paso por ejecucion analizada. Con tres
- * ejecuciones el techo real es 0.08; hacen falta cinco para llegar al tope.
+ * Rises only with enough runs AND enough verified signals, and even then
+ * advances at most one step per analyzed run. With three runs real cap is 0.08;
+ * five runs are needed to reach maximum cap.
  */
 export function deriveUnconfirmedPenalty(runs: number, evidence: UnconfirmedEvidence): number {
   if (runs < MIN_RUNS_TO_LEARN) return 0;
@@ -280,12 +277,11 @@ export function deriveUnconfirmedPenalty(runs: number, evidence: UnconfirmedEvid
 }
 
 /**
- * Resume ejecuciones pasadas en pesos aplicables a la actual.
+ * Summarizes past runs into weights applicable to current run.
  *
- * Lo que no alcanza el minimo de muestras NO se publica: `channelStats` y
- * `contactStats` solo contienen entradas en las que ya se puede confiar, de
- * modo que cualquier consumidor que solo mire `attempts > 0` sigue estando a
- * salvo del arranque en frio.
+ * What does not reach minimum samples is NOT published: `channelStats` and
+ * `contactStats` only contain entries that can already be trusted, so that
+ * any consumer checking `attempts > 0` remains safe from cold start issues.
  */
 export function weightsFromRuns(runs: RunRecord[]): LearnedWeights {
   const weights = emptyWeights();
@@ -309,7 +305,7 @@ export function weightsFromRuns(runs: RunRecord[]): LearnedWeights {
 }
 
 // ---------------------------------------------------------------------------
-// Consulta de lo aprendido
+// Querying learned weights
 // ---------------------------------------------------------------------------
 
 function rate(stat: ChannelStat | undefined, minSamples: number): number | null {
@@ -317,7 +313,7 @@ function rate(stat: ChannelStat | undefined, minSamples: number): number | null 
   return stat.successes / stat.attempts;
 }
 
-/** Tasa de exito de un canal, o null si aun no hay muestras suficientes. */
+/** Channel success rate, or null if insufficient samples exist. */
 export function channelSuccessRate(
   weights: LearnedWeights,
   channel: ActionChannel,
@@ -326,7 +322,7 @@ export function channelSuccessRate(
   return rate(weights.channelStats[channel], minSamples);
 }
 
-/** Capacidad de respuesta de un contacto, o null si aun no hay muestras. */
+/** Contact responsiveness, or null if no samples exist. */
 export function contactSuccessRate(
   weights: LearnedWeights,
   contactId: string,
@@ -335,7 +331,7 @@ export function contactSuccessRate(
   return rate(weights.contactStats[contactId], minSamples);
 }
 
-/** Canal con mejor historial entre los candidatos, o null si nadie llega al minimo. */
+/** Best historical channel among candidates, or null if none reaches minimum. */
 export function bestLearnedChannel(
   weights: LearnedWeights,
   candidates: ActionChannel[],
@@ -350,8 +346,8 @@ export function bestLearnedChannel(
 }
 
 /**
- * Multiplicador que el motor de prioridad debe aplicar a la credibilidad de
- * una senal sin verificar. 1 = no hemos aprendido nada todavia.
+ * Multiplier priority engine applies to unverified signal credibility.
+ * 1 = nothing learned yet.
  */
 export function unverifiedCredibilityMultiplier(weights: LearnedWeights): number {
   const penalty = Math.max(0, Math.min(MAX_UNCONFIRMED_PENALTY, weights.unconfirmedPenalty || 0));
@@ -359,21 +355,21 @@ export function unverifiedCredibilityMultiplier(weights: LearnedWeights): number
 }
 
 // ---------------------------------------------------------------------------
-// Explicabilidad
+// Explainability
 // ---------------------------------------------------------------------------
 
 export interface LearningInsight {
-  /** Identificador estable, p. ej. "channel:call". */
+  /** Stable identifier, e.g. "channel:call". */
   key: string;
-  /** Titular para pantalla. */
+  /** Headline for display. */
   label: string;
-  /** Por que cambio el peso, con las muestras que lo sostienen. */
+  /** Why weight changed, with supporting sample counts. */
   detail: string;
-  /** Muestras que respaldan la conclusion. */
+  /** Samples backing conclusion. */
   samples: number;
-  /** Valor aprendido (tasa 0..1, o la penalizacion). */
+  /** Learned value (rate 0..1, or penalty). */
   value: number;
-  /** false cuando hay indicios pero aun no se aplica nada. */
+  /** false when evidence exists but nothing is applied yet. */
   applied: boolean;
 }
 
@@ -382,9 +378,9 @@ function percent(value: number): string {
 }
 
 /**
- * Traduce los pesos a frases que se pueden ensenar al jurado. Si se pasan los
- * `RunRecord`, tambien explica lo que aun NO se aplica por falta de muestras,
- * que es justo lo que demuestra que el sistema no sobrerreacciona.
+ * Translates weights into sentences suitable for presentation. When `RunRecord`s
+ * are provided, also explains what is NOT yet applied due to lack of samples,
+ * demonstrating the system does not overreact.
  */
 export function explainWeights(weights: LearnedWeights, runs: RunRecord[] = []): LearningInsight[] {
   const insights: LearningInsight[] = [];

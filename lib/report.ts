@@ -1,8 +1,8 @@
-// PROPIETARIO: contrato de entrada a triaje (docs/input-contract.md).
+// OWNER: triage input contract (docs/input-contract.md).
 //
-// Sobre común que producen todos los adaptadores de canal antes del triaje.
-// Cada adaptador valida su salida contra este esquema; así convergen el
-// formulario público, HappyRobot y el motor de escenarios.
+// Common envelope produced by all channel adapters before triage.
+// Each adapter validates its output against this schema; this unifies
+// the public form, HappyRobot, and the scenario engine.
 
 import { z } from "zod";
 

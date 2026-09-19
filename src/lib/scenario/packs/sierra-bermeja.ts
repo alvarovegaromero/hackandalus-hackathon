@@ -14,7 +14,7 @@ const hospital = at(36.4949, -4.9541, "Hospital Costa del Sol");
 
 export const sierraBermeja = scenarioPackSchema.parse({
   id: "sierra-bermeja-wildfire",
-  name: "Incendio forestal en Sierra Bermeja",
+  name: "Wildfire in Sierra Bermeja",
   durationMin: 70,
   facts: [
     {
@@ -22,29 +22,29 @@ export const sierraBermeja = scenarioPackSchema.parse({
       kind: "fire_activity",
       entityLabel: "Los Pinares",
       location: pinares,
-      initial: "activo",
-      alternatives: ["extinguido"],
+      initial: "active",
+      alternatives: ["extinguished"],
     },
     {
       id: "fire-jubrique",
       kind: "fire_activity",
       entityLabel: "Jubrique",
       location: jubrique,
-      initial: "activo",
-      alternatives: ["extinguido"],
+      initial: "active",
+      alternatives: ["extinguished"],
     },
     {
       id: "fire-camping",
       kind: "fire_activity",
       entityLabel: "Camping Sierra Bermeja",
       location: camping,
-      initial: "activo",
-      alternatives: ["extinguido"],
+      initial: "active",
+      alternatives: ["extinguished"],
     },
     {
       id: "wind",
       kind: "wind_direction",
-      entityLabel: "viento",
+      entityLabel: "wind",
       location: sierra,
       initial: "NE",
       alternatives: ["N", "E", "SO"],
@@ -54,21 +54,21 @@ export const sierraBermeja = scenarioPackSchema.parse({
       kind: "road_status",
       entityLabel: "A-397",
       location: a397,
-      initial: "abierta",
-      alternatives: ["cortada"],
+      initial: "open",
+      alternatives: ["blocked"],
     },
     {
       id: "road-ma8301",
       kind: "road_status",
       entityLabel: "MA-8301",
       location: ma8301,
-      initial: "abierta",
-      alternatives: ["cortada"],
+      initial: "open",
+      alternatives: ["blocked"],
     },
     {
       id: "sms-provider",
       kind: "comms_status",
-      entityLabel: "proveedor de SMS",
+      entityLabel: "SMS provider",
       location: sierra,
       initial: "operativo",
       alternatives: ["caido"],
@@ -80,7 +80,7 @@ export const sierraBermeja = scenarioPackSchema.parse({
       location: camping,
       initial: 120,
       alternatives: [100, 150],
-      unit: "personas",
+      unit: "people",
     },
     {
       id: "beds-costa-del-sol",
@@ -89,7 +89,7 @@ export const sierraBermeja = scenarioPackSchema.parse({
       location: hospital,
       initial: 12,
       alternatives: [4, 20],
-      unit: "camas",
+      unit: "beds",
     },
   ],
   sources: [
@@ -160,31 +160,28 @@ export const sierraBermeja = scenarioPackSchema.parse({
   ],
   templates: {
     fire_activity: [
-      "Veo llamas y mucho humo en {entity}, el fuego esta {value}",
-      "Incendio {value} cerca de {entity}, se ve desde la carretera",
-      "Huele fuerte a humo por {entity}, creo que el fuego sigue {value}",
+      "I see flames and heavy smoke in {entity}, the fire is {value}",
+      "Fire {value} near {entity}, visible from the road",
+      "Strong smell of smoke around {entity}, I think the fire is still {value}",
     ],
     wind_direction: [
-      "El viento viene del {value} y sopla fuerte",
-      "Ahora mismo el viento es del {value}, el humo se mueve con el",
+      "The wind is coming from {value} and blowing hard",
+      "Right now the wind is from {value}, smoke is moving with it",
     ],
-    road_status: [
-      "Carretera {entity}: {value}",
-      "Acabamos de pasar por la {entity} y esta {value}",
-    ],
-    comms_status: ["Monitor de comunicaciones: {entity} {value}"],
+    road_status: ["Road {entity}: {value}", "We just passed by {entity} and it is {value}"],
+    comms_status: ["Communications monitor: {entity} {value}"],
     headcount: [
-      "Aqui en {entity} somos unas {value} personas y nadie nos ha dicho nada",
-      "Calculo {value} personas en {entity}",
+      "Here at {entity} there are about {value} people and nobody has told us anything",
+      "I estimate {value} people in {entity}",
     ],
-    bed_availability: ["Tenemos {value} camas libres en {entity}"],
+    bed_availability: ["We have {value} available beds in {entity}"],
   },
   events: [
     {
       id: "t0-burst",
       atMin: 0,
       kind: "noise_burst",
-      label: "Llegada inicial de avisos",
+      label: "Initial arrival of reports",
       effects: [
         {
           type: "witness",
@@ -213,7 +210,7 @@ export const sierraBermeja = scenarioPackSchema.parse({
           type: "hoax",
           kind: "fire_activity",
           entityLabel: "Ronda centro",
-          value: "activo",
+          value: "active",
           location: at(36.7426, -5.1672, "Ronda centro"),
           count: 3,
           sourceIds: ["citizens-sms"],
@@ -224,7 +221,7 @@ export const sierraBermeja = scenarioPackSchema.parse({
       id: "chaos-wind-sw",
       atMin: 30,
       kind: "chaos",
-      label: "El viento gira a SO",
+      label: "Wind shifts to SW",
       effects: [
         { type: "set_fact", factId: "wind", value: "SO" },
         { type: "witness", factId: "wind", count: 4, sourceIds: ["citizens-call"] },
@@ -235,9 +232,9 @@ export const sierraBermeja = scenarioPackSchema.parse({
       id: "chaos-a397-closed",
       atMin: 40,
       kind: "chaos",
-      label: "Corte de la A-397",
+      label: "A-397 road closure",
       effects: [
-        { type: "set_fact", factId: "road-a397", value: "cortada" },
+        { type: "set_fact", factId: "road-a397", value: "blocked" },
         {
           type: "witness",
           factId: "road-a397",
@@ -251,7 +248,7 @@ export const sierraBermeja = scenarioPackSchema.parse({
       id: "chaos-sms-down",
       atMin: 50,
       kind: "chaos",
-      label: "Cae el proveedor de SMS",
+      label: "SMS provider goes down",
       effects: [
         { type: "set_fact", factId: "sms-provider", value: "caido" },
         { type: "witness", factId: "sms-provider", count: 1, sourceIds: ["comms-monitor"] },
@@ -261,7 +258,7 @@ export const sierraBermeja = scenarioPackSchema.parse({
       id: "camping-growth",
       atMin: 60,
       kind: "scheduled",
-      label: "50 personas mas en el camping",
+      label: "50 more people at the campsite",
       effects: [
         { type: "set_fact", factId: "camping-headcount", value: 170 },
         { type: "witness", factId: "camping-headcount", count: 3, sourceIds: ["citizens-call"] },
