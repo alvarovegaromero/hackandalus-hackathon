@@ -2,6 +2,7 @@
 // Signal ingestion into the command center.
 
 import { acceptIncomingEvent, EventConflict } from "@/lib/event-pipeline";
+import { authorizePipeline } from "@/lib/pipeline-auth";
 import { addEvent } from "@/lib/store";
 import type { IncomingEventPayload } from "@/lib/types";
 import {
@@ -17,6 +18,8 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
+  const denied = authorizePipeline(request);
+  if (denied) return denied;
   const parsed = await parseJsonBody(request, incomingEventSchema);
   if (!parsed.ok) return parsed.response;
 

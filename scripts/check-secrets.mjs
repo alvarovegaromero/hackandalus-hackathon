@@ -1,4 +1,4 @@
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -16,11 +16,27 @@ const files = execFileSync("git", ["ls-files", "--cached", "-z"], { encoding: "u
 // Scan tracked files only, including force-added ignored files. Feed content on
 // stdin so paths with glob characters (Next.js route params) remain literal.
 // Secretlint masks detected values by default.
-for (const file of files) {
-  const result = spawnSync(process.execPath, [cli, "--stdinFileName", file], {
-    input: readFileSync(file),
-    stdio: ["pipe", "inherit", "inherit"],
+function scanFile(file) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [cli, "--stdinFileName", file], {
+      stdio: ["pipe", "inherit", "inherit"],
+    });
+    child.once("error", reject);
+    child.once("close", (status) => {
+      if (status === 0) resolve();
+      else reject(new Error(`Secretlint failed for ${file} (exit ${status ?? "unknown"}).`));
+    });
+    child.stdin.end(readFileSync(file));
   });
-  if (result.error) throw result.error;
-  if (result.status !== 0) process.exit(result.status ?? 1);
 }
+
+const workers = Math.min(8, files.length);
+let nextFile = 0;
+await Promise.all(
+  Array.from({ length: workers }, async () => {
+    while (nextFile < files.length) {
+      const file = files[nextFile++];
+      await scanFile(file);
+    }
+  }),
+);

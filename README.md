@@ -286,6 +286,11 @@ Node.js 26 and `npm ci` / `npm run build`; `withWorkflow` is configured in
 `next.config.ts`. Add required environment variables in Vercel and deploy when
 authorized by the team.
 
+The build cleans stale Workflow-generated routes from `app/.well-known/` before
+Next.js runs. The command center lives in `src/app/`; Next.js otherwise gives a
+stale root `app/` directory precedence and serves no dashboard route. Vercel
+also excludes that generated directory from manual CLI uploads.
+
 ## Tests
 
 `npm test` runs 16 test suites: `tests/` covers the command center (priority,
