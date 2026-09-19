@@ -1,10 +1,12 @@
 // OWNER: HappyRobot inbound Signal vertical slice.
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 import { handleSignalPost } from "@/app/api/signals/route";
 import { GET as getSituationRoute } from "@/app/api/situation/route";
+import { GET as getTelemetryRoute } from "@/app/api/telemetry/route";
+import { readTelemetry } from "@/lib/event-pipeline";
 import { happyRobotExternalIdentity } from "@/lib/signals/happyrobot";
 import type { HappyRobotNormalizedReport } from "@/lib/signals/happyrobot";
 import type { NewSignal, PersistedSignal, SignalRepository } from "@/lib/signals/repository";
@@ -128,7 +130,13 @@ function request(payload: unknown, secret = SECRET) {
 beforeEach(() => {
   process.env.HAPPYROBOT_WEBHOOK_SECRET = SECRET;
   process.env.ACTION_EXECUTION_MODE = "mock";
+  globalThis.eventPipelineState = undefined;
   resetSituation();
+  vi.spyOn(console, "info").mockImplementation(() => {});
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 describe("HappyRobot Signal intake", () => {
@@ -159,6 +167,22 @@ describe("HappyRobot Signal intake", () => {
     expect(dashboardState.events.some((event: { id: string }) => event.id === body.eventId)).toBe(
       true,
     );
+    expect(readTelemetry().records).toEqual([
+      expect.objectContaining({
+        eventId: body.eventId,
+        type: "event.accepted",
+        payload: expect.objectContaining({ source: "happyrobot" }),
+      }),
+    ]);
+    const telemetryResponse = await getTelemetryRoute(
+      new Request("http://localhost/api/telemetry"),
+    );
+    const telemetryReader = telemetryResponse.body!.getReader();
+    await telemetryReader.read(); // retry directive
+    const telemetryFrame = new TextDecoder().decode((await telemetryReader.read()).value);
+    expect(telemetryFrame).toContain('"type":"event.accepted"');
+    expect(telemetryFrame).toContain(body.eventId);
+    await telemetryReader.cancel();
   });
 
   it("returns the original references and creates no second Event for duplicate delivery", async () => {
@@ -177,6 +201,7 @@ describe("HappyRobot Signal intake", () => {
     });
     expect(repository.rows.size).toBe(1);
     expect(getSituation().events.length).toBe(eventCount);
+    expect(readTelemetry().records).toHaveLength(1);
   });
 
   it("scopes native interaction identity by channel", async () => {
@@ -269,6 +294,7 @@ describe("HappyRobot Signal intake", () => {
     expect(signal.processingStatus).toBe("failed");
     expect(signal.processingError).toBe("deliberate interpretation failure");
     expect(signal.rawPayload).toEqual(payload);
+    expect(readTelemetry().records).toEqual([]);
   });
 
   it("rejects invalid authentication", async () => {
