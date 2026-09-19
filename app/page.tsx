@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CreateActionPayload, SituationState } from "@/lib/types";
+import { Button } from "./components/ui/button";
+import { Badge } from "./components/ui/badge";
 import ActionQueue from "./components/ActionQueue";
 import AuditPanel from "./components/AuditPanel";
 import ContactsPanel from "./components/ContactsPanel";
@@ -301,25 +303,28 @@ export default function Home() {
     <main className="shell">
       <header className="topbar">
         <div>
-          <p className="eyebrow">Centro de mando de crisis · HappyRobot · Andalucía</p>
-          <h1>
-            Plan vivo de respuesta v{situation.plan.version}
-            <span
-              className={situation.integration.mode === "happyrobot" ? "mode live" : "mode mock"}
-            >
+          <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#5d5d5d]">
+            FARO · Centro de Mando 112 Andalucía
+          </p>
+          <div className="flex items-center gap-2.5 mt-0.5">
+            <h1 className="text-[24px] font-bold text-[#292929] tracking-[-0.15px] leading-tight flex items-center gap-2">
+              Plan vivo de respuesta v{situation.plan.version}
+            </h1>
+            <Badge variant={situation.integration.mode === "happyrobot" ? "info" : "outline"}>
               {situation.integration.mode === "happyrobot"
                 ? "Ejecución real"
                 : "Ejecución simulada"}
-            </span>
-          </h1>
-          <p className="topbar-sub">
+            </Badge>
+          </div>
+          <p className="text-[13px] text-[#5d5d5d] tracking-[-0.15px] mt-1">
             {situation.plan.summary} · actualizado {agoLabel(situation.plan.generatedAt, nowMs)}
           </p>
         </div>
-        <div className="top-actions">
-          {busy ? <Loader2 className="spin" size={18} aria-hidden="true" /> : null}
-          <button
-            className={autonomyPaused ? "primary" : ""}
+        <div className="top-actions flex items-center gap-2">
+          {busy ? <Loader2 className="spin text-[#5d5d5d]" size={16} aria-hidden="true" /> : null}
+          <Button
+            variant={autonomyPaused ? "pill" : "outline"}
+            size="sm"
             onClick={() => toggleAutonomy(!autonomyPaused)}
             disabled={busy !== null}
             aria-pressed={autonomyPaused}
@@ -331,32 +336,34 @@ export default function Home() {
           >
             {autonomyPaused ? (
               <>
-                <Play size={16} aria-hidden="true" /> Reanudar autonomía
+                <Play size={14} aria-hidden="true" /> Reanudar autonomía
               </>
             ) : (
               <>
-                <PauseCircle size={16} aria-hidden="true" /> Parar autonomía
+                <PauseCircle size={14} aria-hidden="true" /> Parar autonomía
               </>
             )}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
             aria-label="Actualizar la situación ahora"
-            className="icon-button"
             onClick={() => run("refresh", refresh)}
             disabled={busy !== null}
           >
-            <RefreshCw size={18} aria-hidden="true" />
-          </button>
-          <button
+            <RefreshCw size={14} aria-hidden="true" />
+          </Button>
+          <Button
+            variant="pillDestructive"
+            size="icon"
             aria-label="Reiniciar la demo al estado inicial"
-            className="icon-button danger-light"
             onClick={() =>
               run("reset", () => requestJson("/api/demo/reset", { method: "POST", body: "{}" }))
             }
             disabled={busy !== null}
           >
-            <RotateCcw size={18} aria-hidden="true" />
-          </button>
+            <RotateCcw size={14} aria-hidden="true" />
+          </Button>
         </div>
       </header>
 

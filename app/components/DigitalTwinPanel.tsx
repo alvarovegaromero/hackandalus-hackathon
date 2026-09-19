@@ -6,6 +6,7 @@
 import { AlertTriangle, BrainCircuit, CheckCircle2, CircleHelp, Clock3 } from "lucide-react";
 import type { DigitalTwinFactStatus, DigitalTwinState } from "@/lib/types";
 import { agoLabel } from "./shared";
+import { Badge } from "./ui/badge";
 
 interface Props {
   twin: DigitalTwinState | undefined;
@@ -38,10 +39,14 @@ export default function DigitalTwinPanel({ twin, nowMs }: Props) {
 
   return (
     <section className={`panel digital-twin ${twin.mismatches > 0 ? "has-mismatch" : ""}`}>
-      <div className="panel-title">
-        <BrainCircuit size={18} aria-hidden="true" />
-        <h2>Gemelo digital</h2>
-        <span className="hint">Percepción reconstruida desde señales</span>
+      <div className="panel-title flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <BrainCircuit size={16} aria-hidden="true" />
+          <h2 className="text-[14px] font-bold text-[#292929] tracking-[-0.15px]">
+            Gemelo digital
+          </h2>
+        </div>
+        <span className="text-[12px] text-[#5d5d5d]">Percepción reconstruida desde señales</span>
       </div>
 
       <div className="twin-summary">
@@ -68,16 +73,31 @@ export default function DigitalTwinPanel({ twin, nowMs }: Props) {
       <ul className="mini-list twin-facts">
         {twin.facts.map((fact) => {
           const Icon = statusIcons[fact.status];
+          const badgeVariant =
+            fact.status === "confirmed"
+              ? "success"
+              : fact.status === "mismatch"
+                ? "critical"
+                : fact.status === "stale"
+                  ? "warning"
+                  : fact.status === "inferred"
+                    ? "info"
+                    : "outline";
           return (
             <li key={fact.id} className={`mini-row twin-fact ${fact.status}`}>
               <Icon size={16} aria-hidden="true" />
-              <div>
-                <strong>{fact.label}</strong>
+              <div className="flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <strong>{fact.label}</strong>
+                  <Badge variant={badgeVariant} className="text-[11px]">
+                    {statusLabels[fact.status]}
+                  </Badge>
+                </div>
                 <small>
                   FARO cree: {fact.perceived} · verdad simulada: {fact.truth}
                 </small>
                 <small>
-                  {statusLabels[fact.status]} · {confidenceLabel(fact.confidence)}
+                  {confidenceLabel(fact.confidence)}
                   {fact.updatedAt ? ` · actualizado ${agoLabel(fact.updatedAt, nowMs)}` : ""}
                   {fact.evidenceEventIds.length > 0
                     ? ` · ${fact.evidenceEventIds.length} señal(es)`

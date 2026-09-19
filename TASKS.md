@@ -36,6 +36,13 @@ probado llamadas a modelos ni comunicaciones reales.
 - [x] Guía CONTRIBUTING.md, plantilla de PR y configuración compartida de editor.
 - [x] Referencias a PROJECT.md desde Codex/AGENTS, Claude, Cursor y otros agentes.
 
+## Modernización de UI y Experiencia de Usuario
+
+- [x] Configuración de Tailwind CSS v4 con `@tailwindcss/postcss` y tokens `@theme`.
+- [x] Primitivas estilo shadcn/ui (`Button`, `Badge`, `Card`) y utilidades `cn` (`clsx` + `tailwind-merge`) en `app/components/ui/` y `lib/utils.ts`.
+- [x] Aplicación del blueprint de diseño limpio: tipografía SF Pro con `-0.15px` letter spacing, jerarquía de grises neutros (`#292929`, `#5D5D5D`, `#9E9E9E`), tarjetas a 16px de radio y botones estilo pill.
+- [x] Mapa táctico interactivo con React Leaflet y capa OpenStreetMap (sin API keys) centrado en Sierra Bermeja, con foco térmico dinámico, carreteras A-397 y MA-8301, y marcadores tácticos con selector de vista (táctico/esquema).
+
 ## Skills de desarrollo compartidas
 
 - [x] Fijar Graft como dependencia de desarrollo y documentar el índice local y sus consultas.

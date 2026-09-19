@@ -20,6 +20,8 @@ import {
   X,
 } from "lucide-react";
 import type { Action, Contact, CreateActionPayload, CrisisZone, Resource } from "@/lib/types";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
 import NewActionForm from "./NewActionForm";
 import ResourcePicker from "./ResourcePicker";
 import {
@@ -119,13 +121,14 @@ export default function ActionQueue({
             </button>
           ))}
         </div>
-        <button
-          className="primary"
+        <Button
+          variant="pill"
+          size="sm"
           onClick={() => onToggleForm(!formOpen)}
           aria-expanded={formOpen}
         >
-          <Plus size={15} aria-hidden="true" /> Nueva acción
-        </button>
+          <Plus size={14} aria-hidden="true" /> Nueva acción
+        </Button>
       </div>
 
       {formOpen ? (
@@ -182,20 +185,32 @@ export default function ActionQueue({
                 </div>
               </div>
 
-              <div className="action-meta">
-                <span className={`pill status-${action.status}`}>
+              <div className="action-meta flex flex-wrap gap-1.5 items-center">
+                <Badge
+                  variant={
+                    action.status === "succeeded"
+                      ? "success"
+                      : action.status === "failed" || action.status === "blocked"
+                        ? "critical"
+                        : action.status === "running" || action.status === "stalled"
+                          ? "warning"
+                          : "default"
+                  }
+                >
                   {actionStatusLabels[action.status]}
-                </span>
-                <span className={action.executionMode === "happyrobot" ? "pill live" : "pill mock"}>
+                </Badge>
+                <Badge variant={action.executionMode === "happyrobot" ? "info" : "outline"}>
                   {executionLabel(action.executionMode)}
-                </span>
+                </Badge>
                 {action.approvedBy ? (
-                  <span className="pill">Aprobada por {action.approvedBy}</span>
+                  <Badge variant="secondary">Aprobada por {action.approvedBy}</Badge>
                 ) : null}
               </div>
 
-              <div className="row-actions">
-                <button
+              <div className="row-actions flex flex-wrap gap-1.5 items-center mt-2">
+                <Button
+                  size="sm"
+                  variant="pill"
                   aria-label={`Aprobar y ejecutar: ${action.objective}`}
                   onClick={() => onApprove(action.id)}
                   disabled={
@@ -203,9 +218,11 @@ export default function ActionQueue({
                     !["pending", "failed", "blocked", "stalled"].includes(action.status)
                   }
                 >
-                  <Check size={15} aria-hidden="true" /> Aprobar
-                </button>
-                <button
+                  <Check size={14} aria-hidden="true" /> Aprobar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
                   aria-label={`Reintentar: ${action.objective}`}
                   onClick={() => onRetry(action.id)}
                   disabled={
@@ -213,25 +230,27 @@ export default function ActionQueue({
                     !["failed", "blocked", "cancelled", "stalled"].includes(action.status)
                   }
                 >
-                  <RefreshCw size={15} aria-hidden="true" /> Reintentar
-                </button>
-                <button
-                  className="danger-light"
+                  <RefreshCw size={14} aria-hidden="true" /> Reintentar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="pillDestructive"
                   aria-label={`Cancelar: ${action.objective}`}
                   onClick={() => onCancel(action.id)}
                   disabled={busy !== null || ["succeeded", "cancelled"].includes(action.status)}
                 >
-                  <X size={15} aria-hidden="true" /> Cancelar
-                </button>
-                <button
-                  className={pickerFor === action.id ? "active" : ""}
+                  <X size={14} aria-hidden="true" /> Cancelar
+                </Button>
+                <Button
+                  size="sm"
+                  variant={pickerFor === action.id ? "secondary" : "outline"}
                   aria-expanded={pickerFor === action.id}
                   aria-label={`Reasignar el recurso de: ${action.objective}`}
                   onClick={() => setPickerFor(pickerFor === action.id ? null : action.id)}
                   disabled={busy !== null || ["succeeded", "cancelled"].includes(action.status)}
                 >
-                  <Truck size={15} aria-hidden="true" /> Reasignar
-                </button>
+                  <Truck size={14} aria-hidden="true" /> Reasignar
+                </Button>
               </div>
 
               {pickerFor === action.id ? (

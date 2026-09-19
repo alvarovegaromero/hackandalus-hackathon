@@ -51,7 +51,13 @@ Es agnóstica del escenario: vale para incendio, inundación, apagón u otro, si
 - Las columnas laterales hacen scroll interno; la página no hace scroll a 1440×900 o mayor.
 - Por debajo de 1280px de ancho, una sola columna en este orden: estado, KPI, prioridades, mapa, entrada, recursos, evolución.
   Móvil no es objetivo; basta con que no se rompa.
-- Separación entre paneles de 16px; padding interno de panel de 16px; radio de 8px.
+- Separación entre paneles de 16px; padding interno de panel de 16px; radio de panel y tarjetas de 16px (`rounded-2xl`), elementos de navegación en 8px y CTAs estilo pill (`rounded-full`).
+- **Sistema de diseño y blueprint visual:**
+  - **Tipografía:** SF Pro / sistema sans con regular y medium, con letter-spacing de `-0.15px` para máxima legibilidad táctica.
+  - **Escala de fuentes:** 12px (metadatos/badges), 13px (cuerpo compacto/botones), 14px (texto estándar/subtítulos) y 24px (números clave/KPIs).
+  - **Jerarquía de neutros:** `#292929` (fondo de paneles secundarios y bordes oscuros), `#5D5D5D` (texto secundario/iconos neutros) y `#9E9E9E` (tinta atenuada y subtítulos).
+  - **Iconos:** 14px para navegación y botones (`Button`), 20px para cabeceras de tarjeta (`CardHeader`).
+  - **Primitivas UI (estilo shadcn):** `Button`, `Badge`, `Card` en `app/components/ui/` con `cn` (`clsx` + `tailwind-merge`).
 
 ## 4. Zonas
 
@@ -96,9 +102,11 @@ Responde a "qué información importa".
 
 Responde a "qué pasa y dónde".
 
-- **Mapa base en escala de grises y apagado**, con variante clara y oscura.
-  El color del mapa se reserva para los datos.
-- **Incidentes:** marcador circular de 12px mínimo con color de estado según severidad, icono de severidad dentro y anillo de 2px del color de la superficie para separarlo de lo que tenga debajo.
+- **Implementación técnica:** Renderizado mediante **React Leaflet** (`app/components/LeafletMap.tsx`) cargado dinámicamente (`next/dynamic` sin SSR) junto a un selector para alternar con el esquema regional SVG (`app/components/OperationsMap.tsx`).
+- **Capa base cartográfica:** **OpenStreetMap** (`https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png`), sin dependencia de API keys externas ni cuotas restrictivas.
+- **Foco operativo:** Centrado en **Sierra Bermeja / Serranía de Ronda** (`[36.525, -5.185]`), con foco térmico dinámico y radio de 2.2 km.
+- **Vías de comunicación críticas:** Trazado explícito de la **carretera A-397** (corte crítico) y ruta alternativa **MA-8301**.
+- **Incidentes:** marcador interactivo compacto mediante `L.divIcon` con rango de prioridad, nombre de zona, severidad e indicador de pulso en zonas críticas.
 - **Recursos:** marcadores con forma distinta a la de los incidentes (cuadrado o icono del tipo de recurso) y color categórico por tipo de recurso.
   Máximo tres colores de recurso en el mapa (ver sección 5); a partir del cuarto tipo, se distinguen por icono en tinta neutra.
 - **Asignaciones:** línea de 2px del recurso al incidente, en tinta secundaria; discontinua solo si la acción es simulada o está pendiente de aprobación.
