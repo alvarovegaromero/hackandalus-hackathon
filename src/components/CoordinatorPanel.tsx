@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Sparkles } from "lucide-react";
 import { coordinatorStateSchema, type CoordinatorState } from "@/lib/contracts/coordinator";
 
 export function useCoordinator() {
@@ -39,33 +40,32 @@ export function useCoordinator() {
   return { state, error };
 }
 
-/** Detail for the System card: the model's situation summary and full plan, on demand. */
-export default function SituationPanel({ state }: { state: CoordinatorState | null }) {
-  if (!state?.situationOverview && !state?.plan) return null;
+/** The coordinator's current plan: objective up front, steps on demand. */
+export default function PlanPanel({ state }: { state: CoordinatorState | null }) {
+  if (!state?.plan) return null;
   return (
-    <section className="grid gap-2 border-b border-line pb-4" aria-labelledby="situation-title">
-      <h2 id="situation-title" className="text-body font-medium text-muted">
-        Situation
+    <section
+      className="grid gap-2 rounded-xl border border-focus/30 bg-gradient-to-br from-focus/15 via-focus/[0.05] to-transparent p-3"
+      aria-labelledby="plan-title"
+    >
+      <h2 id="plan-title" className="flex items-center gap-2 text-body font-medium text-focus">
+        <Sparkles size={14} aria-hidden="true" />
+        Coordinator plan
+        <span className="ml-auto text-meta font-normal text-muted tabular-nums">
+          rev. {state.revision}
+        </span>
       </h2>
-      {state.situationOverview && (
-        <details className="group text-body">
-          <summary className="cursor-pointer list-none">
-            <span className="line-clamp-3 group-open:line-clamp-none">
-              {state.situationOverview}
-            </span>
-          </summary>
-        </details>
-      )}
-      {state.plan && (
-        <details className="text-meta text-muted">
-          <summary className="cursor-pointer">Plan: {state.plan.steps.length} steps</summary>
-          <ol className="mt-1 grid list-decimal gap-1 pl-5">
-            {state.plan.steps.map((step, index) => (
-              <li key={index}>{step}</li>
-            ))}
-          </ol>
-        </details>
-      )}
+      <p className="line-clamp-3 text-lead leading-snug" title={state.plan.objective}>
+        {state.plan.objective}
+      </p>
+      <details className="text-meta text-muted">
+        <summary className="cursor-pointer hover:text-ink">{state.plan.steps.length} steps</summary>
+        <ol className="mt-1 grid list-decimal gap-1 pl-5">
+          {state.plan.steps.map((step, index) => (
+            <li key={index}>{step}</li>
+          ))}
+        </ol>
+      </details>
     </section>
   );
 }

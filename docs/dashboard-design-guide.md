@@ -13,29 +13,35 @@ Scenario-agnostic: applies to wildfire, flood, blackout, or others, as long as t
 This section describes what `/dashboard` renders today.
 Sections 1 to 12 remain the long-term target; where they disagree, this section describes the code.
 
-The panorama row answers three questions without hover, legend or scroll at 1440×900:
+The screen fits 1440×900 without page scroll: dark glass modules over a deep backdrop.
+A pipeline strip reads left to right in the order the system works, so one glance shows the value chain:
 
-1. **What is most severe now?** Critical and high counts, the rest in one line, and active events per arrival minute stacked by priority.
-   The chart only covers telemetry received since the page loaded (the stream replays its last 100 records), and its footer says so.
-2. **Do we have units left?** Free units out of 10 per force, a 10-cell strip (filled = assigned) and an `Exhausted` label at zero. Assigned units are grouped first without empty gaps, then free units; each cell retains its unit identity and map selection.
-3. **What is the system doing?** The plan objective and subagent missions counted by status, blocked and failed first. Running missions add a prominent blue activity banner, count and spinning indicator, plus a highlighted mission row. Reduced-motion preferences disable the spin. The banner disappears when no mission is running or polling fails; unavailable updates are explicitly labeled and retained counts are last-known data.
+1. **Reports filtered:** relevant and discarded counts from the Jev relevance filter, plus a share bar.
+   Filter outcomes use ink and outline only, never a priority hue.
+2. **Active incidents:** critical, high and other counts, a per-minute arrival sparkline stacked by priority, and a share-by-priority bar.
+   The sparkline only covers telemetry received since the page loaded (the stream replays its last 100 records).
+3. **Units deployed:** assigned units out of 30 and a 10-cell strip per force (filled = assigned, grouped first; select a cell to locate it on the map); a force at zero free units reads `exhausted`.
+4. **Agent missions:** running, completed and needing-attention counts.
+   Running missions tint the module blue and show a spinner; reduced motion disables it.
 
 ```
-┌ header: FARO · scenario · SIMULATION · updated HH:MM ─────────────────┐
-├ Severity (span 4) ─────┬ Resources (span 4) ─────┬ System (span 4) ───┤
-├ Events by priority (5) ┴──────── Map (4) ────────┴ Situation + missions (3) ┤
-└───────────────────────────────────────────────────────────────────────┘
+┌ header: FARO · Sierra Bermeja wildfire · ● Live · updated · Simulation · [Reset & run] ┐
+├ Reports filtered ─┬ Active incidents ─┬ Units deployed ─┬ Agent missions ──────────────┤
+├ Incidents by      │        Sierra Bermeja map (hero)         │ Coordinator plan          │
+│ priority (340px)  │  legend · situation assessment overlay   │ Mission log (380px)       │
+└───────────────────┴──────────────────────────────────────────┴───────────────────────────┘
 ```
 
-- The breakdown row explains the panorama: priority queue with rationale on expand, map, then situation summary, plan steps and missions.
-- Reports discarded by the relevance filter collapse under one line; the filter decision is never colored.
-- The map is secondary: desaturated basemap, pins colored by coordinator priority, 24px unit markers.
+- The queue groups incidents under one heading per priority with its count; rows expand to show rationale and assigned units.
+- The map is the hero: desaturated basemap with a vignette, pins colored by coordinator priority (critical and high glow), unit markers, a priority legend and the model's situation assessment floating in glass.
+- Key numbers count to new values with `@number-flow/react`; otherwise motion is limited to transitions, the live dot and the running spinner.
 - Tokens live only in `src/app/(console)/dashboard-theme.css` and reach Tailwind through `@theme inline` (`text-critical`, `bg-panel`, `text-kpi`...).
+  The `.glass` module class sits in `@layer components` so utilities can override it; it falls back to the opaque panel without `backdrop-filter`.
 - Priority hues are reserved for priority: critical `#ff6b61`, high `#f59e42`, medium `#eed27a`, low `#7d8da0`, unassessed `#6b7280`.
-  Green `#07b37c` means brand, selection and focus; blue `#7cc4f0` means a running mission.
+  Green `#07b37c` means brand, live status, selection and focus; blue `#7cc4f0` means a running mission.
   Warnings use an icon and ink text, never a hue.
-- Type scale: 11px meta, 13px body, 15px lead, 28px key numbers.
-  Spacing: 8px inside a group, 16px between cards, 24px between zones.
+- Type: Geist through `next/font/google`, tabular numerals for data.
+  Scale: 11px meta, 13px body, 15px lead, 30px key numbers.
 - Charts use Recharts 3 through the shadcn primitives in `src/components/ui/chart.tsx`.
 
 ## 1. Initial Decisions

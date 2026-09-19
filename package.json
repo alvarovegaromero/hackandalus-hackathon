@@ -41,6 +41,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.71",
+    "@number-flow/react": "^0.6.2",
     "@supabase/supabase-js": "^2.116.0",
     "ai": "^7.0.106",
     "class-variance-authority": "^0.7.1",

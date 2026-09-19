@@ -109,9 +109,9 @@ export default function MissionsPanel({
   unavailable: boolean;
 }) {
   return (
-    <section className="flex min-h-0 flex-col gap-2" aria-labelledby="missions-title">
+    <section className="flex min-h-0 flex-1 flex-col gap-2" aria-labelledby="missions-title">
       <h2 id="missions-title" className="text-body font-medium text-muted">
-        Subagent missions
+        Mission log
       </h2>
       {unavailable && (
         <p role="status" className="flex items-center gap-1 text-meta">
@@ -164,19 +164,19 @@ function MissionRows({ missions, ready }: { missions: Mission[]; ready: boolean 
     initialized.current = true;
   }, [missions, ready]);
   return (
-    <ul ref={list} className="dashboard-scroll divide-y divide-line">
+    <ul ref={list} className="dashboard-scroll -mx-2 grid content-start gap-1.5 px-2">
       {missions.map((m) => (
         <li
           key={m.mission_id}
           data-id={m.mission_id}
           className={
             m.status === "running"
-              ? "border-l-2 border-running bg-running/5 py-2 pl-3 pr-2"
-              : "py-2"
+              ? "rounded-lg border border-running/40 bg-running/10 px-3 py-2.5"
+              : "rounded-lg border border-line bg-ink/[0.02] px-3 py-2.5"
           }
         >
           <div className="flex items-start justify-between gap-3">
-            <span className="text-body">{m.input.objective}</span>
+            <span className="line-clamp-2 text-body">{m.input.objective}</span>
             <MissionStatusLabel status={m.status} />
           </div>
           <p className="mt-1 line-clamp-2 text-meta text-muted">
