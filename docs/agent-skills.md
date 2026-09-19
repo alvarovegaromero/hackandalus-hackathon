@@ -66,16 +66,17 @@ packages or select a model just because an upstream example recommends it.
 Zod and HappyRobot still require their official docs and our integration contracts.
 [Graft](code-index.md) provides the local code index alongside these skills.
 
-## Optional MCP servers
+## MCP servers
 
-These are recommendations, not installed or automatically enabled connections.
-Each developer configures their own client and authentication. No credentials or
-personal editor settings belong in Git. Use the upstream client-specific setup
-instructions; the project does not need MCP to build or run its local checks.
+Context7 has shared project configuration; see [Context7 setup](context7.md)
+for client activation and stack-specific usage. Playwright and Supabase remain
+optional recommendations. Each developer manages client trust and authentication.
+No credentials or personal editor settings belong in Git. The project does not
+need MCP to build or run its local checks.
 
 | Priority                       | Server                                                    | Project use                                                                                                                         |
 | ------------------------------ | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| First                          | [Context7](https://github.com/upstash/context7)           | Retrieve library documentation; prefer bundled, version-matched SDK docs when available.                                            |
+| Configured at project scope    | [Context7](https://github.com/upstash/context7)           | Retrieve library documentation; prefer bundled, version-matched SDK docs when available.                                            |
 | For browser checks             | [Playwright](https://github.com/microsoft/playwright-mcp) | Exercise the local operator panel, inspect page state and capture regressions. CLI plus skills is also an option for coding agents. |
 | When the database is connected | [Supabase](https://supabase.com/docs/guides/ai-tools/mcp) | Inspect the development project, schema and logs. Start project-scoped and read-only.                                               |
 
