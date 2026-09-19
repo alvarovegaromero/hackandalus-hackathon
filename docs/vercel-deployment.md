@@ -7,21 +7,45 @@ Production was deployed from Git branch `production` on 2026-09-19 to project `f
 
 - [Landing](https://faro-lovat-iota.vercel.app/)
 - [Dashboard](https://faro-lovat-iota.vercel.app/dashboard)
-- Deployment ID: `dpl_819DFD5UHZqkLsr82dSUcvQhcaMQ` (Production, READY).
-- Commit: `a8f697d1cc7679adcb9d9fd6e1ed014003c03930`.
-- The initial Git deployment was started through Vercel's Create Deployment UI;
-  a subsequent merge-triggered automatic deployment has not yet been exercised.
+- Deployment ID: `dpl_7WMT5tqgnc9CbvnpWGVvzy8gEmt5` (Production, READY).
+- Commit: `ce3afe11d4078edcdb67e6f2ee6514e78f688235`.
+- Public access feature: [PR #63](https://github.com/alvarovegaromero/hackandalus-hackathon/pull/63).
+- Release: [PR #64](https://github.com/alvarovegaromero/hackandalus-hackathon/pull/64),
+  merged into `production` at `2026-09-19T19:02:44Z`. Its merge automatically
+  triggered Vercel; GitHub's Vercel status and the deployment ID match this commit.
 
-Unauthenticated HTTP checks returned 200 for `/`, `/dashboard` and `/api/map`.
-`/api/state` returned 503 on the initial deployment. Production variables were
-subsequently added through the Vercel UI: Supabase URL/public key, provider/model,
-Jev model/timeout and mock action mode as Config; Supabase, OpenCode and TypeSafe
-private keys plus a newly generated API token as Secret. All 11 names and their
-Production-only scope were verified with the CLI. Values are not recorded here.
-The new Git deployment applies those variables. Unauthenticated `/api/state` and
-`/api/subagents` now return 401, rather than the initial missing-token 503.
-That deployed commit predates timed public demo access. Database connectivity and
-remote model execution remain unverified. This is not yet a working remote-agent demo.
+### Public access window
+
+- Activation: `2026-09-19T19:02:13.807Z`.
+- Automatic expiry: `2026-09-20T21:02:13.807Z`, **20 September at 23:02 CEST
+  (Europe/Madrid)**.
+- No login, popup, code or cookie. All visitors share this fixed 26-hour window.
+- The landing remains public after expiry; the dashboard shows a closed page and
+  public state/mission/telemetry access and demo controls stop. Protected integrations
+  retain their existing credentials. Already accepted background work can finish.
+- Do not refresh the activation timestamp during ordinary releases: redeployment
+  with the same value does not extend access.
+
+### Verified behavior and remaining checks
+
+Unauthenticated remote checks after this release returned 200 for `/`, `/dashboard`,
+`/api/map`, `/api/state`, `/api/subagents` and `/api/telemetry`. The dashboard rendered
+demo controls without a dialog; the telemetry response opened an SSE stream.
+The dashboard was also opened in an active Orca tab without a load error.
+
+State reported `storage: supabase`, revision 66 and 20 events; subagents returned
+seven stored completed missions. These are observations at verification time,
+not fixed fixture counts. Supabase read connectivity is verified. No reset, new
+model execution or real communication was triggered by these checks. Existing
+mission results do not prove a new remote agent run; a new report-to-plan-to-mission
+exercise on Vercel remains pending. Agents execute after intake or mission results,
+not as continuously running processes.
+
+Production contains Supabase URL/public key, provider/model, Jev model/timeout,
+mock action mode and the public activation timestamp as Config; Supabase, OpenCode,
+TypeSafe private keys and the pipeline API token remain Secret. Secret values are
+not recorded here. This supersedes the initial missing-token 503 and protected-read
+401 deployment checks.
 GitHub login and the Vercel GitHub App installation are connected; the installation
 is limited to `alvarovegaromero/hackandalus-hackathon`.
 Local `npm run check` passed on Windows with Node 24. The remote build also
@@ -42,9 +66,8 @@ NO CI rule. Configuration and the `faro-deploy` skill landed through PR #61,
 merged as `a8f697d1cc7679adcb9d9fd6e1ed014003c03930`. Remote `production` was
 created at that commit and protected with required PRs, administrator enforcement,
 and force-push/deletion disabled. Vercel is connected to the repository and
-Production branch tracking is saved as `production`. The initial deployment from
-that branch is READY and serves the existing domain. Automatic delivery on the
-next release merge remains to be verified.
+Production branch tracking is saved as `production`. Automatic delivery was
+verified by release PR #64: its deployment is READY and serves the existing domain.
 
 ## Current execution boundaries
 
@@ -80,11 +103,10 @@ next release merge remains to be verified.
 
 ## Environment and database prerequisites
 
-The public-window implementation is prepared on `feat/demo-code-access`; it needs
-a feature PR and a release into `production` before it is available at the public
-URL. Set `DEMO_PUBLIC_STARTED_AT` immediately before that release and record the
-exact UTC expiry. The previously configured `DEMO_ACCESS_CODE` was removed from
-Vercel; the code-entry implementation has also been removed.
+The public-window implementation is deployed through PRs #63 and #64, with
+`DEMO_PUBLIC_STARTED_AT` set to the activation timestamp above. Preserve that
+timestamp for this demo. The previously configured `DEMO_ACCESS_CODE` and the
+code-entry implementation have been removed.
 
 Configure values in the intended Vercel environment before deploying. Never
 upload local credential files or put secrets in `NEXT_PUBLIC_*` variables.
@@ -109,9 +131,10 @@ by the deployed Supabase HTTP client.
 
 Check the target database's migration history before use. The integrated runtime
 requires the applicable migrations through 015 (patrols, evolving missions and
-retaining resources after communication). The initial deployed UI predates these changes.
-Apply missing migrations only with authorization for that database. This guide
-does not assert that any migration has been applied remotely.
+retaining resources after communication). Production state and mission reads work,
+but this release verification did not audit the full migration history or apply SQL.
+Apply missing migrations only with authorization for that database; successful reads
+alone do not establish every write/recovery path.
 
 ## One-time setup
 

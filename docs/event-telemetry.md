@@ -2,8 +2,8 @@
 
 The served vertical slice is `scripts/mock-events.mjs` → `POST /api/events` →
 `src/lib/event-pipeline.ts` → `GET /api/telemetry` → event log on `/dashboard`.
-Intake now queues durable Supabase coordinator reports. The separate coordinator
-worker runs Jev, triage and global planning. SSE bridges stored receipts and filter
+Intake now queues durable Supabase coordinator reports. The coordinator
+runtime runs Jev, triage and global planning inside Next.js after intake. SSE bridges stored receipts and filter
 results; the frontend polls `/api/state` for plans and allocations. See
 [frontend integration](coordinator-frontend-integration.md) for reset and auth setup.
 
@@ -23,8 +23,9 @@ not real integrations or trusted provenance. Each report remains a separate even
 this does not implement incident correlation or agent execution.
 
 `EVENT_API_URL` overrides the script's base URL. The CLI sends CRISIS_API_TOKEN
-when configured. Start `npm run coordinator:work` separately to process the queue;
-model calls and simulated allocations happen in that worker.
+when configured. No separate coordinator worker is needed: model calls and simulated
+allocations run through Next.js `after()`. Public hosted demo access expires at the
+fixed timestamp in [the deployment guide](vercel-deployment.md).
 
 ## Input and acknowledgement
 
