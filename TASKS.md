@@ -46,6 +46,16 @@ All package owners are unassigned; no implementation completion is implied.
 - [x] **P3 — Manual formula/handoff scenarios:** `npm run triage:try`, 10/10
       passed on Windows; numeric examples, stable IDs, unknown factors, Jev
       uncertainty and invalid input/context. No provider calls or automated tests.
+- [x] **P4 — LLM planning module:** consume the validated P3 handoff and authorized
+      history; return final priority, finite resource proposals, a versioned plan
+      and an assistant audit message. See [P4 planning](docs/agent-planning.md).
+      OpenCode Go/Luna live validation passed eight synthetic cases on Windows.
+- [x] **P4 — OpenCode and mock execution:** explicit provider selection through
+      Vercel AI SDK; bounded tool loop with simulated resource assignment and
+      HappyRobot placeholder communications. No real dispatch or messages.
+- [x] **P3/P4 — Manual exercise script:** `npm run llm:try` with eight synthetic
+      scenarios, optional limit and dry run. Eight live LLM output contracts passed,
+      zero service errors; all execution remained simulated. No hooks or automatic tests.
 - [ ] **P4 — Agent/execution:** one agent and one HappyRobot operation;
       persist messages, plans and outcomes; respect intervention and replan.
 - [ ] **P5 — Frontend:** reports, decision/activity history, agent messages,

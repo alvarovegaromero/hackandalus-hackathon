@@ -59,6 +59,14 @@ To manually exercise Jev with 10 synthetic reports, run `npm run jev:try` after
 configuring `TYPESAFE_API_KEY`. Add `-- --limit 5` for fewer cases or `-- --dry-run`
 to inspect inputs without live calls. See [Jev filter](docs/jev-filter.md).
 
+To exercise P3 → P4 on demand, use `npm run llm:try -- --dry-run` to inspect
+synthetic inputs, or `npm run llm:try -- --limit 5` for real model calls with
+the selected provider in `.env.local`: `AI_PROVIDER=opencode-go` uses
+`OPENCODE_MODEL` and `OPENCODE_API_KEY`; `gateway` uses `AI_MODEL` and
+`AI_GATEWAY_API_KEY`. It uses synthetic Jev results, real impact/planning modules
+and mock tools, without real communications or dispatch.
+See [P4 planning](docs/agent-planning.md) for outputs and interpretation.
+
 P2's server-only [Jev relevance filter](docs/jev-filter.md) is available for P1
 integration, with shared input/output validators and backend decision logs.
 Configure `TYPESAFE_API_KEY` and optional `JEV_*` policy settings in `.env.local`
@@ -66,9 +74,10 @@ for real evaluation. Missing credentials return unavailable. The served intake
 does not yet invoke it; persistence and frontend filter notifications are pending.
 
 P3's [impact calculation](docs/triage.md) uses structured operator/scenario
-factors and the Source of Truth formula. Its validated handoff carries Jev's
-result, explicit unknowns and unlimited resource availability to the future
-P4 planner. Intake and persistence wiring remain pending.
+factors and the Source of Truth formula. P4's [LLM planner](docs/agent-planning.md)
+consumes that result and Jev's decision to propose priority, a plan and resource
+quantities with unlimited availability. These modules still need intake,
+persistence and execution wiring; they do not dispatch resources.
 
 The agreed initial delivery is documented in [Initial POC](docs/poc.md), with
 P0–P5 work packages, dependencies and demo acceptance. Follow that scope before
