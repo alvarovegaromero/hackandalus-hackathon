@@ -95,9 +95,10 @@ are in the source document.
 
 ## Phase 4 · Consolidation Post Command Center Merge
 
-- [ ] Unify both trees. Next serves `app/` and ignores `src/app`:
-      batch ingestion (`/api/events` with deduplication and Supabase), `/api/runs/<runId>`, `/api/scenario/signals`, workflow in `src/workflows/crisis.ts`, and `src/components` dashboard are only exercised in tests. Decide what to port to `app/`/`lib/` and what to retire.
-- [ ] Rename seed and default script to Sierra Bermeja (`lib/seed.ts`, `lib/scenario.ts` use "Sierra Morena" and `wildfire-andalucia`) and title in `app/layout.tsx` to FARO.
+- [x] Unify both trees into standard `src/` directory (`src/app/`, `src/components/`, `src/lib/`).
+      Removed dead scaffold dashboard, unserved duplicate API routes, 5 unwired UI components (`AgentStrip`, `ChaosBar`, `ChangeBar`, `ContextPanel`, `PriorityBoard`), and duplicate `docs/data-model.md`.
+- [x] Set title in `src/app/layout.tsx` to FARO · Crisis Command Center.
+- [ ] Rename seed and default script to Sierra Bermeja (`src/lib/seed.ts`, `src/lib/scenario.ts` use "Sierra Morena" and `wildfire-andalucia`).
 - [ ] Explain zone and resource changes between plans: helper `capturePlanContext` in `lib/store.ts` was not invoked and removed in cleanup; `diffPlans` currently compares current state with itself. Must capture snapshot before each replanning mutation.
 - [ ] Scope `.data/` directory in `lib/persistence.ts` to prevent Turbopack from tracing the full project (warning in `npm run build`).
 - [ ] Connect command center to Supabase following `docs/data-model.md`.

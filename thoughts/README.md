@@ -19,7 +19,7 @@ documents transfer that work to the definitive base.
 | [open-questions.md](open-questions.md) | What nobody has decided yet, ordered by the phase it blocks                                                                                         | You want to know what still needs agreement                     |
 
 The project's source-of-truth document is at the repository root:
-`HackSpain 2026 · Source of Truth del proyecto.md`. These documents build on
+`HackSpain 2026 · Project Source of Truth.md`. These documents build on
 it; if they disagree, the source of truth wins and this folder gets updated.
 
 ## How to use it if you are an agent

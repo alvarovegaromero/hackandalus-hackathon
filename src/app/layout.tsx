@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Butterfish · Crisis Coordination",
-  description: "Human supervision and intervention dashboard — HackSpain 2026",
+  title: "FARO · Crisis Command Center",
+  description:
+    "Agentic command center for crisis management in Sierra Bermeja. HappyRobot challenge for HackSpain 2026.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
