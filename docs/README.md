@@ -23,6 +23,10 @@ JSON persistence. Outbound communications default to mock mode.
 
 ## Contracts and integration work
 
+[P3 triage integration](triage.md) defines the source-of-truth impact formula,
+structured factors from operator/scenario observations, and the planner handoff
+with Jev information and unlimited-resource POC assumptions.
+
 [Jev filter integration](jev-filter.md) documents the implemented P2 module,
 P1 request, validated P3 handoff, backend logging and provisional configuration.
 Runtime wiring/persistence and frontend filtering notifications remain pending.
@@ -31,8 +35,9 @@ Runtime wiring/persistence and frontend filtering notifications remain pending.
 active scope, P0–P5 work packages, handoffs and demo acceptance. Its persisted
 activity/SSE path and bounded filter/triage/agent scope take precedence for the
 first delivery. [POC module contracts v1](poc-contracts.md) defines the interfaces
-and reuses the existing input/SSE work from `e2579a9`. Executable schemas,
-fixtures and that branch's port into `src/` remain pending.
+and reuses the existing input/SSE work from `e2579a9`, now ported into `src/`.
+P2/P3 executable contracts exist; connecting the processing modules, durable
+storage and frontend delivery remains pending.
 
 For the broader product, review [Architecture review](architecture-review.md): current
 and proposed diagrams, confirmed decisions, unresolved choices, and parallel work

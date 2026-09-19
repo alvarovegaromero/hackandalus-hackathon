@@ -30,7 +30,8 @@
     "index:check": "graft check",
     "index:verify": "npm run index:build && npm run index:check",
     "jev:try": "node --conditions=react-server scripts/try-jev.mjs",
-    "mock:events": "node --env-file-if-exists=.env.local scripts/mock-events.mjs"
+    "mock:events": "node --env-file-if-exists=.env.local scripts/mock-events.mjs",
+    "triage:try": "node scripts/try-triage.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
