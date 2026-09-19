@@ -1,5 +1,11 @@
 # Project Tasks
 
+## 24-hour hackathon workflow
+
+- [x] Disable pre-commit and remove tests from automatic check/push/PR validation.
+      Existing tests remain available manually. Do not add or run more by default.
+      Historical hook/test milestones below describe the earlier setup.
+
 ## Initial POC · active delivery scope
 
 Scope agreed on 2026-09-19: [POC plan and package acceptance](docs/poc.md).
@@ -18,8 +24,19 @@ All package owners are unassigned; no implementation completion is implied.
       legacy projection from executing alongside the new agent for the same input.
 - [ ] **P1 — Input/scenarios:** expose confirmed report intake, deduplicate
       deliveries, persist and schedule processing; publish demo scenario fixtures.
-- [ ] **P2 — Jev filter:** relevant/irrelevant/uncertain decisions, explicit
-      unavailable state and review path; preserve all original reports.
+- [x] **P2 — Jev filter module:** shared request/result/P3 handoff validators,
+      Jev HTTP evaluation, relevant/irrelevant/uncertain/unavailable results,
+      backend outcome logs and contract/failure fixtures. See [integration](docs/jev-filter.md).
+- [ ] **P0/P1/P2 — Connect filtering:** invoke P2 from persisted report processing,
+      persist decisions and route relevant and uncertain reports to P3/agent;
+      retain irrelevant reports and log unavailable results without forwarding them.
+- [x] **P2 — Manual live smoke run:** `npm run jev:try`, 10 synthetic cases,
+      10 expected routes and valid output contracts on Windows (2026-09-19).
+      This is on demand only; no hooks or automatic test integration.
+- [ ] **P2 — Calibration:** broader labeled evaluation and threshold calibration;
+      the small live sample does not establish accuracy or operational readiness.
+- [ ] **P0/P5 — TBD filtering notifications:** after persistence, publish existing
+      filtering telemetry to the frontend; P2 currently logs in the backend only.
 - [ ] **P3 — Triage:** agree factors/weights; implement the central versioned
       deterministic priority function and auditable factor breakdown.
 - [ ] **P4 — Agent/execution:** one agent and one HappyRobot operation;
