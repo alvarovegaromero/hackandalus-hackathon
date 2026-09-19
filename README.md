@@ -30,7 +30,7 @@ conexiones reales siguen abiertos: ver [TASKS.md](TASKS.md) y
 Las convenciones de desarrollo y los permisos están en [PROJECT.md](PROJECT.md).
 `AGENTS.md` y `CLAUDE.md` apuntan allí para evitar reglas duplicadas. Para
 incorporarte al equipo, sigue [CONTRIBUTING.md](CONTRIBUTING.md). El repositorio
-incluye [skills compartidas](docs/agent-skills.md) para React/Next.js,
+incluye [skills compartidas](docs/agent-skills.md) para TypeSafe/Jev, AI SDK, Workflow, React/Next.js,
 Postgres/Supabase, accesibilidad y diseño visual. Para indexar el código tras
 `npm ci`, ejecuta `npm run index:build` y consulta el mapa con
 `npm run index:map`; su uso para navegar por el código es obligatorio

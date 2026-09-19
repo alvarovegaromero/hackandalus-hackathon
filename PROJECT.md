@@ -271,7 +271,7 @@ for setup, supported workflows and verified limits.
 
 ### Shared stack skills
 
-The repository vendors four skills under `.agents/skills/`. Use the relevant
+The repository vendors seven skills under `.agents/skills/`. Use the relevant
 skill by reading its `SKILL.md` before the corresponding task; load supporting
 references only as needed. These explicit paths also work with agents that do
 not automatically discover this directory:
@@ -284,12 +284,22 @@ not automatically discover this directory:
   [.agents/skills/web-design-guidelines/SKILL.md](.agents/skills/web-design-guidelines/SKILL.md).
 - Visual design and dashboard presentation:
   [.agents/skills/frontend-design/SKILL.md](.agents/skills/frontend-design/SKILL.md).
+- TypeSafe/Jev question design and integration:
+  [.agents/skills/typesafe-ai/SKILL.md](.agents/skills/typesafe-ai/SKILL.md).
+- AI SDK agents, tools, structured output and streaming:
+  [.agents/skills/ai-sdk/SKILL.md](.agents/skills/ai-sdk/SKILL.md).
+- Durable execution, retries and external-event waits:
+  [.agents/skills/workflow/SKILL.md](.agents/skills/workflow/SKILL.md).
 
 Skills supplement this file; project stack, permissions and challenge requirements
 take precedence. Apply examples to installed dependency versions; do not add
-dependencies just because an example uses them. These skills do not cover the
-AI SDK, Workflow, Zod or HappyRobot contracts: consult their applicable official
-documentation and the project's integration guides when working on those parts.
+dependencies just because an example uses them. Use the installed SDK version's
+documentation before applying examples. The Workflow snapshot includes v5 APIs
+while this project uses v4; do not copy v5-only APIs or upgrade dependencies merely
+because a skill recommends it. Model/provider selection remains an explicit
+project decision. Adding TypeSafe guidance does not configure Jev or authorize
+live calls. Zod and HappyRobot contracts still require their official documentation
+and the project's integration guides.
 
 Cloning the repository includes the skills; no global installation or symlinks
 are required. See [docs/agent-skills.md](docs/agent-skills.md) for onboarding,
