@@ -1,5 +1,6 @@
 // OWNER: event ingestion and telemetry pipeline.
 import { timingSafeEqual } from "node:crypto";
+import { publicDemoExpiresAt } from "./demo-access";
 
 /** Local demo is open. Configured tokens are always enforced; production fails closed. */
 export function authorizePipeline(request: Request): Response | undefined {
@@ -20,6 +21,7 @@ export function authorizePipeline(request: Request): Response | undefined {
 
 /** Local dashboard reads may use the browser's same-origin context, never a client token. */
 export function authorizeDashboardRead(request: Request): Response | undefined {
+  if (publicDemoExpiresAt()) return;
   if (
     process.env.NODE_ENV === "development" &&
     request.headers.get("sec-fetch-site") === "same-origin"

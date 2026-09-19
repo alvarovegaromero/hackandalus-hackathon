@@ -413,6 +413,14 @@ MIT. See [LICENSE](LICENSE).
 
 ## Global coordinator v2
 
+Hosted demo access is public without accounts, codes or cookies. At activation,
+set server-only `DEMO_PUBLIC_STARTED_AT` to the current canonical UTC ISO timestamp
+and keep `ACTION_EXECUTION_MODE=mock` in Vercel, then deploy. All visitors can open
+the dashboard and use Reset & run events for the same 26-hour window; this resets
+the shared simulation and calls the configured models. Access closes automatically
+at activation plus 26 hours. Credentials remain on the server. See
+[deployment and access](docs/vercel-deployment.md).
+
 Apply supabase/migrations/202609190005_global_coordinator.sql after the inventory migration.
 Apply migrations 006–008 next, then run `npm run dev` (Node 24).
 Next.js processes persisted reports after intake and groups accepted reports for

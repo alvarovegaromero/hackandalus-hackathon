@@ -1,4 +1,6 @@
-"use client";
+import Dashboard from "@/components/Dashboard";
+import Link from "next/link";
+import { publicDemoExpiresAt } from "@/lib/demo-access";
 
 // Operator screen. Panorama answers three questions (severity, capacity, system
 // activity); the breakdown row below explains each answer in detail.
