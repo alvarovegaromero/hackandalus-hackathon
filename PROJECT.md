@@ -68,8 +68,10 @@ invented values. Track follow-up work in TASKS.md.
 - `.gitignore`: local credentials, personal agent settings, and generated caches.
 
 - `app/`, `lib/`, `tests/`: the served command center. `app/` holds the operator
-  panel and HTTP API; each `lib/` module states its owner in a
-  `// PROPIETARIO:` line; `tests/` is its Vitest suite.
+  panel, HTTP API, shadcn/ui-inspired primitives (`app/components/ui/`), and the
+  tactical React Leaflet map (`app/components/LeafletMap.tsx`) with OpenStreetMap;
+  each `lib/` module states its owner in a `// PROPIETARIO:` line; `tests/` is its
+  Vitest suite.
 - `src/app`, `src/components`: platform-base endpoints and dashboard (not served
   while the root `app/` exists; covered by tests).
 - `src/lib/domain.ts`: shared Zod schemas and domain types.

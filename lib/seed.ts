@@ -20,7 +20,7 @@ export const seedZones: CrisisZone[] = [
     populationAtRisk: 1200,
     riskScore: 42,
     needs: ["evaluacion de monte"],
-    coordinates: { x: 39, y: 32 },
+    coordinates: { x: 39, y: 32, lat: 36.565, lng: -5.215 },
     lastUpdatedAt: now,
   },
   {
@@ -30,7 +30,7 @@ export const seedZones: CrisisZone[] = [
     populationAtRisk: 3100,
     riskScore: 68,
     needs: ["alerta publica", "triaje sanitario"],
-    coordinates: { x: 32, y: 52 },
+    coordinates: { x: 32, y: 52, lat: 36.544, lng: -5.234 },
     lastUpdatedAt: now,
   },
   {
@@ -40,7 +40,7 @@ export const seedZones: CrisisZone[] = [
     populationAtRisk: 900,
     riskScore: 24,
     needs: ["vigilancia de rutas"],
-    coordinates: { x: 72, y: 55 },
+    coordinates: { x: 72, y: 55, lat: 36.512, lng: -5.187 },
     lastUpdatedAt: now,
   },
   {
@@ -50,7 +50,7 @@ export const seedZones: CrisisZone[] = [
     populationAtRisk: 1750,
     riskScore: 35,
     needs: ["capacidad de refugios"],
-    coordinates: { x: 54, y: 76 },
+    coordinates: { x: 54, y: 76, lat: 36.427, lng: -5.145 },
     lastUpdatedAt: now,
   },
   {
@@ -60,7 +60,7 @@ export const seedZones: CrisisZone[] = [
     populationAtRisk: 640,
     riskScore: 18,
     needs: ["enlace logistico"],
-    coordinates: { x: 22, y: 71 },
+    coordinates: { x: 22, y: 71, lat: 36.444, lng: -5.273 },
     lastUpdatedAt: now,
   },
 ];

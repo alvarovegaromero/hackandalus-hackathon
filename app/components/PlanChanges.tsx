@@ -5,6 +5,7 @@
 import { GitCompareArrows } from "lucide-react";
 import type { Plan } from "@/lib/types";
 import { agoLabel, planChangeLabels, timeLabel } from "./shared";
+import { Badge } from "./ui/badge";
 
 interface Props {
   plan: Plan;
@@ -44,11 +45,13 @@ export default function PlanChanges({ plan, planHistory, nowMs, isFresh }: Props
       className={`panel plan-panel ${isFresh ? "just-changed" : ""}`}
       aria-label="Cambios del plan"
     >
-      <div className="panel-title">
-        <GitCompareArrows size={18} aria-hidden="true" />
-        <h2>Plan v{plan.version}: qué cambió</h2>
-        {isFresh ? <em className="flash-tag">Nuevo</em> : null}
-        {invalid ? <em className="flash-tag">Ya no vale</em> : null}
+      <div className="panel-title flex items-center gap-2">
+        <GitCompareArrows size={16} aria-hidden="true" />
+        <h2 className="text-[14px] font-bold text-[#292929] tracking-[-0.15px]">
+          Plan v{plan.version}: qué cambió
+        </h2>
+        {isFresh ? <Badge variant="warning">Nuevo</Badge> : null}
+        {invalid ? <Badge variant="critical">Ya no vale</Badge> : null}
       </div>
 
       {invalid ? (
@@ -71,7 +74,9 @@ export default function PlanChanges({ plan, planHistory, nowMs, isFresh }: Props
 
       {assumptions.length > 0 ? (
         <>
-          <h3 className="section-head">De qué depende este plan</h3>
+          <h3 className="section-head text-[12px] uppercase tracking-[0.06em] text-[#5d5d5d]">
+            De qué depende este plan
+          </h3>
           <ul className="mini-list">
             {assumptions.map((assumption) => (
               <li key={assumption.id} className={`mini-row assumption ${assumption.status}`}>
@@ -81,13 +86,13 @@ export default function PlanChanges({ plan, planHistory, nowMs, isFresh }: Props
                     Vigila {assumption.variable} · {assumption.condition}
                   </small>
                 </div>
-                <span
-                  className={
+                <Badge
+                  variant={
                     assumption.status === "broken"
-                      ? "pill zone-critical"
+                      ? "critical"
                       : assumption.status === "ok"
-                        ? "pill zone-stable"
-                        : "pill"
+                        ? "success"
+                        : "outline"
                   }
                 >
                   {assumption.status === "broken"
@@ -95,7 +100,7 @@ export default function PlanChanges({ plan, planHistory, nowMs, isFresh }: Props
                     : assumption.status === "ok"
                       ? "Se sostiene"
                       : "Sin datos"}
-                </span>
+                </Badge>
               </li>
             ))}
           </ul>

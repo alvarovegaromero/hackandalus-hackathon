@@ -52,7 +52,7 @@ export interface CrisisZone {
   /** Riesgo base de la zona, sin contar senales vivas. */
   riskScore: number;
   needs: string[];
-  coordinates: { x: number; y: number };
+  coordinates: { x: number; y: number; lat?: number; lng?: number };
   lastUpdatedAt: string;
   /** Puntos vulnerables de la zona: residencias, colegios, campings. */
   vulnerableSites?: VulnerableSite[];

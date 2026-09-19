@@ -5,6 +5,8 @@
 
 import { ArrowRight, Flame, History, Users } from "lucide-react";
 import type { SituationState } from "@/lib/types";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
 import {
   agoLabel,
   clockLabel,
@@ -58,30 +60,51 @@ export default function HeroSummary({
   return (
     <section className="hero" aria-label="Resumen de la situación">
       <article className={`hero-card hero-priority ${topZone?.status ?? "stable"}`}>
-        <header>
-          <Flame size={16} aria-hidden="true" />
-          <span>Prioridad ahora</span>
+        <header className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.06em] text-[#5d5d5d]">
+            <Flame size={14} className="text-[#a11b12]" aria-hidden="true" />
+            <span>Prioridad ahora</span>
+          </div>
+          {topZone ? (
+            <Badge
+              variant={
+                topZone.status === "critical"
+                  ? "critical"
+                  : topZone.status === "active"
+                    ? "warning"
+                    : "outline"
+              }
+            >
+              {zoneStatusLabels[topZone.status]}
+            </Badge>
+          ) : null}
         </header>
         {topZone && priority ? (
           <>
-            <h2>{topZone.name}</h2>
-            <p className="hero-reason">{priority.reason}</p>
-            <div className="hero-foot">
-              <span className={`pill zone-${topZone.status}`}>
-                {zoneStatusLabels[topZone.status]}
-              </span>
-              <span className="pill">Puntuación {priority.score}</span>
-              <span className="pill">
-                <Users size={13} aria-hidden="true" />{" "}
+            <h2 className="text-[18px] font-bold text-[#292929] tracking-[-0.15px] mt-1">
+              {topZone.name}
+            </h2>
+            <p className="hero-reason text-[13px] text-[#5d5d5d] tracking-[-0.15px]">
+              {priority.reason}
+            </p>
+            <div className="hero-foot flex flex-wrap items-center gap-2 mt-3">
+              <Badge variant="outline">Puntuación {priority.score}</Badge>
+              <Badge variant="outline" className="flex items-center gap-1">
+                <Users size={12} aria-hidden="true" />{" "}
                 {topZone.populationAtRisk.toLocaleString("es-ES")} personas
-              </span>
-              <button className="link-button" onClick={() => onFocusZone(topZone.id)}>
-                Ver zona <ArrowRight size={14} aria-hidden="true" />
-              </button>
+              </Badge>
+              <Button
+                variant="pill"
+                size="sm"
+                className="h-7 text-[12px]"
+                onClick={() => onFocusZone(topZone.id)}
+              >
+                Ver zona <ArrowRight size={12} aria-hidden="true" />
+              </Button>
             </div>
           </>
         ) : (
-          <h2>Sin zonas activas</h2>
+          <h2 className="text-[16px] font-bold text-[#292929]">Sin zonas activas</h2>
         )}
       </article>
 

@@ -5,6 +5,8 @@
 import { CircleDot, Play, Square, Wind, Zap } from "lucide-react";
 import type { ScenarioState, WorldState } from "@/lib/types";
 import { clockLabel, scenarioRuntime } from "./shared";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
 
 interface Props {
   scenario: ScenarioState;
@@ -40,43 +42,58 @@ export default function ScenarioBar({
     >
       <div className="scenario-head">
         <div className="scenario-id">
-          <span className="eyebrow">Escenario</span>
-          <h2>{scenario.name}</h2>
-          <p>{scenario.description}</p>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#5d5d5d]">
+            Escenario
+          </span>
+          <h2 className="text-[16px] font-bold text-[#292929] tracking-[-0.15px]">
+            {scenario.name}
+          </h2>
+          <p className="text-[12px] text-[#5d5d5d]">{scenario.description}</p>
         </div>
-        <div className="scenario-controls">
-          <div className="scenario-clock" aria-live="off">
+        <div className="scenario-controls flex items-center gap-2">
+          <div className="scenario-clock flex items-center gap-1.5" aria-live="off">
             <span className={scenario.running ? "dot live" : "dot"} aria-hidden="true" />
-            <strong>{clockLabel(elapsedSeconds)}</strong>
-            <small>{scenario.running ? "en marcha" : "parado"}</small>
+            <strong className="text-[13px]">{clockLabel(elapsedSeconds)}</strong>
+            <small className="text-[11px] text-[#9e9e9e]">
+              {scenario.running ? "en marcha" : "parado"}
+            </small>
           </div>
-          <button
+          <Button
+            size="sm"
+            variant="pill"
             onClick={onStart}
             disabled={busy || scenario.running}
             aria-label="Arrancar el escenario"
           >
-            <Play size={15} aria-hidden="true" /> Arrancar
-          </button>
-          <button
-            className="danger-light"
+            <Play size={13} aria-hidden="true" /> Arrancar
+          </Button>
+          <Button
+            size="sm"
+            variant="pillDestructive"
             onClick={onStop}
             disabled={busy || !scenario.running}
             aria-label="Parar el escenario"
           >
-            <Square size={15} aria-hidden="true" /> Parar
-          </button>
-          <div className="speed-row" role="group" aria-label="Velocidad del guion">
+            <Square size={13} aria-hidden="true" /> Parar
+          </Button>
+          <div
+            className="speed-row flex items-center gap-1"
+            role="group"
+            aria-label="Velocidad del guion"
+          >
             {speeds.map((speed) => (
-              <button
+              <Button
                 key={speed}
-                className={runtime?.speed === speed ? "chip active" : "chip"}
+                size="sm"
+                variant={runtime?.speed === speed ? "default" : "outline"}
+                className="h-7 px-2 text-[11px]"
                 aria-pressed={runtime?.speed === speed}
                 aria-label={`Poner el guion a velocidad ${speed}x`}
                 disabled={busy}
                 onClick={() => onSpeed(speed)}
               >
                 {speed}x
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -94,22 +111,44 @@ export default function ScenarioBar({
       </div>
 
       {world ? (
-        <div className="world-strip" aria-label="Estado del mundo simulado">
-          <span className="pill">
-            <Wind size={13} aria-hidden="true" /> Viento {world.windDirection} ·{" "}
+        <div
+          className="world-strip flex flex-wrap gap-2 items-center"
+          aria-label="Estado del mundo simulado"
+        >
+          <Badge variant="outline" className="flex items-center gap-1">
+            <Wind size={12} aria-hidden="true" /> Viento {world.windDirection} ·{" "}
             {world.windSpeedKmh} km/h
-          </span>
-          <span className={world.blockedRoads.length > 0 ? "pill zone-active" : "pill"}>
-            {world.blockedRoads.length > 0
-              ? `Cortadas: ${world.blockedRoads.join(", ")}`
-              : "Ninguna carretera cortada"}
-          </span>
-          <span className={world.smsOperational ? "pill zone-stable" : "pill zone-critical"}>
-            SMS {world.smsOperational ? "operativo" : "caído"}
-          </span>
-          <span className={world.voiceOperational ? "pill zone-stable" : "pill zone-critical"}>
-            Voz {world.voiceOperational ? "operativa" : "caída"}
-          </span>
+          </Badge>
+          <Badge
+            variant={world.blockedRoads.length > 0 ? "warning" : "outline"}
+            className="flex items-center gap-1"
+          >
+            <Zap size={12} aria-hidden="true" />{" "}
+            {world.blockedRoads.length === 0
+              ? "Carreteras despejadas"
+              : `Cortada ${world.blockedRoads.join(", ")}`}
+          </Badge>
+          <Badge
+            variant={!world.smsOperational ? "critical" : "outline"}
+            className="flex items-center gap-1"
+          >
+            <CircleDot size={12} aria-hidden="true" /> SMS{" "}
+            {world.smsOperational ? "operativo" : "caído"}
+          </Badge>
+          <Badge
+            variant={!world.voiceOperational ? "critical" : "outline"}
+            className="flex items-center gap-1"
+          >
+            <CircleDot size={12} aria-hidden="true" /> Voz{" "}
+            {world.voiceOperational ? "operativa" : "caída"}
+          </Badge>
+          {nextBeat ? (
+            <span className="next-beat text-[12px] text-[#5d5d5d]">
+              Siguiente cambio a los {clockLabel(nextBeat.atSeconds)}: {nextBeat.label}
+            </span>
+          ) : (
+            <span className="next-beat text-[12px] text-[#5d5d5d]">Guion completado</span>
+          )}
         </div>
       ) : null}
 
