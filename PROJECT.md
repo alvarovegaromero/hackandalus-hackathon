@@ -41,6 +41,42 @@ invented values. Track follow-up work in TASKS.md.
 
 ## Start here
 
+### Mandatory POC reading and change discipline
+
+Before planning, implementing or reviewing any POC work, every contributor and
+coding agent must read these documents in order:
+
+1. [POC scope and work packages](docs/poc.md): active scope, P0–P5 ownership,
+   deferred work and acceptance criteria.
+2. [POC module contracts v1](docs/poc-contracts.md): package interfaces, existing
+   input/SSE reuse, identity, retry and audit semantics.
+3. [TASKS.md](TASKS.md): current implementation status and immediate backlog.
+4. [Report input contract](docs/input-contract.md) when touching intake or adapters.
+
+These are implementation references, not optional background. The POC scope and
+v1 module contracts take precedence over the broader architecture review and
+contracts-v0 draft for the first delivery. The existing input/SSE wire contracts
+remain authoritative at their boundaries; do not silently redefine them.
+The product vision remains the long-term direction, and CHALLENGE.md defines
+submission requirements. Documentation of a contract is not proof of implementation.
+
+Before changing a boundary, identify the affected producer and consumers, update
+the canonical contract and shared fixtures in the same change, and document
+compatibility/migration behavior. Keep TASKS.md current. PRs must identify the
+P0–P5 package and confirm these documents were consulted, or explain why the
+change is outside the POC. Do not copy competing contract definitions into
+module-specific docs or use the sketch as the target architecture.
+
+### Repository orientation
+
+- The initial delivery scope is the agreed [POC](docs/poc.md): one scenario,
+  one agent, relevance filtering, deterministic priority, one HappyRobot
+  operation, persisted decision/activity history and SSE frontend delivery.
+  Use its P0–P5 work packages; broader architecture drafts do not add POC gates.
+  Exact technical contracts and external integration configuration remain pending.
+  [POC module interfaces](docs/poc-contracts.md) define the initial boundaries and
+  reuse input/SSE from `e2579a9`; executable schemas and integration remain pending.
+
 - Read this file and `CHALLENGE.md` before designing or implementing features.
 - Check `git status -s` and the current branch; preserve existing user changes.
 - Read any nested `AGENTS.md` / `CLAUDE.md` / `GEMINI.md` before editing that
@@ -90,6 +126,9 @@ invented values. Track follow-up work in TASKS.md.
 - `src/lib/integrations`: HappyRobot boundary, explicitly blocked until implemented.
 - `supabase/migrations`: initial PostgreSQL schema with deny-by-default RLS.
 - `docs/README.md`: documentation index and implementation status.
+- `docs/architecture-review.md`: current/target diagrams, confirmed boundaries and
+  proposed decisions awaiting team validation. `docs/contracts-v0.md` starts the
+  integration contract review; it is not yet a frozen or implemented API.
 - `docs/`: design and implementation guides. `docs/architecture.md` explains the
   command-center decisions, `docs/security.md` its credential and demo-recipient
   rules, `docs/happyDocumentation.md` the unverified HappyRobot contract,

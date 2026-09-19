@@ -4,6 +4,12 @@ The confirmed [report input contract](input-contract.md) defines the public
 payload, normalized triage input, synchronous receipt and asynchronous processing,
 and the migration from the existing code. Read it before implementing intake.
 
+For the initial POC, reuse input/SSE from `origin/event-pipeline-backend-frontend`
+at `e2579a9`, as specified in [POC module contracts](poc-contracts.md). That branch
+is not integrated into this checkout. Its memory receipt is not the durable
+report receipt below; its SSE envelope/cursors/reset are the existing transport
+to extend with filter, triage and agent payloads.
+
 ## Pipeline
 
 ```text
@@ -24,7 +30,7 @@ A claimed or inferred fact is not confirmed evidence.
 
 The HTTP request waits for persistence and confirmed scheduling, not model
 interpretation or triage. Batches have bounded concurrency and per-item outcomes.
-Supabase Realtime, when connected, delivers later state changes to the dashboard;
+The reused SSE transport delivers later state changes to the dashboard;
 it does not replace durable Workflow execution. No separate broker or worker is
 part of the confirmed stack.
 
@@ -67,8 +73,9 @@ implementation. A stored report alone is not proof of scheduled work.
 2. **Durable ingestion:** reconcile the target data model, migrate the workflow
    input and expose the route under `src/app/`. Preserve existing callers until
    migrated. Do not describe in-memory acceptance as durable.
-3. **Dashboard updates:** connect Supabase Realtime with operator authentication
-   and appropriate read policies. This does not change the producer payload.
+3. **Dashboard updates:** reuse input-owned SSE, add domain activity and connect
+   durable replay with operator authorization. This does not change the producer
+   payload; Supabase Realtime is not an additional POC requirement.
 
 The [data-model proposal](data-model.md) still needs reconciliation
 for unassessed reports. Its former public `incomingSignalSchema` has been

@@ -1,5 +1,39 @@
 # Project Tasks
 
+## Initial POC · active delivery scope
+
+Scope agreed on 2026-09-19: [POC plan and package acceptance](docs/poc.md).
+This section is the immediate implementation queue. The phases below retain
+historical status and broader backlog; they are not extra POC prerequisites.
+All package owners are unassigned; no implementation completion is implied.
+
+- [x] Agree POC scope and document P0–P5 ownership boundaries and dependencies.
+- [x] Define [POC package interfaces](docs/poc-contracts.md), identify existing
+      input/SSE contracts at `e2579a9`, and specify adapter/extension boundaries.
+- [ ] **P0 — Contracts/integration:** assign owners; freeze shared schemas and
+      fixtures from the POC contract; implement persistence, recovery and authorized
+      snapshot; reuse the input branch's SSE envelope, cursors and reset behavior.
+- [ ] **P0/P1 — Existing input port:** integrate input/SSE from `e2579a9` into
+      `src/`, preserve wire compatibility, adapt to `NormalizedReport` and prevent
+      legacy projection from executing alongside the new agent for the same input.
+- [ ] **P1 — Input/scenarios:** expose confirmed report intake, deduplicate
+      deliveries, persist and schedule processing; publish demo scenario fixtures.
+- [ ] **P2 — Jev filter:** relevant/irrelevant/uncertain decisions, explicit
+      unavailable state and review path; preserve all original reports.
+- [ ] **P3 — Triage:** agree factors/weights; implement the central versioned
+      deterministic priority function and auditable factor breakdown.
+- [ ] **P4 — Agent/execution:** one agent and one HappyRobot operation;
+      persist messages, plans and outcomes; respect intervention and replan.
+- [ ] **P5 — Frontend:** reports, decision/activity history, agent messages,
+      current objective/action/result and approval or pause; recover on reconnect.
+- [ ] Demonstrate the complete acceptance sequence in docs/poc.md, including
+      an approved real interaction; record local verification and tested OS.
+
+Full plan UI, subagents, current asset incident effects on priority, advanced
+resource optimization and full Twin integration are deferred beyond this POC.
+SSE is the selected POC delivery path; earlier Realtime tasks below are deferred
+alternatives, not a requirement to implement both transports.
+
 ## Phase 1 · Base Scaffolding Completed
 
 - [x] TypeScript repository with Next.js App Router and React.
@@ -121,7 +155,11 @@ are in the source document.
       the latest confirmed report intake decision.
 - [x] Add a documentation index and correct persistence/learning status.
 - [x] Set the served application metadata title to FARO.
-- [ ] Create the architecture diagram after agreeing the consolidation boundaries.
+- [x] Draft current and proposed architecture diagrams, distinguish confirmed
+      decisions from proposals, and outline parallel ownership in
+      [architecture review](docs/architecture-review.md).
+- [ ] Validate architecture decisions A1–A7 and freeze shared Zod schemas and
+      fixtures from [contracts v0](docs/contracts-v0.md) before parallel integration.
 - [ ] Complete the English translation of runtime strings and corresponding
       test expectations; previous translation work left Spanish content behind.
 
