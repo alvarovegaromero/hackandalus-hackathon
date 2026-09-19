@@ -3,7 +3,8 @@ import { crisisEventSchema, type CrisisEvent } from "./domain";
 import { ingest, ingestStatus, normalizeBatch, type PersistEvents } from "./ingest";
 import { createState, advance } from "./scenario/engine";
 import { sierraBermeja } from "./scenario/packs/sierra-bermeja";
-import { signalToEvent } from "./signals/to-event";
+import { normalizedReportSchema } from "@/lib/report";
+import { signalToEvent, signalToReport } from "./signals/to-event";
 
 const incidentId = "22222222-2222-4222-8222-222222222222";
 const event = (n: number): CrisisEvent => ({
@@ -114,5 +115,49 @@ describe("signalToEvent", () => {
     expect(signalToEvent(other, signal).id).not.toBe(signalToEvent(incidentId, signal).id);
     const ids = emitted.map(({ signal: s }) => signalToEvent(incidentId, s).id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe("signalToReport", () => {
+  const { emitted } = advance(sierraBermeja, createState(sierraBermeja, 1), 60);
+  const at = new Date("2026-09-19T10:00:00Z");
+
+  it("emits the shared triage envelope with provenance and the original signal", () => {
+    for (const { signal } of emitted) {
+      const { report, evidence } = signalToReport(incidentId, signal, at);
+      expect(normalizedReportSchema.parse(report)).toEqual(report);
+      expect(report).toMatchObject({
+        runId: incidentId,
+        source: "scenario",
+        channel: signal.channel,
+        externalRef: signal.id,
+        receivedAt: at.toISOString(),
+        location: {
+          latitude: signal.location.lat,
+          longitude: signal.location.lon,
+          description: signal.location.placeName,
+          reference: "unknown",
+        },
+        extracted: {},
+      });
+      expect(report).not.toHaveProperty("occurredAt");
+      expect(evidence).toBe(signal);
+    }
+  });
+
+  it("keeps sensor readings structured beside a readable text", () => {
+    const reading = emitted.find(({ signal }) => signal.body.type === "reading")?.signal;
+    expect(reading).toBeDefined();
+    const { report, evidence } = signalToReport(incidentId, reading!, at);
+    expect(evidence.body).toMatchObject({ type: "reading" });
+    expect(report.text).toContain(String((evidence.body as { value: unknown }).value));
+  });
+
+  it("shares the legacy event id, so retries and the migration deduplicate", () => {
+    for (const { signal } of emitted) {
+      const { report } = signalToReport(incidentId, signal);
+      expect(report.id).toBe(signalToReport(incidentId, signal, at).report.id);
+      expect(report.id).toBe(signalToEvent(incidentId, signal).id);
+    }
   });
 });
