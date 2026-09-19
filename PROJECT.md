@@ -14,9 +14,9 @@ changes while the system runs. See `CHALLENGE.md` for the full brief and
 scoring criteria.
 
 Product: FARO, an agentic command center for a wildfire in Sierra Bermeja
-(Málaga), operated by the 112 Andalucía control room. All code, comments,
-documentation, and operator interfaces are in English (proper geographic and
-agency names such as Sierra Bermeja and 112 Andalucía remain as proper nouns).
+(Málaga), operated by the 112 Andalucía control room. Everything the operator
+sees is in English; proper geographic and agency names such as Sierra Bermeja
+and 112 Andalucía remain as proper nouns.
 The product vision, scenario, demo script and build phases live in
 `HackSpain 2026 · Project Source of Truth.md` at the repository root; `thoughts/`
 holds the data model proposal, the inventory of features built on the
@@ -181,12 +181,22 @@ When extending the scaffolding:
   types, kebab-case for application filenames, and UPPER_SNAKE_CASE for environment
   variables. Preserve framework filenames such as `page.tsx`, `route.ts`, and
   `AGENTS.md`. Prettier handles formatting, not identifier naming or commit language.
-- Write all code, comments, documentation, and user interfaces in English.
-  All technical/process docs and product docs alike (`PROJECT.md`, `AGENTS.md`,
-  `CLAUDE.md`, `README.md`, `TASKS.md`, everything under `docs/`,
-  `HackSpain 2026 · Project Source of Truth.md`, and the operator UI) are in
-  English. Real-world proper nouns (e.g. Sierra Bermeja, 112 Andalucía, INFOCA)
-  are retained as proper nouns.
+- English is mandatory for all project output, even when the conversation is
+  in Spanish: code identifiers, comments, prompts, UI text, messages, tests,
+  documentation, filenames, commits and PRs. All documents including
+  `HackSpain 2026 · Project Source of Truth.md` and `PROJECT.md` are in English.
+  Real-world proper nouns (e.g. Sierra Bermeja, 112 Andalucía, INFOCA) are retained.
+- Whenever you encounter Spanish in project code or other maintained content
+  while working, translate it into English in the same change. Update affected
+  references and tests together so translations preserve behavior and contracts.
+  Keep content that is already in English in English. Preserve proper names
+  and externally defined protocol identifiers.
+- This language rule takes priority over earlier Spanish-language conventions,
+  including the operator UI and module-owner labels. A Spanish conversation
+  does not change the required language of project output.
+- Prioritize concise English wording to reduce token consumption and keep
+  shared context compact. Actual token savings depend on the tokenizer; never
+  sacrifice correctness or necessary detail for brevity.
 - This is a hackathon project: prioritize a working end-to-end demo over
   polish. Don't build abstractions for hypothetical future requirements.
 - The challenge requires the system to actually _act_ (calls, messages,
@@ -275,7 +285,7 @@ for setup, supported workflows and verified limits.
 
 ### Shared stack skills
 
-The repository vendors four skills under `.agents/skills/`. Use the relevant
+The repository vendors seven skills under `.agents/skills/`. Use the relevant
 skill by reading its `SKILL.md` before the corresponding task; load supporting
 references only as needed. These explicit paths also work with agents that do
 not automatically discover this directory:
@@ -288,12 +298,22 @@ not automatically discover this directory:
   [.agents/skills/web-design-guidelines/SKILL.md](.agents/skills/web-design-guidelines/SKILL.md).
 - Visual design and dashboard presentation:
   [.agents/skills/frontend-design/SKILL.md](.agents/skills/frontend-design/SKILL.md).
+- TypeSafe/Jev question design and integration:
+  [.agents/skills/typesafe-ai/SKILL.md](.agents/skills/typesafe-ai/SKILL.md).
+- AI SDK agents, tools, structured output and streaming:
+  [.agents/skills/ai-sdk/SKILL.md](.agents/skills/ai-sdk/SKILL.md).
+- Durable execution, retries and external-event waits:
+  [.agents/skills/workflow/SKILL.md](.agents/skills/workflow/SKILL.md).
 
 Skills supplement this file; project stack, permissions and challenge requirements
 take precedence. Apply examples to installed dependency versions; do not add
-dependencies just because an example uses them. These skills do not cover the
-AI SDK, Workflow, Zod or HappyRobot contracts: consult their applicable official
-documentation and the project's integration guides when working on those parts.
+dependencies just because an example uses them. Use the installed SDK version's
+documentation before applying examples. The Workflow snapshot includes v5 APIs
+while this project uses v4; do not copy v5-only APIs or upgrade dependencies merely
+because a skill recommends it. Model/provider selection remains an explicit
+project decision. Adding TypeSafe guidance does not configure Jev or authorize
+live calls. Zod and HappyRobot contracts still require their official documentation
+and the project's integration guides.
 
 Cloning the repository includes the skills; no global installation or symlinks
 are required. See [docs/agent-skills.md](docs/agent-skills.md) for onboarding,

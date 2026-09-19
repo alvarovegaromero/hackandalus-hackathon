@@ -1,8 +1,8 @@
 # Shared development skills
 
-The repository includes four upstream skill snapshots in `.agents/skills/`.
-They help coding agents work on our React/Next.js frontend and Supabase/Postgres
-database. They are development guidance, not application dependencies.
+The repository includes seven upstream skill snapshots in `.agents/skills/`.
+They cover our frontend, database, AI SDK, durable workflows and TypeSafe/Jev.
+They are development guidance, not application dependencies.
 
 ## Using the skills
 
@@ -47,10 +47,42 @@ before each review. That review needs network access, and its checklist can
 change independently of our pinned skill. Report when it cannot be fetched.
 The snapshots do not add browser automation, database access or deployment tools.
 
-AI SDK, Workflow, Zod and HappyRobot are not covered by these four skills. Use
-official documentation matching the installed versions and our integration
-contracts for those tasks. [Graft](code-index.md) is installed with development
-dependencies and provides a local code index alongside these skills.
+Additional snapshots:
+
+| Local skill   | Upstream source                                                                                                     | Purpose                                             |
+| ------------- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `typesafe-ai` | [TypeSafe](https://github.com/typesafe-ai/skills/tree/65a39f393687675ce170e6094757de20370365b9/skills/typesafe-ai)  | Jev typed judgments, question design and confidence |
+| `ai-sdk`      | [Vercel AI](https://github.com/vercel/ai/tree/73ec7015edd4f04ca9144ce93a8a037a731e5db8/skills/use-ai-sdk)           | Agents, tools, structured output and streaming      |
+| `workflow`    | [Vercel Workflow](https://github.com/vercel/workflow/tree/7840c15617c801e0df8f0a85145f43de25f96cc4/skills/workflow) | Durable execution, retries, hooks and observability |
+
+TypeSafe's skill license and the Vercel AI and Workflow repository licenses are
+included with their snapshots. TypeSafe reads live documentation when used;
+network access is needed for current API guidance. Adding its skill does not
+select Jev as a production model or install its SDK.
+
+Use the installed SDK documentation before copying examples. Workflow's snapshot
+includes v5 examples, but this project uses v4. Do not adopt v5-only APIs, upgrade
+packages or select a model just because an upstream example recommends it.
+Zod and HappyRobot still require their official docs and our integration contracts.
+[Graft](code-index.md) provides the local code index alongside these skills.
+
+## Optional MCP servers
+
+These are recommendations, not installed or automatically enabled connections.
+Each developer configures their own client and authentication. No credentials or
+personal editor settings belong in Git. Use the upstream client-specific setup
+instructions; the project does not need MCP to build or run its local checks.
+
+| Priority                       | Server                                                    | Project use                                                                                                                         |
+| ------------------------------ | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| First                          | [Context7](https://github.com/upstash/context7)           | Retrieve library documentation; prefer bundled, version-matched SDK docs when available.                                            |
+| For browser checks             | [Playwright](https://github.com/microsoft/playwright-mcp) | Exercise the local operator panel, inspect page state and capture regressions. CLI plus skills is also an option for coding agents. |
+| When the database is connected | [Supabase](https://supabase.com/docs/guides/ai-tools/mcp) | Inspect the development project, schema and logs. Start project-scoped and read-only.                                               |
+
+Use demo data for browser checks and a development project for Supabase. Existing
+PROJECT.md permissions still apply to writes, migrations and live communications.
+GitHub MCP is lower priority here: `gh` already covers our repository workflow,
+and PR creation must continue through `npm run pr:create` with local validation.
 
 ## Updating
 

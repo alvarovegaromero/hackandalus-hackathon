@@ -29,7 +29,7 @@ and [thoughts/open-questions.md](thoughts/open-questions.md).
 Development conventions and permissions are in [PROJECT.md](PROJECT.md).
 `AGENTS.md` and `CLAUDE.md` point there to avoid duplicate rules. To join
 the team, follow [CONTRIBUTING.md](CONTRIBUTING.md). The repository
-includes [shared skills](docs/agent-skills.md) for React/Next.js,
+includes [shared skills](docs/agent-skills.md) for TypeSafe/Jev, AI SDK, Workflow, React/Next.js,
 Postgres/Supabase, accessibility, and visual design. To index code after
 `npm ci`, run `npm run index:build` and view the map with
 `npm run index:map`; its use for code navigation is required

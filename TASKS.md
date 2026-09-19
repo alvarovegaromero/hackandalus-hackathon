@@ -48,9 +48,12 @@ communications have not been tested.
 
 ## Shared Development Skills
 
+- [x] Add the official TypeSafe/Jev, AI SDK, and Workflow skills with pinned
+      revisions, file hashes, and shared usage guidance.
+- [x] Document optional Context7, Playwright, and Supabase MCP recommendations.
 - [x] Pin Graft as development dependency and document local index and queries.
 - [x] Require Graft in agent instructions and PR checklist; generate and verify index in commit and push hooks.
-- [x] Include four skills for React/Next.js, Postgres/Supabase, UI review, and visual design.
+- [x] Include skills for React/Next.js, Postgres/Supabase, UI review, and visual design.
 - [x] Record upstream revisions, references, licenses, and usage guide for the team.
 - [x] Link skills from PROJECT.md for agents without auto-discovery.
 
