@@ -1,177 +1,163 @@
 # HappyRobot Documentation Notes
 
-> Status: the requested page, `https://docs.happyrobot.ai/introduction`, is access-restricted and requires an access code. This document summarizes the public HappyRobot product documentation available on 2026-09-18 and translates it into implementation guidance for this hackathon project. Validate endpoint names and payloads against the private docs before enabling live actions.
+> Status (2026-09-19): `https://docs.happyrobot.ai` (introduction, API reference,
+> `integrations/webhook`, `developer-tools/mcp`) is gated behind an access code.
+> The public API contract below was recovered from the public npm package
+> `@happyrobot-ai/sdk` 0.1.50 (MIT), the public product pages and the
+> step-by-step tutorial on happyrobot.ai. Treat it as verified for URL, auth,
+> trigger and run endpoints; treat payload field names inside a workflow as
+> ours to define. **The adapter in `src/lib/happyrobot.ts` still ships defaults
+> invented before this contract was known; see "Gap between code and contract"
+> before enabling live mode.** Ask the HappyRobot team at the event for the
+> docs access code to confirm concurrency and cost limits.
 
 ## Executive Summary
 
-HappyRobot is an agentic operations platform for deploying AI workers across voice, SMS, email, WhatsApp, web chat, Slack, Teams, and other operational channels. The platform is built around agents that can reason during a workflow, call tools, read and write operational context, trigger external systems, and surface outcomes through human-facing interfaces.
+HappyRobot is an agentic operations platform for AI workers across voice,
+SMS, email, WhatsApp, web chat, Slack and Teams. The unit of work is a
+**workflow**: a versioned graph of nodes (trigger, agent, action, condition,
+tool) published per environment (`development`, `staging`, `production`). A
+workflow is executed as a **run**; each conversation inside a run is a
+**session** with messages, recordings and extracted variables.
 
-For this project, the useful framing is:
+For this project:
 
-- Agents are the execution layer: they communicate, decide when to call tools, escalate, and continue workflows across channels.
-- Context is the shared data layer: interactions and external data become structured records that can drive later decisions, dashboards, audits, and reporting.
-- Integrations are scoped actions: agents can read records, write outcomes, create tickets, send messages, query systems, and trigger follow-ups.
-- Interfaces are the supervision layer: humans can see what agents did, what changed, and where intervention is needed.
-- Governance is the quality layer: HappyRobot emphasizes benchmarks, pre-deployment tests, production audits, and continuous improvement.
+- This app decides (priorities, resources, approval gates, idempotency).
+- HappyRobot executes the outward communication (call, SMS, email) and
+  extracts structured answers.
+- The workflow's final node posts those answers back to our webhook, which
+  turns them into signals and triggers a replan.
 
-## Platform Concepts
+## Verified public API contract
 
-### Agents
+Source: `core/http.js`, `resources/*.js`, `helpers/trigger-and-wait.js` and
+`README.md` of `@happyrobot-ai/sdk` 0.1.50.
 
-HappyRobot agents are autonomous AI workers that handle conversations, follow procedures, use shared context, and invoke tools. Public documentation describes agents as configurable through:
+| Item                 | Value                                                                                  |
+| -------------------- | -------------------------------------------------------------------------------------- |
+| Base URL (US)        | `https://platform.happyrobot.ai/api/v2`                                                |
+| Base URL (EU)        | `https://platform.eu.happyrobot.ai/api/v2`                                             |
+| Authentication       | `Authorization: Bearer <key>`; keys look like `sk_live_...` or `sk_test_...`           |
+| API key origin       | Platform UI: Settings > Profile > Generate API Key (keys are per environment)          |
+| Trigger a run        | `POST /workflows/{workflowIdOrSlug}/runs`                                              |
+| Trigger body         | `{ "payload": { ...workflow variables... }, "environment": "production" }`             |
+| Trigger response     | `{ "run_id": "..." }`                                                                  |
+| Run status           | `GET /runs/{run_id}`; terminal: `completed`, `succeeded`, `failed`, `canceled`, `skipped` |
+| Node executions      | `GET /runs/{run_id}/nodes?node_persistent_id=...`, then `GET /runs/{run_id}/outputs/{output_id}` |
+| Sessions             | `GET /runs/{run_id}/sessions`, `GET /sessions/{id}`, `GET /sessions/{id}/messages`     |
+| Live transcript      | SSE `GET /sessions/{id}/stream` (events `connected`, `message`, `session_ended`)       |
+| Cancel               | `POST /runs/{run_id}/cancel`; `POST /workflows/{id}/cancel-runs` (also unpublishes)    |
+| Contacts             | `GET /contacts/resolve?phone_number=...`, `GET /contacts/{id}/interactions`            |
+| Pagination           | `page`, `page_size`, `sort` query params; response `{ data, pagination }`              |
+| SDK retry policy     | Retries 429/5xx with exponential backoff (default 2); 30 s timeout                     |
 
-- Agent definition: how the agent thinks, speaks, and acts.
-- Persona and boundaries: tone, communication rules, sensitive-topic handling, and "always/never" instructions.
-- Operating procedures: step-by-step workflows for specific situations.
-- Channel deployment: one agent logic layer can be deployed across voice, SMS, email, WhatsApp, web chat, Teams, and Slack.
-- Session continuity: context can persist across sessions and authenticated data can be injected at session start.
-- Human handoff: escalation can route into channels such as Slack or Microsoft Teams.
+Environments are separate publish targets with separate keys and separate
+webhook URLs. `file` uploads use multipart on the same trigger endpoint.
 
-For the crisis demo, an agent should not be a generic chatbot. It should have a crisis-specific procedure: classify incoming information, update the situation, decide whether priority changed, select a concrete action, and ask for human approval when the action is high-risk.
+### Webhook trigger (no API key path)
 
-### Agentic Tools
+Every workflow with a Webhook trigger node also exposes a direct URL per
+environment, shown in the node's Setup > Test tab. Public examples use the
+pattern `https://workflows.platform.happyrobot.ai/hooks/<id>`. Any method
+works (POST recommended), the JSON body defines the variables available to
+downstream nodes, and "Enhanced Security" makes the endpoint require an
+`x-api-key` header. This is equivalent to the REST trigger above for our
+purposes; the REST path is preferred because it returns a `run_id`.
 
-Agentic tools are actions an agent can invoke mid-workflow instead of handing work to a human. Public docs list examples such as:
+### Callbacks to this app
 
-- Looking up information.
-- Reading documents or pages.
-- Writing to a system.
-- Sending messages.
-- OCR on images, PDFs, or scanned documents.
-- Browser agents for legacy systems without APIs.
-- Retrieval from SOPs, policies, contracts, documentation, or training material.
-- Image and document understanding.
-- Multi-channel inbound and outbound messaging.
+There is no platform-level "callback URL" setting. Results reach us through a
+**Webhook action node inside the workflow** that does `POST` to our public
+URL with whatever variables we map (for example the output of an AI Extract
+node). Consequences:
 
-For this repo, the current action queue maps cleanly to this model. Each local `Action` should correspond to one HappyRobot action or workflow invocation, with an idempotency key derived from the local action id so retries do not duplicate calls or messages.
+- The callback body shape is defined by us when building the workflow. Use the
+  shape in "Inbound callback shape" below so
+  `src/app/api/webhooks/happyrobot/route.ts` accepts it unchanged.
+- Add the header `x-happyrobot-secret: <HAPPYROBOT_WEBHOOK_SECRET>` in that node.
+- Local development needs a public tunnel for the platform to reach the app.
+- As a fallback when no callback arrives, poll `GET /runs/{run_id}` and read
+  the extract node output via `/runs/{run_id}/nodes` + `/outputs/{output_id}`.
 
-### Workflow Logic
+## Developer tooling
 
-HappyRobot supports deterministic workflow logic when predictable execution matters. Public docs mention branching paths, conditional routing, retry logic, fallback behavior, custom code, parallel tasks, list iteration, and trigger types such as inbound calls, webhooks, scheduled runs, file uploads, or inbound messages.
+- `@happyrobot-ai/sdk` (npm, MIT, Node >= 18): `new HappyRobotClient({ apiKey, cluster })`,
+  `client.workflows.triggerRun(id, { payload, environment })`, `client.runs.get(runId)`,
+  `client.sessions.getMessages(id)`. Helper `triggerAndWait` from
+  `@happyrobot-ai/sdk/helpers` polls until a terminal status and returns run
+  plus sessions; `triggerAndWaitForNodeOutput` returns one node's output.
+  Browser clients (`/voice`, `/chat`) need a scoped token created server-side.
+- MCP for building workflows from the IDE (OAuth, no key in the repo):
+  `claude mcp add --transport http happyrobot-workflows https://mcp.platform.happyrobot.ai/workflows/mcp`.
+  The stdio package `@happyrobot-ai/mcp` is deprecated in favour of this URL.
+  Tools include `create_workflow`, `update_workflow_nodes`, `manage_versions`,
+  `trigger_run`, `monitor_runs`, `test_workflow`.
+- `@happyrobot-ai/workflow-sdk` (typed workflows as code) and the Python SDK
+  `happyrobot` exist; not evaluated.
+- Builder site: `https://builder.happyrobot.ai`; platform UI: `https://platform.happyrobot.ai`.
 
-For crisis management, deterministic workflow boundaries are important:
+## Platform concepts (condensed)
 
-- Use AI for interpretation, summarization, classification, and natural communication.
-- Use deterministic code for priority scoring, resource constraints, idempotency, approval gates, and retry limits.
-- Use explicit fallback paths when an integration fails or a channel is unavailable.
+- **Agents**: prompt-driven workers with persona, procedures, tools and human
+  handoff; one definition deploys to voice, SMS, email, WhatsApp, chat, Teams, Slack.
+- **Nodes**: Action (integration events), Prompt (AI conversation), Condition
+  (branching), Tool (mid-conversation functions), plus AI Extract / Classify and
+  Webhook. Variables are referenced as `{{index.field}}` or `@name` in the UI.
+- **Runs and sessions**: the Runs tab shows every execution with status,
+  version and environment, and per-run transcripts and error logs.
+- **Context**: structured records built from interactions (contacts,
+  interactions, AI memories), readable through the API and MCP.
+- **Integrations**: 200+ connectors (Slack, Teams, Twilio SMS, WhatsApp,
+  Google Sheets, ticketing, databases) exposed as workflow actions.
 
-### Context
+## Mapping to this repository
 
-Context is described as the layer where agent interactions and external-system data become structured operational data. Public documentation highlights extracting, classifying, mapping interactions, contact intelligence, pre-loading data at session start, and making context available to downstream workflows and reporting.
+### Responsibilities
 
-For this project, Context should represent:
+Local app (`src/`): ingest events (`POST /api/events`), keep state,
+score priorities, propose actions, require human approval, track status and
+failures, show everything to the operator.
 
-- Incidents and zones.
-- Events and evidence.
-- Available resources.
-- Action queue and execution status.
-- Contact profiles and escalation targets.
-- Plan versions and why they changed.
-- Historical run outcomes for the challenge bonus around learning from past interactions.
+HappyRobot: call or message demo contacts, ask for confirmations, extract
+structured answers, escalate to coordinators, and post results back.
 
-### Integrations
+### Integration flow
 
-HappyRobot publicly describes 200+ native integrations across CRMs, ERPs, ticketing platforms, databases, communication tools, maps/logistics APIs, and domain-specific APIs. Integrations are exposed to agents as scoped workflow actions such as reading a record, writing an outcome, creating a case, escalating to a queue, or triggering a follow-up.
+1. Event enters via UI or `POST /api/events`; state and priorities update.
+2. The app proposes actions; the operator approves a high-impact one.
+3. `src/lib/happyrobot.ts` triggers the workflow run (idempotency key per attempt).
+4. HappyRobot runs the channel-specific agent.
+5. The workflow's Webhook node posts status and `newInformation` to
+   `POST /api/webhooks/happyrobot`.
+6. The app records the result, ingests new signals and replans.
 
-Relevant integration categories for the crisis demo:
-
-- Communication: SMS, email, Slack, Teams, voice calls.
-- Ticketing: create or update emergency tasks, cases, or field assignments.
-- Databases: read/write crisis state, contacts, resources, and action results.
-- Maps/logistics: verify locations, routes, blocked roads, and ETA changes.
-- Webhooks: connect this Next.js app to HappyRobot without requiring a pre-built connector.
-
-The public docs also mention that webhook nodes can connect HTTP endpoints and that browser agents can handle systems without APIs. For the hackathon, webhooks are likely the fastest integration path.
-
-### Interfaces
-
-Interfaces are HappyRobot's operational UI layer. Public documentation describes purpose-built dashboards/apps that sit on Context, show real-time and historical agent data, trigger workflow actions, log tickets, manage escalations, and provide transparency into what each AI worker is doing.
-
-Our current Crisis Command Center is aligned with this requirement. It should continue to show:
-
-- Situation summary.
-- New events.
-- Priority reasoning.
-- Plan version changes.
-- Pending, approved, failed, and completed actions.
-- Human approval/intervention controls.
-- Integration failures and retries.
-
-### Developer Tools
-
-HappyRobot public docs describe the platform as programmable through:
-
-- REST API for workflows, agents, integrations, contacts, usage, and other resources.
-- TypeScript SDK for embedding calls, transcripts, phone number management, and related capabilities.
-- MCP server for workflow creation, integration management, evals, and agent configuration through MCP-compatible tooling.
-- Web SDK for browser-based voice over WebRTC.
-- Embedded chat through a script tag.
-- Workflows as code.
-- Context REST API and MCP access for reading/writing the Context layer.
-
-The exact API surface is not available without the restricted docs, so the current local integration in `src/lib/happyrobot.ts` should be treated as a provisional adapter until private docs confirm the real endpoint and payload.
-
-## Recommended Architecture For This Repo
-
-### Local App Responsibilities
-
-Keep these responsibilities in the Next.js app:
-
-- Ingest incoming events through `POST /api/events`.
-- Maintain local crisis state for the demo.
-- Score priorities deterministically.
-- Generate candidate actions.
-- Require human approval before live external execution.
-- Track action status and failure reasons.
-- Expose a clear UI for judges.
-
-### HappyRobot Responsibilities
-
-Use HappyRobot for live external interaction and multi-channel execution:
-
-- Call or message demo contacts.
-- Ask for confirmations or field updates.
-- Send summaries to human coordinators.
-- Create or update tickets in an external system if available.
-- Receive inbound replies and push them back into this app as events.
-
-### Integration Flow
-
-Recommended webhook-first flow:
-
-1. Crisis event enters this app through UI demo controls or `POST /api/events`.
-2. The app updates situation state and recomputes priorities.
-3. The app creates one or more proposed actions.
-4. A human approves a high-impact action in the UI.
-5. `src/lib/happyrobot.ts` sends the approved action to HappyRobot.
-6. HappyRobot executes the channel-specific workflow.
-7. HappyRobot posts status callbacks or newly gathered information back to this app.
-8. The app records the result and replans if the new data changes priorities.
-
-### Suggested Payload Shape
-
-Use this as our internal contract until official docs confirm the real shape:
+### Outbound trigger payload (what we send as `payload`)
 
 ```json
 {
-  "channel": "voice | sms | email | slack | teams | webhook",
+  "channel": "voice | sms | email",
   "target": "recipient-or-system-id",
+  "destination": "+34600000000 | name@example.org",
   "objective": "Short task the HappyRobot agent must complete",
+  "briefing": { "headline": "...", "detail": "...", "askFor": "..." },
   "metadata": {
     "localActionId": "act_123",
     "zoneId": "north",
     "reason": "Evacuation priority increased after wind shift",
-    "planVersion": 4,
-    "idempotencyKey": "act_123"
+    "idempotencyKey": "act_123:1",
+    "callbackUrl": "https://<public-host>/api/webhooks/happyrobot"
   }
 }
 ```
 
-Inbound callback shape for this app:
+These keys become the workflow's trigger variables; the agent prompt and the
+Webhook node reference them by name.
+
+### Inbound callback shape (what the workflow posts to us)
 
 ```json
 {
-  "externalActionId": "happyrobot_action_id",
+  "externalActionId": "<run_id>",
   "localActionId": "act_123",
   "status": "completed | failed | needs_human | in_progress",
   "summary": "What happened",
@@ -179,46 +165,100 @@ Inbound callback shape for this app:
     {
       "type": "road_blocked",
       "zoneId": "north",
-      "description": "A-92 is blocked near exit 241"
+      "description": "MA-8301 blocked at km 12",
+      "severity": "high",
+      "confidence": "high",
+      "confirmed": true
     }
   ]
 }
 ```
 
+Header: `x-happyrobot-secret`. Optional dedup header: `x-happyrobot-delivery-id`.
+Accepted `status` values are mapped in the route (`completed`, `success`,
+`in_progress`, `needs_human`, `failed`, `cancelled`, and aliases).
+
+## Gap between code and contract
+
+`src/lib/happyrobot.ts` and `.env.example` predate this information. Everything is
+environment-configurable, but the following defaults and checks are wrong for
+the real API and must change before live mode works:
+
+| Setting / check                          | Current default                     | Real contract                                     |
+| ---------------------------------------- | ----------------------------------- | ------------------------------------------------- |
+| `HAPPYROBOT_BASE_URL`                    | `https://api.happyrobot.ai`         | `https://platform.happyrobot.ai/api/v2`           |
+| `HAPPYROBOT_ACTION_PATH`                 | `/agents/{agentId}/actions`         | `/workflows/{workflowId}/runs`                    |
+| `HAPPYROBOT_PAYLOAD_SHAPE=trigger` body  | `{ "input": ..., "idempotencyKey" }` | `{ "payload": ..., "environment": ... }`          |
+| `HAPPYROBOT_RESPONSE_ID_PATH`            | `id,actionId,action_id,data.id`     | `run_id`                                          |
+| `isHappyRobotConfigured()`               | requires `HAPPYROBOT_AGENT_ID`      | only workflow id and API key are needed           |
+| Status after live dispatch               | stays `running` until callback      | add `GET /runs/{run_id}` polling as fallback      |
+| `HAPPYROBOT_IDEMPOTENCY_HEADER`          | sent as `idempotency-key`           | not documented publicly; harmless, keep in payload too |
+
+Tracked in `TASKS.md` ("Verify live HappyRobot contract"). Do not resolve
+credentials or workflow ids with invented values.
+
+## Mocking without credentials
+
+Three levels, cheapest first:
+
+1. **Built-in mock mode** (`ACTION_EXECUTION_MODE=mock`, the default). Nothing
+   leaves the process; actions succeed immediately with `mock-simulado-*` ids
+   and the UI labels them as simulated. Limitation: no field answer ever
+   arrives, so replanning from a callback is not exercised.
+2. **Replay the callback by hand** against the real webhook route. This does
+   exercise ingestion, dedup and replanning:
+
+   ```bash
+   curl -X POST http://localhost:3000/api/webhooks/happyrobot \
+     -H "content-type: application/json" \
+     -H "x-happyrobot-secret: $HAPPYROBOT_WEBHOOK_SECRET" \
+     -d '{"localActionId":"<action id>","status":"completed","summary":"Sector chief confirms dense smoke","newInformation":[{"type":"road_blocked","zoneId":"<zoneId>","description":"MA-8301 blocked at km 12","severity":"high","confirmed":true}]}'
+   ```
+
+3. **Fake HappyRobot server**: a small local server answering
+   `POST /workflows/:id/runs` with `{ "run_id": "fake-..." }` and posting the
+   callback above to our webhook a few seconds later. Point
+   `HAPPYROBOT_BASE_URL` at it and mark one fictitious contact `demoSafe: true`
+   to rehearse `ACTION_EXECUTION_MODE=happyrobot` end to end at zero cost.
+
+Tests in `tests/integration.test.ts` stub `fetch` and must never reach the network.
+
 ## Implementation Checklist
 
-- Confirm private-doc endpoint names for agent actions, workflow triggers, callbacks, authentication, and idempotency.
-- Keep `ACTION_EXECUTION_MODE=mock` by default.
-- Enable `ACTION_EXECUTION_MODE=happyrobot` only with approved demo recipients.
-- Store credentials in `.env.local`, never in git.
-- Require `HAPPYROBOT_WEBHOOK_SECRET` on callbacks and validate it.
-- Add idempotency for every external action.
-- Log the external action id returned by HappyRobot.
-- Treat external failures as visible state, not silent success.
-- Show whether each action ran in `mock` or `happyrobot` mode.
-- Avoid sending live messages/calls without explicit approval for the exact demo action.
+- Build the workflow (UI or MCP): Webhook trigger with the outbound payload
+  schema, voice/SMS agent, AI Extract with the `newInformation` fields, Webhook
+  node posting to our callback with the shared secret.
+- Align adapter defaults with the contract table above; relax the agent-id check.
+- Keep `ACTION_EXECUTION_MODE=mock` by default; enable `happyrobot` only with
+  approved `demoSafe` recipients and explicit approval for each live action.
+- Store credentials in `.env.local` only (Next.js does not read `env.local`).
+- Require and validate `HAPPYROBOT_WEBHOOK_SECRET` on callbacks.
+- Log the `run_id` as `externalActionId`; show `mock` vs `happyrobot` per action.
+- Treat external failures as visible state, never silent success.
+- Confirm concurrency and cost limits of the hackathon account with the HappyRobot team.
 
 ## Demo Opportunities
 
-Good HappyRobot-backed demo moments:
-
-- Voice call to a field coordinator asking whether an evacuation route is still open.
+- Voice call to a sector chief asking whether an evacuation route is still open.
 - SMS to a volunteer team with a concise assignment and acknowledgement request.
 - Email summary to an operations lead after the plan changes.
-- Slack/Teams escalation when an integration fails or a hospital capacity event arrives.
-- Inbound reply from a contact that becomes a new event and forces reprioritization.
+- Slack/Teams escalation when an integration fails or a capacity event arrives.
+- Inbound reply that becomes a new event and forces reprioritisation.
 
-The strongest judging story is not "we sent a message." It is: the situation changed, the system noticed, it reprioritized, it executed a concrete external action through HappyRobot, then it incorporated the response and updated the plan under human supervision.
+The strongest story is not "we sent a message". It is: the situation changed,
+the system noticed, it reprioritised, it acted through HappyRobot, then it
+incorporated the answer and updated the plan under human supervision.
 
 ## Source Notes
 
-Public pages reviewed:
+Reviewed on 2026-09-19:
 
-- `https://docs.happyrobot.ai/introduction`: access-restricted login page.
-- `https://www.happyrobot.ai/product/platform-overview`
-- `https://www.happyrobot.ai/product/agents/agents-overview`
-- `https://www.happyrobot.ai/product/agents/agentic-tools`
-- `https://www.happyrobot.ai/product/agents/integrations`
-- `https://www.happyrobot.ai/product/interfaces`
-- `https://www.happyrobot.ai/product/developer-tools`
-
+- `https://docs.happyrobot.ai/introduction`, `/api-reference/introduction`,
+  `/integrations/webhook`, `/overview/workflows`,
+  `/api-reference/dial/create-outbound-call`, `/developer-tools/mcp`: all
+  return an access-code gate.
+- `https://www.happyrobot.ai/product/developer-tools`, `https://builder.happyrobot.ai`.
+- `https://www.happyrobot.ai/hub/how-to-use-happyrobot-a-step-by-step-tutorial`.
+- npm: `@happyrobot-ai/sdk` 0.1.50 (README, `core/http.js`, `helpers/*.js`),
+  `@happyrobot-ai/mcp` 0.1.25 (README), `@happyrobot-ai/workflow-sdk`.
+- `https://github.com/happyrobot-ai` (Python SDK, web SDK examples).
