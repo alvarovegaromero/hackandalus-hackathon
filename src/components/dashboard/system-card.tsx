@@ -4,16 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Skeleton from "@/components/Skeleton";
 import { LoaderCircle, TriangleAlert } from "lucide-react";
 import { NEEDS_ATTENTION, type Mission } from "@/components/MissionsPanel";
-import type { CoordinatorState } from "@/lib/contracts/coordinator";
 import Kpi from "./kpi";
 
 export default function SystemCard({
-  state,
   missions,
   loading,
   unavailable,
 }: {
-  state: CoordinatorState | null;
   missions: Mission[];
   loading: boolean;
   unavailable: boolean;
@@ -27,9 +24,6 @@ export default function SystemCard({
     <Card aria-labelledby="system-title" className={active ? "glass-running" : undefined}>
       <CardHeader>
         <CardTitle id="system-title">Agent missions</CardTitle>
-        {state?.plan && (
-          <span className="text-meta text-muted tabular-nums">Plan rev. {state.revision}</span>
-        )}
       </CardHeader>
       <CardContent className="flex items-end gap-5">
         {loading ? (

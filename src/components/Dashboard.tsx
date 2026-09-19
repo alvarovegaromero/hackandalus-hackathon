@@ -184,7 +184,6 @@ export default function Dashboard({
           onSelect={selectAmbulance}
         />
         <SystemCard
-          state={coordinator.state}
           missions={missions.missions}
           loading={coordinatorLoading}
           unavailable={missions.error || !!coordinator.error}
