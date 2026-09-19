@@ -754,7 +754,10 @@ export default function EmergencyDrills() {
                           </small>
                         </button>
                         <p id={`action-help-${action}`}>
-                          {unavailable ?? ACTIONS[action].description}
+                          {unavailable ??
+                            (action === "assess" && displayed.config.hazard === "wildfire"
+                              ? "Inspect this sector. Wildfire evacuation can begin without a building assessment."
+                              : ACTIONS[action].description)}
                         </p>
                       </div>
                     );

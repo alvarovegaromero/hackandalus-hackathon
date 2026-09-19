@@ -504,7 +504,9 @@ export function createDrillScene(
         entry.kind !== "decision" ||
         !entry.sectorId ||
         entry.action === "evacuate" ||
-        entry.minute < run.phase * 5
+        (run.modelVersion === 3
+          ? !run.reservations?.some((reservation) => reservation.decisionId === entry.id)
+          : entry.minute < run.phase * 5)
       )
         continue;
       const site = districts.find((s) => s.id === entry.sectorId)!;

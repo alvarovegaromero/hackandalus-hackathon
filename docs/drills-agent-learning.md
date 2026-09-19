@@ -99,8 +99,10 @@ This is a modeled consequence, not a UI error. Pending missions/reservations at
 T+20 remain pending in the debrief; they are not silently completed or released.
 Exposure still excludes people in transit, so dispatching people who never arrive
 can make that metric look better. Always inspect coverage and unfinished missions
-together with exposure. Existing team sprites are illustrative deployment markers;
-the availability counter and trace are the resource ledger.
+together with exposure. Team sprites are illustrative deployment markers: model 3
+service markers follow active reservations and disappear when service finishes;
+mission markers follow unfinished evacuations. Each marker represents a deployment,
+not one team. The availability counter and trace are the resource ledger.
 
 The renderer currently expresses hazards using phase and T+5/T+10/T+15. Arbitrary
 event times, route topology and physically modeled wind direction require a

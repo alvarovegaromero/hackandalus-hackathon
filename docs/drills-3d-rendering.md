@@ -29,7 +29,9 @@ that seed. Neighbourhood anchors and roads stay fixed so operators can learn the
 layout. Hazard, population and team changes do not regenerate the geography.
 The same locality therefore supports comparisons across hazards and decisions.
 
-Every hazard position comes from `drillMinute(run)`, severity and the seed.
+Every hazard position comes from `drillMinute(run)`, severity and the locality seed.
+The separate ad hoc scenario seed controls engine risk and travel delay; it does
+not regenerate the town or change the illustrative hazard geometry.
 There is no random sampling or elapsed-wall-time hazard integration per frame.
 Backward replay recomputes earlier damage, vegetation and fire directly.
 Automatic camera orbit is a user-controlled viewing aid, outside replay state.
@@ -78,8 +80,9 @@ remain stationary. Formation offsets are also continuous across the diversion.
 Completed groups remain in the assembly area, with green markers.
 
 Vehicle orientation follows the path tangent. Convoys accompany active missions;
-assessment/protection deployments appear at their destination during their
-allocation phase. These are deployment symbols, not an inventory or a separate
+assessment/protection deployments appear at their destination while their model 3
+service reservation is active. Models 1 and 2 retain phase-based markers.
+These are deployment symbols, not an inventory or a separate
 resource scheduler. Model-1 archives retain their engine's instant-arrival
 semantics and are drawn directly at assembly.
 

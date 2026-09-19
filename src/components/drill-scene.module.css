@@ -2,7 +2,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   height: auto;
-  background: #193440;
+  background: var(--ink);
 }
 
 .stage {
@@ -20,6 +20,7 @@
   grid-row: 1;
   align-self: center;
   pointer-events: auto;
+  max-width: none;
 }
 
 .cinema :global(.drill-cinema-hud) strong {
@@ -45,12 +46,12 @@
 }
 
 .cinema :global(.drill-camera-controls) button {
-  min-height: 38px;
+  min-height: 44px;
 }
 
 .cinema :global(.drill-camera-controls) button:focus-visible {
-  outline: 2px solid #cceff6;
-  outline-offset: 2px;
+  outline: 3px solid var(--drills-focus);
+  outline-offset: 3px;
 }
 
 .cinema :global(.drill-cinema-legend) {

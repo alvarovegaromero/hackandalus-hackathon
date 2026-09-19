@@ -725,6 +725,21 @@
   color: var(--ink);
 }
 
+.drills-lesson-grid label {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  font-size: 13px;
+}
+
+.drills-lesson-grid select {
+  width: 100%;
+  min-width: 0;
+  background: var(--panel);
+  border: 1px solid var(--drills-control-line);
+  padding: 8px;
+}
+
 .drills-comparison,
 .drills-facilitator {
   font-size: 13px;

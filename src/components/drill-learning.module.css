@@ -1,12 +1,18 @@
 .configuration {
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  padding: 12px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 14px;
+  background: var(--bg);
 }
 
 .configuration summary {
   cursor: pointer;
-  font-weight: 600;
+  font-family: var(--drills-mono);
+  font-weight: 500;
+  line-height: 1.6;
+  min-height: 44px;
+  align-content: center;
 }
 
 .configuration label {
@@ -18,17 +24,19 @@
 .configuration p,
 .exports p {
   margin: 12px 0;
-  font-size: 0.82rem;
-  line-height: 1.5;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
 }
 
 .exports {
-  background: #f8fafc;
-  color: #1e293b;
-  border: 1px solid #cbd5e1;
-  border-radius: 10px;
-  padding: 16px;
-  margin: 16px 0;
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--green);
+  border-radius: 4px;
+  padding: 24px;
+  margin: 32px 0;
 }
 
 .buttons {
@@ -38,14 +46,20 @@
 }
 
 .buttons button {
-  background: #fff;
-  border: 1px solid #64748b;
-  border-radius: 6px;
-  color: #1e293b;
+  background: var(--panel);
+  border: 1px solid var(--drills-control-line);
+  border-radius: 4px;
+  color: var(--ink);
   cursor: pointer;
+  min-height: 44px;
   padding: 10px 12px;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 13px;
+}
+
+.buttons button:hover:not(:disabled) {
+  border-color: var(--green);
+  background: var(--green-soft);
 }
 
 .buttons button:disabled {
@@ -55,6 +69,16 @@
 
 .buttons button:focus-visible,
 .configuration summary:focus-visible {
-  outline: 3px solid #2563eb;
+  outline: 3px solid var(--drills-focus);
   outline-offset: 3px;
+}
+
+@media (max-width: 600px) {
+  .exports {
+    padding: 18px;
+  }
+
+  .buttons button {
+    width: 100%;
+  }
 }
