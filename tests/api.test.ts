@@ -45,7 +45,7 @@ describe("crisis API routes", () => {
       }),
     );
 
-    expect(response.status).toBe(201);
+    expect(response.status).toBe(202);
     const situationResponse = await situationGet();
     const situation = await situationResponse.json();
     expect(situation.events[0].category).toBe("shelter-overflow");

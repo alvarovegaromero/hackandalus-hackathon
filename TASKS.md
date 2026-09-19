@@ -95,6 +95,17 @@ ejecución robusta, aprendizaje y ensayo) están en el documento fuente.
 - [x] Probar restricciones de recursos, fallos y control humano (`tests/`).
 - [ ] Configurar y desplegar en Vercel cuando se autorice.
 
+## Vertical HTTP → backend → SSE
+
+- [x] Script `npm run mock:events` que envía eventos a `POST /api/events`.
+- [x] Aceptación en memoria, UUID de idempotencia y telemetría correlacionada.
+- [x] `GET /api/telemetry` y visor `/telemetry`, con replay, reconexión y límites.
+- [ ] TODO: guardar en Supabase; sin adaptador ni migración en esta vertical.
+- [ ] Consumir el handoff pendiente en filtrado → triaje → LLM, independiente del visor.
+- [ ] Portar los productores antiguos (escenario, demo y callbacks) a la entrada común.
+
+Contrato y límites: [docs/event-telemetry.md](docs/event-telemetry.md).
+
 ## Fase 4 · Consolidación tras fusionar el centro de mando
 
 - [ ] Unificar los dos árboles. Next sirve `app/` y por tanto ignora `src/app`:

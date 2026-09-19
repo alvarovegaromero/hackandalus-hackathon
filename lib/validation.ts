@@ -307,6 +307,7 @@ const identificador = z.string().trim().min(1).max(80);
  */
 export const incomingEventSchema = z
   .strictObject({
+    id: z.uuid().optional(),
     source: eventSourceSchema.optional(),
     title: texto(200).optional(),
     description: texto(2000).optional(),

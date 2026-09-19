@@ -209,8 +209,10 @@ que nadie sepa quién manda.
 
 ## Decisión 5 — Sondeo desde el navegador, no websockets
 
-`app/page.tsx` pide `GET /api/situation` periódicamente y repinta. No hay canal en
-tiempo real.
+`app/page.tsx` pide `GET /api/situation` periódicamente y repinta. El visor
+independiente `/telemetry` consume `GET /api/telemetry` por SSE de solo lectura;
+ver [event-telemetry.md](event-telemetry.md). No sustituye el sondeo del centro
+de mando ni comparte sus efectos laterales.
 
 **Por qué.** El estado es pequeño, el servidor es local y una demo no nota la
 diferencia entre un sondeo de un segundo y un push. Un websocket añadiría gestión

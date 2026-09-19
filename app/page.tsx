@@ -317,6 +317,7 @@ export default function Home() {
           </p>
         </div>
         <div className="top-actions">
+          <a href="/telemetry">Telemetría</a>
           {busy ? <Loader2 className="spin" size={18} aria-hidden="true" /> : null}
           <button
             className={autonomyPaused ? "primary" : ""}

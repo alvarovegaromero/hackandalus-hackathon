@@ -35,6 +35,13 @@ still name Sierra Morena; the confirmed scenario is Sierra Bermeja (see
 credentials and live integrations remain open; do not resolve them with
 invented values. Track follow-up work in TASKS.md.
 
+The served ingestion slice also includes `lib/event-pipeline.ts`,
+`POST /api/events`, `GET /api/telemetry`, `/telemetry` and `npm run mock:events`.
+It accepts events in bounded process memory, logs acceptance, and streams
+`event.accepted` / `filtering.pending`. Supabase saving is a TODO, as are
+filtering/triage/LLM dispatch; no database adapter is implemented for this slice.
+See `docs/event-telemetry.md` for contracts, auth and single-process limits.
+
 ## Start here
 
 - Read this file and `CHALLENGE.md` before designing or implementing features.
@@ -86,7 +93,8 @@ invented values. Track follow-up work in TASKS.md.
   command-center decisions, `docs/security.md` its credential and demo-recipient
   rules, `docs/happyDocumentation.md` the unverified HappyRobot contract,
   `docs/data-model.md` the Supabase model, `docs/input-architecture.md` batch
-  event ingestion (synchronous now; async/topic fan-out deferred),
+  legacy batch event ingestion and proposed model; `docs/event-telemetry.md`
+  describes the served single-event ingestion and SSE slice,
   `docs/dashboard-design-guide.md`, `docs/code-index.md` and
   `docs/agent-skills.md` the presentation, Graft and skills guides.
 - `.github/`: pull request template, issue templates and the CI workflow that

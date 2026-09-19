@@ -1,4 +1,9 @@
-# Event ingestion — how signals enter FARO
+# Event ingestion — legacy scaffold and target model
+
+The **served** single-event API and SSE viewer are documented in
+[event-telemetry.md](event-telemetry.md). The batch API described below lives
+under `src/app` and is not served while the root `app/` exists. Its proposed
+Supabase/Realtime design is not implemented by the new in-memory SSE slice.
 
 How external input enters the FARO command center: the **ingest** path that turns
 calls, SMS, sensors, HappyRobot callbacks and scenario beats into `signals`,
@@ -29,8 +34,8 @@ signals in one request** and processes them **concurrently**. Milestone B is the
 > the confirmed model; building it depends on the schema landing (open-questions
 > phase 1 · Contracts). A mapping table is in §8.
 
-**Implemented today (interim, on the scaffolding names).** A first cut of
-Milestone A runs on the old names and will move to the target model above:
+**Implemented in the inactive platform scaffold (tests only).** A first cut of
+Milestone A uses the old names and will move to the target model above:
 
 - `POST /api/events` (`src/app/api/events/route.ts`, bearer `CRISIS_API_TOKEN`)
   accepts one event, an array or `{ events }` (max 50) and returns

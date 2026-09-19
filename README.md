@@ -36,6 +36,15 @@ Postgres/Supabase, accesibilidad y diseño visual. Para indexar el código tras
 `npm run index:map`; su uso para navegar por el código es obligatorio
 ([guía de Graft](docs/code-index.md)).
 
+## Eventos por HTTP y telemetría SSE
+
+La nueva vertical permite ejecutar `npm run mock:events` contra `npm run dev`
+y ver cada evento en <http://localhost:3000/telemetry> y en el log del backend.
+`POST /api/events` devuelve 202; `GET /api/telemetry` emite `event.accepted` y
+`filtering.pending`. El almacenamiento es en memoria, con TODO para Supabase;
+filtrado, triaje y LLM no están conectados a este flujo. Ver
+[contrato, autenticación, replay y límites](docs/event-telemetry.md).
+
 ## Arranque local
 
 Requisitos: Node.js **22.21+ (22.x)** con el npm que incluye (**10.9+**);
@@ -191,20 +200,21 @@ estables (`cuerpo_invalido`, `referencia_desconocida`, `no_encontrado`,
 `conflicto`, `no_autorizado`, `metodo_no_permitido`, `error_interno`). Un
 método no soportado responde `405` con la cabecera `Allow`.
 
-| Endpoint                          | Cuerpo                                                                                      | Qué hace                                                                         |
-| --------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `GET /api/situation`              | —                                                                                           | Estado completo: señales, zonas, recursos, plan, historia                        |
-| `POST /api/events`                | `{ source?, title?, description?, zoneId?, category?, severity?, confidence?, confirmed? }` | Ingiere una señal y replanifica                                                  |
-| `POST /api/events/:id/mark`       | `{ confirmed }`                                                                             | Confirma o descarta una señal                                                    |
-| `POST /api/actions`               | `{ channel, target, objective, reason, zoneId, resourceId?, contactId? }`                   | Crea una acción pendiente de aprobación                                          |
-| `POST /api/actions/:id/approve`   | —                                                                                           | Aprobación humana; solo entonces se ejecuta                                      |
-| `POST /api/actions/:id/status`    | `{ operation?: "cancel" \| "retry", status?, externalActionId?, error? }`                   | Cancela, reintenta o actualiza el estado                                         |
-| `POST /api/webhooks/happyrobot`   | callback                                                                                    | Exige `x-happyrobot-secret`; `503` sin secreto configurado, `401` si no coincide |
-| `POST /api/scenario/start`        | `{ scriptId?, speed?, restart? }`                                                           | Arranca o reanuda el guion (`speed` entre 0.25 y 10)                             |
-| `POST /api/scenario/stop`         | —                                                                                           | Pausa conservando el tiempo consumido                                            |
-| `POST` / `GET /api/scenario/tick` | —                                                                                           | Empuje manual del guion / lectura sin efectos                                    |
-| `POST /api/demo/inject`           | `{ kind?: "incident" \| "resource-down" \| "route-blocked" \| "integration-failure" }`      | Inyecta una avería                                                               |
-| `POST /api/demo/reset`            | —                                                                                           | Vuelve al estado inicial                                                         |
+| Endpoint                          | Cuerpo                                                                                           | Qué hace                                                                         |
+| --------------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| `GET /api/situation`              | —                                                                                                | Estado completo: señales, zonas, recursos, plan, historia                        |
+| `POST /api/events`                | `{ id?, source?, title?, description?, zoneId?, category?, severity?, confidence?, confirmed? }` | 202: acepta en memoria, publica telemetría y actualiza el centro de mando        |
+| `GET /api/telemetry`              | —                                                                                                | SSE de solo lectura; historial reciente y reconexión por cursor                  |
+| `POST /api/events/:id/mark`       | `{ confirmed }`                                                                                  | Confirma o descarta una señal                                                    |
+| `POST /api/actions`               | `{ channel, target, objective, reason, zoneId, resourceId?, contactId? }`                        | Crea una acción pendiente de aprobación                                          |
+| `POST /api/actions/:id/approve`   | —                                                                                                | Aprobación humana; solo entonces se ejecuta                                      |
+| `POST /api/actions/:id/status`    | `{ operation?: "cancel" \| "retry", status?, externalActionId?, error? }`                        | Cancela, reintenta o actualiza el estado                                         |
+| `POST /api/webhooks/happyrobot`   | callback                                                                                         | Exige `x-happyrobot-secret`; `503` sin secreto configurado, `401` si no coincide |
+| `POST /api/scenario/start`        | `{ scriptId?, speed?, restart? }`                                                                | Arranca o reanuda el guion (`speed` entre 0.25 y 10)                             |
+| `POST /api/scenario/stop`         | —                                                                                                | Pausa conservando el tiempo consumido                                            |
+| `POST` / `GET /api/scenario/tick` | —                                                                                                | Empuje manual del guion / lectura sin efectos                                    |
+| `POST /api/demo/inject`           | `{ kind?: "incident" \| "resource-down" \| "route-blocked" \| "integration-failure" }`           | Inyecta una avería                                                               |
+| `POST /api/demo/reset`            | —                                                                                                | Vuelve al estado inicial                                                         |
 
 Canales: `call`, `sms`, `email`, `ticket`, `webhook`, `whatsapp`, `slack`.
 Estados de acción: `pending`, `approved`, `running`, `succeeded`, `failed`,
