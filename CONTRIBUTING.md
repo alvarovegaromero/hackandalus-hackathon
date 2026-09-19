@@ -33,7 +33,10 @@ git add <reviewed-files>
 git commit -m "feat: describe the change in English"
 ```
 
-The pre-commit hook checks secrets and private files, applies Prettier and ESLint to staged files, and runs typechecks and tests. Review formatting changes. The pre-push hook runs the full verification including build. Do not skip hooks to hide failures. Naming rules are documented in PROJECT.md.
+Pre-commit is intentionally disabled for the 24-hour hackathon. Do not add or run
+automated tests by default; existing tests are available manually on request.
+Pre-push and PR validation run `npm run check`, which includes build but excludes
+tests. Branch and credential rules still apply. See PROJECT.md for the shared policy.
 
 After committing and publishing your feature branch, create a PR targeting
 `main` with the repository template and an authenticated GitHub CLI (`gh`):

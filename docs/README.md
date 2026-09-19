@@ -23,6 +23,10 @@ JSON persistence. Outbound communications default to mock mode.
 
 ## Contracts and integration work
 
+[Jev filter integration](jev-filter.md) documents the implemented P2 module,
+P1 request, validated P3 handoff, backend logging and provisional configuration.
+Runtime wiring/persistence and frontend filtering notifications remain pending.
+
 **Start implementation with the agreed [Initial POC](poc.md).** It defines the
 active scope, P0–P5 work packages, handoffs and demo acceptance. Its persisted
 activity/SSE path and bounded filter/triage/agent scope take precedence for the

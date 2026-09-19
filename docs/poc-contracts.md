@@ -1,7 +1,10 @@
 # POC module contracts v1
 
 Defined on 2026-09-19 for [P0–P5](poc.md). This is the initial implementation
-contract between packages; runtime schemas, fixtures and wiring are still pending.
+contract between packages. P2 filter request/result and P3 handoff schemas are
+implemented in `src/lib/contracts/filter.ts`, with fixtures in
+`tests/fixtures/filter-reports.ts`. Other runtime schemas and pipeline wiring
+remain pending. See [Jev filter integration](jev-filter.md).
 It supersedes the broader contracts draft for this POC only. Existing input and
 SSE wire contracts are reused, not replaced.
 
@@ -150,11 +153,20 @@ type FilterResult = Context &
 
 Require `report.id === eventId` and matching `runId`. Probability, if available,
 is finite in `[0, 1]`; it is relevance, not truthfulness. P2 owns Jev invocation
-and policy version. P0 routes relevant results to P3, irrelevant results to a
-retained stopped state, and uncertain/unavailable results to visible review.
-No automatic tool dispatch follows an uncertain/unavailable filter result.
+and policy version. P0 routes both relevant and uncertain results to P3 and onward
+to the agent, preserving decision and probability. Irrelevant results stop but
+remain retained. Unavailable results stop the attempt with a backend error log;
+retry or correction follows the failure metadata. The filter never authorizes
+tool dispatch itself; downstream priority and action controls still apply.
 Initial failure codes: `FILTER_TIMEOUT`, `FILTER_UNAVAILABLE`, `FILTER_INVALID_RESULT`.
-Model selection and thresholds remain configuration decisions.
+The P2 implementation uses configurable Jev model/thresholds with provisional
+POC defaults; see [configuration and limitations](jev-filter.md). Evidence IDs
+are UUIDs, and the evidence list must include the original report ID. P1 must
+supply that reference even when additional provider evidence is available.
+
+Initial P2 delivery logs every outcome in the backend. Frontend notification
+is explicitly TBD: P0 must persist results before publishing the existing
+filtering telemetry events. No SSE or operator review queue is implemented by P2.
 
 ## P2 → P3 → P4: assessed factors and calculated priority
 
@@ -165,7 +177,7 @@ method for extracted factors; trusted provenance supplies source reliability.
 ```ts
 type PriorityRequest = Context & {
   report: NormalizedReport;
-  filter: FilterResult; // Must be completed/relevant with matching context.
+  filter: FilterResult; // Must be completed, relevant or uncertain, with matching context.
   sourceProfileId: string | null; // Trusted server metadata, not report text.
 };
 type PriorityFactor = {
@@ -361,7 +373,8 @@ The following are acceptance cases, not claims of passing tests:
 | Same input ID twice              | Same ingress/execution identity; no second effective dispatch                                    |
 | Greeting                         | Irrelevant; retained; no triage or agent execution                                               |
 | Clear incident                   | Relevant → scored priority → persisted plan → action/result                                      |
-| Ambiguous input or Jev failure   | Uncertain/unavailable; visible review; no automatic dispatch                                     |
+| Ambiguous input                  | Uncertain; forward to P3/agent with uncertainty preserved                                        |
+| Jev failure                      | Unavailable; stop attempt and log error; no automatic dispatch                                   |
 | Severe anonymous report          | High impact retained under the published priority policy                                         |
 | Forged police claim in text      | No trusted source profile elevation                                                              |
 | Missing required priority factor | needs_review; no fabricated score                                                                |

@@ -1,12 +1,12 @@
-# Índice de código con Graft
+﻿# Code index with Graft
 
-Usamos [Graft](https://github.com/trailhq/Graft) para localizar funciones,
-relaciones y archivos antes de leer código. La versión `0.10.1` está fijada en
-`devDependencies` y `package-lock.json`; todos usan la misma mediante npm.
+Use [Graft](https://github.com/trailhq/Graft) to locate functions, relationships
+and files before reading code. Version `0.10.1` is pinned in devDependencies and
+the lockfile; use the shared npm commands rather than a global installation.
 
-## Preparación
+## Setup
 
-Desde la raíz del repositorio, con Git, Node.js y npm según PROJECT.md:
+From the repository root, using the Git, Node.js and npm versions in PROJECT.md:
 
 ```sh
 npm ci
@@ -14,32 +14,26 @@ npm run index:build
 npm run index:map
 ```
 
-Cada clon o worktree genera su propio `graft/`. No se sube a Git ni se comparte
-entre ramas o máquinas. El índice estructural funciona sin claves de modelos.
-No hace falta instalar Graft globalmente ni ejecutar `graft init`: AGENTS.md y
-CLAUDE.md ya remiten al flujo común de PROJECT.md, igual que las reglas de los
-otros agentes. Si una herramienta no carga las instrucciones, pídele que lea
-PROJECT.md antes de empezar.
+Each checkout builds its own ignored `graft/` cache. Do not commit it or share it
+between branches or machines. Structural indexing needs no model credentials.
+No global installation or `graft init` is required. Agent entry points refer to
+PROJECT.md; tools that do not load instructions must read it before starting.
 
-El uso de Graft para navegar por el código es obligatorio para el equipo y
-sus agentes. Consulta el mapa o una búsqueda relevante antes de explorar o
-modificar código. Si falla o no cubre lo que necesitas, documenta el motivo
-al recurrir a búsquedas directas.
+Graft navigation is mandatory for contributors and agents. Query the map or a
+relevant symbol before exploring or editing code. Report failures or missing
+coverage before falling back to scoped searches and direct reads.
 
-Los hooks de commit y push ejecutan `npm run index:verify`: construyen o
-actualizan el índice y después comprueban su frescura. Si falla, bloquean la
-operación. Pre-commit lo ejecuta al final; pre-push lo ejecuta como último paso
-de `npm run check`. No desactives los hooks para evitar la comprobación.
-Son controles locales: no impiden que un usuario desactive sus hooks ni prueban
-que haya consultado el grafo. El checklist de PR exige confirmar el uso.
+Pre-commit is intentionally disabled for the 24-hour hackathon. Pre-push and PR
+validation run `npm run index:verify` through `npm run check`; this builds or
+refreshes the index and checks freshness. Failures block those checks. These are
+local controls, not proof that a contributor consulted the graph; confirm usage
+and coverage limitations in the PR checklist.
 
-La indexación no forma parte de `npm ci`, el build directo de Next.js o el
-despliegue. Con `npm ci --omit=dev`, Graft no se instala.
-Si tu configuración npm desactiva scripts de instalación, el setup local
-verificado también pudo construir el índice; para los hooks del proyecto sigue
-siendo necesario ejecutar `npm run prepare`, como indica CONTRIBUTING.md.
+Indexing is not part of `npm ci`, direct Next.js builds or deployment. Graft is
+not installed with `npm ci --omit=dev`. If install scripts are disabled, run
+`npm run prepare` to install project hooks as described in CONTRIBUTING.md.
 
-## Consultas
+## Queries
 
 ```sh
 npm run index:map
@@ -52,39 +46,31 @@ npm run index:check
 npm run index:verify
 ```
 
-Usa `ask` para localizar código relacionado con una tarea, `skeleton` para ver
-firmas, `callers` para relaciones y `grep` para buscar texto dentro de archivos
-indexados. Abre el código original para comprobar los resultados antes de editar.
+Use `ask` for task-related code, `skeleton` for signatures, `callers` for
+relationships and `grep` for text in indexed files. Read the source before editing.
+Queries refresh the structural graph by default. Rebuild after changing branches
+or when freshness checks fail. An unbuilt deep layer is expected: `--deep` adds
+model processing and is not part of the configured workflow.
 
-Las consultas refrescan el grafo estructural por defecto. `index:check` informa
-si está actualizado; si falla o cambias de rama, ejecuta `index:build`.
-Que `check` indique que la capa «deep» no está construida es normal: este setup
-solo usa el índice estructural. `--deep` añade procesamiento con modelos y no
-forma parte de los comandos configurados.
+## Coverage and limitations
 
-## Alcance y límites
+- Counts vary as the source changes; use the current index output.
+- Hidden directories, dependencies and build output are excluded. Git file
+  selection applies; tracked files may remain indexed despite ignore rules.
+- SQL, CSS and Markdown are outside the verified structural coverage. Use scoped
+  `rg` searches in `supabase/migrations`, `src` or `docs`.
+- Some exported values lack symbol nodes. If `callers crisisEventSchema` cannot
+  find a symbol, `grep crisisEventSchema` can still find textual references.
+  Dynamic relationships are not exhaustive.
+- `graft/` is excluded from Git, Prettier and generated secret scans. `.ignore`
+  allows searching cards but excludes `.graph/` and `.cache/`. Scope source
+  searches explicitly, for example `rg ... src scripts`.
+- Graft does not configure MCP, editor hooks, services or global settings.
 
-- En esta revisión se indexaron 23 archivos JS/TS/TSX, con 22 símbolos y 84
-  relaciones. Las cifras cambiarán al añadir código.
-- Graft omite directorios ocultos y dependencias/builds, y respeta la selección
-  de archivos de Git. Los archivos ya versionados pueden seguir entrando aunque
-  coincidan con una regla de ignore; `next-env.d.ts` aparece en este índice.
-- SQL, CSS y Markdown no aparecen en el índice comprobado. Usa `rg` sobre
-  `supabase/migrations`, `src` o `docs` para consultar esos contenidos.
-- Algunos valores exportados no son nodos: `callers crisisEventSchema` no
-  encuentra el símbolo, mientras que `grep crisisEventSchema` sí encuentra sus
-  usos. Las relaciones dinámicas tampoco deben considerarse exhaustivas.
-- `graft/` está excluido de Git, Prettier y el escaneo de secretos generado.
-  `.ignore` permite a ripgrep consultar sus tarjetas, pero excluye `.graph/`
-  y `.cache/`. Para buscar solo fuente, limita las rutas (`rg ... src scripts`).
-- No configura MCP, hooks de editores, servicios ni ajustes globales. Los
-  agentes usan la CLI mediante los comandos npm compartidos.
+Build, rebuild, map, search, signatures, references and freshness were verified
+on Windows. Commands avoid absolute paths and shell-specific syntax; macOS and
+Linux are intended platforms, not verified by those checks.
 
-Se verificaron construcción, reconstrucción, mapa, búsqueda, firmas,
-referencias y frescura en Windows. Los comandos no usan rutas absolutas ni
-sintaxis específica de shell; macOS y Linux son plataformas previstas, pero
-no se han probado en esta tarea.
-
-Para actualizar Graft, cambia la versión exacta con npm, revisa el lockfile y
-repite estas consultas y `npm run check`. Si las respuestas son incompletas o
-la herramienta falla, continúa con búsquedas acotadas y lectura directa.
+Update the exact npm version and lockfile together when upgrading Graft, then
+verify the relevant queries. Follow PROJECT.md's current hackathon validation
+policy; automated tests are not part of `npm run check`.

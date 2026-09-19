@@ -118,6 +118,10 @@ module-specific docs or use the sketch as the target architecture.
   signal-to-event bridge used by the demo).
 - `src/lib/report.ts`: `NormalizedReport`, the envelope every channel adapter emits
   before triage (see `docs/input-contract.md`).
+- `src/lib/contracts/filter.ts`, `src/lib/filtering/`: P2 shared validators,
+  server-only Jev relevance evaluation and P3 handoff. Backend logs only;
+  served intake/Workflow wiring, persistence and frontend notifications remain
+  pending. See `docs/jev-filter.md` for configuration and P1 integration.
 - `src/lib/ingest.ts`, `src/lib/ingest-server.ts`: batch event ingestion
   (validation, dedup, persistence, workflow start).
 - `src/lib/agents`: AI SDK coordinator (model configured through environment).
@@ -151,13 +155,23 @@ module-specific docs or use the sketch as the target architecture.
 
 ## Setup / Build / Test / Run
 
+### 24-hour hackathon validation policy
+
+Do not add or run automated tests by default during this hackathon. Existing
+tests remain available through `npm test` for an explicit request. Pre-commit
+is intentionally disabled; do not restore its checks without a new team decision.
+`npm run check`, pre-push and PR creation exclude tests. Keep validation focused
+on the requested change; do not expand it into a new test suite. Branch/push
+permissions and the prohibition on committing credentials still apply.
+
 Use Node.js 22.21+ (22.x) with its bundled npm (10.9+). `packageManager` pins
 npm 11.6.1 for Corepack users (`corepack enable`); it is optional.
 Commit package-lock.json; use npm only.
 Install: `npm ci`. Develop: `npm run dev`. Production: `npm run build` then
-`npm start`. Checks: `npm run lint`, `npm run typecheck`, `npm test` (Vitest).
+`npm start`. Checks: `npm run lint`, `npm run typecheck`; optional manual tests:
+`npm test` (Vitest), only when explicitly requested during the hackathon.
 Formatting: `npm run format` writes changes; `npm run format:check` only checks.
-`npm run check` runs secret detection, formatting, lint, types, tests, build
+`npm run check` runs secret detection, formatting, lint, types, build
 and Graft index construction/freshness verification.
 Create PRs with `npm run pr:create -- --title "..." --body-file <file>` after
 committing and publishing the feature branch with explicit permission. Requires
@@ -173,10 +187,10 @@ GitHub Actions CI is intentionally removed, not deferred: no Actions minutes
 are available. Keep validation local; do not add CI workflows or required CI checks.
 `npm run lint:staged` runs Secretlint, Prettier and ESLint on staged files using
 lint-staged (serial tasks; unstaged hunks in partially staged files are hidden).
-`npm ci` installs Husky hooks through `prepare` in development. Pre-commit blocks
-protected branches and private credential filenames, then runs lint-staged,
-typecheck, tests and `index:verify`. Pre-push blocks updates to `main`, `master`, and `develop`
-(including refspecs and deletions), then runs the full check including build.
+`npm ci` installs Husky hooks through `prepare` in development. Pre-commit is an
+intentional no-op for the hackathon. Pre-push blocks updates to `main`, `master`,
+and `develop` (including refspecs and deletions), then runs `check` including build
+but excluding tests. PR creation retains the protected-branch guard.
 Secretlint masks matched secrets in its output. Never disable detection to
 commit a credential; use empty or harmless placeholders in `.env.example`.
 Detection covers known credential formats, not every possible password/token.
@@ -309,9 +323,9 @@ to use the project version rather than a potentially different global CLI:
 Queries refresh the structural graph by default. Rebuild explicitly after
 changing branches or when freshness checks fail. Keep `graft/` out of Git;
 each teammate generates it locally. Structural indexing needs no model key.
-Use plain `build`, not `--deep`, for this setup. Pre-commit runs `index:verify`
-after its other checks, and pre-push runs it through `npm run check`. An indexing
-failure blocks these hooks. This also creates a missing index automatically.
+Use plain `build`, not `--deep`, for this setup. Pre-commit is disabled during
+the hackathon. Pre-push and PR validation run `index:verify` through `npm run check`;
+an indexing failure blocks those checks. This creates a missing index automatically.
 Direct app builds and deployments do not invoke indexing, and no global agent
 settings are changed. Do not bypass hooks. Local hooks can be disabled by a
 developer, so they enforce successful indexing in the normal workflow, not

@@ -42,6 +42,16 @@ Postgres/Supabase, accessibility, and visual design. To index code after
 
 ## Local Startup
 
+To manually exercise Jev with 10 synthetic reports, run `npm run jev:try` after
+configuring `TYPESAFE_API_KEY`. Add `-- --limit 5` for fewer cases or `-- --dry-run`
+to inspect inputs without live calls. See [Jev filter](docs/jev-filter.md).
+
+P2's server-only [Jev relevance filter](docs/jev-filter.md) is available for P1
+integration, with shared input/output validators and backend decision logs.
+Configure `TYPESAFE_API_KEY` and optional `JEV_*` policy settings in `.env.local`
+for real evaluation. Missing credentials return unavailable. The served intake
+does not yet invoke it; persistence and frontend filter notifications are pending.
+
 The agreed initial delivery is documented in [Initial POC](docs/poc.md), with
 P0–P5 work packages, dependencies and demo acceptance. Follow that scope before
 the broader architecture proposals; progress is tracked in [TASKS.md](TASKS.md).
@@ -63,17 +73,17 @@ restarts; `POST /api/demo/reset` returns to initial state. For a second
 instance without build directory conflicts:
 `NEXT_DIST_DIR=.next-dev npm run dev -- -p 3001`.
 
-| Command                             | Description                                                      |
-| ----------------------------------- | ---------------------------------------------------------------- |
-| `npm run dev`                       | Development server on port 3000.                                 |
-| `npm run build` / `npm start`       | Production build and server.                                     |
-| `npm run lint`                      | ESLint across the entire repository.                             |
-| `npm run typecheck`                 | Next route types and `tsc --noEmit`.                             |
-| `npm test`                          | Single-pass Vitest: `tests/`, `src/`, and `scripts/`.            |
-| `npm run format` / `format:check`   | Prettier: format or check only.                                  |
-| `npm run check`                     | Secrets, formatting, lint, types, tests, build, and Graft index. |
-| `npm run env:setup`                 | Creates `.env.local` from `.env.example` if missing.             |
-| `npm run index:build` / `index:map` | Builds and queries the Graft code index.                         |
+| Command                             | Description                                                         |
+| ----------------------------------- | ------------------------------------------------------------------- |
+| `npm run dev`                       | Development server on port 3000.                                    |
+| `npm run build` / `npm start`       | Production build and server.                                        |
+| `npm run lint`                      | ESLint across the entire repository.                                |
+| `npm run typecheck`                 | Next route types and `tsc --noEmit`.                                |
+| `npm test`                          | Optional manual Vitest run; not part of hackathon validation.       |
+| `npm run format` / `format:check`   | Prettier: format or check only.                                     |
+| `npm run check`                     | Secrets, formatting, lint, types, build, and Graft index; no tests. |
+| `npm run env:setup`                 | Creates `.env.local` from `.env.example` if missing.                |
+| `npm run index:build` / `index:map` | Builds and queries the Graft code index.                            |
 
 `package.json` pins two indirect dependencies of Workflow via `overrides`
 (`nanoid` and `undici`) to patched versions. Check if these remain necessary
@@ -84,12 +94,10 @@ when updating Workflow.
 `npm ci` installs Husky hooks via `prepare`. Git and Node/npm must be on PATH;
 on Windows, Git for Windows provides the shell.
 
-- **Pre-commit:** blocks commits on protected branches and private files like
-  `.env.local` or private keys. `lint-staged` checks secrets, applies Prettier,
-  and runs ESLint (warnings treated as errors) on staged files. Then it runs
-  TypeScript, tests, and `npm run index:verify`.
+- **Pre-commit:** intentionally disabled for the 24-hour hackathon. Do not add
+  or run automated tests by default; existing tests remain available on request.
 - **Pre-push:** blocks updates to `main`, `master`, and `develop`, and runs
-  `npm run check`, including the full build.
+  `npm run check`, including the full build but excluding tests.
 - **Before creating a PR:** use `npm run pr:create -- --title "..." --body-file <file>`.
   Its local `pr:check` prehook runs `npm run check` and blocks creation on
   failure. Requires authenticated GitHub CLI (`gh`), a clean working tree, and

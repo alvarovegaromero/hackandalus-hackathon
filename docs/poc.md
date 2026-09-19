@@ -5,6 +5,11 @@ of implemented behavior. TASKS.md tracks completion. The broader product vision
 remains the long-term direction; this document takes precedence for the initial
 POC scope over the broader architecture and contract drafts.
 
+P2 delivery update: the [Jev filter module](jev-filter.md) implements shared
+request/result/P3 handoff schemas and backend logs. Initial frontend filtering
+notification is explicitly TBD; the eventual SSE path below remains the target.
+P1/P0 still own invoking and persisting the filter during asynchronous processing.
+
 Use [POC module contracts v1](poc-contracts.md) for package interfaces. Reuse the
 input and SSE implementation from `origin/event-pipeline-backend-frontend`
 (`e2579a9`); its port into this checkout remains pending. P0 extends domain
@@ -48,10 +53,11 @@ flowchart LR
   SSE --> UI[Operator frontend]
 ```
 
-The filter continues relevant reports to triage. Irrelevant reports remain in
-history but stop processing. Uncertain reports remain visible for review or
-verification; do not silently discard them or automatically dispatch an action.
-A model failure is recorded as unavailable and follows the review path.
+The filter continues relevant and uncertain reports to triage and onward to the
+agent, preserving uncertainty rather than requiring human review at P2.
+Irrelevant reports remain in history but stop processing. A model failure is
+recorded as unavailable, stops that attempt and produces a backend error log.
+Downstream priority and action controls still apply before tool dispatch.
 
 Use the confirmed [input contract](input-contract.md) and existing
 `NormalizedReport`; do not introduce another public payload. A receipt confirms
