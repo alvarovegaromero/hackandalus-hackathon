@@ -20,4 +20,4 @@
 - [ ] Relevant docs and `.env.example` updated if needed.
 - [ ] Simulated behavior is clearly identified; live results are not assumed.
 
-<!-- The repository owner performs the final merge. Agents must not merge. -->
+<!-- Agents may merge when explicitly instructed by the user, respecting checks and branch protection. -->
