@@ -144,6 +144,16 @@ communications have not been tested.
 - [x] First inbound HappyRobot slice: authenticated `/api/signals`, durable raw
       `normalized_report`, transport idempotency, FARO-owned Event interpretation,
       and reuse of the active planning/Digital Twin/dashboard flow.
+- [x] Reconcile the deployed development `public.signals` table (created earlier
+      from the `docs/data-model.md` proposal, missing the durable receipt columns)
+      with `src/lib/signals/repository.ts` via
+      `supabase/migrations/202609190002_reconcile_signals_schema.sql`, preserving
+      existing rows. Verified against the real development database:
+      `POST /api/signals` persists and processes a report, the resulting Event
+      reaches the Digital Twin/plan/actions/audit trail in `/api/situation`, its
+      `event.accepted` record appears on `/api/telemetry`, and a duplicate
+      delivery of the same report is idempotent end to end (single DB row,
+      single Event, single action, single audit entry).
 - [ ] Agree on demo recipients and test resources for external validations.
 
 Open decisions do not block the foundational scaffolding and must not be resolved with invented values.
