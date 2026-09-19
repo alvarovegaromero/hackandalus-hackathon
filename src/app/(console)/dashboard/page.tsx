@@ -4,6 +4,7 @@
 
 import { Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { CrisisZone } from "@/lib/types";
 import AmbulanceCard from "@/components/AmbulanceCard";
@@ -17,7 +18,7 @@ const LeafletMap = dynamic(() => import("@/components/LeafletMap"), {
   loading: () => <p>Loading Sierra Bermeja map…</p>,
 });
 
-export default function Home() {
+export default function DashboardPage() {
   const [situation, setSituation] = useState<{ zones: CrisisZone[] } | null>(null);
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +80,12 @@ export default function Home() {
   return (
     <main className="shell flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-[16px] font-medium">Faro</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-[16px] font-medium">Faro</h1>
+          <Link href="/" prefetch={false} className="text-sm underline underline-offset-4">
+            Back to home
+          </Link>
+        </div>
         {process.env.NODE_ENV === "development" ? (
           <div className="flex flex-wrap items-center gap-3">
             <span role="status" className="text-xs text-blueprint-light">

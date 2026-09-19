@@ -38,6 +38,8 @@ changing code, and report any fallback caused by failures or missing coverage.
 
 The repository uses the standard Next.js `src/` directory layout: the served
 command center lives in `src/app/`, `src/components/`, `src/lib/`, .
+The landing at `/` and dashboard at `/dashboard` use separate root layouts;
+see PROJECT.md and docs/landing-integration.md before changing their routing or CSS.
 Keep the module-owner line (`// OWNER: …`) in `src/lib/**`, following PROJECT.md's
 English-language rule for its label, and keep the digital-twin docs and tests in sync.
 

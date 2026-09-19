@@ -41,7 +41,7 @@ correct" and "demonstrable on Sunday without crashing."
                                       │
                          ┌────────────▼────────────┐
                          │ GET /api/situation      │
-                         │ src/app/page.tsx (polling)  │
+                         │ /dashboard (polling)       │
                          │ human approves/cancels  │
                          └─────────────────────────┘
 ```
@@ -221,8 +221,8 @@ is in charge.
 
 ## Decision 5 — Browser polling, not WebSockets
 
-`src/app/page.tsx` polls `GET /api/situation` periodically and re-renders. The
-event log on `/` consumes `GET /api/telemetry` over read-only SSE; see
+`src/app/(console)/dashboard/page.tsx` polls `GET /api/situation` periodically and re-renders. The
+event log on `/dashboard` consumes `GET /api/telemetry` over read-only SSE; see
 [event-telemetry.md](event-telemetry.md). It does not replace command-center polling
 or share its side effects.
 

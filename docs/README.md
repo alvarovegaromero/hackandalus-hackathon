@@ -10,6 +10,10 @@ implementation status; [CHALLENGE.md](../CHALLENGE.md) defines the requirements.
 
 ## Current application
 
+The public landing lives at `/`, with same-tab access to `/dashboard`.
+Separate root layouts isolate their styles. See [landing integration](landing-integration.md)
+for routing, imported assets and maintenance.
+
 **Dashboard status: SKETCH.** The visible prototype banner has been removed. The interface is exploratory, with partially connected
 controls; it does not define the approved product or target architecture.
 

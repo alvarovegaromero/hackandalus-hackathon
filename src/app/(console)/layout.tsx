@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Faro",
+  title: "Dashboard | Far0",
   description:
     "Prototype crisis dashboard with demo scenario data and partially connected controls.",
 };
