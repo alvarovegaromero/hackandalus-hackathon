@@ -1,6 +1,6 @@
 // OWNER: P4 subagent execution boundary; parent owns mission creation and reservations.
 import { z } from "zod";
-import { ambulanceIdSchema } from "./coordinator";
+import { resourceIdSchema } from "./coordinator";
 
 export const missionToolSchema = z.enum(["contactService", "getContactResult"]);
 export const missionInputSchema = z
@@ -8,14 +8,15 @@ export const missionInputSchema = z
     missionId: z.uuid(),
     runId: z.uuid(),
     eventId: z.uuid(),
-    revision: z.literal(1),
+    revision: z.number().int().positive(),
+    eventIds: z.array(z.uuid()).min(1).max(100).optional(),
     objective: z.string().min(1).max(2000),
     instructions: z.string().min(1).max(4000),
     context: z.strictObject({
       incidentSummary: z.string().min(1).max(4000),
       priority: z.enum(["low", "medium", "high", "critical"]),
     }),
-    assignedResourceIds: z.array(ambulanceIdSchema).max(10),
+    assignedResourceIds: z.array(resourceIdSchema).max(30),
     allowedTools: z.array(missionToolSchema).max(2),
   })
   .superRefine((m, ctx) => {
@@ -50,10 +51,10 @@ export type MissionInput = z.infer<typeof missionInputSchema>;
 export type ContactOperation = z.infer<typeof contactOperationSchema>;
 export type MissionDecision = z.infer<typeof missionDecisionSchema>;
 export const missionResultSchema = missionDecisionSchema.extend({
-  status: z.enum(["waiting", "blocked", "completed", "failed"]),
+  status: z.enum(["waiting", "blocked", "completed", "failed", "cancelled"]),
   updateId: z.uuid(),
   missionId: z.uuid(),
-  missionRevision: z.literal(1),
+  missionRevision: z.number().int().positive(),
   needsParentDecision: z.boolean(),
   externalOperationIds: z.array(z.uuid()).max(2),
   executionMode: z.literal("simulation"),

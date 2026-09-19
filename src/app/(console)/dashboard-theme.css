@@ -1,0 +1,137 @@
+/* Far0 landing palette shared by the operational dashboard. */
+:root {
+  --bg: #131720;
+  --ink: #f4f2ec;
+  --muted: #b1b7bd;
+  --line: #353b44;
+  --line-soft: #2b323c;
+  --panel: #1b212b;
+  --green: #07b37c;
+  --green-soft: #153b30;
+  --amber: #f0c27b;
+  --amber-soft: #382e20;
+  --red: #f5a09a;
+  --red-soft: #3a252b;
+  --blue: #83c9f4;
+  --blue-soft: #203443;
+  --shadow: none;
+  --shadow-soft: none;
+}
+.faro-dashboard {
+  min-height: 100dvh;
+}
+.faro-dashboard :is(h1, h2, h3, dt) {
+  font-family: "IBM Plex Mono", "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+}
+.faro-dashboard .bg-white {
+  background: var(--panel);
+}
+.faro-dashboard :is(.text-neutral-500, .text-blueprint-light) {
+  color: var(--muted);
+}
+.faro-dashboard :is(.text-neutral-700, .text-ink) {
+  color: var(--ink);
+}
+.faro-dashboard :is(.text-blue-700, .text-blue-900) {
+  color: #a7f3d0;
+}
+.faro-dashboard :is(.bg-blue-50, .bg-blue-100) {
+  background: #153b30;
+}
+.faro-dashboard :is(.border-blue-200, .border-blue-600) {
+  border-color: #07b37c;
+}
+.faro-dashboard .bg-neutral-50 {
+  background: var(--panel);
+}
+.faro-dashboard .border-neutral-200 {
+  border-color: var(--line);
+}
+.faro-dashboard :is(.bg-emerald-50, .bg-ok-soft) {
+  background: var(--green-soft);
+}
+.faro-dashboard .text-emerald-900 {
+  color: #a7f3d0;
+}
+.faro-dashboard .border-emerald-300 {
+  border-color: #237c60;
+}
+.faro-dashboard .bg-red-50 {
+  background: var(--red-soft);
+}
+.faro-dashboard .text-red-900 {
+  color: var(--red);
+}
+.faro-dashboard .border-red-300 {
+  border-color: #854c51;
+}
+.faro-dashboard .bg-amber-50 {
+  background: var(--amber-soft);
+}
+.faro-dashboard :is(.text-amber-800, .text-amber-900) {
+  color: var(--amber);
+}
+.faro-dashboard .border-amber-300 {
+  border-color: #816a40;
+}
+.faro-dashboard .bg-emerald-700 {
+  background: #07b37c;
+  color: #131720;
+  border-color: #07b37c;
+}
+.faro-dashboard .bg-emerald-700:hover {
+  background: #a7f3d0;
+}
+.faro-dashboard button:focus-visible {
+  outline-color: #a7f3d0;
+}
+.faro-dashboard .leaflet-popup-content-wrapper,
+.faro-dashboard .leaflet-popup-tip {
+  background: var(--panel);
+  color: var(--ink);
+}
+.faro-dashboard .leaflet-container {
+  color: #131720;
+}
+.faro-dashboard .leaflet-control a {
+  color: #131720;
+}
+.faro-dashboard .leaflet-popup-close-button {
+  color: var(--muted);
+}
+
+.resource-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+@media (max-width: 1000px) {
+  .resource-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.faro-dashboard button {
+  background: var(--panel);
+  color: #a7f3d0;
+}
+
+/* Darken only the basemap tiles; event and resource colors stay unchanged. */
+.faro-dashboard .leaflet-container {
+  background: #131720;
+}
+.faro-dashboard .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) saturate(0.35) brightness(0.8) contrast(0.9);
+}
+.faro-dashboard .leaflet-bar a,
+.faro-dashboard .leaflet-control-attribution {
+  background: var(--panel);
+  color: var(--muted);
+  border-color: var(--line);
+}
+.faro-dashboard .leaflet-bar a:hover {
+  background: #2b323c;
+  color: var(--ink);
+}
+.faro-dashboard .leaflet-control-attribution a {
+  color: #a7f3d0;
+}
