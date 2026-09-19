@@ -1,10 +1,12 @@
 # Contributing to Butterfish
 
-Read [PROJECT.md](PROJECT.md): it is the single source of truth for project conventions and permissions. [README.md](README.md) explains how the system works; [TASKS.md](TASKS.md) tracks completed and deferred tasks.
+Read [PROJECT.md](PROJECT.md) for shared conventions and permissions,
+[README.md](README.md) for setup and [TASKS.md](TASKS.md) for current work.
 
-## Environment Setup
+## Environment setup
 
-You need Git and Node.js 24.x with its bundled npm; if you use Corepack, `corepack enable` activates npm 11.6.1 pinned in `package.json`. On Windows, install Git for Windows; hooks use its shell. On macOS and Linux, Git and Node on your PATH are sufficient. Use npm and the repository lockfile.
+Use Git, Node.js 24.x and npm. Corepack users can enable npm 11.6.1 through
+`corepack enable`. Windows needs Git for Windows for the hook shell.
 
 ```sh
 git clone https://github.com/alvarovegaromero/hackandalus-hackathon.git
@@ -13,134 +15,92 @@ npm ci
 npm run dev
 ```
 
-Open http://localhost:3000. The simulation starts without credentials. `npm ci` installs local hooks; if you installed without scripts, run `npm run prepare`. VS Code and Cursor can use the recommended configuration and extensions in `.vscode`; other editors must respect Prettier and EditorConfig.
+Open http://localhost:3000. Geography and the simulation UI can load without
+credentials; persisted coordinator state requires configured Supabase access.
+`npm ci` installs local hooks. Use `npm run prepare` if installation skipped scripts.
 
-## Creating a Contribution
+## Feature contributions
 
-With a clean working tree, branch from the latest remote `main`:
+Start from a clean checkout of the latest integration branch:
 
 ```sh
 git fetch origin
 git switch -c feat/short-description origin/main
-```
-
-Use `feat/`, `fix/`, or `chore/` as appropriate. If you already have changes, save them before switching branches.
-
-```sh
-npm run format
 npm run check
 git add <reviewed-files>
 git commit -m "feat: describe the change in English"
 ```
 
-Pre-commit is intentionally disabled for the 24-hour hackathon. Do not add or run
-automated tests by default; existing tests are available manually on request.
-Pre-push and PR validation run `npm run check`, which includes build but excludes
-tests. Branch and credential rules still apply. See PROJECT.md for the shared policy.
-
-After committing and publishing your feature branch, create a PR targeting
-`main` with the repository template and an authenticated GitHub CLI (`gh`):
+Use `feat/`, `fix/` or `chore/` branches. Preserve uncommitted work before switching.
+After explicit permission to push the feature branch, create its PR into `main`:
 
 ```sh
-npm run pr:create -- --title "chore: describe the change" --body-file pr-body.md
+npm run pr:create -- --title "chore: describe the change" --body-file .data/pr-body.md
 ```
 
-Use a body file outside the repository (or an ignored local file) to keep the
-working tree clean. `pr:create` explicitly runs `pr:check`, which blocks protected
-branches and runs the full `npm run check` before PR creation. A failed check
-stops the command. The command requires a clean working tree and uses the already
-published branch without pushing. Record results and the tested OS in the PR.
-Run it again after code changes. All contributors and agents must use this entry
-point: GitHub's UI and direct `gh pr create` bypass the local gate. The explicit
-command chain also runs validation when npm lifecycle hooks are disabled.
+Write the body first, following `.github/pull_request_template.md`. The helper
+requires authenticated GitHub CLI, a clean working tree and a published feature
+branch. It runs `npm run check` and never pushes. All contributors and agents
+must use it; GitHub's UI or direct `gh pr create` bypasses the local gate.
+Record checks and the tested OS. A passing Windows check does not prove Linux
+or macOS validation. Failed checks must be fixed, not bypassed.
 
-We will not use GitHub Actions CI: the team has no Actions minutes. Checks stay
-local; adding CI is not deferred work.
+Pre-commit is intentionally disabled during the hackathon. Pre-push and PR
+validation run checks, build and Graft verification, excluding tests. Do not add
+or run automated tests by default; existing tests are available on explicit request.
+Direct pushes to `main`, `master`, `develop` and `production` are blocked.
 
-Los agentes necesitan permiso explícito para hacer push y pueden hacer merge
-cuando el usuario se lo indique, respetando checks y protección de ramas.
-Los pushes directos a `main` están
-bloqueados. Indica en la PR qué probaste y cualquier comprobación omitida.
+## Releases
 
-## Trabajar con agentes
+`main` is the integration branch; `production` is the publishing branch. Release
+PRs use head `main`, base `production`. The owner merges releases, and Vercel's
+native Git integration builds and deploys only `production`. GitHub Actions is
+disabled because the team has no Actions minutes. The Vercel delivery exception
+supersedes the former blanket NO CI rule; local validation remains mandatory.
 
-Codex y herramientas compatibles entran por [AGENTS.md](AGENTS.md); Claude Code
-usa [CLAUDE.md](CLAUDE.md); Cursor usa `.cursor/rules/project.mdc`; Gemini y
-Antigravity también tienen referencias al mismo PROJECT.md. Usa el modelo que
-prefieras, manteniendo las mismas reglas. Si tu herramienta no carga esas
-instrucciones, pídele que lea AGENTS.md y PROJECT.md antes de empezar.
+Use `npm run pr:create -- --release --title "release: publish main" --body-file .data/release-pr.md`
+from a clean feature checkout at the current remote `main` commit. The helper
+validates that exact source revision without changing either protected branch.
+Follow [the release guide](docs/vercel-deployment.md) for initial branch
+protection/Git connection setup and regular releases. Never commit fixes directly
+to `production`; land them in `main` and release again.
 
-No subas preferencias personales ni claves de las herramientas. Coordina los
-archivos que modifica cada persona o agente para evitar pisar cambios.
+Agents require explicit permission to push or publish. Local commits are allowed.
+Follow PROJECT.md and the current user's merge instructions; no command grants
+permission to bypass branch protection.
 
-## Índice local de código
+## Coding agents and navigation
 
-Su uso es obligatorio para navegar por el código, también para los agentes.
-Consulta el mapa o una búsqueda relevante antes de explorar o modificar código.
-Indica en la PR si necesitas recurrir a búsquedas directas por fallos o falta
-de cobertura. El checklist de la PR incluye esta comprobación.
+Codex uses AGENTS.md, Claude uses CLAUDE.md, and the other editor instructions
+reference PROJECT.md. Shared rules apply regardless of the selected model.
+Coordinate edits to avoid overwriting another contributor's work. Keep personal
+model preferences and tool credentials out of Git.
 
-Graft se instala con las dependencias de desarrollo de `npm ci`. En cada clon
-o worktree, ejecuta `npm run index:build` y después `npm run index:map`.
-Para buscar una tarea: `npm run graft -- ask "event validation"`.
-Los agentes encuentran estas instrucciones a través de PROJECT.md.
+Graft is required for code navigation. Run `npm run index:build` once per checkout,
+then `npm run index:map` or `npm run graft -- ask "event validation"`. Report
+missing coverage or failures before using scoped searches. `graft/` is local,
+ignored and needs no model key. Pre-push/PR checks run `index:verify`; pre-commit
+does not. See [the navigation guide](docs/code-index.md).
 
-El índice `graft/` es local y está ignorado por Git; cada persona genera el suyo.
-No hacen falta claves ni instalación global. Usa la
-[guía de Graft](docs/code-index.md) para consultas, actualización y límites.
-Los hooks de commit y push ejecutan `npm run index:verify`: generan o actualizan
-el índice y validan su frescura. Si falla, corrige el problema antes de continuar;
-no omitas los hooks. Son comprobaciones locales, no protección remota.
+Shared skills are versioned under `.agents/skills/`; no global installation or
+copying is necessary. Follow [the skill guide](docs/agent-skills.md) and the paths
+in PROJECT.md. Skills do not grant permission to deploy or send communications.
 
-## Skills compartidas
+## Credentials and services
 
-Las cuatro skills del equipo están versionadas en `.agents/skills/` y llegan
-con el clone o pull de la rama que las contiene. No ejecutes una instalación
-global ni copies las skills a cada editor. Sigue la
-[guía de uso y actualización](docs/agent-skills.md); PROJECT.md enlaza cada
-`SKILL.md` para que cualquier agente pueda leerlo aunque no lo detecte solo.
+`npm run env:setup` creates `.env.local` from the empty template only if absent.
+Fill values locally as needed. Commit only sanitized `.env.example` templates.
+Share development credentials through a password manager or an expiring private
+link, never repository issues, PRs, agent chats or screenshots. Keep Vercel values
+separate for Production, Preview and Development. GitHub Actions Secrets are not
+a team credential-sharing mechanism and are unused by this delivery flow.
 
-Si una sesión ya estaba abierta, inicia una nueva o pide al agente que lea el
-archivo de la skill correspondiente. Las instrucciones de proyecto siguen
-siendo prioritarias y las skills no conceden permisos para publicar o desplegar.
+Only public data belongs in `NEXT_PUBLIC_*`. Supabase server keys, model keys,
+API tokens and HappyRobot credentials must remain server-only. Rotate exposed
+credentials at their provider; deleting a copy does not revoke it.
 
-## Claves y servicios
-
-Ejecuta `npm run env:setup` para copiar `.env.example` a `.env.local` con valores
-vacíos. El comando conserva el archivo si ya existe, sin leerlo ni sobrescribirlo.
-Rellena los valores localmente cuando necesites integrar servicios.
-
-- **GitHub:** solo `.env.example`, con nombres de variables y valores vacíos.
-  Nunca subas `.env`, `.env.local` o claves reales, aunque el repositorio sea privado.
-- **Equipo:** comparte credenciales de desarrollo mediante un gestor de contraseñas
-  compartido o un enlace privado con caducidad. No uses issues, PRs, comentarios,
-  chats de agentes ni capturas para transmitirlas.
-- **Vercel:** configura las variables en el proyecto, separadas por Development,
-  Preview y Production. Evita usar claves de producción en desarrollo o previews.
-- **GitHub Actions Secrets:** unused because this project does not run Actions;
-  they are not a mechanism for sharing `.env` files with the team.
-- **Exposición accidental:** revoca o rota la clave en su proveedor inmediatamente;
-  borrarla del último archivo o commit no elimina las copias ni el historial.
-
-Solo las variables `NEXT_PUBLIC_*` pueden llegar al navegador y deben contener
-datos públicos. Nunca pongas ahí `SUPABASE_SECRET_KEY`, `AI_GATEWAY_API_KEY`,
-`CRISIS_API_TOKEN` ni credenciales de HappyRobot. Los hooks reducen errores, pero
-no sustituyen esta separación.
-
-| Funcionalidad          | Configuración necesaria                                                                                  |
-| ---------------------- | -------------------------------------------------------------------------------------------------------- |
-| Panel de simulación    | Ninguna clave                                                                                            |
-| API local de workflows | `CRISIS_API_TOKEN`: token privado aleatorio generado por el equipo                                       |
-| Planificación real     | `AI_GATEWAY_API_KEY` y `AI_MODEL` (`proveedor/modelo`)                                                   |
-| Supabase               | URL, clave publicable y clave secreta de servidor indicadas en `.env.example`                            |
-| HappyRobot             | Credenciales y workflow acordados; las variables actuales están reservadas y aún no ejecutan llamadas    |
-| Despliegue             | Proyecto Vercel, acceso del equipo y variables por entorno; no requiere una clave de Vercel en el código |
-
-Poner claves no conecta automáticamente el panel ni implementa los adaptadores.
-Quedan pendientes la persistencia, autenticación/RLS de operadores, Realtime,
-contrato de HappyRobot, verificación de callbacks y destinatarios de demo.
-También hay que elegir escenario/modelo y autorizar las pruebas reales.
-
-Para colaborar, el propietario debe conceder acceso al repositorio; los accesos
-a Vercel, Supabase y HappyRobot se conceden cuando se usen. No hace falta decidir
-ni añadir una licencia para esta tarea de preparación del hackathon.
+Use `.env.example` for current variable names and [the deployment guide](docs/vercel-deployment.md)
+for the hosting checklist. Setting keys does not prove migrations are installed,
+authenticate an operator or enable real HappyRobot communications. Real calls
+require the agreed integration and approved demo recipients. Repository access
+and Vercel/Supabase/HappyRobot access are granted separately by their owners.

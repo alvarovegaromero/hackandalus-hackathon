@@ -143,7 +143,7 @@ communications have not been tested.
 
 ## Local Code Quality Setup
 
-- [x] Remove GitHub Actions CI: no Actions minutes are available and CI is not planned.
+- [x] Remove GitHub Actions CI: no Actions minutes are available. Vercel-native production delivery was subsequently authorized.
 - [x] Require local validation before PR creation via `npm run pr:create` and its
       local `pr:check` prehook (`npm run check`); document the workflow for contributors and agents.
 - [x] Shared Prettier, EditorConfig, and LF endings in Git across macOS, Windows, and Linux.
@@ -231,7 +231,9 @@ are in the source document.
 - [ ] Test resource constraints, failures, and human oversight.
 - [x] Publish the UI manually to Vercel: https://faro-lovat-iota.vercel.app/dashboard (2026-09-19). Landing, dashboard and map HTTP checks passed; `/api/state` remains 503.
 - [ ] Configure remote application credentials, database access and agent execution before claiming a working hosted agent demo.
-- [x] Prepare manual Vercel build settings, disable Git auto-deployments and document environment prerequisites and agent hosting limits in `docs/vercel-deployment.md`.
+- [x] Prepare Vercel build settings and document environment prerequisites and agent hosting limits in `docs/vercel-deployment.md`.
+- [x] Prepare `production`-only Git deployments, local branch protection and the `main` to `production` release PR command.
+- [ ] Publish the delivery configuration into `main`, bootstrap/protect remote `production`, connect Vercel Git and set Production branch tracking. Verify the first merged release deploys automatically.
 - [ ] Add durable remote scheduling for coordinator recovery and subagent execution; web deployment alone does not run the subagent worker.
 - [ ] Connect dashboard session authentication to `/api/state` before the remote demo; the current browser request lacks the token required in production.
 

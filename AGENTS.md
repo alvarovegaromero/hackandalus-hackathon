@@ -1,11 +1,10 @@
 # AGENTS.md
 
-**NO CI. This project will not use continuous integration.** We have no GitHub
-Actions minutes. No agent or contributor may create, restore or enable CI
-workflows, configure an alternative CI service, or require remote CI checks.
-This is a project decision, not deferred work. Validate locally with
-`npm run check` and create PRs through `npm run pr:create`, which runs the local
-validation first and blocks creation on failure. See [PROJECT.md](PROJECT.md).
+**Production delivery uses Vercel's native Git integration.** Feature PRs target
+`main`; release PRs go from `main` to `production`. Only `production` triggers
+automatic deployment. GitHub Actions remains disabled (no Actions minutes).
+Validate locally with `npm run check` and create PRs through `npm run pr:create`.
+See [PROJECT.md](PROJECT.md) and [the release guide](docs/vercel-deployment.md).
 
 Read and follow [PROJECT.md](PROJECT.md) before working in this repository.
 For POC work, also read [the active scope](docs/poc.md),

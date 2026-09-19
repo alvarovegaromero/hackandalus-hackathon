@@ -157,14 +157,15 @@ on Windows, Git for Windows provides the shell.
 
 - **Pre-commit:** intentionally disabled for the 24-hour hackathon. Do not add
   or run automated tests by default; existing tests remain available on request.
-- **Pre-push:** blocks updates to `main`, `master`, and `develop`, and runs
+- **Pre-push:** blocks updates to `main`, `master`, `develop`, and `production`, and runs
   `npm run check`, including the full build but excluding tests.
 - **Before creating a PR:** use `npm run pr:create -- --title "..." --body-file <file>`.
   Its local `pr:check` prehook runs `npm run check` and blocks creation on
   failure. Requires authenticated GitHub CLI (`gh`), a clean working tree, and
   an already published feature branch; the command targets `main` and does not push.
-- **No CI:** GitHub Actions is removed and will not be used because the team has
-  no Actions minutes. Validation is local. All contributors and agents must use
+- **Delivery:** GitHub Actions remains disabled because the team has no Actions
+  minutes. Vercel automatically builds and deploys `production` after a human
+  merges a release PR from `main`. Validation is local. All contributors and agents must use
   the PR command; GitHub's UI and direct `gh pr create` bypass the local hook.
   Include check results and the tested OS in the PR.
 
@@ -353,11 +354,13 @@ Tables have RLS enabled and deny browser access by default. Before connecting
 the dashboard, operator authentication and per-incident policies are needed.
 The full model is documented in [docs/data-model.md](docs/data-model.md).
 
-Deploy manually as a Next.js project with Node.js 24.x and `npm ci` /
-`npm run build`. `vercel.json` disables Git auto-deployments; no CI is used.
+Deploy as a Next.js project with Node.js 24.x and `npm ci` / `npm run build`.
+`vercel.json` enables Git auto-deployment only for `production`. Feature PRs go
+to `main`; release PRs promote `main` to `production`. No GitHub Actions is used.
 Follow [the deployment guide](docs/vercel-deployment.md) for environment setup,
 local checks, publishing authorization and remote-agent limitations. Deploying
-Next.js does not start the standalone subagent worker or complete parent integration.
+Next.js runs the integrated coordinator and missions after intake; durable recovery
+and hosted authentication still need verification.
 
 `npm run dev` automatically runs `predev`; builds run `prebuild`. These hooks
 remove legacy Workflow-generated routes from `app/.well-known/` before Next.js

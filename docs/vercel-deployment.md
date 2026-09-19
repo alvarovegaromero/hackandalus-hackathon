@@ -1,4 +1,4 @@
-# Manual Vercel deployment
+# Vercel deployment and releases
 
 ## Current deployment
 
@@ -27,9 +27,15 @@ passed, with three dynamic-filesystem tracing warnings in `src/lib/persistence.t
 
 One Next.js project serves `/`, `/dashboard` and `/api/*`. Use Node.js 24.x
 (declared in `package.json`). `vercel.json` selects Next.js, `npm ci` and
-`npm run build`, and disables deployments triggered by Git. There is no CI.
+`npm run build`. Git deployments are enabled only for `production`; `**: false`
+covers all other branches, including names containing `/`. Vercel's matching rule
+allows the explicit `production: true` to override that default.
 Run `npm run check` locally before publishing. Deployment does not apply SQL
-migrations or start the standalone subagent worker.
+migrations. Vercel performs the production build; GitHub Actions is not used.
+
+The owner authorized this release flow on 2026-09-19, replacing the blanket
+NO CI rule. Repository configuration is prepared; the remote production branch,
+its protection, Git connection and Vercel branch tracking still need setup.
 
 ## Current execution boundaries
 
@@ -37,14 +43,13 @@ migrations or start the standalone subagent worker.
   route duration. Configure Vercel Functions to support that duration. Supabase
   stores coordinator state and pending input; process-local scheduling is not
   durable. An interrupted attempt needs another intake request for recovery.
-- Subagents currently require `npm run subagents:work` on a persistent Node 24
-  host. Vercel does not start this command when deploying Next.js. Running every
-  agent within Vercel requires a separate bounded execution and durable scheduling
-  implementation, including retries of waiting missions. Do not claim that a
-  successful web deployment provides that implementation.
-- Parent mission creation and result consumption remain pending in this branch.
-  See [the subagent contract](subagent-execution.md). Communication tools are mock
-  only, even when model calls are real.
+- Current `main` integrates parent mission creation, inline subagent execution
+  and result-triggered replanning in Next.js. Three missions can run concurrently;
+  the request lifetime remains bounded by Vercel. Durable restart recovery and
+  external callbacks still need implementation. Do not run a second standalone
+  worker just to duplicate inline execution. See [the subagent contract](subagent-execution.md).
+- Communication operations acknowledge requests locally; they do not contact
+  real services. Real model calls do not make those communications live.
 - `CoordinatorPanel` fetches `/api/state` without an authorization header, while
   that route requires `CRISIS_API_TOKEN` in production. A configured token yields
   401 for that browser request; an absent token yields 503. Operator/session
@@ -78,30 +83,63 @@ can use Vercel's production origin. See `.env.example` for the complete inventor
 Direct database connection strings are migration tooling credentials, not required
 by the deployed Supabase HTTP client.
 
-Check the target database's migration history before use. The current coordinator
-requires the schema through migration 008; subagents additionally require 009.
+Check the target database's migration history before use. The integrated runtime
+requires the applicable migrations through 015 (patrols, evolving missions and
+retaining resources after communication). The initial deployed UI predates these changes.
 Apply missing migrations only with authorization for that database. This guide
 does not assert that any migration has been applied remotely.
 
-## Release procedure
+## One-time setup
 
-1. Authenticate with Vercel CLI and select the intended team and project. If the
-   project does not exist, confirm its creation before making that remote change.
-2. Keep Git auto-deployments disabled. Link the local folder explicitly using
-   `vercel link --project <project-name> --scope <team-slug>`; inspect the linked
-   project before deployment. `.vercel/` is ignored by Git.
-3. Configure Preview environment values through Vercel's settings or interactive
-   CLI prompts, and verify the database prerequisites. Keep deployment protection
-   enabled for the initial demo; operator authentication is not implemented.
-4. Run `npm run check` locally. Record failures without bypassing checks. Tests
-   remain opt-in under the hackathon policy.
-5. After authorization to publish, run `vercel deploy --scope <team-slug>` for a
-   Preview. A CLI deployment does not require a Git push. Use `vercel curl` for
-   protected Preview checks rather than disabling deployment protection.
-6. Verify `/`, `/dashboard` and authorized `GET /api/state`. A successful build
-   alone does not prove database access, filtering or model execution. Obtain
-   authorization for a model-backed smoke report and any real communications.
-7. Configure Production separately and publish with `--prod` only when authorized.
+1. Merge the reviewed delivery-configuration feature PR into `main`. The owner
+   performs the merge. Bootstrap remote `production` from that exact reviewed
+   commit, with explicit permission; this is branch creation, not a routine push.
+   The local hook blocks direct pushes to `production`; do not bypass it.
+2. Protect `production` on GitHub: require PRs, enforce for administrators, block
+   force pushes and deletion. Keep `main` as the default integration branch.
+3. Connect the existing Vercel `faro` project to
+   `alvarovegaromero/hackandalus-hackathon`. Complete the GitHub login/app
+   authorization if Vercel requests it. Do not create a second Vercel project.
+4. In Vercel Settings > Environments > Production > Branch Tracking, set
+   `production`. Confirm this setting before enabling the first release. The
+   `git.deploymentEnabled` map controls whether a build starts, not its environment.
+   Git connection/setup itself may create an initial deployment; check its target.
+5. Confirm the Production variables and database prerequisites. Credentials stay
+   in Vercel, not in GitHub Actions or the repository. No deploy hook or Vercel
+   token needs to be committed.
+
+## Regular release procedure
+
+Development uses feature branch -> PR -> `main`. Publication uses
+`main` -> release PR -> `production` -> automatic Vercel build/deployment.
+Opening a release PR does not publish it. The human merge is the release decision.
+
+From a clean checkout, fetch the latest refs and create a temporary local feature
+branch at remote `main` so the local guard can validate it without permitting
+direct commits to protected branches:
+
+```sh
+git fetch origin
+git switch -c release/2026-09-19 origin/main
+npm run pr:create -- --release --title "release: publish main" --body-file .data/release-pr.md
+```
+
+Use a unique local branch name and write the reviewed PR body first. The helper
+runs local checks, verifies HEAD still equals current remote `main`, and creates
+the PR with head `main` and base `production`. It does not push the temporary
+branch or merge anything. If main advances, fetch/update and repeat validation.
+Do not squash release PRs: use a merge commit to preserve shared branch ancestry.
+
+After the human merges, confirm Vercel reports READY for the production commit
+and the existing domain points to that deployment. Verify `/`, `/dashboard`,
+`/api/map` and authorized `GET /api/state`. A successful build alone does not prove
+database access or model execution. Obtain authorization for model-backed smoke
+reports and real communications. Tests remain opt-in under the hackathon policy.
+
+Manual CLI deployments remain an explicit, authorized fallback. They bypass the
+branch-trigger filter, so do not run `vercel deploy --prod` as the normal release
+path. For rollback, use a reviewed revert through `main` and another release PR,
+or an explicitly authorized Vercel rollback. Never reset/force-push `production`.
 
 References: [CLI deployments](https://vercel.com/docs/cli/deploy),
 [Git deployment settings](https://vercel.com/docs/project-configuration/git-configuration),
