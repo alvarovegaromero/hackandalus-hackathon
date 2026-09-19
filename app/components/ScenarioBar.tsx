@@ -42,19 +42,19 @@ export default function ScenarioBar({
     >
       <div className="scenario-head">
         <div className="scenario-id">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#5d5d5d]">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-blueprint-mid">
             Escenario
           </span>
-          <h2 className="text-[16px] font-bold text-[#292929] tracking-[-0.15px]">
+          <h2 className="text-[16px] font-bold text-blueprint-dark tracking-[-0.15px]">
             {scenario.name}
           </h2>
-          <p className="text-[12px] text-[#5d5d5d]">{scenario.description}</p>
+          <p className="text-[12px] text-blueprint-mid">{scenario.description}</p>
         </div>
         <div className="scenario-controls flex items-center gap-2">
           <div className="scenario-clock flex items-center gap-1.5" aria-live="off">
             <span className={scenario.running ? "dot live" : "dot"} aria-hidden="true" />
             <strong className="text-[13px]">{clockLabel(elapsedSeconds)}</strong>
-            <small className="text-[11px] text-[#9e9e9e]">
+            <small className="text-[11px] text-blueprint-light">
               {scenario.running ? "en marcha" : "parado"}
             </small>
           </div>
@@ -143,11 +143,11 @@ export default function ScenarioBar({
             {world.voiceOperational ? "operativa" : "caída"}
           </Badge>
           {nextBeat ? (
-            <span className="next-beat text-[12px] text-[#5d5d5d]">
+            <span className="next-beat text-[12px] text-blueprint-mid">
               Siguiente cambio a los {clockLabel(nextBeat.atSeconds)}: {nextBeat.label}
             </span>
           ) : (
-            <span className="next-beat text-[12px] text-[#5d5d5d]">Guion completado</span>
+            <span className="next-beat text-[12px] text-blueprint-mid">Guion completado</span>
           )}
         </div>
       ) : null}

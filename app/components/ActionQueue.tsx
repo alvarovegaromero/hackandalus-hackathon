@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import type { Action, Contact, CreateActionPayload, CrisisZone, Resource } from "@/lib/types";
 import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
+import { Badge, type BadgeProps } from "./ui/badge";
 import NewActionForm from "./NewActionForm";
 import ResourcePicker from "./ResourcePicker";
 import {
@@ -58,6 +58,17 @@ const filterLabels: Record<Filter, string> = {
   open: "Abiertas",
   trouble: "Necesitan a alguien",
   all: "Todas",
+};
+
+const actionStatusBadge: Record<Action["status"], BadgeProps["variant"]> = {
+  pending: "default",
+  approved: "default",
+  running: "warning",
+  stalled: "warning",
+  succeeded: "success",
+  failed: "critical",
+  blocked: "critical",
+  cancelled: "default",
 };
 
 function channelIcon(action: Action) {
@@ -186,17 +197,7 @@ export default function ActionQueue({
               </div>
 
               <div className="action-meta flex flex-wrap gap-1.5 items-center">
-                <Badge
-                  variant={
-                    action.status === "succeeded"
-                      ? "success"
-                      : action.status === "failed" || action.status === "blocked"
-                        ? "critical"
-                        : action.status === "running" || action.status === "stalled"
-                          ? "warning"
-                          : "default"
-                  }
-                >
+                <Badge variant={actionStatusBadge[action.status]}>
                   {actionStatusLabels[action.status]}
                 </Badge>
                 <Badge variant={action.executionMode === "happyrobot" ? "info" : "outline"}>

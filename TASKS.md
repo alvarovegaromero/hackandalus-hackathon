@@ -40,8 +40,8 @@ probado llamadas a modelos ni comunicaciones reales.
 
 - [x] Configuración de Tailwind CSS v4 con `@tailwindcss/postcss` y tokens `@theme`.
 - [x] Primitivas estilo shadcn/ui (`Button`, `Badge`, `Card`) y utilidades `cn` (`clsx` + `tailwind-merge`) en `app/components/ui/` y `lib/utils.ts`.
-- [x] Aplicación del blueprint de diseño limpio: tipografía SF Pro con `-0.15px` letter spacing, jerarquía de grises neutros (`#292929`, `#5D5D5D`, `#9E9E9E`), tarjetas a 16px de radio y botones estilo pill.
-- [x] Mapa táctico interactivo con React Leaflet y capa OpenStreetMap (sin API keys) centrado en Sierra Bermeja, con foco térmico dinámico, carreteras A-397 y MA-8301, y marcadores tácticos con selector de vista (táctico/esquema).
+- [x] Aplicación del blueprint de diseño limpio: tipografía del sistema (SF Pro en Apple) con `-0.15px` letter spacing, jerarquía de grises neutros (`#292929`, `#5D5D5D`, `#9E9E9E`), tarjetas a 16px de radio y botones estilo pill.
+- [x] Mapa táctico interactivo con React Leaflet y capa OpenStreetMap (sin API keys) centrado en Sierra Bermeja, con foco del incendio cuyo radio sigue la velocidad del viento, carreteras A-397 y MA-8301 (trazado ilustrativo) que reflejan los cortes del mundo simulado, marcadores accesibles, selector de vista táctico/regional y paso automático al esquema si no hay tiles.
 
 ## Skills de desarrollo compartidas
 

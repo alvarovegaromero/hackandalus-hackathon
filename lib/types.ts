@@ -52,7 +52,8 @@ export interface CrisisZone {
   /** Riesgo base de la zona, sin contar senales vivas. */
   riskScore: number;
   needs: string[];
-  coordinates: { x: number; y: number; lat?: number; lng?: number };
+  /** x/y (0-100) sitúan la zona en el esquema regional; lat/lng en el mapa táctico. */
+  coordinates: { x: number; y: number; lat: number; lng: number };
   lastUpdatedAt: string;
   /** Puntos vulnerables de la zona: residencias, colegios, campings. */
   vulnerableSites?: VulnerableSite[];

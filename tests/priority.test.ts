@@ -43,7 +43,7 @@ function zona(overrides: Partial<CrisisZone> = {}): CrisisZone {
     populationAtRisk: 600,
     riskScore: 20,
     needs: [],
-    coordinates: { x: 0, y: 0 },
+    coordinates: { x: 0, y: 0, lat: 0, lng: 0 },
     lastUpdatedAt: AHORA,
     ...overrides,
   };

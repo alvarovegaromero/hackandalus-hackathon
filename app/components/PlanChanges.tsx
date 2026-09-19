@@ -47,7 +47,7 @@ export default function PlanChanges({ plan, planHistory, nowMs, isFresh }: Props
     >
       <div className="panel-title flex items-center gap-2">
         <GitCompareArrows size={16} aria-hidden="true" />
-        <h2 className="text-[14px] font-bold text-[#292929] tracking-[-0.15px]">
+        <h2 className="text-[14px] font-bold text-blueprint-dark tracking-[-0.15px]">
           Plan v{plan.version}: qué cambió
         </h2>
         {isFresh ? <Badge variant="warning">Nuevo</Badge> : null}
@@ -74,7 +74,7 @@ export default function PlanChanges({ plan, planHistory, nowMs, isFresh }: Props
 
       {assumptions.length > 0 ? (
         <>
-          <h3 className="section-head text-[12px] uppercase tracking-[0.06em] text-[#5d5d5d]">
+          <h3 className="section-head text-[12px] uppercase tracking-[0.06em] text-blueprint-mid">
             De qué depende este plan
           </h3>
           <ul className="mini-list">

@@ -303,11 +303,11 @@ export default function Home() {
     <main className="shell">
       <header className="topbar">
         <div>
-          <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#5d5d5d]">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-blueprint-mid">
             FARO · Centro de Mando 112 Andalucía
           </p>
           <div className="flex items-center gap-2.5 mt-0.5">
-            <h1 className="text-[24px] font-bold text-[#292929] tracking-[-0.15px] leading-tight flex items-center gap-2">
+            <h1 className="text-[24px] font-bold text-blueprint-dark tracking-[-0.15px] leading-tight flex items-center gap-2">
               Plan vivo de respuesta v{situation.plan.version}
             </h1>
             <Badge variant={situation.integration.mode === "happyrobot" ? "info" : "outline"}>
@@ -316,12 +316,14 @@ export default function Home() {
                 : "Ejecución simulada"}
             </Badge>
           </div>
-          <p className="text-[13px] text-[#5d5d5d] tracking-[-0.15px] mt-1">
+          <p className="text-[13px] text-blueprint-mid tracking-[-0.15px] mt-1">
             {situation.plan.summary} · actualizado {agoLabel(situation.plan.generatedAt, nowMs)}
           </p>
         </div>
         <div className="top-actions flex items-center gap-2">
-          {busy ? <Loader2 className="spin text-[#5d5d5d]" size={16} aria-hidden="true" /> : null}
+          {busy ? (
+            <Loader2 className="spin text-blueprint-mid" size={16} aria-hidden="true" />
+          ) : null}
           <Button
             variant={autonomyPaused ? "pill" : "outline"}
             size="sm"
@@ -449,6 +451,7 @@ export default function Home() {
           <OperationsMap
             zones={situation.zones}
             plan={situation.plan}
+            world={maybe(situation, "world")}
             selectedZoneId={selectedZoneId}
             onSelect={(zoneId) => setSelectedZoneId(zoneId === selectedZoneId ? null : zoneId)}
           />

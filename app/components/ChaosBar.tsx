@@ -25,28 +25,28 @@ const buttons: ChaosButton[] = [
     label: "Girar el viento",
     effect: "El frente cambia de dirección",
     icon: "wind",
-    accent: "text-[#a11b12] bg-[#fde4e2]",
+    accent: "text-danger bg-danger-soft",
   },
   {
     id: "road",
     label: "Cortar la carretera",
     effect: "Se pierde la vía A-397",
     icon: "road",
-    accent: "text-[#96490f] bg-[#fdf0e0]",
+    accent: "text-warn bg-warn-soft",
   },
   {
     id: "sms",
     label: "Tumbar el SMS",
     effect: "Cae el canal de mensajería",
     icon: "sms",
-    accent: "text-[#543a99] bg-[#eee9fb]",
+    accent: "text-violet bg-violet-soft",
   },
   {
     id: "people",
     label: "+50 personas",
     effect: "Llegan más desplazados de los previstos",
     icon: "people",
-    accent: "text-[#17527f] bg-[#e6f0fa]",
+    accent: "text-info bg-info-soft",
   },
 ];
 
@@ -67,33 +67,31 @@ function renderIcon(kind: ChaosButton["icon"], accentClass: string) {
 export default function ChaosBar({ busy, onFire }: Props) {
   return (
     <section
-      className="rounded-[16px] border border-[#d8d4c9] bg-white p-4 shadow-xs tracking-[-0.15px]"
+      className="rounded-[16px] border border-line bg-white p-4 shadow-xs tracking-[-0.15px]"
       aria-label="Romper algo en directo"
     >
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#5d5d5d]">
-          Inyección de Caos · Jurado
+        <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-blueprint-mid">
+          Romper algo en directo
         </p>
-        <span className="text-[12px] text-[#9e9e9e]">
-          Haz clic para alterar el escenario en vivo
-        </span>
+        <span className="text-[12px] text-blueprint-light">Pulsa para alterar el escenario</span>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
         {buttons.map((button) => (
           <button
             key={button.id}
             type="button"
-            className="flex items-start gap-3 p-3 rounded-[12px] border border-[#d8d4c9] bg-white text-left hover:border-[#292929] hover:bg-neutral-50/70 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:pointer-events-none group"
+            className="flex items-start gap-3 p-3 rounded-[12px] border border-line bg-white text-left hover:border-blueprint-dark hover:bg-neutral-50/70 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:pointer-events-none group"
             onClick={() => onFire(button.id)}
             disabled={busy !== null}
             aria-label={`${button.label}. ${button.effect}.`}
           >
             {renderIcon(button.icon, button.accent)}
             <div className="flex flex-col min-w-0">
-              <b className="text-[13px] font-semibold text-[#292929] group-hover:text-black transition-colors">
+              <b className="text-[13px] font-semibold text-blueprint-dark group-hover:text-black transition-colors">
                 {button.label}
               </b>
-              <small className="text-[12px] text-[#5d5d5d] leading-snug mt-0.5 truncate">
+              <small className="text-[12px] text-blueprint-mid leading-snug mt-0.5">
                 {button.effect}
               </small>
             </div>

@@ -339,6 +339,17 @@ function isValidLearning(value: unknown): boolean {
   return typeof value.runsAnalyzed === "number" && Number.isFinite(value.runsAnalyzed);
 }
 
+function hasMapCoordinates(zone: unknown): boolean {
+  if (!isRecord(zone) || !isRecord(zone.coordinates)) return false;
+  const { lat, lng } = zone.coordinates;
+  return (
+    typeof lat === "number" &&
+    Number.isFinite(lat) &&
+    typeof lng === "number" &&
+    Number.isFinite(lng)
+  );
+}
+
 /**
  * Comprueba que lo leido es un estado completo y utilizable. store.ts hace
  * `restored.plan.version + 1` nada mas arrancar, asi que aqui somos estrictos:
@@ -358,6 +369,8 @@ export function validateState(value: unknown): SituationState | null {
     "audit",
   ];
   if (!hasArrays(value, required)) return null;
+  // Estados guardados antes de que las zonas tuvieran lat/lng romperian el mapa.
+  if (!(value.zones as unknown[]).every((zone) => hasMapCoordinates(zone))) return null;
   if (!isValidPlan(value.plan)) return null;
   if (!(value.planHistory as unknown[]).every((plan) => isValidPlan(plan))) return null;
 
