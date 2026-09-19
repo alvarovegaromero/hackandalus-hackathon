@@ -43,7 +43,7 @@ body:
         - Rutas de API (app/api/)
         - Lógica de dominio (lib/)
         - Integración HappyRobot
-        - Tooling / CI / documentación
+        - Tooling / hooks locales / documentación
         - No lo sé
     validations:
       required: true

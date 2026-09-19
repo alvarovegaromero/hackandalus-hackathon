@@ -1,5 +1,12 @@
 # AGENTS.md
 
+**NO CI. This project will not use continuous integration.** We have no GitHub
+Actions minutes. No agent or contributor may create, restore or enable CI
+workflows, configure an alternative CI service, or require remote CI checks.
+This is a project decision, not deferred work. Validate locally with
+`npm run check` and create PRs through `npm run pr:create`, which runs the local
+validation first and blocks creation on failure. See [PROJECT.md](PROJECT.md).
+
 Read and follow [PROJECT.md](PROJECT.md) before working in this repository.
 It is the single source of truth for project context, stack, commands, naming,
 English commit messages, Git permissions, branch protection and secret checks.

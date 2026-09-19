@@ -14,7 +14,8 @@
 
 - [ ] Targets `main` from a feature branch.
 - [ ] Follows `PROJECT.md`; commit messages are in English.
-- [ ] Local hooks passed; relevant checks and limitations are documented above.
+- [ ] Created with `npm run pr:create`; its local `pr:check` validation passed (no GitHub Actions CI).
+- [ ] Check results and tested OS are documented above.
 - [ ] Used Graft for code navigation and passed `npm run index:verify`; documented any unavailable or unindexed results.
 - [ ] No credentials or private interaction data included.
 - [ ] Relevant docs and `.env.example` updated if needed.
