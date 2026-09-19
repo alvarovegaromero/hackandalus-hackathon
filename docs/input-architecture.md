@@ -1,50 +1,53 @@
 # Event ingestion: how signals enter FARO
 
-The confirmed [report input contract](input-contract.md) defines the public
-payload, normalized triage input, synchronous receipt and asynchronous processing,
-and the migration from the existing code. Read it before implementing intake.
+The HappyRobot inbound contract is runtime-validated by
+`src/lib/signals/happyrobot.ts`. The broader multi-source contract in
+[input-contract.md](input-contract.md) remains future work.
 
-For the initial POC, reuse input/SSE from `origin/event-pipeline-backend-frontend`
-at `e2579a9`, as specified in [POC module contracts](poc-contracts.md). That branch
-is not integrated into this checkout. Its memory receipt is not the durable
-report receipt below; its SSE envelope/cursors/reset are the existing transport
-to extend with filter, triage and agent payloads.
+The legacy `/api/events` input and SSE transport are now integrated in `main`, as
+specified in [POC module contracts](poc-contracts.md). Their process-local receipt
+is separate from the durable HappyRobot Signal receipt below. The SSE
+envelope/cursors/reset remain the transport to extend with filter, triage and
+agent payloads.
 
 ## Pipeline
 
 ```text
-report / channel adapter
-  -> validate context and payload
-  -> deduplicate delivery, persist original, schedule durable processing
-  -> acknowledge receipt
-  -> normalize and extract claims
-  -> triage
-  -> correlate incidents
-  -> plan and execute
+HappyRobot normalized_report
+  -> authenticate and validate POST /api/signals
+  -> persist the complete raw payload and deduplicate transport delivery
+  -> processSignal (synchronous first slice)
+  -> deterministic FARO interpretation into active CrisisEvent
+  -> addCrisisEvent
+  -> existing Digital Twin, planning, actions and dashboard flow
 ```
 
-The reporter supplies text and optional location only. The server supplies
-identity, crisis context and provenance. Normalization preserves the original
-and produces a common envelope; triage assesses relevance, urgency and confidence.
-A claimed or inferred fact is not confirmed evidence.
+HappyRobot supplies observations and provenance. FARO supplies operational
+category, zone assignment, severity and confidence. Claims remain losslessly
+embedded in `signals.raw_payload`; separate Claim/Evidence rows and incident
+correlation are not part of this first slice.
 
-The HTTP request waits for persistence and confirmed scheduling, not model
-interpretation or triage. Batches have bounded concurrency and per-item outcomes.
-The reused SSE transport delivers later state changes to the dashboard;
-it does not replace durable background execution. No separate broker or worker is
-part of the confirmed stack.
+The HTTP request persists first and then waits for deterministic interpretation.
+A processing failure leaves the Signal in `failed` state for a later retry.
+Vercel Workflow, queues, batch intake, and Supabase Realtime are not used here.
+The dashboard continues to poll `GET /api/situation` every four seconds.
+The existing SSE transport remains unchanged and is not the processing trigger.
 
 ## Implemented today
 
 Next.js serves the unified `src/app/` tree. The duplicate scaffold endpoints
 were retired; backend module consolidation does not imply integration.
 
-| Path                          | Current behavior                                                                                                                    |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `src/app/api/events/route.ts` | Active single-event endpoint using `src/lib/validation.ts`; synchronous `addEvent`, 201 for new events and 200 for duplicates.      |
-| `src/lib/store.ts`            | In-memory state, optional JSON persistence, five-minute duplicate lookup and synchronous replanning.                                |
-| `src/lib/ingest.ts`           | Reusable batch validation, event-ID deduplication and bounded processing starts; not called by the active route.                    |
-| `src/lib/signals/to-event.ts` | `signalToReport` emits the shared envelope and preserves scenario evidence; legacy `signalToEvent` remains available for migration. |
+| Path                            | Current behavior                                                                                                                    |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `src/app/api/signals/route.ts`  | Authenticated HappyRobot intake; exact validation, durable idempotent persistence, synchronous processing, compact result.          |
+| `src/lib/signals/happyrobot.ts` | Exact `normalized_report` schema plus source-scoped deterministic identities.                                                       |
+| `src/lib/signals/repository.ts` | Supabase `signals` persistence, atomic processing claim, success/failure recording.                                                 |
+| `src/lib/signals/process.ts`    | Explicit deterministic interpretation into active `src/lib/types.ts::CrisisEvent`.                                                  |
+| `src/app/api/events/route.ts`   | Legacy interpreted-event input; process-local receipt, telemetry publication and command-center projection.                         |
+| `src/lib/store.ts`              | `addCrisisEvent` is the shared interpreted-Event seam; it updates state, Twin, actions, plan and audit.                             |
+| `src/lib/ingest.ts`             | Reusable batch validation, event-ID deduplication and bounded processing starts; not called by the active route.                    |
+| `src/lib/signals/to-event.ts`   | `signalToReport` emits the shared envelope and preserves scenario evidence; legacy `signalToEvent` remains available for migration. |
 
 Luis's batch implementation is reusable orchestration, but is not the served
 endpoint or the final report schema. The exact adaptation plan is in
@@ -64,17 +67,23 @@ deduplication and its window remain open. An atomic occurrence update and
 recovery after persistence succeeds but scheduling fails must be resolved during
 implementation. A stored report alone is not proof of scheduled work.
 
-## Delivery milestones
+## Request and retry contract
 
-1. **Contract and normalization:** the decision is fixed in
-   [input-contract.md](input-contract.md); the envelope schema and scenario
-   adapter exist, the public validator and other adapters are next.
-2. **Durable ingestion:** reconcile the target data model, connect the processing
-   input and expose the route under `src/app/`. Preserve existing callers until
-   migrated. Do not describe in-memory acceptance as durable.
-3. **Dashboard updates:** reuse input-owned SSE, add domain activity and connect
-   durable replay with operator authorization. This does not change the producer
-   payload; Supabase Realtime is not an additional POC requirement.
+Send `POST /api/signals` with `Content-Type: application/json` and
+`x-happyrobot-secret: <HAPPYROBOT_WEBHOOK_SECRET>`. A successful response is:
+
+```json
+{ "signalId": "...", "eventId": "...", "duplicate": false, "status": "processed" }
+```
+
+Transport identity is `happyrobot:<channel>:<native_interaction_id>`. When the
+native ID is absent, FARO hashes the canonical complete payload. Re-delivery of
+an already processed Signal returns its existing identifiers and creates no new
+Event. Failed interpretation records `processing_status = failed` without
+altering `raw_payload`; sending the same report again claims and retries it.
+
+The migration `202609190001_happyrobot_signals.sql` must be applied before live
+intake. The `signals` table is service-role-only with deny-by-default RLS.
 
 The [data-model proposal](data-model.md) still needs reconciliation
 for unassessed reports. Its former public `incomingSignalSchema` has been

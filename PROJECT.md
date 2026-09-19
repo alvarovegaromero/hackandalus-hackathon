@@ -30,8 +30,10 @@ connected; the sketch must not be treated as the target architecture.
 Status: the codebase is unified under the standard Next.js `src/` directory
 (`src/app/`, `src/components/`, and `src/lib/`): operator panel,
 HTTP API, self-advancing scenario scripts, action queue with human approval,
-HappyRobot adapter (contract unverified, `mock` mode by default) and the digital
-twin. Persistence is in-memory (optional JSON under `.data/`); Supabase, operator
+HappyRobot adapter (aligned with the public SDK contract, `mock` mode by default,
+live runs not yet exercised), report intake at `POST /api/signals`, and the digital
+twin. Operational state is in-memory (optional JSON under `.data/`); Supabase is
+used only for durable inbound HappyRobot signals (`public.signals`); operator
 authentication and live HappyRobot communications are not connected. The seed and default script
 still name Sierra Morena; the confirmed scenario is Sierra Bermeja (see
 `thoughts/open-questions.md`, "Confirmed, do not reopen"). Model selection,
@@ -128,9 +130,15 @@ module-specific docs or use the sketch as the target architecture.
   server-only Jev relevance evaluation and P3 handoff. Backend logs only;
   served intake wiring, persistence and frontend notifications remain
   pending. See `docs/jev-filter.md` for configuration and P1 integration.
+- `src/lib/contracts/triage.ts`, `src/lib/triage/impact.ts`: P3 structured factors,
+  source-of-truth impact formula and LLM handoff. Jev relevance is separate from
+  impact; P4 chooses final priority and resource proposals assuming
+  unlimited availability. See `docs/triage.md`; intake/persistence wiring is pending.
 - `src/lib/ingest.ts`: reusable batch validation and deduplication with injected
   persistence and processing callbacks; not connected to the served API.
-- `src/lib/agents`: AI SDK coordinator (model configured through environment).
+- `src/lib/agents`: legacy AI SDK coordinator and P4 `planReport` for the P3
+  handoff (model configured through environment). See `docs/agent-planning.md`;
+  planning returns proposals and audit messages for P0 to persist, without dispatch.
 - `src/lib/supabase`: server/browser clients and Realtime subscription helper.
 - `src/lib/integrations`: HappyRobot boundary, explicitly blocked until implemented.
 - `supabase/migrations`: initial PostgreSQL schema with deny-by-default RLS.
@@ -140,7 +148,7 @@ module-specific docs or use the sketch as the target architecture.
   integration contract review; it is not yet a frozen or implemented API.
 - `docs/`: design and implementation guides. `docs/architecture.md` explains the
   command-center decisions, `docs/security.md` its credential and demo-recipient
-  rules, `docs/happyDocumentation.md` the unverified HappyRobot contract,
+  rules, `docs/happyDocumentation.md` the HappyRobot contract and workflow payloads,
   `docs/data-model.md` the Supabase model, `docs/input-architecture.md` batch
   event ingestion (current route split and migration); `docs/event-telemetry.md`
   describes the served single-event ingestion and SSE slice,

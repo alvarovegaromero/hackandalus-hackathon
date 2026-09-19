@@ -158,7 +158,7 @@ No action leaves the system on its own. The lifecycle is:
 | Safeguard          | Where                                                | What it does                                                                                                                                                 |
 | ------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Execution mode     | `getExecutionMode()`                                 | With `ACTION_EXECUTION_MODE` set to anything other than `happyrobot`, nothing leaves the process. This is the default.                                       |
-| Credentials        | `isHappyRobotConfigured()`                           | Without an API key, base URL, and agent, live execution fails with an explicit error instead of attempting partial dispatch.                                 |
+| Credentials        | `isHappyRobotConfigured()`                           | Without an API key, base URL, and at least one workflow id, live execution fails with an explicit error instead of attempting partial dispatch.              |
 | Approved recipient | `canReceiveLiveAction()` / `liveActionBlockReason()` | A contact without `demoSafe` **degrades the action to simulation** and explains why. In the current seed, all contacts are marked as not approved.           |
 | Human approval     | `approveAction()`                                    | Nothing executes without human approval.                                                                                                                     |
 | Idempotency        | `idempotencyKey = "<id>:<attempt>"`                  | Prevents duplicate alerts when retrying or receiving the same event twice.                                                                                   |
@@ -261,15 +261,15 @@ and interactive demo powered by the same underlying engine.
 
 ## What is implemented and what is not
 
-| Component                                                              | Status                                                                                                           |
-| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| In-memory state, replanning, audit trail                               | Implemented                                                                                                      |
-| Deterministic priority engine with factor breakdown                    | Implemented                                                                                                      |
-| Resource allocation, contacts, escalation chains                       | Implemented                                                                                                      |
-| HappyRobot adapter with retries, timeout, and idempotency              | Implemented (route and payload **unverified** against private documentation; see `docs/happyDocumentation.md`)   |
-| Human approval and action queue                                        | Implemented                                                                                                      |
-| Input validation and homogeneous error responses across the entire API | Implemented                                                                                                      |
-| Self-advancing script with three scenarios and adjustable speed        | Implemented                                                                                                      |
-| Digital twin with accuracy, divergence, and uncertainty metrics        | Implemented                                                                                                      |
-| JSON persistence                                                       | Implemented, opt-in local JSON with validation, redaction and atomic writes                                      |
-| Cross-execution learning                                               | Implemented statistics and optional persistence; influences contact/channel selection, not zone priority scoring |
+| Component                                                              | Status                                                                                                                                   |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| In-memory state, replanning, audit trail                               | Implemented                                                                                                                              |
+| Deterministic priority engine with factor breakdown                    | Implemented                                                                                                                              |
+| Resource allocation, contacts, escalation chains                       | Implemented                                                                                                                              |
+| HappyRobot adapter with retries, timeout, and idempotency              | Implemented against the public SDK contract (`POST /workflows/{id}/runs`); live runs not yet exercised. See `docs/happyDocumentation.md` |
+| Human approval and action queue                                        | Implemented                                                                                                                              |
+| Input validation and homogeneous error responses across the entire API | Implemented                                                                                                                              |
+| Self-advancing script with three scenarios and adjustable speed        | Implemented                                                                                                                              |
+| Digital twin with accuracy, divergence, and uncertainty metrics        | Implemented                                                                                                                              |
+| JSON persistence                                                       | Implemented, opt-in local JSON with validation, redaction and atomic writes                                                              |
+| Cross-execution learning                                               | Implemented statistics and optional persistence; influences contact/channel selection, not zone priority scoring                         |

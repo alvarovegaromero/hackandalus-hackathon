@@ -18,8 +18,9 @@ open decisions) in [thoughts/](thoughts/README.md).
 **Status.** The application is unified under `src/`. Next.js serves
 `src/app/`, with sketch UI components in `src/components/` and the active
 command-center backend in `src/lib/`. It includes the HTTP API, scripted
-scenarios, human-approved actions and the digital twin. State lives in server
-memory with optional local JSON persistence.
+scenarios, human-approved actions and the digital twin. Operational state lives
+in server memory with optional local JSON persistence. Authenticated HappyRobot
+inbound reports are durably stored in Supabase before synchronous interpretation.
 
 Reusable AI SDK, Supabase, batch ingestion and Sierra Bermeja
 scenario modules also live under `src/`, but are not connected to the served
@@ -50,15 +51,33 @@ not connected to this flow. See [contract, authentication, replay and limits](do
 
 ## Local Startup
 
+To inspect P3 inputs and outputs without any credentials or network calls, run
+`npm run triage:try`: ten manual scenarios cover scored impact, unknown factors,
+uncertainty and rejected invalid input. See the [P3 diagram and results](docs/triage.md).
+
 To manually exercise Jev with 10 synthetic reports, run `npm run jev:try` after
 configuring `TYPESAFE_API_KEY`. Add `-- --limit 5` for fewer cases or `-- --dry-run`
 to inspect inputs without live calls. See [Jev filter](docs/jev-filter.md).
+
+To exercise P3 → P4 on demand, use `npm run llm:try -- --dry-run` to inspect
+synthetic inputs, or `npm run llm:try -- --limit 5` for real model calls with
+the selected provider in `.env.local`: `AI_PROVIDER=opencode-go` uses
+`OPENCODE_MODEL` and `OPENCODE_API_KEY`; `gateway` uses `AI_MODEL` and
+`AI_GATEWAY_API_KEY`. It uses synthetic Jev results, real impact/planning modules
+and mock tools, without real communications or dispatch.
+See [P4 planning](docs/agent-planning.md) for outputs and interpretation.
 
 P2's server-only [Jev relevance filter](docs/jev-filter.md) is available for P1
 integration, with shared input/output validators and backend decision logs.
 Configure `TYPESAFE_API_KEY` and optional `JEV_*` policy settings in `.env.local`
 for real evaluation. Missing credentials return unavailable. The served intake
 does not yet invoke it; persistence and frontend filter notifications are pending.
+
+P3's [impact calculation](docs/triage.md) uses structured operator/scenario
+factors and the Source of Truth formula. P4's [LLM planner](docs/agent-planning.md)
+consumes that result and Jev's decision to propose priority, a plan and resource
+quantities with unlimited availability. These modules still need intake,
+persistence and execution wiring; they do not dispatch resources.
 
 The agreed initial delivery is documented in [Initial POC](docs/poc.md), with
 P0–P5 work packages, dependencies and demo acceptance. Follow that scope before
@@ -131,9 +150,9 @@ are permitted. No scanner detects every secret.
 ```
       signals                    decision                    execution
   ┌───────────────┐        ┌───────────────────┐        ┌────────────────┐
-  │ POST /events  │        │ priority.ts       │        │ happyrobot.ts  │
-  │ webhook       │ ─────► │ resources.ts      │ ─────► │  (single exit  │
-  │ demo/inject   │        │ contacts.ts       │        │     point)     │
+  │ POST /signals │        │ priority.ts       │        │ happyrobot.ts  │
+  │ POST /events  │        │ resources.ts      │        │  (single exit  │
+  │ webhook/demo  │ ─────► │ contacts.ts       │ ─────► │     point)     │
   │ scenario.ts   │        │ escalation.ts     │        └───────┬────────┘
   └───────────────┘        └─────────┬─────────┘                │
                                      │                          │ callback
@@ -166,6 +185,7 @@ model.
 | `src/lib/assumptions.ts`                                              | Plan assumptions and world-state updates.                                      |
 | `src/lib/digitalTwin.ts`                                              | Digital twin: perceived world from signals vs simulated ground truth accuracy. |
 | `src/lib/happyrobot.ts`                                               | HappyRobot adapter; the single outbound communication point.                   |
+| `src/lib/signals/happyrobot.ts`, `process.ts`, `repository.ts`        | Exact inbound contract, FARO interpretation, and durable Signal storage.       |
 | `src/lib/scenario.ts`, `src/lib/seed.ts`                              | Scenario scripts driving crisis progression and initial state.                 |
 | `src/lib/history.ts`, `src/lib/learning.ts`, `src/lib/persistence.ts` | History and plan diffs, learned statistics, optional JSON storage.             |
 | `src/app/page.tsx`, `src/components/`                                 | Operator dashboard.                                                            |
@@ -202,9 +222,10 @@ for the distinction between current behavior and proposals.
    what changed compared to the previous plan and why.
 4. Trigger chaos manually via demo buttons (new incident, blocked road, resource down, integration failure).
 5. Intervene: approve an action in the queue (only then does it execute), cancel another, retry a failed action, or confirm/discard an ambiguous signal.
-6. Close the loop by simulating a callback via `POST /api/webhooks/happyrobot`:
-   the action status updates and the information reported by the contact enters as a
-   new signal triggering replanning.
+6. Close the loop by simulating a callback via `POST /api/webhooks/happyrobot`
+   (a `dispatch_result`, a `public_alert_result` or the generic shape): the action
+   status updates and what the responder said enters as a new signal triggering
+   replanning. HappyRobot inbound reports enter through `POST /api/signals`.
 7. Reset with `POST /api/demo/reset` before the next demonstration run.
 
 The default script is `wildfire-andalucia` and its seed names Sierra Morena;
@@ -215,19 +236,21 @@ updating this to Sierra Bermeja is tracked in [TASKS.md](TASKS.md).
 JSON responses without caching. Errors always follow the format
 `{ "error", "code", "detalles": [{ "campo", "mensaje" }] }` with stable
 codes (`cuerpo_invalido`, `referencia_desconocida`, `no_encontrado`,
-`conflicto`, `no_autorizado`, `metodo_no_permitido`, `error_interno`).
+`conflicto`, `no_autorizado`, `persistencia_no_disponible`,
+`metodo_no_permitido`, `error_interno`).
 Unsupported methods return `405` with the `Allow` header.
 
 | Endpoint                          | Body                                                                                             | Description                                                                |
 | --------------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
-| `GET /api/situation`              | —                                                                                                | Complete state: signals, zones, resources, plan, history                   |
+| `GET /api/situation`              | —                                                                                                | Complete operational state: events, zones, resources, plan, history        |
 | `POST /api/events`                | `{ id?, source?, title?, description?, zoneId?, category?, severity?, confidence?, confirmed? }` | 202: accepts in memory, publishes telemetry and updates the command center |
 | `GET /api/telemetry`              | —                                                                                                | Read-only SSE; recent history and cursor reconnection                      |
 | `POST /api/events/:id/mark`       | `{ confirmed }`                                                                                  | Confirms or discards a signal                                              |
 | `POST /api/actions`               | `{ channel, target, objective, reason, zoneId, resourceId?, contactId? }`                        | Creates a pending action awaiting approval                                 |
 | `POST /api/actions/:id/approve`   | —                                                                                                | Human approval; only then does execution occur                             |
 | `POST /api/actions/:id/status`    | `{ operation?: "cancel" \| "retry", status?, externalActionId?, error? }`                        | Cancels, retries, or updates action status                                 |
-| `POST /api/webhooks/happyrobot`   | callback                                                                                         | Requires `x-happyrobot-secret`; `503` if unconfigured, `401` on mismatch   |
+| `POST /api/signals`               | HappyRobot `normalized_report`                                                                   | Durably stores a Signal, interprets an Event, and replans                  |
+| `POST /api/webhooks/happyrobot`   | `dispatch_result`, `public_alert_result` or generic callback                                     | Requires `x-happyrobot-secret`; `503` if unconfigured, `401` on mismatch   |
 | `POST /api/scenario/start`        | `{ scriptId?, speed?, restart? }`                                                                | Starts or resumes scenario script (`speed` between 0.25 and 10)            |
 | `POST /api/scenario/stop`         | —                                                                                                | Pauses scenario preserving elapsed time                                    |
 | `POST` / `GET /api/scenario/tick` | —                                                                                                | Manual scenario advancement / read-only status poll                        |
@@ -246,17 +269,18 @@ All variables live in `.env.local` (ignored by Git); `npm run env:setup` creates
 from `.env.example`, which contains the fully documented list. Never commit credentials to the
 repository; see [CONTRIBUTING.md](CONTRIBUTING.md) for sharing guidance.
 
-| Variable                                                                                                                               | Purpose                                                                                                                                    |
-| -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ACTION_EXECUTION_MODE`                                                                                                                | `mock` (default): nothing leaves the local process. `happyrobot`: live execution.                                                          |
-| `HAPPYROBOT_API_KEY`, `HAPPYROBOT_BASE_URL`, `HAPPYROBOT_AGENT_ID`, `HAPPYROBOT_WORKFLOW_ID`                                           | Credentials for live execution.                                                                                                            |
-| `HAPPYROBOT_ACTION_PATH`, `_AUTH_HEADER`, `_AUTH_SCHEME`, `_IDEMPOTENCY_HEADER`, `_PAYLOAD_SHAPE`, `_RESPONSE_ID_PATH`, `_CHANNEL_MAP` | Configurable contract, unverified against live API ([docs/happyDocumentation.md](docs/happyDocumentation.md)).                             |
-| `HAPPYROBOT_TIMEOUT_MS`, `HAPPYROBOT_MAX_ATTEMPTS`, `HAPPYROBOT_RETRY_BASE_MS`                                                         | Per-attempt timeout, retry attempts (5xx, network, and timeout only), and backoff.                                                         |
-| `HAPPYROBOT_WEBHOOK_SECRET`                                                                                                            | Shared secret for callback webhook.                                                                                                        |
-| `DEMO_API_TOKEN`                                                                                                                       | Protects `/api/demo/*`.                                                                                                                    |
-| `CRISIS_PERSISTENCE`                                                                                                                   | `on` persists state as JSON under `.data/`. Disabled by default.                                                                           |
-| `CRISIS_API_TOKEN`, `AI_GATEWAY_API_KEY`, `AI_MODEL`, `NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SECRET_KEY`, `SCENARIO_AGENT_ENABLED`        | Optional scaffolding configuration; AI SDK and Supabase are not connected to served intake.                                                |
-| `SUPABASE_DIRECT_DB_URL`, `SUPABASE_POOLER_DB_URL`                                                                                     | Server-side Supabase CLI connection URIs for migrations. Encode special characters in passwords; never expose or use them in browser code. |
+| Variable                                                                                                                                                 | Purpose                                                                                                                                    |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ACTION_EXECUTION_MODE`                                                                                                                                  | `mock` (default): nothing leaves the local process. `happyrobot`: live execution.                                                          |
+| `HAPPYROBOT_API_KEY`, `HAPPYROBOT_BASE_URL`, `HAPPYROBOT_ENVIRONMENT`                                                                                    | API key, cluster (`platform.eu.happyrobot.ai/api/v2` for our workspace) and run environment (`development` by default).                    |
+| `HAPPYROBOT_DISPATCH_WORKFLOW_ID`, `HAPPYROBOT_PUBLIC_ALERT_WORKFLOW_ID`, `HAPPYROBOT_WORKFLOW_ID`, `HAPPYROBOT_CHANNEL_WORKFLOWS`, `CRISIS_INCIDENT_ID` | FARO workflows triggered per channel (`call=dispatch,sms=public-alert`, generic fallback) and the incident id sent with each run.          |
+| `HAPPYROBOT_RUNS_PATH`, `_AUTH_HEADER`, `_AUTH_SCHEME`, `_IDEMPOTENCY_HEADER`, `_RESPONSE_ID_PATH`                                                       | Adapter knobs; defaults follow the public SDK contract ([docs/happyDocumentation.md](docs/happyDocumentation.md)).                         |
+| `HAPPYROBOT_TIMEOUT_MS`, `HAPPYROBOT_MAX_ATTEMPTS`, `HAPPYROBOT_RETRY_BASE_MS`                                                                           | Per-attempt timeout, retry attempts (5xx, network, and timeout only), and backoff.                                                         |
+| `HAPPYROBOT_WEBHOOK_SECRET`                                                                                                                              | Shared `x-happyrobot-secret` for inbound Signal intake and callback webhook.                                                               |
+| `DEMO_API_TOKEN`                                                                                                                                         | Protects `/api/demo/*`.                                                                                                                    |
+| `CRISIS_PERSISTENCE`                                                                                                                                     | `on` persists state as JSON under `.data/`. Disabled by default.                                                                           |
+| `CRISIS_API_TOKEN`, `AI_GATEWAY_API_KEY`, `AI_MODEL`, `NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SECRET_KEY`, `SCENARIO_AGENT_ENABLED`                          | Optional scaffolding configuration; see the current intake and agent integration docs.                                                     |
+| `SUPABASE_DIRECT_DB_URL`, `SUPABASE_POOLER_DB_URL`                                                                                                       | Server-side Supabase CLI connection URIs for migrations. Encode special characters in passwords; never expose or use them in browser code. |
 
 Without model or key, the coordinator under `src/` uses a deterministic decision
 marked as `simulation`; with both set, it uses AI SDK. If one is missing, it fails
@@ -268,8 +292,10 @@ By default, nothing leaves the system. For an action to reach a recipient,
 all of the following conditions must be met simultaneously:
 
 1. `ACTION_EXECUTION_MODE=happyrobot`.
-2. `HAPPYROBOT_API_KEY`, `HAPPYROBOT_BASE_URL`, and `HAPPYROBOT_AGENT_ID`
-   are present; if any is missing, the adapter fails listing the missing keys.
+2. `HAPPYROBOT_API_KEY`, `HAPPYROBOT_BASE_URL` and a workflow id for the action's
+   channel (or the generic `HAPPYROBOT_WORKFLOW_ID`) are present; otherwise the
+   adapter fails listing what is missing. Runs go to `HAPPYROBOT_ENVIRONMENT`
+   (`development` unless changed).
 3. The recipient is marked safe for demo (`demoSafe`) and has a phone or email.
    In the initial seed, no contact is marked demoSafe.
 4. A human operator explicitly approved that specific action from the dashboard.
@@ -324,7 +350,7 @@ remain proposals for later product work and do not add POC prerequisites.
 | [TASKS.md](TASKS.md)                                                                   | Completed and deferred work, including tree unification.      |
 | [docs/architecture.md](docs/architecture.md)                                           | Command center design decisions and trade-offs.               |
 | [docs/security.md](docs/security.md)                                                   | Credentials, webhook secret, and demo recipients.             |
-| [docs/happyDocumentation.md](docs/happyDocumentation.md)                               | HappyRobot notes and unverified API contract details.         |
+| [docs/happyDocumentation.md](docs/happyDocumentation.md)                               | HappyRobot contract, FARO workflows, callbacks and mocking.   |
 | [docs/data-model.md](docs/data-model.md), [thoughts/](thoughts/README.md)              | Supabase data model, feature inventory, and design decisions. |
 | [docs/input-architecture.md](docs/input-architecture.md)                               | Batch event ingestion architecture.                           |
 | [docs/dashboard-design-guide.md](docs/dashboard-design-guide.md)                       | Dashboard visual and design guide.                            |

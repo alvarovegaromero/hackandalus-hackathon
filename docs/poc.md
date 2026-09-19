@@ -17,6 +17,10 @@ payloads behind that transport rather than designing another input/SSE contract.
 
 ## Goal and boundaries
 
+Focus on catastrophe coordination affecting populations, zones and critical
+infrastructure. Standalone individual emergency response is a possible later
+add-on, outside this POC's scenarios and acceptance criteria.
+
 Demonstrate one Sierra Bermeja scenario, one coordinating agent, and one
 HappyRobot operation: receive a report, filter relevance, calculate priority,
 create a plan, execute an action, and show the result. A later report must change
@@ -39,7 +43,7 @@ flowchart LR
   INPUT[Scenario / report API] --> SAVE[Validate, deduplicate, persist]
   SAVE --> START[Confirm recoverable asynchronous processing]
   START --> FILTER[Jev relevance filter]
-  FILTER --> TRIAGE[Deterministic priority function]
+  FILTER --> TRIAGE[Deterministic impact formula]
   TRIAGE --> AGENT[One agent: persist plan and execute tool]
   AGENT --> RESULT[Persist outcome]
   RESULT --> AGENT
@@ -68,14 +72,14 @@ Jev assesses relevance, not whether the reported event is objectively true.
 The POC filter uses `relevant`, `irrelevant`, and `uncertain`; these are not the
 five response-policy outcomes in the broader product proposal.
 
-Priority is calculated by one deterministic function with adjustable,
-versioned weights. Record input factors, unknowns, factor contributions and
-formula version with every result. Separate severity, urgency and source
-reliability. Source reliability may influence handling/ranking, but must not
-erase high potential impact merely because a report is anonymous. Source roles
-such as police come from trusted adapter metadata, never self-declared text.
-The precise formula, thresholds and initial weights remain to be agreed and
-tested against fixtures; do not silently adopt the sketch's zone scoring.
+P3 calculates potential impact using the [source-of-truth formula](triage.md),
+`G * log10(1 + N) * V / (1 + t/15)`, with versioned vulnerability/time parameters.
+Structured factors come from operator/scenario observations, not another Jev call
+or simulator ground truth. Unknown factors remain explicit and continue to the
+LLM. Jev relevance, confidence and trusted source identity remain separate from
+impact. The LLM decides final priority and finite proposed resource quantities,
+assuming unlimited availability for this POC. It does not dispatch resources here.
+Do not adopt the sketch's zone scoring or the superseded additive contract draft.
 
 ## Audit and frontend delivery
 
@@ -113,8 +117,8 @@ instead of creating competing enums or editing shared contracts independently.
 | --- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | P0  | Contracts and integration      | Shared Zod contracts and fixtures for filter, priority, agent execution, activity and UI; preserve the existing report contract | All packages consume identical examples; IDs, unknown values, state transitions and retry behavior are explicit                                    |
 | P1  | Input and scenarios            | Report intake, stable delivery identity, persistence, recoverable processing start; scenario fixtures                           | Text-only report accepted; duplicate delivery produces one effective processing run; storage/start failure recovers; independent witnesses survive |
-| P2  | Jev relevance filter           | Typed decision with evidence references, brief justification and unavailable/error state                                        | Greeting stops; clear incident continues; ambiguous report or Jev failure remains reviewable                                                       |
-| P3  | Deterministic triage           | Single pure priority function, versioned configuration and factor breakdown                                                     | Repeatable score; authenticated source affects configured policy; severe anonymous report retains high impact; unknowns remain explicit            |
+| P2  | Jev relevance filter           | Typed decision with evidence references, brief justification and unavailable/error state                                        | Greeting stops; relevant and uncertain reports continue; Jev failure stops with a backend error log                                                |
+| P3  | Deterministic impact           | Source-of-truth formula, versioned configuration and structured factor breakdown                                                | Repeatable raw impact; source and relevance remain separate; unknown factors continue to P4 explicitly                                             |
 | P4  | Agent and HappyRobot execution | Persist messages and plan versions; one validated tool; persist dispatch/outcome; handle a later report                         | Initial action and changed next action visible; retries do not duplicate dispatch; simulation, acceptance and confirmed result are distinct        |
 | P5  | Frontend and live activity     | Report list/detail, activity timeline and agent messages; current objective/action/result; approval or pause                    | Refresh/reconnect restores history without gaps/duplicates; receipt differs from completion; errors and human intervention visible                 |
 
@@ -159,8 +163,8 @@ timeout, duplicate outcome, stale approval, paused execution and SSE reconnect.
 
 ## Decisions still needed
 
-Assign people to P0–P5; select coordinator model and credentials; confirm Jev
-configuration and unavailable behavior; choose priority weights/thresholds;
+Assign people to P0–P5; select coordinator model and credentials; calibrate Jev
+thresholds and the initial impact parameters against labeled scenarios;
 verify the first HappyRobot request, response and outcome contract; establish
 demo recipient approval; select operator authentication; define durable
 scheduling recovery and durable SSE replay/snapshot/hosting behavior. The current
