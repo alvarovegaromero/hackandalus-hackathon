@@ -1,5 +1,7 @@
 # Documentation map
 
+Subagent execution handoff (Person B): [contracts, tools and worker](subagent-execution.md).
+
 Current contract: [global coordinator state v2](coordinator-state-contract.md), with a [complete FE fixture](coordinator-state.example.json). Implemented with a dedicated coordinator worker; the Supabase v2 migration is applied. Resource release is disabled.
 
 Start with [the project README](../README.md) for setup and
