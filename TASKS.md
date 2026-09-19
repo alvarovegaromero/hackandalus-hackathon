@@ -234,9 +234,11 @@ are in the source document.
 - [x] Prepare Vercel build settings and document environment prerequisites and agent hosting limits in `docs/vercel-deployment.md`.
 - [x] Prepare `production`-only Git deployments, local branch protection and the `main` to `production` release PR command.
 - [x] Add the project-owned `faro-deploy` skill for release PRs and Vercel verification.
-- [ ] Publish the delivery configuration into `main`, bootstrap/protect remote `production`, connect Vercel Git and set Production branch tracking. Verify the first merged release deploys automatically.
+- [x] Merge delivery configuration and skill through PR #61; bootstrap remote `production` at `a8f697d` and require PRs, including administrators, with force-push/deletion disabled.
+- [x] Connect GitHub and its repository-scoped Vercel App, link the repository and set Production branch tracking to `production`. Initial Git deployment `dpl_819DFD5UHZqkLsr82dSUcvQhcaMQ` is READY at `a8f697d`; landing, dashboard and map return 200, protected state/subagents return 401 without authentication.
+- [ ] Verify automatic deployment on the next release merge; the first Git deployment was started through Vercel's Create Deployment UI.
 - [ ] Add durable remote scheduling for coordinator recovery and subagent execution; web deployment alone does not run the subagent worker.
-- [ ] Connect dashboard session authentication to `/api/state` before the remote demo; the current browser request lacks the token required in production.
+- [x] Implement shared-code demo access without accounts: signed twenty-six-hour cookie for dashboard reads and same-origin mock reset/fixture controls. Configure `DEMO_ACCESS_CODE` and deploy before remote verification.
 
 ## Vertical HTTP → backend → SSE
 

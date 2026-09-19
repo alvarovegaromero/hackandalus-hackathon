@@ -15,6 +15,10 @@ The landing's three dashboard links use `/dashboard` in the same tab with
 prefetching disabled. The operator header provides a home link. Direct visits,
 refreshes and bookmarked `/dashboard` URLs work without visiting the landing.
 The home page stays visible until the visitor chooses to open the dashboard.
+In production, `/dashboard` first shows a shared-code dialog. Its server page
+mounts the dashboard only after validating the signed demo cookie. The public
+landing is unchanged. Development keeps direct dashboard access. See
+[deployment access configuration](vercel-deployment.md).
 
 ## Layout and CSS isolation
 

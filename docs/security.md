@@ -126,8 +126,11 @@ descriptions, free text—is **untrusted content**.
 
 Stated explicitly so no assumptions are made:
 
-- **No user authentication.** Anyone who reaches the UI can approve actions.
-  Acceptable on a laptop; unacceptable when exposed publicly.
+- **No individual user accounts.** The hosted dashboard uses a server-verified shared
+  demo code and a signed twenty-six-hour HttpOnly session. It grants coordinator/mission/
+  telemetry reads and same-origin reset/fixture controls only, in mock action mode.
+  General intake, legacy protected actions and webhooks keep their own credentials.
+  All code holders share the same simulated run; this is not per-user authorization.
 - **No role-based access control (RBAC).** Operator and administrator are the same entity.
 - **No rate limiting** on any route.
 - **No encryption at rest.** When `CRISIS_PERSISTENCE=on` is enabled, state—including

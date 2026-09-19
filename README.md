@@ -413,6 +413,13 @@ MIT. See [LICENSE](LICENSE).
 
 ## Global coordinator v2
 
+Hosted demo access requires no account: configure server-only `DEMO_ACCESS_CODE`,
+`CRISIS_API_TOKEN` and `ACTION_EXECUTION_MODE=mock` in Vercel, then deploy. The
+landing stays public; the dashboard asks for the shared code and remembers access
+for twenty-six hours. The same session enables Reset & run events in production;
+this resets the shared simulation and calls the configured models. Credentials
+remain on the server. See [deployment and access](docs/vercel-deployment.md).
+
 Apply supabase/migrations/202609190005_global_coordinator.sql after the inventory migration.
 Apply migrations 006–008 next, then run `npm run dev` (Node 24).
 Next.js processes persisted reports after intake and groups accepted reports for

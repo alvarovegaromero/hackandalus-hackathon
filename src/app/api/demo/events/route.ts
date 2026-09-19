@@ -4,18 +4,15 @@ import { setTimeout } from "node:timers/promises";
 import fixtures from "@/lib/demo/mock-events.json";
 import { enqueueLegacyEvent, readCoordinatorState } from "@/lib/coordinator/runtime";
 import { incomingEventSchema } from "@/lib/validation";
+import { authorizeDemoControl } from "@/lib/demo-access";
 
 export const runtime = "nodejs";
 export const maxDuration = 180;
 
-/** Local-only demo control; never expose server credentials in the browser. */
+/** Local or session-authorized fixture control; never expose server credentials. */
 export async function POST(request: Request) {
-  if (process.env.NODE_ENV !== "development") {
-    return Response.json({ error: "Demo controls are only available locally." }, { status: 404 });
-  }
-  if (request.headers.get("origin") !== new URL(request.url).origin) {
-    return Response.json({ error: "Same-origin request required." }, { status: 403 });
-  }
+  const denied = authorizeDemoControl(request);
+  if (denied) return denied;
   const events = fixtures.map((fixture) => incomingEventSchema.parse(fixture));
   const { runId } = await readCoordinatorState();
   after(async () => {

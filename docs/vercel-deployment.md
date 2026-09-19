@@ -2,12 +2,15 @@
 
 ## Current deployment
 
-The UI was deployed manually on 2026-09-19 to project `faro` in team
+Production was deployed from Git branch `production` on 2026-09-19 to project `faro` in team
 `alvaros-projects-329c5aac`:
 
 - [Landing](https://faro-lovat-iota.vercel.app/)
 - [Dashboard](https://faro-lovat-iota.vercel.app/dashboard)
-- Deployment ID: `dpl_4AajTMyfA6TBfAaQ4R9EFPovEXQZ` (Production, READY).
+- Deployment ID: `dpl_819DFD5UHZqkLsr82dSUcvQhcaMQ` (Production, READY).
+- Commit: `a8f697d1cc7679adcb9d9fd6e1ed014003c03930`.
+- The initial Git deployment was started through Vercel's Create Deployment UI;
+  a subsequent merge-triggered automatic deployment has not yet been exercised.
 
 Unauthenticated HTTP checks returned 200 for `/`, `/dashboard` and `/api/map`.
 `/api/state` returned 503 on the initial deployment. Production variables were
@@ -15,11 +18,12 @@ subsequently added through the Vercel UI: Supabase URL/public key, provider/mode
 Jev model/timeout and mock action mode as Config; Supabase, OpenCode and TypeSafe
 private keys plus a newly generated API token as Secret. All 11 names and their
 Production-only scope were verified with the CLI. Values are not recorded here.
-A redeployment is still required to apply them. Operator authentication, database
-connectivity and remote model execution remain unverified. This is a UI deployment,
-not a working remote-agent demo.
-The GitHub connection attempt failed because a GitHub login connection was
-missing; CLI deployment succeeded without it. No Git push was performed.
+The new Git deployment applies those variables. Unauthenticated `/api/state` and
+`/api/subagents` now return 401, rather than the initial missing-token 503.
+That deployed commit predates shared-code demo access. Database connectivity and
+remote model execution remain unverified. This is not yet a working remote-agent demo.
+GitHub login and the Vercel GitHub App installation are connected; the installation
+is limited to `alvarovegaromero/hackandalus-hackathon`.
 Local `npm run check` passed on Windows with Node 24. The remote build also
 passed, with three dynamic-filesystem tracing warnings in `src/lib/persistence.ts`.
 
@@ -34,8 +38,13 @@ Run `npm run check` locally before publishing. Deployment does not apply SQL
 migrations. Vercel performs the production build; GitHub Actions is not used.
 
 The owner authorized this release flow on 2026-09-19, replacing the blanket
-NO CI rule. Repository configuration is prepared; the remote production branch,
-its protection, Git connection and Vercel branch tracking still need setup.
+NO CI rule. Configuration and the `faro-deploy` skill landed through PR #61,
+merged as `a8f697d1cc7679adcb9d9fd6e1ed014003c03930`. Remote `production` was
+created at that commit and protected with required PRs, administrator enforcement,
+and force-push/deletion disabled. Vercel is connected to the repository and
+Production branch tracking is saved as `production`. The initial deployment from
+that branch is READY and serves the existing domain. Automatic delivery on the
+next release merge remains to be verified.
 
 ## Current execution boundaries
 
@@ -50,12 +59,20 @@ its protection, Git connection and Vercel branch tracking still need setup.
   worker just to duplicate inline execution. See [the subagent contract](subagent-execution.md).
 - Communication operations acknowledge requests locally; they do not contact
   real services. Real model calls do not make those communications live.
-- `CoordinatorPanel` fetches `/api/state` without an authorization header, while
-  that route requires `CRISIS_API_TOKEN` in production. A configured token yields
-  401 for that browser request; an absent token yields 503. Operator/session
-  authentication must be integrated before the hosted panel can display this
-  state. Vercel deployment protection does not replace application authentication;
-  do not expose the server token in a public environment variable to bypass this.
+- Hosted dashboard access uses an optional shared demo code, without user accounts.
+  Set server-only `DEMO_ACCESS_CODE` to the agreed event code, keep
+  `CRISIS_API_TOKEN` configured and `ACTION_EXECUTION_MODE=mock`. The public landing
+  stays open; `/dashboard` prompts for the code before mounting data consumers.
+  `POST /api/demo/access` issues a signed, HttpOnly, Secure, SameSite=Strict cookie
+  valid for twenty-six hours. State, mission and telemetry reads accept that cookie;
+  reset and fixture-event controls additionally require a same-origin request.
+  General intake, legacy action APIs and webhooks retain their existing credentials.
+  No server token or provider key is sent to the browser. Removing the code or
+  changing the code/signing token invalidates sessions on the next deployment;
+  live action mode disables this demo access. This is shared demo access, not
+  individual operator identity or role-based access control. On expiry, refresh
+  the dashboard and enter the code again. All visitors share one demo run;
+  Reset & run events resets that shared simulation and invokes the configured models.
 - Legacy command-center and telemetry state still uses process memory. Do not
   enable `CRISIS_PERSISTENCE` on Vercel: local JSON files are not shared durable
   storage. See [coordinator state](coordinator-state-contract.md) for the durable
@@ -63,19 +80,24 @@ its protection, Git connection and Vercel branch tracking still need setup.
 
 ## Environment and database prerequisites
 
+`DEMO_ACCESS_CODE` has also been saved as a Production Secret. The shared-code
+implementation is prepared on `feat/demo-code-access`; it needs a feature PR and
+a release into `production` before it is available at the public URL.
+
 Configure values in the intended Vercel environment before deploying. Never
 upload local credential files or put secrets in `NEXT_PUBLIC_*` variables.
 
-| Purpose                               | Variables                                                                         |
-| ------------------------------------- | --------------------------------------------------------------------------------- |
-| Coordinator database                  | `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY`                                 |
-| Browser Supabase client, if used      | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`                                            |
-| Jev relevance filtering               | `TYPESAFE_API_KEY`; optional Jev settings in `.env.example`                       |
-| AI Gateway model                      | `AI_PROVIDER=gateway`, `AI_MODEL`, `AI_GATEWAY_API_KEY`                           |
-| Alternative existing OpenCode adapter | `AI_PROVIDER=opencode-go` or `opencode-zen`, `OPENCODE_MODEL`, `OPENCODE_API_KEY` |
-| Protected APIs                        | `CRISIS_API_TOKEN`, `DEMO_API_TOKEN` as required by the selected routes           |
-| Inbound HappyRobot reports/callbacks  | `HAPPYROBOT_WEBHOOK_SECRET`                                                       |
-| Initial simulated actions             | `ACTION_EXECUTION_MODE=mock`                                                      |
+| Purpose                               | Variables                                                                          |
+| ------------------------------------- | ---------------------------------------------------------------------------------- |
+| Coordinator database                  | `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY`                                  |
+| Browser Supabase client, if used      | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`                                             |
+| Jev relevance filtering               | `TYPESAFE_API_KEY`; optional Jev settings in `.env.example`                        |
+| AI Gateway model                      | `AI_PROVIDER=gateway`, `AI_MODEL`, `AI_GATEWAY_API_KEY`                            |
+| Alternative existing OpenCode adapter | `AI_PROVIDER=opencode-go` or `opencode-zen`, `OPENCODE_MODEL`, `OPENCODE_API_KEY`  |
+| Protected APIs                        | `CRISIS_API_TOKEN`, `DEMO_API_TOKEN` as required by the selected routes            |
+| Shared-code demo dashboard            | `DEMO_ACCESS_CODE` (server only); requires `CRISIS_API_TOKEN` and mock action mode |
+| Inbound HappyRobot reports/callbacks  | `HAPPYROBOT_WEBHOOK_SECRET`                                                        |
+| Initial simulated actions             | `ACTION_EXECUTION_MODE=mock`                                                       |
 
 Select one model provider explicitly. The application currently requires an API
 key even when using AI Gateway on Vercel. The public site URL is optional; metadata

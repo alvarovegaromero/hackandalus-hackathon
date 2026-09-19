@@ -468,6 +468,16 @@ Graft remains the required tool for navigating this repository.
   editing the same files concurrently without coordination. A choice of tool
   never grants permission to push, merge, deploy or execute live communications.
 
+### Shared-code hosted demo
+
+The owner selected account-free demo access. Production `/dashboard` uses a
+shared-code dialog backed by server-only `DEMO_ACCESS_CODE`, `CRISIS_API_TOKEN`
+and `ACTION_EXECUTION_MODE=mock`. A signed twenty-six-hour HttpOnly cookie authorizes
+dashboard reads and same-origin reset/fixture controls; it does not authorize
+general intake or live-action APIs. Landing stays public and development remains
+open. See [deployment configuration](docs/vercel-deployment.md). Individual operator
+accounts and roles remain deferred. Never put server credentials in client code.
+
 ## Implementation and verification
 
 - Build a working vertical slice: incoming event, updated situation, priority
