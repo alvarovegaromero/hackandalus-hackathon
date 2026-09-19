@@ -1,5 +1,5 @@
 "use client";
-import { TriangleAlert } from "lucide-react";
+import { LoaderCircle, TriangleAlert } from "lucide-react";
 import { cva } from "class-variance-authority";
 import { resourceSummary } from "./resource-summary";
 import { TextSkeleton } from "./Skeleton";
@@ -78,7 +78,7 @@ const statusText = cva("flex shrink-0 items-center gap-1 text-meta", {
     status: {
       blocked: "font-medium text-ink",
       failed: "font-medium text-ink",
-      running: "text-running",
+      running: "rounded-md bg-running/15 px-2 py-1 font-semibold text-running",
       waiting: "text-muted",
       queued: "text-muted",
       completed: "text-muted",
@@ -91,6 +91,9 @@ export function MissionStatusLabel({ status }: { status: MissionStatus }) {
   return (
     <span className={statusText({ status })}>
       {NEEDS_ATTENTION.includes(status) && <TriangleAlert size={12} aria-hidden="true" />}
+      {status === "running" && (
+        <LoaderCircle size={14} aria-hidden="true" className="motion-safe:animate-spin" />
+      )}
       {status}
     </span>
   );
@@ -163,7 +166,15 @@ function MissionRows({ missions, ready }: { missions: Mission[]; ready: boolean 
   return (
     <ul ref={list} className="dashboard-scroll divide-y divide-line">
       {missions.map((m) => (
-        <li key={m.mission_id} data-id={m.mission_id} className="py-2">
+        <li
+          key={m.mission_id}
+          data-id={m.mission_id}
+          className={
+            m.status === "running"
+              ? "border-l-2 border-running bg-running/5 py-2 pl-3 pr-2"
+              : "py-2"
+          }
+        >
           <div className="flex items-start justify-between gap-3">
             <span className="text-body">{m.input.objective}</span>
             <MissionStatusLabel status={m.status} />

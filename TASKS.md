@@ -373,3 +373,5 @@ Contract and limits: [docs/event-telemetry.md](docs/event-telemetry.md).
 - [x] Keep simulation wording out of generated plans while preserving evidence-based action claims.
 
 - [x] Restore the dashboard server/client boundary after the panorama redesign; preserve the public demo expiry gate, reload timer and hosted demo controls.
+
+- [x] Highlight running subagent missions with a live count and reduced-motion-aware activity indicator; group assigned resource cells before free units without changing their identities.
