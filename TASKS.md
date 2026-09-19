@@ -1,5 +1,17 @@
 # Project Tasks
 
+## Resource Dispatch integration
+
+- [x] P0/P4: durable dispatch, authenticated callback and atomic outcome/mission/resource/audit update (migration 016).
+- [x] Feed dispatch evidence to the existing coordinator, invalidate stale proposals and persist pending replanning.
+- [x] Preserve inbound payload/response and accept both shared-secret variable names.
+- [x] Verify SQL/HTTP dispatch, outcomes, duplicates, auth, failures, scarce inventory and replanning locally.
+- [ ] Apply 016 to the shared demo database and deploy matching code.
+- [ ] Publish the HappyRobot callback, configure approved recipients and verify an operator-run real call.
+- [ ] General resource reactivation, provider polling and automatic recovery of interrupted sends remain deferred.
+
+See [Resource Dispatch](docs/resource-dispatch.md), superseding older mock-only notes below.
+
 - [x] Five live-model subagent tool scenarios passed using the production agent/tools with isolated persistence; script: npm run subagents:try. No real contacts or Supabase writes.
 
 ## Person B: subagent execution
@@ -361,3 +373,5 @@ Contract and limits: [docs/event-telemetry.md](docs/event-telemetry.md).
 - [x] Keep simulation wording out of generated plans while preserving evidence-based action claims.
 
 - [x] Restore the dashboard server/client boundary after the panorama redesign; preserve the public demo expiry gate, reload timer and hosted demo controls.
+
+- [x] Highlight running subagent missions with a live count and reduced-motion-aware activity indicator; group assigned resource cells before free units without changing their identities.

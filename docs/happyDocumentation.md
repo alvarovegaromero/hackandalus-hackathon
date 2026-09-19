@@ -1,5 +1,11 @@
 # HappyRobot Documentation Notes
 
+The active coordinator uses [Resource Dispatch](resource-dispatch.md), superseding
+the legacy action-store flow below. POST /api/dispatch/results provides durable
+mission/resource correlation, idempotency and coordinator replanning. The old
+/api/webhooks/happyrobot remains the legacy action/public-alert endpoint.
+Inbound voice was verified by the team; live outbound still needs workflow setup.
+
 > Status (2026-09-19): `https://docs.happyrobot.ai` (introduction, API reference,
 > `integrations/webhook`, `developer-tools/mcp`) is gated behind an access code.
 > The public API contract below was recovered from the public npm package

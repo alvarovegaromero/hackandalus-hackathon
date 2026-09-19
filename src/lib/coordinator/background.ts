@@ -73,6 +73,13 @@ function requestPlan(trigger = "event.received"): Promise<void> {
 /** Called within Next after(); no processing is attached to dashboard polling. */
 export async function processCoordinatorInBackground() {
   const current = state();
+  const pendingDispatch = await createServerSupabase()
+    .from("coordinator_runtime")
+    .select("dispatch_replan_pending")
+    .eq("singleton", true)
+    .single();
+  if (pendingDispatch.error) throw new Error("Dispatch recovery state unavailable.");
+  if (pendingDispatch.data?.dispatch_replan_pending) void requestPlan("dispatch.result");
   current.filterAgain = true;
   if (!current.filtering) {
     current.filtering = (async () => {
@@ -115,4 +122,9 @@ export async function processCoordinatorInBackground() {
     // Unavailable models retry on the next intake, not in a hot loop.
     if (!current.planning) break;
   } while (true);
+}
+
+/** Uses the same serialized coordinator; durable flag survives callback retries. */
+export async function processDispatchReplanning() {
+  await processCoordinatorInBackground();
 }

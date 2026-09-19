@@ -3,6 +3,7 @@ import "server-only";
 import { readCoordinatorState } from "../coordinator/runtime";
 import { createServerSupabase } from "../supabase/server";
 import { missionInputSchema, type MissionInput } from "../contracts/mission";
+import { getExecutionMode } from "../happyrobot";
 
 export async function missionRpc(kind: string, token: string, data: unknown = {}) {
   const result = await createServerSupabase().rpc("subagent_execution", {
@@ -58,7 +59,7 @@ export async function readSubagents(missionId?: string) {
   }
   return {
     schemaVersion: 1,
-    executionMode: "simulation",
+    executionMode: getExecutionMode() === "happyrobot" ? "happyrobot" : "simulation",
     pollAfterMs: 3000,
     missions: data,
     activity,

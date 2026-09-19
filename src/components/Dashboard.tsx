@@ -168,6 +168,7 @@ export default function Dashboard({
           state={coordinator.state}
           missions={missions.missions}
           loading={coordinatorLoading}
+          unavailable={missions.error || !!coordinator.error}
         />
       </div>
 

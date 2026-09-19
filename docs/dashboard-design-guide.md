@@ -17,8 +17,8 @@ The panorama row answers three questions without hover, legend or scroll at 1440
 
 1. **What is most severe now?** Critical and high counts, the rest in one line, and active events per arrival minute stacked by priority.
    The chart only covers telemetry received since the page loaded (the stream replays its last 100 records), and its footer says so.
-2. **Do we have units left?** Free units out of 10 per force, a 10-cell strip (filled = assigned) and an `Exhausted` label at zero.
-3. **What is the system doing?** The plan objective and subagent missions counted by status, blocked and failed first.
+2. **Do we have units left?** Free units out of 10 per force, a 10-cell strip (filled = assigned) and an `Exhausted` label at zero. Assigned units are grouped first without empty gaps, then free units; each cell retains its unit identity and map selection.
+3. **What is the system doing?** The plan objective and subagent missions counted by status, blocked and failed first. Running missions add a prominent blue activity banner, count and spinning indicator, plus a highlighted mission row. Reduced-motion preferences disable the spin. The banner disappears when no mission is running or polling fails; unavailable updates are explicitly labeled and retained counts are last-known data.
 
 ```
 ┌ header: FARO · scenario · SIMULATION · updated HH:MM ─────────────────┐

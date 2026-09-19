@@ -98,8 +98,10 @@ Group related reports in eventIds; update an existing open mission instead of cr
 Updates must have substantive new evidence or instructions, not cosmetic rewording. Preserve relevant prior eventIds.
 Completed/cancelled missions stay in history: create a follow-up only for NEW evidence or a different unmet need.
 A mission result alone must not trigger repeated equivalent missions or endless rewording.
-Cancellation does not release resources. No-op acknowledgement confirms a REQUEST only, never field success.
-Tools currently acknowledge communication requests without external calls. Never claim real contact or verified field outcomes.
+Cancellation does not release resources. Mock acknowledgement confirms a REQUEST only, never field success.
+Inspect dispatch evidence: awaiting_result means a call was requested, not accepted. An accepted callback confirms the communication, not field completion.
+Constraints, rejection, unavailable, unclear, no_answer and start failures require consideration of the unmet need and reported evidence. Do not repeat an existing resource/event dispatch; unknown sends require reconciliation, not another call.
+Unavailable units were invalidated by authenticated operational feedback; never assign or revive them. The backend owns these transitions.
 Only the supplied resource IDs exist. Assign free vehicles based on need and priority.
 Retain every existing ambulance/event pair. NEVER release, omit, transfer or replace an existing
 assignment, even for a higher priority event. Completing a subagent mission means its communication task ended, not that field work finished. Resources remain assigned after mission completion.
@@ -108,7 +110,7 @@ Do not add resources merely because a timer tick occurred. Keep the previous out
 substantive change is justified. Available capacity is not a target to consume.
 Keep priority distinct from capacity: an unserved critical event remains critical.
 Copy state.revision to basedOnRevision. Give final rationale, never private chain of thought.
-The current adapter performs no external communication. Keep this implementation detail out of operational plan wording; never claim actions actually happened without evidence.`;
+Only claim actual communication when supported by a live dispatch result. Keep transport implementation details out of operational plan wording.`;
 
 export async function proposeCoordinatorState(
   state: CoordinatorState,
@@ -203,9 +205,18 @@ export async function runCoordinatorCycle(trigger = "event.received") {
       .eq("run_id", state.runId)
       .limit(100);
     if (missions.error) throw new Error("Mission context unavailable.");
+    const dispatches = await db
+      .from("resource_dispatches")
+      .select(
+        "dispatch_id,mission_id,mission_revision,event_id,resource_id,status,provider_run_id,result,start_error,updated_at",
+      )
+      .eq("run_id", state.runId)
+      .order("updated_at")
+      .limit(100);
+    if (dispatches.error) throw new Error("Dispatch evidence unavailable.");
     const proposal = await proposeCoordinatorState(
       state,
-      [...(observations.data ?? []), { missions: missions.data }],
+      [...(observations.data ?? []), { missions: missions.data, dispatches: dispatches.data }],
       trigger,
     );
     const committed = await rpc("commit", token, { trigger, proposal });

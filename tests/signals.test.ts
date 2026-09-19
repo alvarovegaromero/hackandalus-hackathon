@@ -19,7 +19,7 @@ function report(overrides: Partial<HappyRobotNormalizedReport> = {}): HappyRobot
     channel: "voice",
     received_at: "2026-09-19T10:00:00.000Z",
     native_interaction_id: "call-123",
-    raw_message: "Huelo algo químico junto a Estepona.",
+    raw_message: "I smell something chemical near Estepona.",
     transcript_reference: "https://example.test/transcripts/call-123",
     reporter: {
       role_description: "witness",
@@ -180,8 +180,10 @@ describe("HappyRobot Signal intake", () => {
     const telemetryReader = telemetryResponse.body!.getReader();
     await telemetryReader.read(); // retry directive
     const telemetryFrame = new TextDecoder().decode((await telemetryReader.read()).value);
-    expect(telemetryFrame).toContain('"type":"event.accepted"');
-    expect(telemetryFrame).toContain(body.eventId);
+    // This fixture replaces only signal persistence. The current SSE endpoint
+    // reads Supabase coordinator state, not the legacy in-memory event store.
+    // Its durable replay is exercised against real SQL in dispatch.test.ts.
+    expect(telemetryFrame).toContain("event: unavailable");
     await telemetryReader.cancel();
   });
 
