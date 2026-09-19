@@ -1,8 +1,8 @@
-// PROPIETARIO: agente de triaje calibrado y verificación.
+// OWNER: calibrated triage and verification agent.
 //
-// Lo que se prueba aquí es la salida del medio: que una señal dudosa no se
-// quede esperando, sino que genere una verificación concreta. Y que la
-// confianza se fusione como fuentes independientes, no como votos.
+// What is tested here is the middle outcome: that a doubtful signal does not
+// sit waiting, but generates a concrete verification. And that confidence
+// is fused as independent sources, not as votes.
 
 import { afterEach, describe, expect, it } from "vitest";
 import {
@@ -23,10 +23,10 @@ import { seedContacts, seedSourceReliability, seedZones } from "@/lib/seed";
 import type { CrisisEvent, SignalAssessment, SourceReliability } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
-// Utilidades de prueba
+// Test utilities
 // ---------------------------------------------------------------------------
 
-/** Instante fijo: con `now` congelado la evaluación es reproducible. */
+/** Fixed timestamp: with frozen `now`, evaluation is reproducible. */
 const AHORA = "2026-03-01T12:00:00.000Z";
 
 function fiabilidades(): SourceReliability[] {
@@ -91,11 +91,11 @@ afterEach(() => {
 });
 
 // ---------------------------------------------------------------------------
-// Las tres salidas
+// The three outcomes
 // ---------------------------------------------------------------------------
 
-describe("tres salidas del triaje", () => {
-  it("una señal de sensor claramente relevante se resuelve como actuar", () => {
+describe("three triage outcomes", () => {
+  it("resolves a clearly relevant sensor signal as act", () => {
     const assessment = assessSignal(
       senal({ severity: "critical", confidence: "high", source: "sensor" }),
       contexto(),
@@ -107,10 +107,10 @@ describe("tres salidas del triaje", () => {
     expect(assessment.urgency).toBeGreaterThan(0.9);
     expect(assessment.assessedBy).toBe("deterministic");
     expect(assessment.sourceReliability).toBe(0.9);
-    expect(assessment.rationale).toContain("se actúa");
+    expect(assessment.rationale).toContain("acting");
   });
 
-  it("un bulo de una fuente poco fiable se descarta con motivo visible", () => {
+  it("discards a rumor from an unreliable source with a visible reason", () => {
     const assessment = assessSignal(
       senal({
         source: "public",
@@ -125,12 +125,12 @@ describe("tres salidas del triaje", () => {
 
     expect(assessment.decision).toBe("discard");
     expect(assessment.confidence).toBeLessThan(defaultTriageThresholds.verify);
-    // El motivo tiene que ser legible y nombrar la fuente y el número.
-    expect(assessment.rationale).toContain("aviso ciudadano");
-    expect(assessment.rationale).toContain("se descarta");
+    // The rationale must be readable and name the source and numbers.
+    expect(assessment.rationale).toContain("citizen report");
+    expect(assessment.rationale).toContain("discarded");
   });
 
-  it("una señal intermedia se verifica en vez de esperar y pide preguntas cerradas", () => {
+  it("verifies an intermediate signal instead of waiting and asks closed questions", () => {
     const assessment = assessSignal(
       senal({
         source: "happyrobot",
@@ -146,7 +146,7 @@ describe("tres salidas del triaje", () => {
     expect(assessment.decision).toBe("verify");
     expect(assessment.confidence).toBeGreaterThan(0.5);
     expect(assessment.confidence).toBeLessThan(0.85);
-    expect(assessment.rationale).toContain("se verifica");
+    expect(assessment.rationale).toContain("verifying");
 
     const peticion = buildVerificationRequest(
       eventoDe(assessment, {
@@ -160,10 +160,10 @@ describe("tres salidas del triaje", () => {
       { zones: seedZones, contacts: seedContacts },
     );
 
-    // Dos o tres preguntas, no un cuestionario.
+    // Two or three questions, not a questionnaire.
     expect(peticion.questions.length).toBeGreaterThanOrEqual(2);
     expect(peticion.questions.length).toBeLessThanOrEqual(3);
-    // Cerradas: todas ofrecen las opciones de respuesta entre paréntesis.
+    // Closed: all offer answer choices in parentheses.
     for (const pregunta of peticion.questions) {
       expect(pregunta).toMatch(/\(.+\)$/);
     }
@@ -171,13 +171,13 @@ describe("tres salidas del triaje", () => {
     expect(peticion.role).toBe("medical-lead");
     expect(peticion.channel).toBe("call");
     expect(peticion.contactId).toBe("con-med-central");
-    expect(peticion.objective).toContain("verificar");
+    expect(peticion.objective).toContain("verify");
     expect(peticion.objective).toContain("Granada y Almería");
-    expect(peticion.reason).toContain("Triaje intermedio");
+    expect(peticion.reason).toContain("Intermediate triage");
     expect(peticion.eventId).toBe("evt-camping");
   });
 
-  it("una señal ya descartada por un operador no vuelve a colarse", () => {
+  it("prevents an already operator-discarded signal from slipping back in", () => {
     const assessment = assessSignal(
       senal({ confirmed: false, severity: "critical", confidence: "high" }),
       contexto(),
@@ -185,16 +185,16 @@ describe("tres salidas del triaje", () => {
 
     expect(assessment.decision).toBe("discard");
     expect(assessment.pTruthful).toBeLessThan(0.1);
-    expect(assessment.rationale).toContain("descartada por un operador");
+    expect(assessment.rationale).toContain("discarded by an operator");
   });
 });
 
 // ---------------------------------------------------------------------------
-// Fusión de fuentes
+// Source fusion
 // ---------------------------------------------------------------------------
 
-describe("fusión de confianza", () => {
-  it("dos testigos independientes pesan más que uno, con rendimientos decrecientes", () => {
+describe("confidence fusion", () => {
+  it("two independent witnesses weigh more than one, with diminishing returns", () => {
     const uno = fuseConfidence([{ source: "public", probability: 0.8, reliability: 0.6 }]);
     const dos = fuseConfidence([
       { source: "public", probability: 0.8, reliability: 0.6 },
@@ -209,13 +209,13 @@ describe("fusión de confianza", () => {
     expect(uno).toBeCloseTo(0.48, 3);
     expect(dos).toBeCloseTo(0.73, 2);
     expect(tres).toBeGreaterThan(dos);
-    // Rendimientos decrecientes: el tercer testigo aporta menos que el segundo.
+    // Diminishing returns: the third witness adds less than the second.
     expect(tres - dos).toBeLessThan(dos - uno);
-    // Nunca llega a la certeza absoluta.
+    // Never reaches absolute certainty.
     expect(tres).toBeLessThan(1);
   });
 
-  it("dos señales de la misma fuente no cuentan como dos testigos", () => {
+  it("two signals from the same source do not count as two witnesses", () => {
     const independientes = fuseConfidence([
       { source: "public", probability: 0.8, reliability: 0.6 },
       { source: "sensor", probability: 0.8, reliability: 0.6 },
@@ -226,11 +226,11 @@ describe("fusión de confianza", () => {
     ]);
 
     expect(mismaFuente).toBeLessThan(independientes);
-    // Sigue aportando algo, pero muy descontado por correlación.
+    // Still contributes something, but heavily discounted for correlation.
     expect(mismaFuente).toBeGreaterThan(
       fuseConfidence([{ source: "public", probability: 0.8, reliability: 0.6 }]),
     );
-    // Con peso cero, repetir la misma fuente no aporta absolutamente nada.
+    // With zero weight, repeating the same source adds absolutely nothing.
     const sinCorrelacion = fuseConfidence(
       [
         { source: "public", probability: 0.8, reliability: 0.6 },
@@ -241,11 +241,11 @@ describe("fusión de confianza", () => {
     expect(sinCorrelacion).toBeCloseTo(0.48, 3);
   });
 
-  it("sin señales no hay confianza que fusionar", () => {
+  it("without signals there is no confidence to fuse", () => {
     expect(fuseConfidence([])).toBe(0);
   });
 
-  it("dos testigos independientes suben la confianza por encima del umbral de actuar", () => {
+  it("two independent witnesses push confidence above the act threshold", () => {
     const aviso = senal({
       id: "evt-vecino",
       source: "public",
@@ -268,7 +268,7 @@ describe("fusión de confianza", () => {
     expect(conTestigo.confidence).toBeGreaterThanOrEqual(defaultTriageThresholds.act);
   });
 
-  it("dos señales de la misma fuente no suben la confianza igual que dos independientes", () => {
+  it("two signals from the same source do not raise confidence like two independent ones", () => {
     const aviso = senal({
       id: "evt-vecino",
       source: "public",
@@ -293,7 +293,7 @@ describe("fusión de confianza", () => {
     expect(independiente.decision).toBe("act");
   });
 
-  it("una señal contradicha por otra ya descartada pierde credibilidad", () => {
+  it("a signal contradicted by an already discarded one loses credibility", () => {
     const aviso = senal({
       id: "evt-dudoso",
       source: "happyrobot",
@@ -311,16 +311,16 @@ describe("fusión de confianza", () => {
 
     expect(contradicho.pTruthful).toBeLessThan(limpio.pTruthful);
     expect(contradicho.pRelevant).toBeLessThan(limpio.pRelevant);
-    expect(contradicho.rationale).toContain("descartada");
+    expect(contradicho.rationale).toContain("discarded");
   });
 });
 
 // ---------------------------------------------------------------------------
-// Fiabilidad aprendida de las fuentes
+// Learned source reliability
 // ---------------------------------------------------------------------------
 
-describe("fiabilidad de las fuentes", () => {
-  it("una sola muestra no mueve la fiabilidad de una fuente", () => {
+describe("source reliability", () => {
+  it("a single sample does not move a source's reliability", () => {
     const antes = fiabilidades();
     const despues = updateSourceReliability(antes, "public", false);
 
@@ -328,11 +328,11 @@ describe("fiabilidad de las fuentes", () => {
     expect(entrada?.reliability).toBe(0.55);
     expect(entrada?.observations).toBe(1);
     expect(entrada?.confirmed).toBe(0);
-    // No muta la lista original.
+    // Does not mutate the original list.
     expect(antes.find((item) => item.source === "public")?.observations).toBe(0);
   });
 
-  it("la fiabilidad baja tras varios falsos confirmados, pero paso a paso", () => {
+  it("reliability drops after several confirmed false reports, but step by step", () => {
     let lista = fiabilidades();
     const inicial = reliabilityOf(lista, "public");
 
@@ -344,15 +344,15 @@ describe("fiabilidad de las fuentes", () => {
     lista = updateSourceReliability(lista, "public", false);
     const trasMinimo = reliabilityOf(lista, "public");
     expect(trasMinimo).toBeLessThan(inicial);
-    // Movimiento acotado: nunca se desploma de golpe.
+    // Bounded movement: never collapses all at once.
     expect(inicial - trasMinimo).toBeLessThanOrEqual(0.05 + 1e-9);
 
     for (let i = 0; i < 20; i += 1) lista = updateSourceReliability(lista, "public", false);
-    // Ni con veinte bulos seguidos se llega a cero: la fuente puede acertar mañana.
+    // Even with twenty rumors in a row it never reaches zero: source may be right tomorrow.
     expect(reliabilityOf(lista, "public")).toBeGreaterThanOrEqual(0.15);
   });
 
-  it("la fiabilidad sube cuando las señales de la fuente se confirman", () => {
+  it("reliability rises when signals from the source are confirmed", () => {
     let lista = fiabilidades();
     const inicial = reliabilityOf(lista, "public");
     for (let i = 0; i < MIN_SOURCE_SAMPLES; i += 1) {
@@ -361,7 +361,7 @@ describe("fiabilidad de las fuentes", () => {
     expect(reliabilityOf(lista, "public")).toBeGreaterThan(inicial);
   });
 
-  it("una fuente desconocida arranca con la fiabilidad por defecto y se registra", () => {
+  it("an unknown source starts with default reliability and is registered", () => {
     const lista = updateSourceReliability([], "scenario", true);
     const entrada = lista.find((item) => item.source === "scenario");
     expect(entrada).toBeTruthy();
@@ -369,7 +369,7 @@ describe("fiabilidad de las fuentes", () => {
     expect(reliabilityOf([], "scenario")).toBe(0.6);
   });
 
-  it("una fuente menos fiable empuja la misma señal de actuar a verificar", () => {
+  it("a less reliable source pushes the same signal from act to verify", () => {
     const aviso = senal({ severity: "critical", confidence: "high", source: "sensor" });
     const confiable = assessSignal(aviso, contexto());
 
@@ -384,11 +384,11 @@ describe("fiabilidad de las fuentes", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Umbrales y determinismo
+// Thresholds and determinism
 // ---------------------------------------------------------------------------
 
-describe("umbrales y determinismo", () => {
-  it("los umbrales son configurables y cambian la decisión", () => {
+describe("thresholds and determinism", () => {
+  it("thresholds are configurable and change the decision", () => {
     const aviso = senal({
       source: "happyrobot",
       zoneId: "zone-east",
@@ -400,16 +400,15 @@ describe("umbrales y determinismo", () => {
     const pordefecto = assessSignal(aviso, contexto());
     expect(pordefecto.decision).toBe("verify");
 
-    // Bajar el umbral de actuación (lo que propondría el aprendizaje si las
-    // señales por encima de 0,6 se confirman siempre) convierte esa misma
-    // señal en acción directa.
+    // Lowering act threshold (what learning would propose if signals
+    // above 0.6 are consistently confirmed) turns this signal into direct action.
     const exigenteMenos = assessSignal(
       aviso,
       contexto({ thresholds: { act: 0.6, urgencyRelief: 0, verifyUrgencyRelief: 0 } }),
     );
     expect(exigenteMenos.decision).toBe("act");
 
-    // Subir el umbral de verificación la manda a la papelera.
+    // Raising verify threshold sends it to discard.
     const exigenteMas = assessSignal(
       aviso,
       contexto({ thresholds: { verify: 0.9, urgencyRelief: 0, verifyUrgencyRelief: 0 } }),
@@ -417,7 +416,7 @@ describe("umbrales y determinismo", () => {
     expect(exigenteMas.decision).toBe("discard");
   });
 
-  it("el umbral cede con la urgencia: lo urgente se verifica antes que se descarta", () => {
+  it("threshold yields to urgency: urgent signals are verified before being discarded", () => {
     const aviso = senal({
       source: "public",
       zoneId: "zone-south",
@@ -434,11 +433,11 @@ describe("umbrales y determinismo", () => {
 
     expect(conAlivio.decision).toBe("verify");
     expect(sinAlivio.decision).toBe("discard");
-    // Las probabilidades no cambian: lo único que se mueve es el listón.
+    // Probabilities do not change: only the bar moves.
     expect(conAlivio.confidence).toBe(sinAlivio.confidence);
   });
 
-  it("mismas entradas, misma evaluación", () => {
+  it("same inputs produce same assessment", () => {
     const aviso = senal({ source: "happyrobot", confidence: "medium", severity: "high" });
     const contextoFijo = contexto({
       events: [evento({ zoneId: "zone-north", category: "incendio" })],
@@ -454,7 +453,7 @@ describe("umbrales y determinismo", () => {
     expect(primera.assessedAt).toBe(AHORA);
   });
 
-  it("una señal más vieja urge menos que la misma recién llegada", () => {
+  it("an older signal is less urgent than the same signal freshly arrived", () => {
     const reciente = assessSignal(senal(), contexto());
     const vieja = assessSignal(
       senal({ createdAt: new Date(Date.parse(AHORA) - 90 * 60000).toISOString() }),
@@ -466,10 +465,10 @@ describe("umbrales y determinismo", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Arquitectura intercambiable
+// Swappable architecture
 // ---------------------------------------------------------------------------
 
-describe("evaluadores intercambiables", () => {
+describe("swappable assessors", () => {
   const falso: SignalAssessor = {
     name: "jev",
     available: () => true,
@@ -479,19 +478,19 @@ describe("evaluadores intercambiables", () => {
       urgency: 0.99,
       confidence: 0.99,
       decision: "act",
-      rationale: "Evaluación del clasificador externo.",
+      rationale: "External classifier evaluation.",
       assessedBy: "jev",
       sourceReliability: 0.99,
       assessedAt: AHORA,
     }),
   };
 
-  it("sin evaluador registrado se usa el motor determinista", () => {
+  it("uses deterministic engine when no assessor is registered", () => {
     expect(selectAssessor()).toBe(deterministicAssessor);
     expect(assessSignal(senal(), contexto()).assessedBy).toBe("deterministic");
   });
 
-  it("el evaluador externo sólo entra si el entorno lo pide", () => {
+  it("external assessor only activates if environment requests it", () => {
     registerAssessor(falso);
     expect(selectAssessor()).toBe(deterministicAssessor);
 
@@ -500,57 +499,57 @@ describe("evaluadores intercambiables", () => {
     expect(assessSignal(senal(), contexto()).assessedBy).toBe("jev");
   });
 
-  it("un evaluador externo no disponible cae al determinista sin romper nada", () => {
+  it("an unavailable external assessor falls back to deterministic without breaking", () => {
     process.env.TRIAGE_ASSESSOR = "jev";
     registerAssessor({ ...falso, available: () => false });
     expect(selectAssessor()).toBe(deterministicAssessor);
 
-    // Y si revienta al comprobar disponibilidad, tampoco se propaga.
+    // And if it throws when checking availability, it is not propagated either.
     registerAssessor({
       ...falso,
       available: () => {
-        throw new Error("sin acceso anticipado");
+        throw new Error("no early access");
       },
     });
     expect(selectAssessor()).toBe(deterministicAssessor);
   });
 
-  it("si el evaluador externo falla al evaluar, responde el determinista y se dice", () => {
+  it("if external assessor throws while assessing, deterministic responds and notes it", () => {
     process.env.TRIAGE_ASSESSOR = "jev";
     registerAssessor({
       ...falso,
       assess: () => {
-        throw new Error("timeout del clasificador");
+        throw new Error("classifier timeout");
       },
     });
 
     const assessment = assessSignal(senal({ severity: "critical" }), contexto());
     expect(assessment.assessedBy).toBe("deterministic");
-    expect(assessment.rationale).toContain("respaldo determinista");
+    expect(assessment.rationale).toContain("deterministic fallback");
     expect(assessment.decision).toBe("act");
   });
 
-  it("el hueco de Jev nunca firma como Jev mientras no haya acceso", () => {
+  it("Jev placeholder never signs as Jev while access is unavailable", () => {
     expect(externalAssessorPlaceholder.available()).toBe(false);
     const assessment = externalAssessorPlaceholder.assess(senal(), contexto());
     expect(assessment.assessedBy).toBe("deterministic");
-    expect(assessment.rationale).toContain("no disponible");
+    expect(assessment.rationale).toContain("unavailable");
   });
 });
 
 // ---------------------------------------------------------------------------
-// Petición de verificación
+// Verification request
 // ---------------------------------------------------------------------------
 
-describe("petición de verificación", () => {
-  it("pregunta por la relevancia cuando la duda es si eso importa aquí", () => {
+describe("verification request", () => {
+  it("asks about relevance when doubt is whether this matters here", () => {
     const assessment: SignalAssessment = {
       pRelevant: 0.45,
       pTruthful: 0.8,
       urgency: 0.3,
       confidence: 0.8,
       decision: "verify",
-      rationale: "prueba",
+      rationale: "test",
       assessedBy: "deterministic",
       sourceReliability: 0.6,
       assessedAt: AHORA,
@@ -574,14 +573,14 @@ describe("petición de verificación", () => {
     expect(peticion.questions[0]).toContain("Costa del Sol");
   });
 
-  it("funciona sin contactos ni zonas y sigue nombrando a alguien concreto", () => {
+  it("works without contacts or zones and still names someone specific", () => {
     const assessment: SignalAssessment = {
       pRelevant: 0.7,
       pTruthful: 0.6,
       urgency: 0.8,
       confidence: 0.6,
       decision: "verify",
-      rationale: "prueba",
+      rationale: "test",
       assessedBy: "deterministic",
       sourceReliability: 0.6,
       assessedAt: AHORA,
@@ -590,7 +589,7 @@ describe("petición de verificación", () => {
     const peticion = buildVerificationRequest(evento({ id: "evt-sin-contexto" }), assessment);
 
     expect(peticion.contactId).toBeNull();
-    expect(peticion.target).toContain("coordinación de campo");
+    expect(peticion.target).toContain("field coordinator");
     expect(peticion.channel).toBe("call");
     expect(peticion.zoneId).toBe("zone-south");
   });

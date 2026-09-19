@@ -1,136 +1,110 @@
-# Tareas del proyecto
+# Project Tasks
 
-## Fase 1 · Estructura base completada
+## Phase 1 · Base Scaffolding Completed
 
-- [x] Repositorio TypeScript con Next.js App Router y React.
-- [x] npm, lockfile y comandos de desarrollo, build, lint, tipos y tests.
-- [x] Esquemas compartidos de eventos y planes con Zod.
-- [x] Coordinador preparado con Vercel AI SDK y modelo configurable.
-- [x] Workflow de ejemplo con pasos persistentes y API protegida por token.
-- [x] Panel local sin claves: eventos, revisión de propuestas, pausa y cancelación.
-- [x] Clientes Supabase de servidor y navegador; helper de suscripción Realtime.
-- [x] Migración inicial para incidentes, eventos, recursos, planes, acciones y resultados.
-- [x] RLS activado por defecto en el esquema, sin acceso público a los datos.
-- [x] Límite de integración HappyRobot que devuelve `blocked` explícitamente.
-- [x] `.env.example`, README e instrucciones de agentes actualizados.
-- [x] Verificar build, lint, TypeScript y tests (7 tests en 2 archivos: dominio y guardas de hooks).
-- [x] Probar el workflow local hasta completarlo en simulación y validar errores 401/400.
-- [x] Revisar dependencias: auditoría sin vulnerabilidades tras los ajustes.
+- [x] TypeScript repository with Next.js App Router and React.
+- [x] npm, lockfile, and commands for dev, build, lint, typecheck, and tests.
+- [x] Shared event and plan schemas with Zod.
+- [x] Coordinator prepared with Vercel AI SDK and configurable model.
+- [x] Example workflow with persistent steps and token-protected API.
+- [x] Local zero-credential dashboard: events, proposal review, pause, and cancel.
+- [x] Supabase server and browser clients; Realtime subscription helper.
+- [x] Initial migration for incidents, events, resources, plans, actions, and outcomes.
+- [x] Deny-by-default RLS enabled in schema, no public data access.
+- [x] HappyRobot integration boundary explicitly returning `blocked`.
+- [x] `.env.example`, README, and agent instructions updated.
+- [x] Verified build, lint, TypeScript, and tests (7 tests across 2 files: domain and hook guards).
+- [x] Tested local workflow to completion in simulation, validating 401/400 errors.
+- [x] Reviewed dependencies: clean vulnerability audit after adjustments.
 
-El panel es una simulación en memoria del navegador y está separado del
-workflow. La migración está escrita, pero no aplicada; los clientes Supabase y
-el helper Realtime están preparados, pero no conectados al panel. No se han
-probado llamadas a modelos ni comunicaciones reales.
+The dashboard is an in-memory browser simulation separate from the workflow.
+The migration is written but unapplied; Supabase clients and the Realtime helper
+are prepared but not connected to the dashboard. Live model calls and real external
+communications have not been tested.
 
-## Preparación local del código
+## Local Code Quality Setup
 
 - [x] Remove GitHub Actions CI: no Actions minutes are available and CI is not planned.
 - [x] Require local validation before PR creation via `npm run pr:create` and its
       local `pr:check` prehook (`npm run check`); document the workflow for contributors and agents.
-- [x] Prettier compartido, EditorConfig y finales LF en Git para macOS, Windows y Linux.
-- [x] Husky instalado automáticamente al instalar dependencias de desarrollo.
-- [x] Pre-commit con Secretlint, Prettier y ESLint sobre archivos staged, más TypeScript y tests.
-- [x] Pre-push con verificación completa y build.
-- [x] Bloqueo de archivos privados y detección de formatos conocidos de claves/tokens.
-- [x] PROJECT.md como fuente de verdad, referenciada por AGENTS.md y CLAUDE.md.
-- [x] Bloqueo local de commits y pushes a ramas protegidas.
-- [x] Documentar nomenclatura y comandos de formato y verificación.
-- [x] Unificar ramas y PR hacia main; los agentes pueden hacer merge por indicación explícita del usuario.
-- [x] Guía CONTRIBUTING.md, plantilla de PR y configuración compartida de editor.
-- [x] Referencias a PROJECT.md desde Codex/AGENTS, Claude, Cursor y otros agentes.
+- [x] Shared Prettier, EditorConfig, and LF endings in Git across macOS, Windows, and Linux.
+- [x] Husky installed automatically during development dependencies installation.
+- [x] Pre-commit hook running Secretlint, Prettier, and ESLint on staged files, plus TypeScript and tests.
+- [x] Pre-push hook with full verification including build.
+- [x] Blocking private files and detecting known key/token formats.
+- [x] PROJECT.md as single source of truth, referenced by AGENTS.md and CLAUDE.md.
+- [x] Local blocking of direct commits and pushes to protected branches.
+- [x] Documented naming, formatting, and verification commands.
+- [x] Unified branches and PR targeting main; agents authorized to merge on explicit user instruction.
+- [x] CONTRIBUTING.md guide, PR template, and shared editor settings.
+- [x] References to PROJECT.md from Codex/AGENTS, Claude, Cursor, and other coding agents.
 
-## Modernización de UI y Experiencia de Usuario
+## UI Modernization and User Experience
 
-- [x] Configuración de Tailwind CSS v4 con `@tailwindcss/postcss` y tokens `@theme`.
-- [x] Primitivas estilo shadcn/ui (`Button`, `Badge`, `Card`) y utilidades `cn` (`clsx` + `tailwind-merge`) en `app/components/ui/` y `lib/utils.ts`.
-- [x] Aplicación del blueprint de diseño limpio: tipografía del sistema (SF Pro en Apple) con `-0.15px` letter spacing, jerarquía de grises neutros (`#292929`, `#5D5D5D`, `#9E9E9E`), tarjetas a 16px de radio y botones estilo pill.
-- [x] Mapa táctico interactivo con React Leaflet y capa OpenStreetMap (sin API keys) centrado en Sierra Bermeja, con foco del incendio cuyo radio sigue la velocidad del viento, carreteras A-397 y MA-8301 (trazado ilustrativo) que reflejan los cortes del mundo simulado, marcadores accesibles, selector de vista táctico/regional y paso automático al esquema si no hay tiles.
+- [x] Tailwind CSS v4 setup with `@tailwindcss/postcss` and `@theme` tokens.
+- [x] shadcn/ui-inspired primitives (`Button`, `Badge`, `Card`) and `cn` utilities (`clsx` + `tailwind-merge`) in `app/components/ui/` and `lib/utils.ts`.
+- [x] Clean design blueprint application: system typography (SF Pro on Apple) with `-0.15px` letter spacing, neutral grey hierarchy (`#292929`, `#5D5D5D`, `#9E9E9E`), 16px radius cards, and pill-style buttons.
+- [x] Interactive tactical map with React Leaflet and OpenStreetMap layer (no API keys required) centered on Sierra Bermeja, with fire perimeter scaling with wind speed, A-397 and MA-8301 road overlays reflecting simulation closures, accessible markers, tactical/regional view toggle, and automatic fallback to schematic if tiles fail.
 
-## Skills de desarrollo compartidas
+## Shared Development Skills
 
-- [x] Add the official TypeSafe/Jev, AI SDK and Workflow skills with pinned
-      revisions, file hashes and shared usage guidance.
-- [x] Document optional Context7, Playwright and Supabase MCP recommendations.
+- [x] Add the official TypeSafe/Jev, AI SDK, and Workflow skills with pinned
+      revisions, file hashes, and shared usage guidance.
+- [x] Document optional Context7, Playwright, and Supabase MCP recommendations.
+- [x] Pin Graft as development dependency and document local index and queries.
+- [x] Require Graft in agent instructions and PR checklist; generate and verify index in commit and push hooks.
+- [x] Include skills for React/Next.js, Postgres/Supabase, UI review, and visual design.
+- [x] Record upstream revisions, references, licenses, and usage guide for the team.
+- [x] Link skills from PROJECT.md for agents without auto-discovery.
 
-- [x] Fijar Graft como dependencia de desarrollo y documentar el índice local y sus consultas.
-- [x] Exigir Graft en las instrucciones de agentes y el checklist de PR; generar y verificar el índice en los hooks de commit y push.
+## Phase 2 · Decisions and Configuration, for Later
 
-- [x] Incluir las cuatro skills de React/Next.js, Postgres/Supabase, revisión de UI y diseño visual.
-- [x] Registrar revisiones upstream, referencias, licencias y guía de uso para el equipo.
-- [x] Enlazar las skills desde PROJECT.md para agentes sin descubrimiento automático.
+- [x] Select crisis scenario and changes injected during demo:
+      Sierra Bermeja wildfire with three chaos events (wind shift, A-397 closure, SMS outage). Details in source document and `thoughts/open-questions.md`.
+- [ ] Define available resources, priority rules, and allocation policies.
+- [ ] Select AI provider/model and configure AI Gateway credentials.
+- [ ] Set up Supabase project and apply migration in development.
+- [ ] Finalize HappyRobot operations, authentication, and callbacks.
+- [ ] Agree on demo recipients and test resources for external validations.
 
-## Fase 2 · Decisiones y configuración, para más adelante
+Open decisions do not block the foundational scaffolding and must not be resolved with invented values.
+The full list, sorted by blocking phase, is in [thoughts/open-questions.md](thoughts/open-questions.md);
+construction phases (contracts, minimal end-to-end, full decisioning, robust execution, learning, rehearsal)
+are in the source document.
 
-- [x] Elegir el escenario de crisis y los cambios que se inyectarán durante la demo:
-      incendio en Sierra Bermeja con tres eventos de caos (giro del viento, corte de la
-      A-397, caída del SMS). Detalle en el documento fuente y en `thoughts/open-questions.md`.
-- [ ] Definir recursos disponibles y reglas de prioridad y asignación.
-- [ ] Elegir proveedor/modelo y configurar las credenciales de AI Gateway.
-- [ ] Configurar el proyecto Supabase y aplicar la migración en desarrollo.
-- [ ] Concretar operaciones, autenticación y callbacks de HappyRobot.
-- [ ] Acordar destinatarios y recursos de demo para las pruebas externas.
+## Phase 3 · First Connected Vertical
 
-Las decisiones aún abiertas no bloquean la estructura base y no deben
-resolverse con credenciales inventadas. La lista completa, ordenada por la fase
-que bloquea, está en [thoughts/open-questions.md](thoughts/open-questions.md);
-las fases de construcción (contratos, punta a punta mínimo, decisión completa,
-ejecución robusta, aprendizaje y ensayo) están en el documento fuente.
+- [x] Batch ingestion with event deduplication (Milestone A in `docs/input-architecture.md`), optional persistence in Supabase.
+- [x] Forward scenario engine signals to agent workflow and display plans on dashboard.
+- [ ] Persist plans, actions, and outcomes in Supabase.
+- [x] Prevent duplicate external actions during retries: `lib/happyrobot.ts` adapter sends idempotency key per dispatch/attempt and webhook caches processed deliveries.
+- [ ] Integrate history and live resource availability into decisioning.
+- [ ] Add operator authentication and per-incident RLS policies.
+- [ ] Connect dashboard to backend and Realtime subscriptions.
+- [ ] Persist pause, cancellation, and human overrides, honoring them during execution.
+- [ ] Add AI SDK tools and subagents based on agreed operations.
+- [x] HappyRobot adapter with timeout, retries, and shared-secret authenticated webhook (`lib/happyrobot.ts`, `app/api/webhooks/happyrobot`). Live API contract remains unverified: see `docs/happyDocumentation.md`.
+- [ ] Verify live HappyRobot contract and test an action with approved demo recipients.
+- [ ] Add waits, retries, and failure recovery to workflow.
+- [x] Demonstrate replanning when situation changes mid-execution:
+      self-advancing scripts, chaos fault injection, and plan version diffs in command center.
+- [x] Digital twin, initial release: `lib/digitalTwin.ts` reconstructs perceived world from signals and measures accuracy against simulated ground truth; displayed in `app/components/DigitalTwinPanel.tsx`.
+- [ ] Digital twin, second release: simulate variants (wind, road cuts, resource loss) on state clones, compare alternative outcomes, and present recommendations before acting.
+- [ ] Test resource constraints, failures, and human oversight (`tests/`).
+- [ ] Configure and deploy to Vercel upon authorization.
 
-## Fase 3 · Primera vertical conectada
+## Phase 4 · Consolidation Post Command Center Merge
 
-- [x] Ingesta por lotes con deduplicación de eventos (Hito A de
-      `docs/input-architecture.md`), guardado en Supabase si está configurado.
-- [x] Enviar los avisos del motor de escenarios al workflow del agente y mostrar
-      sus planes en el panel.
-- [ ] Persistir planes, acciones y resultados en Supabase.
-- [x] Evitar acciones externas duplicadas durante reintentos: el adaptador de
-      `lib/happyrobot.ts` envía una clave de idempotencia por despacho e intento y
-      el webhook recuerda las entregas ya procesadas.
-- [ ] Incorporar historial y disponibilidad real de recursos a las decisiones.
-- [ ] Añadir autenticación de operadores y políticas RLS por incidente.
-- [ ] Conectar el panel al backend y a Realtime.
-- [ ] Persistir pausa, cancelación e intervención humana y respetarlas en la ejecución.
-- [ ] Añadir herramientas y subagentes de AI SDK según las operaciones acordadas.
-- [x] Adaptador HappyRobot con timeout, reintentos y webhook autenticado por
-      secreto compartido (`lib/happyrobot.ts`, `app/api/webhooks/happyrobot`).
-      El contrato real sigue sin verificar: ver `docs/happyDocumentation.md`.
-- [ ] Verificar el contrato real de HappyRobot y validar una acción con
-      destinatarios de demo aprobados.
-- [ ] Incorporar esperas, reintentos y recuperación de fallos al workflow.
-- [x] Demostrar replanificación al cambiar la situación durante la ejecución:
-      guiones que avanzan solos, inyección de averías y diff entre versiones del
-      plan en el centro de mando.
-- [x] Gemelo digital, primera entrega: `lib/digitalTwin.ts` reconstruye el
-      mundo percibido a partir de las señales y mide su precisión contra la
-      verdad simulada; `app/components/DigitalTwinPanel.tsx` lo muestra.
-- [ ] Gemelo digital, segunda entrega: simular variantes (viento, accesos
-      cortados, pérdida de recursos) sobre una copia del estado, comparar
-      alternativas por resultado y mostrar la recomendada antes de actuar.
-- [x] Probar restricciones de recursos, fallos y control humano (`tests/`).
-- [ ] Configurar y desplegar en Vercel cuando se autorice.
-
-## Fase 4 · Consolidación tras fusionar el centro de mando
-
-- [ ] Unificar los dos árboles. Next sirve `app/` y por tanto ignora `src/app`:
-      la ingesta por lotes (`/api/events` con deduplicación y Supabase),
-      `/api/runs/<runId>`, `/api/scenario/signals`, el workflow de
-      `src/workflows/crisis.ts` y el panel de `src/components` solo se
-      ejercitan en tests. Decidir qué se porta a `app/`/`lib/` y qué se retira.
-- [ ] Renombrar la semilla y el guion por defecto a Sierra Bermeja
-      (`lib/seed.ts`, `lib/scenario.ts` usan "Sierra Morena" y
-      `wildfire-andalucia`) y el título de `app/layout.tsx` a FARO.
-- [ ] Explicar los cambios de zonas y recursos entre planes: el helper
-      `capturePlanContext` de `lib/store.ts` nunca se llegó a llamar y se retiró
-      en la limpieza; `diffPlans` compara hoy el estado actual consigo mismo.
-      Hay que capturar la foto antes de cada mutación que replanifica.
-- [ ] Acotar la ruta de `.data/` en `lib/persistence.ts` para que Turbopack no
-      trace todo el proyecto (aviso en `npm run build`).
-- [ ] Conectar el centro de mando a Supabase siguiendo `docs/data-model.md`.
+- [ ] Unify both trees. Next serves `app/` and ignores `src/app`:
+      batch ingestion (`/api/events` with deduplication and Supabase), `/api/runs/<runId>`, `/api/scenario/signals`, workflow in `src/workflows/crisis.ts`, and `src/components` dashboard are only exercised in tests. Decide what to port to `app/`/`lib/` and what to retire.
+- [ ] Rename seed and default script to Sierra Bermeja (`lib/seed.ts`, `lib/scenario.ts` use "Sierra Morena" and `wildfire-andalucia`) and title in `app/layout.tsx` to FARO.
+- [ ] Explain zone and resource changes between plans: helper `capturePlanContext` in `lib/store.ts` was not invoked and removed in cleanup; `diffPlans` currently compares current state with itself. Must capture snapshot before each replanning mutation.
+- [ ] Scope `.data/` directory in `lib/persistence.ts` to prevent Turbopack from tracing the full project (warning in `npm run build`).
+- [ ] Connect command center to Supabase following `docs/data-model.md`.
 
 ## Ideas
 
-- [ ] Ampliar el gemelo digital como campo de pruebas para comparar alternativas
-      antes de ejecutar acciones reales (ver Fase 3 y 4).
+- [ ] Extend digital twin as sandbox testing environment to compare alternatives prior to live action execution (see Phase 3 & 4).
 
 ## Report intake contract — confirmed, implementation pending
 
@@ -145,18 +119,17 @@ ejecución robusta, aprendizaje y ensayo) están en el documento fuente.
       and expose intake in root `app/` as part of route-tree consolidation.
 - [ ] Add a reporting form with optional GPS, incident pin or textual location.
 
-## Referencias
+## References
 
-- [README.md](README.md): instalación, comandos y límites actuales.
-- [PROJECT.md](PROJECT.md): convenciones de desarrollo, comandos y verificaciones.
-- [HackSpain 2026 · Source of Truth del proyecto.md](<HackSpain 2026 · Source of Truth del proyecto.md>):
-  visión de producto, escenario, guion de demo y fases.
-- [thoughts/](thoughts/README.md): modelo de datos, inventario de
-  funcionalidades por portar y decisiones abiertas.
-- [CHALLENGE.md](CHALLENGE.md): requisitos originales del reto.
-- [docs/architecture.md](docs/architecture.md) y [docs/security.md](docs/security.md):
-  decisiones y reglas de seguridad del centro de mando.
+- [README.md](README.md): installation, commands, and current limitations.
+- [PROJECT.md](PROJECT.md): development conventions, commands, and checks.
+- [HackSpain 2026 · Project Source of Truth.md](<HackSpain 2026 · Project Source of Truth.md>):
+  product vision, scenario, demo script, and phases.
+- [thoughts/](thoughts/README.md): data model, feature inventory to port, and open decisions.
+- [CHALLENGE.md](CHALLENGE.md): original challenge brief.
+- [docs/architecture.md](docs/architecture.md) & [docs/security.md](docs/security.md):
+  command center design decisions and security rules.
 - [docs/input-architecture.md](docs/input-architecture.md): current ingestion,
-  route-tree limitations and migration milestones.
+  route-tree limitations, and migration milestones.
 - [docs/input-contract.md](docs/input-contract.md): confirmed report payload and
   normalization contract; envelope and scenario adapter implemented.

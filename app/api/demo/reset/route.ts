@@ -1,5 +1,5 @@
-// PROPIETARIO: agente de endurecimiento de la API y validacion de entrada.
-// Reinicio del estado de la crisis. Ruta protegida: es destructiva.
+// OWNER: API hardening and input validation agent.
+// Crisis state reset. Protected route: destructive.
 
 import { resetSituation } from "@/lib/store";
 import { apiErrorFromThrown, apiOk, autorizarRutaDemo, methodNotAllowed } from "@/lib/validation";
@@ -10,12 +10,12 @@ export async function POST(request: Request) {
   const noAutorizado = autorizarRutaDemo(request);
   if (noAutorizado) return noAutorizado;
 
-  // No lee cuerpo a proposito: reiniciar no admite parametros, asi que un
-  // cuerpo vacio o un "{}" de la interfaz valen igual.
+  // Intentionally does not read body: reset takes no parameters, so an empty
+  // body or "{}" from the UI are treated equally.
   try {
     return apiOk(resetSituation());
   } catch (error) {
-    return apiErrorFromThrown(error, "No se pudo reiniciar la demo");
+    return apiErrorFromThrown(error, "Could not reset demo");
   }
 }
 

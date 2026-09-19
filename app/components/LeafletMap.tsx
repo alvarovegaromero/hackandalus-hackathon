@@ -124,8 +124,8 @@ function ZoneMarker({ zone, score, rank, selected, onSelect }: ZoneMarkerProps) 
     () => createTacticalIcon(zone.name, score, rank, zone.status, selected),
     [zone.name, score, rank, zone.status, selected],
   );
-  const title = `${zone.name}. Estado ${zoneStatusLabels[zone.status]}. Puntuación ${score}${
-    rank ? `. Prioridad número ${rank}` : ""
+  const title = `${zone.name}. Status ${zoneStatusLabels[zone.status]}. Score ${score}${
+    rank ? `. Priority number ${rank}` : ""
   }`;
 
   return (
@@ -144,18 +144,18 @@ function ZoneMarker({ zone, score, rank, selected, onSelect }: ZoneMarkerProps) 
             </span>
           </div>
           <p className="text-neutral-600 mb-1">
-            Población expuesta: <b>{zone.populationAtRisk.toLocaleString("es-ES")}</b>
+            Population at risk: <b>{zone.populationAtRisk.toLocaleString("en-US")}</b>
           </p>
           <p className="text-neutral-600 mb-1">
-            Puntuación de riesgo: <b>{score}</b>
-            {rank ? ` (Prioridad #${rank})` : ""}
+            Risk score: <b>{score}</b>
+            {rank ? ` (Priority #${rank})` : ""}
           </p>
           <button
             type="button"
             className="mt-2 w-full bg-blueprint-dark text-white py-1 rounded-[6px] text-[11px] font-semibold hover:bg-blueprint-dark/90 transition-colors"
             onClick={() => onSelect(zone.id)}
           >
-            Ver detalle de la zona
+            View zone details
           </button>
         </div>
       </Popup>
@@ -183,11 +183,11 @@ export default function LeafletMap({
     <div className="relative w-full h-[480px] rounded-[16px] overflow-hidden border border-line shadow-xs">
       <div className="absolute top-3 left-3 z-[1000] flex items-center gap-2 bg-ink/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-neutral-700 text-white text-[12px] font-medium pointer-events-none">
         <span className="w-2 h-2 rounded-full bg-danger animate-ping inline-block" />
-        <span>Sierra Bermeja · mapa táctico</span>
+        <span>Sierra Bermeja · Tactical Map</span>
       </div>
       <div className="absolute bottom-6 left-3 z-[1000] rounded-full bg-ink/80 px-2.5 py-1 text-[11px] text-neutral-200 pointer-events-none">
-        {world ? `Viento ${world.windDirection} · ${world.windSpeedKmh} km/h · ` : ""}
-        foco y trazados ilustrativos (demo)
+        {world ? `Wind ${world.windDirection} · ${world.windSpeedKmh} km/h · ` : ""}
+        fire origin and routes illustrative (demo)
       </div>
 
       <MapContainer
@@ -217,7 +217,7 @@ export default function LeafletMap({
 
         <FlyToSelected lat={selectedZone?.coordinates.lat} lng={selectedZone?.coordinates.lng} />
 
-        {/* Foco del incendio: el radio crece con la velocidad del viento. */}
+        {/* Fire origin: radius grows with wind speed. */}
         <Circle
           center={fireOrigin}
           radius={fireRadiusMeters(world?.windSpeedKmh ?? 22)}
@@ -240,13 +240,13 @@ export default function LeafletMap({
         >
           <Popup>
             <div className="p-1 text-[12px] font-sans">
-              <b className="text-danger">Carretera A-397 (Ronda - Costa)</b>
+              <b className="text-danger">Road A-397 (Ronda - Coast)</b>
               <p className="text-neutral-700 mt-1">
                 {a397Blocked
-                  ? "CORTADA. El plan no puede apoyarse en esta vía."
-                  : "Abierta. Eje de evacuación prioritario, vigilada por riesgo de humo."}
+                  ? "CLOSED. The plan cannot rely on this route."
+                  : "Open. Priority evacuation corridor, monitored for smoke risk."}
               </p>
-              <p className="text-neutral-500 mt-1">Trazado aproximado.</p>
+              <p className="text-neutral-500 mt-1">Approximate route.</p>
             </div>
           </Popup>
         </Polyline>
@@ -261,15 +261,15 @@ export default function LeafletMap({
         >
           <Popup>
             <div className="p-1 text-[12px] font-sans">
-              <b className="text-info">Carretera MA-8301</b>
+              <b className="text-info">Road MA-8301</b>
               <p className="text-neutral-700 mt-1">
                 {ma8301Blocked
-                  ? "CORTADA."
+                  ? "CLOSED."
                   : a397Blocked
-                    ? "Ruta alternativa activa por Jubrique y Peñas Blancas."
-                    : "Ruta alternativa por Jubrique y Peñas Blancas."}
+                    ? "Active alternate route via Jubrique and Peñas Blancas."
+                    : "Alternate route via Jubrique and Peñas Blancas."}
               </p>
-              <p className="text-neutral-500 mt-1">Trazado ilustrativo.</p>
+              <p className="text-neutral-500 mt-1">Illustrative route.</p>
             </div>
           </Popup>
         </Polyline>

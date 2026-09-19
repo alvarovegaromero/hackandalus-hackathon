@@ -1,6 +1,6 @@
-// PROPIETARIO: agente del escenario que avanza solo.
-// El tiempo se controla inyectando `nowMs` o instantes ISO explicitos: ningun
-// test espera de verdad, asi que la suite tarda milisegundos.
+// OWNER: self-advancing scenario agent.
+// Time is controlled by injecting `nowMs` or explicit ISO timestamps: no
+// test actually waits, so the suite runs in milliseconds.
 
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -30,7 +30,7 @@ import type { ScenarioBeat, ScenarioState } from "@/lib/types";
 
 const T0 = Date.parse("2026-03-01T10:00:00.000Z");
 
-/** Instante real, en ms, a `seconds` segundos del arranque. */
+/** Real timestamp, in ms, at `seconds` seconds from start. */
 function at(seconds: number): number {
   return T0 + seconds * 1000;
 }
@@ -51,8 +51,8 @@ beforeEach(() => {
   resetScenarioEngine();
 });
 
-describe("motor del escenario: disparo por tiempo", () => {
-  it("no dispara nada antes del instante del beat y dispara al llegar", () => {
+describe("scenario engine: time-based trigger", () => {
+  it("triggers nothing before beat time and triggers upon reaching it", () => {
     const scenario = createScenarioState();
     startScenario(scenario, iso(0));
 
@@ -62,7 +62,7 @@ describe("motor del escenario: disparo por tiempo", () => {
     expect(scenario.elapsedSeconds).toBe(21);
   });
 
-  it("no vuelve a disparar un beat ya disparado", () => {
+  it("does not re-trigger an already triggered beat", () => {
     const scenario = createScenarioState();
     startScenario(scenario, iso(0));
 
@@ -72,55 +72,55 @@ describe("motor del escenario: disparo por tiempo", () => {
     expect(scenario.firedBeatIds).toEqual(["beat-1"]);
   });
 
-  it("no avanza si el escenario no esta en marcha", () => {
+  it("does not advance if scenario is not running", () => {
     const scenario = createScenarioState();
     expect(firedAt(scenario, 500)).toEqual([]);
     expect(scenario.elapsedSeconds).toBe(0);
   });
 });
 
-describe("motor del escenario: sondeo interrumpido", () => {
-  it("dispara como mucho un beat por tick aunque venzan varios a la vez", () => {
+describe("scenario engine: interrupted polling", () => {
+  it("triggers at most one beat per tick even if multiple mature simultaneously", () => {
     const scenario = createScenarioState();
     startScenario(scenario, iso(0));
 
-    // Nadie sondea hasta el segundo 95: vencen los beats 1, 2 y 3.
+    // Nobody polls until second 95: beats 1, 2, and 3 mature.
     const primera = firedAt(scenario, 95);
     expect(primera).toHaveLength(1);
   });
 
-  it("omite los beats superados y salta al presente de la crisis", () => {
+  it("skips superseded beats and jumps to present crisis moment", () => {
     const scenario = createScenarioState();
     startScenario(scenario, iso(0));
 
-    // Silencio total durante 200 segundos: vencen los seis beats del guion.
+    // Total silence for 200 seconds: all six script beats mature.
     const fired = firedAt(scenario, 200);
 
-    // Los beats de hace mas de 60 s de guion quedan superados por otro
-    // posterior ya vencido, asi que se marcan omitidos en vez de reproducirse.
+    // Beats older than 60s of script time are superseded by a later
+    // already-matured beat, so they are marked skipped instead of replayed.
     expect(runtimeOf(scenario).skippedBeatIds).toEqual(["beat-1", "beat-2", "beat-3", "beat-4"]);
     expect(fired).toEqual(["beat-5"]);
     expect(scenario.running).toBe(true);
 
-    // El ultimo beat vencido nunca se omite: el siguiente tick lo ejecuta.
+    // The last matured beat is never skipped: the next tick executes it.
     expect(firedAt(scenario, 203)).toEqual(["beat-6"]);
     expect(scenario.running).toBe(false);
   });
 
-  it("drena en orden el atraso corto sin omitir nada", () => {
+  it("drains short lag in order without skipping anything", () => {
     const scenario = createScenarioState();
     startScenario(scenario, iso(0));
 
-    // 60 s de silencio: vencen el beat 1 (20 s) y el 2 (55 s); ninguno supera
-    // el umbral de obsolescencia respecto al reloj de guion.
+    // 60 s silence: beat 1 (20 s) and 2 (55 s) mature; neither exceeds
+    // obsolescence threshold relative to script clock.
     expect(firedAt(scenario, 60)).toEqual(["beat-1"]);
     expect(firedAt(scenario, 61)).toEqual(["beat-2"]);
     expect(runtimeOf(scenario).skippedBeatIds).toEqual([]);
   });
 });
 
-describe("motor del escenario: pausa y reanudacion", () => {
-  it("conserva el tiempo de guion consumido al pausar y reanudar", () => {
+describe("scenario engine: pause and resume", () => {
+  it("preserves elapsed script time when paused and resumed", () => {
     const scenario = createScenarioState();
     startScenario(scenario, iso(0));
     expect(firedAt(scenario, 30)).toEqual(["beat-1"]);
@@ -130,19 +130,19 @@ describe("motor del escenario: pausa y reanudacion", () => {
     expect(scenario.elapsedSeconds).toBe(30);
     expect(runtimeOf(scenario).paused).toBe(true);
 
-    // Diez minutos de pausa real: el reloj de guion no se mueve.
+    // Ten minutes of real pause: script clock does not move.
     expect(scriptSeconds(scenario, at(630))).toBe(30);
 
     startScenario(scenario, iso(630));
     expect(scenario.firedBeatIds).toEqual(["beat-1"]);
     expect(runtimeOf(scenario).paused).toBe(false);
 
-    // Reanudado: al beat de los 55 s le quedan 25 s de guion, no 55.
+    // Resumed: the 55s beat has 25s of script time left, not 55.
     expect(firedAt(scenario, 640)).toEqual([]);
     expect(firedAt(scenario, 656)).toEqual(["beat-2"]);
   });
 
-  it("deja cuadrado el cronometro de la interfaz tras una pausa larga", () => {
+  it("keeps UI timer consistent after a long pause", () => {
     const scenario = createScenarioState();
     startScenario(scenario, iso(0));
     firedAt(scenario, 30);
@@ -150,14 +150,14 @@ describe("motor del escenario: pausa y reanudacion", () => {
     startScenario(scenario, iso(630));
     firedAt(scenario, 640);
 
-    // La interfaz pinta (ahora - startedAt): tiene que dar los 40 s de guion,
-    // no los diez minutos largos que hubo de pausa.
+    // UI displays (now - startedAt): must show 40s of script time,
+    // not the ten-plus minutes of pause.
     const pintadoEnPantalla = (at(640) - Date.parse(scenario.startedAt!)) / 1000;
     expect(pintadoEnPantalla).toBeCloseTo(40, 3);
     expect(runtimeOf(scenario).startedAtReal).toBe(iso(0));
   });
 
-  it("arrancar de nuevo no reinicia el reloj salvo que se pida restart", () => {
+  it("starting again does not reset clock unless restart requested", () => {
     const scenario = createScenarioState();
     startScenario(scenario, iso(0));
     firedAt(scenario, 30);
@@ -173,7 +173,7 @@ describe("motor del escenario: pausa y reanudacion", () => {
     expect(firedAt(scenario, 121)).toEqual(["beat-1"]);
   });
 
-  it("no pierde el tramo en curso si se arranca estando ya en marcha", () => {
+  it("does not lose current segment if started while already running", () => {
     const scenario = createScenarioState();
     startScenario(scenario, iso(0));
     firedAt(scenario, 30);
@@ -184,8 +184,8 @@ describe("motor del escenario: pausa y reanudacion", () => {
   });
 });
 
-describe("motor del escenario: multiplicador de velocidad", () => {
-  it("dispara antes con velocidad alta", () => {
+describe("scenario engine: speed multiplier", () => {
+  it("triggers earlier with higher speed", () => {
     const scenario = createScenarioState();
     configureScenario({ speed: 4 });
     startScenario(scenario, iso(0));
@@ -196,24 +196,24 @@ describe("motor del escenario: multiplicador de velocidad", () => {
     expect(scenario.elapsedSeconds).toBe(24);
   });
 
-  it("cambia de velocidad en caliente sin perder el tiempo ya consumido", () => {
+  it("changes speed on the fly without losing already elapsed time", () => {
     const scenario = createScenarioState();
     startScenario(scenario, iso(0));
     expect(firedAt(scenario, 10)).toEqual([]);
 
     configureScenario({ speed: 5 });
-    // La velocidad nueva se aplica en el tick siguiente, que cierra el tramo a
-    // 1x (12 s de guion) y abre el tramo rapido: nada de tiempo regalado.
+    // New speed is applied on next tick, which closes segment at 1x
+    // (12s script time) and opens fast segment: no free time given.
     expect(firedAt(scenario, 12)).toEqual([]);
     expect(scenario.elapsedSeconds).toBe(12);
     expect(runtimeOf(scenario).speed).toBe(5);
 
-    // 12 s de guion + 2 s reales a 5x = 22 s de guion: vence el beat 1.
+    // 12s script + 2s real at 5x = 22s script: beat 1 matures.
     expect(firedAt(scenario, 14)).toEqual(["beat-1"]);
     expect(scenario.elapsedSeconds).toBe(22);
   });
 
-  it("rechaza multiplicadores fuera de rango", () => {
+  it("rejects out-of-range multipliers", () => {
     expect(parseSpeed(1)).toBe(1);
     expect(parseSpeed(0.25)).toBe(0.25);
     expect(parseSpeed(0)).toBeNull();
@@ -228,21 +228,21 @@ describe("motor del escenario: multiplicador de velocidad", () => {
   });
 });
 
-describe("motor del escenario: orden determinista", () => {
+describe("scenario engine: deterministic order", () => {
   const empate: ScenarioBeat[] = [
     { id: "tie-b", atSeconds: 30, label: "Segundo del empate" },
     { id: "tie-a", atSeconds: 30, label: "Primero del empate" },
     { id: "tie-early", atSeconds: 10, label: "El más temprano" },
   ];
 
-  it("ordena por instante y, ante empate, por posicion en el guion", () => {
+  it("sorts by timestamp and, on tie, by position in script", () => {
     const scenario = createScenarioState();
     scenario.beats = empate.map((beat) => ({ ...beat }));
 
     expect(orderedBeats(scenario).map((beat) => beat.id)).toEqual(["tie-early", "tie-b", "tie-a"]);
   });
 
-  it("dispara los beats empatados siempre en el mismo orden", () => {
+  it("triggers tied beats always in the same order", () => {
     const secuencia = () => {
       const scenario = createScenarioState();
       scenario.beats = empate.map((beat) => ({ ...beat }));
@@ -255,8 +255,8 @@ describe("motor del escenario: orden determinista", () => {
   });
 });
 
-describe("motor del escenario: fin del guion", () => {
-  it("se detiene solo cuando no queda nada por disparar", () => {
+describe("scenario engine: end of script", () => {
+  it("stops automatically when nothing left to trigger", () => {
     const scenario = createScenarioState();
     startScenario(scenario, iso(0));
 
@@ -274,7 +274,7 @@ describe("motor del escenario: fin del guion", () => {
     expect(estado.skippedBeats).toBe(0);
     expect(estado.nextBeat).toBeNull();
 
-    // Terminado: no dispara mas y arrancar de nuevo empieza de cero.
+    // Finished: triggers no more and starting again begins from scratch.
     expect(firedAt(scenario, 400)).toEqual([]);
     startScenario(scenario, iso(400));
     expect(scenario.firedBeatIds).toEqual([]);
@@ -282,8 +282,8 @@ describe("motor del escenario: fin del guion", () => {
   });
 });
 
-describe("guiones disponibles", () => {
-  it("ofrece varios relatos y el incendio sigue siendo el predeterminado", () => {
+describe("available scripts", () => {
+  it("offers multiple storylines and wildfire remains default", () => {
     const guiones = listScenarioScripts();
     expect(guiones.length).toBeGreaterThanOrEqual(3);
     expect(new Set(guiones.map((guion) => guion.id)).size).toBe(guiones.length);
@@ -294,7 +294,7 @@ describe("guiones disponibles", () => {
     expect(porDefecto.beats.map((beat) => beat.atSeconds)).toEqual([20, 55, 90, 125, 160, 200]);
   });
 
-  it("los guiones alternativos son narrativos y con acentos", () => {
+  it("alternative scripts are narrative and with accents", () => {
     for (const id of ["blackout-guadalquivir", "flood-guadalquivir"]) {
       const guion = findScript(id);
       expect(guion).toBeDefined();
@@ -304,12 +304,12 @@ describe("guiones disponibles", () => {
         expect(beat.label.length).toBeGreaterThan(20);
         expect(Boolean(beat.event) !== Boolean(beat.demoKind)).toBe(true);
       }
-      // Al menos parte del relato lleva acentos: se muestra a un jurado.
+      // At least part of narrative contains accents: presented to an evaluation panel.
       expect(guion!.beats.some((beat) => /[áéíóúñÁÉÍÓÚÑ]/.test(beat.label))).toBe(true);
     }
   });
 
-  it("cambiar de guion reinicia el relato con los beats nuevos", () => {
+  it("switching script restarts narrative with new beats", () => {
     const scenario = createScenarioState();
     startScenario(scenario, iso(0));
     firedAt(scenario, 30);
@@ -323,7 +323,7 @@ describe("guiones disponibles", () => {
     expect(firedAt(scenario, 81)).toEqual(["blackout-1"]);
   });
 
-  it("no cambia de guion si el identificador no existe", () => {
+  it("does not switch script if identifier does not exist", () => {
     const scenario = createScenarioState();
     configureScenario({ scriptId: "guion-inventado" });
     startScenario(scenario, iso(0));
@@ -331,14 +331,14 @@ describe("guiones disponibles", () => {
   });
 });
 
-describe("latido de servidor", () => {
-  it("queda desactivado en los tests y no deja temporizadores vivos", () => {
+describe("server heartbeat", () => {
+  it("is disabled in tests and leaves no active timers", () => {
     expect(ensureHeartbeat(() => true)).toBe("disabled");
     expect(heartbeatStatus().running).toBe(false);
   });
 });
 
-describe("rutas HTTP del escenario", () => {
+describe("scenario HTTP routes", () => {
   beforeEach(() => {
     process.env.ACTION_EXECUTION_MODE = "mock";
     resetSituation();
@@ -352,7 +352,7 @@ describe("rutas HTTP del escenario", () => {
     });
   }
 
-  it("arranca el escenario sin cuerpo", async () => {
+  it("starts scenario without body", async () => {
     const response = await scenarioStartPost(post());
     const body = await response.json();
 
@@ -361,7 +361,7 @@ describe("rutas HTTP del escenario", () => {
     expect(body.scenario.id).toBe(DEFAULT_SCRIPT_ID);
   });
 
-  it("acepta guion y velocidad", async () => {
+  it("accepts script and speed", async () => {
     const response = await scenarioStartPost(post({ scriptId: "flood-guadalquivir", speed: 3 }));
     const body = await response.json();
 
@@ -370,7 +370,7 @@ describe("rutas HTTP del escenario", () => {
     expect(body.scenario.runtime.speed).toBe(3);
   });
 
-  it("rechaza velocidades y guiones invalidos", async () => {
+  it("rejects invalid speeds and scripts", async () => {
     const velocidad = await scenarioStartPost(post({ speed: 100 }));
     expect(velocidad.status).toBe(400);
 
@@ -391,7 +391,7 @@ describe("rutas HTTP del escenario", () => {
     expect(roto.status).toBe(400);
   });
 
-  it("para el escenario conservando el tiempo consumido", async () => {
+  it("stops scenario preserving elapsed time", async () => {
     await scenarioStartPost(post());
     const response = await scenarioStopPost();
     const body = await response.json();
@@ -401,7 +401,7 @@ describe("rutas HTTP del escenario", () => {
     expect(body.scenario.runtime.paused).toBe(true);
   });
 
-  it("avanza con un tick manual y expone el estado del guion", async () => {
+  it("advances with manual tick and exposes script status", async () => {
     await scenarioStartPost(post());
 
     const tick = await scenarioTickPost();
@@ -412,7 +412,7 @@ describe("rutas HTTP del escenario", () => {
     expect((await estado.json()).id).toBe(DEFAULT_SCRIPT_ID);
   });
 
-  it("rechaza metodos no permitidos", async () => {
+  it("rejects disallowed methods", async () => {
     const response = await scenarioStartGet();
     expect(response.status).toBe(405);
   });

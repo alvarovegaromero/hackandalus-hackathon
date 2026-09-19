@@ -55,9 +55,9 @@ interface Props {
 type Filter = "open" | "trouble" | "all";
 
 const filterLabels: Record<Filter, string> = {
-  open: "Abiertas",
-  trouble: "Necesitan a alguien",
-  all: "Todas",
+  open: "Open",
+  trouble: "Needs attention",
+  all: "All",
 };
 
 const actionStatusBadge: Record<Action["status"], BadgeProps["variant"]> = {
@@ -112,7 +112,7 @@ export default function ActionQueue({
   return (
     <div className="queue">
       <div className="queue-head">
-        <div className="filter-row" role="group" aria-label="Filtrar la cola de acciones">
+        <div className="filter-row" role="group" aria-label="Filter action queue">
           {(Object.keys(filterLabels) as Filter[]).map((option) => (
             <button
               key={option}
@@ -138,7 +138,7 @@ export default function ActionQueue({
           onClick={() => onToggleForm(!formOpen)}
           aria-expanded={formOpen}
         >
-          <Plus size={14} aria-hidden="true" /> Nueva acción
+          <Plus size={14} aria-hidden="true" /> New action
         </Button>
       </div>
 
@@ -156,9 +156,7 @@ export default function ActionQueue({
       ) : null}
 
       <div className="action-list" role="list">
-        {visible.length === 0 ? (
-          <p className="muted-note">No hay acciones con este filtro.</p>
-        ) : null}
+        {visible.length === 0 ? <p className="muted-note">No actions match this filter.</p> : null}
         {visible.map((action) => {
           const zone = zones.find((candidate) => candidate.id === action.zoneId);
           const contact = contactName(contacts, action.contactId);
@@ -176,21 +174,21 @@ export default function ActionQueue({
                 <div>
                   <h3>
                     {action.objective}
-                    {fresh ? <em className="flash-tag">Nueva</em> : null}
+                    {fresh ? <em className="flash-tag">New</em> : null}
                   </h3>
                   <p>{action.reason}</p>
                   <p className="action-trace">
-                    {channelLabels[action.channel]} a {action.target}
-                    {contact ? ` · contacto ${contact}` : ""} · {zone?.name ?? action.zoneId} ·{" "}
-                    {assignedResource?.name ?? "sin recurso"} · intento {action.attempt} ·{" "}
+                    {channelLabels[action.channel]} to {action.target}
+                    {contact ? ` · contact ${contact}` : ""} · {zone?.name ?? action.zoneId} ·{" "}
+                    {assignedResource?.name ?? "no resource"} · attempt {action.attempt} ·{" "}
                     {agoLabel(action.updatedAt, nowMs)}
                   </p>
                   {action.result ? <p className="inline-result">{action.result}</p> : null}
                   {action.error ? <p className="inline-error">{action.error}</p> : null}
                   {assignedResource?.status === "unavailable" && isOpenAction(action) ? (
                     <p className="inline-error">
-                      {assignedResource.name} está fuera de servicio: aprobar ahora dejaría la
-                      acción bloqueada. Reasigna el recurso antes.
+                      {assignedResource.name} is out of service: approving now would leave the
+                      action blocked. Reassign the resource first.
                     </p>
                   ) : null}
                 </div>
@@ -204,7 +202,7 @@ export default function ActionQueue({
                   {executionLabel(action.executionMode)}
                 </Badge>
                 {action.approvedBy ? (
-                  <Badge variant="secondary">Aprobada por {action.approvedBy}</Badge>
+                  <Badge variant="secondary">Approved by {action.approvedBy}</Badge>
                 ) : null}
               </div>
 
@@ -212,45 +210,45 @@ export default function ActionQueue({
                 <Button
                   size="sm"
                   variant="pill"
-                  aria-label={`Aprobar y ejecutar: ${action.objective}`}
+                  aria-label={`Approve and execute: ${action.objective}`}
                   onClick={() => onApprove(action.id)}
                   disabled={
                     busy !== null ||
                     !["pending", "failed", "blocked", "stalled"].includes(action.status)
                   }
                 >
-                  <Check size={14} aria-hidden="true" /> Aprobar
+                  <Check size={14} aria-hidden="true" /> Approve
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
-                  aria-label={`Reintentar: ${action.objective}`}
+                  aria-label={`Retry: ${action.objective}`}
                   onClick={() => onRetry(action.id)}
                   disabled={
                     busy !== null ||
                     !["failed", "blocked", "cancelled", "stalled"].includes(action.status)
                   }
                 >
-                  <RefreshCw size={14} aria-hidden="true" /> Reintentar
+                  <RefreshCw size={14} aria-hidden="true" /> Retry
                 </Button>
                 <Button
                   size="sm"
                   variant="pillDestructive"
-                  aria-label={`Cancelar: ${action.objective}`}
+                  aria-label={`Cancel: ${action.objective}`}
                   onClick={() => onCancel(action.id)}
                   disabled={busy !== null || ["succeeded", "cancelled"].includes(action.status)}
                 >
-                  <X size={14} aria-hidden="true" /> Cancelar
+                  <X size={14} aria-hidden="true" /> Cancel
                 </Button>
                 <Button
                   size="sm"
                   variant={pickerFor === action.id ? "secondary" : "outline"}
                   aria-expanded={pickerFor === action.id}
-                  aria-label={`Reasignar el recurso de: ${action.objective}`}
+                  aria-label={`Reassign resource for: ${action.objective}`}
                   onClick={() => setPickerFor(pickerFor === action.id ? null : action.id)}
                   disabled={busy !== null || ["succeeded", "cancelled"].includes(action.status)}
                 >
-                  <Truck size={14} aria-hidden="true" /> Reasignar
+                  <Truck size={14} aria-hidden="true" /> Reassign
                 </Button>
               </div>
 

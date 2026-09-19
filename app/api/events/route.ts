@@ -1,5 +1,5 @@
-// PROPIETARIO: agente de endurecimiento de la API y validacion de entrada.
-// Entrada de senales al centro de mando.
+// OWNER: API hardening and input validation agent.
+// Signal ingestion into the command center.
 
 import { addEvent } from "@/lib/store";
 import type { IncomingEventPayload } from "@/lib/types";
@@ -18,8 +18,8 @@ export async function POST(request: Request) {
   const parsed = await parseJsonBody(request, incomingEventSchema);
   if (!parsed.ok) return parsed.response;
 
-  // La zona se comprueba contra el estado vivo: antes una zona inexistente se
-  // aceptaba y la senal quedaba huerfana, sin aparecer en ninguna prioridad.
+  // The zone is checked against live state: previously a non-existent zone was
+  // accepted and the signal became orphaned, never appearing in any priority.
   const referencias = validarReferencias({ zoneId: parsed.data.zoneId });
   if (referencias) return referencias;
 
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     const result = addEvent(parsed.data as IncomingEventPayload);
     return apiOk(result, result.duplicate ? 200 : 201);
   } catch (error) {
-    return apiErrorFromThrown(error, "No se pudo registrar la señal");
+    return apiErrorFromThrown(error, "Could not register signal");
   }
 }
 

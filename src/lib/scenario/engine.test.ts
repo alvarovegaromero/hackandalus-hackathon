@@ -58,8 +58,8 @@ describe("scenario engine", () => {
     const { state } = run(1);
     expect(valueAt(state.facts.wind, 29)).toBe("NE");
     expect(factValue(state, "wind", 30)).toBe("SO");
-    expect(factValue(state, "road-a397", 39)).toBe("abierta");
-    expect(factValue(state, "road-a397", 40)).toBe("cortada");
+    expect(factValue(state, "road-a397", 39)).toBe("open");
+    expect(factValue(state, "road-a397", 40)).toBe("blocked");
     expect(factValue(state, "sms-provider", 50)).toBe("caido");
     expect(factValue(state, "camping-headcount", 60)).toBe(170);
   });
@@ -77,7 +77,7 @@ describe("manual injection", () => {
     const start = createState(pack, 1);
     const early = fire(pack, start, "chaos-a397-closed", 5);
     expect(early.fired).toEqual(["chaos-a397-closed"]);
-    expect(factValue(early.state, "road-a397", 6)).toBe("cortada");
+    expect(factValue(early.state, "road-a397", 6)).toBe("blocked");
     expect(fire(pack, early.state, "chaos-a397-closed", 6).fired).toEqual([]);
     expect(advance(pack, early.state, 70).fired).not.toContain("chaos-a397-closed");
   });
@@ -98,15 +98,15 @@ describe("manual injection", () => {
       id: "live-1",
       atMin: 0,
       kind: "chaos" as const,
-      label: "Corte de la MA-8301",
+      label: "MA-8301 road closure",
       effects: [
-        { type: "set_fact" as const, factId: "road-ma8301", value: "cortada" },
+        { type: "set_fact" as const, factId: "road-ma8301", value: "blocked" },
         { type: "witness" as const, factId: "road-ma8301", count: 2, sourceIds: ["road-api"] },
       ],
     };
     const step = fire(pack, createState(pack, 1), improvised, 10);
     expect(step.fired).toEqual(["live-1"]);
-    expect(factValue(step.state, "road-ma8301", 10)).toBe("cortada");
+    expect(factValue(step.state, "road-ma8301", 10)).toBe("blocked");
     expect(step.state.pending).toHaveLength(2);
     expect(fire(pack, step.state, improvised, 11).fired).toEqual([]);
 

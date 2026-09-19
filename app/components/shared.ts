@@ -20,20 +20,20 @@ import type {
 } from "@/lib/types";
 
 export const actionStatusLabels: Record<Action["status"], string> = {
-  pending: "Pendiente",
-  approved: "Aprobada",
-  running: "En curso",
-  succeeded: "Completada",
-  failed: "Fallida",
-  blocked: "Bloqueada",
-  cancelled: "Cancelada",
-  stalled: "Sin respuesta",
+  pending: "Pending",
+  approved: "Approved",
+  running: "In progress",
+  succeeded: "Succeeded",
+  failed: "Failed",
+  blocked: "Blocked",
+  cancelled: "Cancelled",
+  stalled: "No response",
 };
 
 export const channelLabels: Record<ActionChannel, string> = {
-  call: "Llamada",
+  call: "Call",
   sms: "SMS",
-  email: "Correo",
+  email: "Email",
   ticket: "Ticket",
   webhook: "Webhook",
   whatsapp: "WhatsApp",
@@ -41,71 +41,71 @@ export const channelLabels: Record<ActionChannel, string> = {
 };
 
 export const severityLabels: Record<Severity, string> = {
-  low: "Baja",
-  medium: "Media",
-  high: "Alta",
-  critical: "Crítica",
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  critical: "Critical",
 };
 
 export const confidenceLabels: Record<Confidence, string> = {
-  low: "Confianza baja",
-  medium: "Confianza media",
-  high: "Confianza alta",
+  low: "Low confidence",
+  medium: "Medium confidence",
+  high: "High confidence",
 };
 
 export const zoneStatusLabels: Record<ZoneStatus, string> = {
-  stable: "Estable",
-  watch: "Vigilancia",
-  active: "Activa",
-  critical: "Crítica",
+  stable: "Stable",
+  watch: "Watch",
+  active: "Active",
+  critical: "Critical",
 };
 
 export const resourceStatusLabels: Record<Resource["status"], string> = {
-  available: "Disponible",
-  assigned: "Asignado",
-  unavailable: "Fuera de servicio",
+  available: "Available",
+  assigned: "Assigned",
+  unavailable: "Out of service",
 };
 
 export const actorLabels: Record<Actor, string> = {
-  system: "Sistema",
-  operator: "Operador",
+  system: "System",
+  operator: "Operator",
   happyrobot: "HappyRobot",
-  scenario: "Escenario",
+  scenario: "Scenario",
 };
 
 export const roleLabels: Record<ContactRole, string> = {
-  "field-coordinator": "Coordinación de campo",
-  "medical-lead": "Jefatura sanitaria",
-  "public-safety": "Seguridad pública",
-  volunteer: "Voluntariado",
-  "operations-lead": "Jefatura de operaciones",
-  authority: "Autoridad",
+  "field-coordinator": "Field Coordinator",
+  "medical-lead": "Medical Lead",
+  "public-safety": "Public Safety",
+  volunteer: "Volunteer",
+  "operations-lead": "Operations Lead",
+  authority: "Authority",
 };
 
 export const chainStatusLabels: Record<EscalationChain["status"], string> = {
-  active: "Escalando",
-  satisfied: "Resuelta",
-  exhausted: "Agotada",
-  cancelled: "Cancelada",
+  active: "Escalating",
+  satisfied: "Resolved",
+  exhausted: "Exhausted",
+  cancelled: "Cancelled",
 };
 
 export const planChangeLabels: Record<PlanChangeKind, string> = {
-  "priority-up": "Sube prioridad",
-  "priority-down": "Baja prioridad",
-  "action-added": "Nueva acción",
-  "action-invalidated": "Acción invalidada",
-  "resource-reassigned": "Recurso reasignado",
-  "zone-status": "Cambio de zona",
-  integration: "Integración",
+  "priority-up": "Priority increased",
+  "priority-down": "Priority decreased",
+  "action-added": "New action",
+  "action-invalidated": "Action invalidated",
+  "resource-reassigned": "Resource reassigned",
+  "zone-status": "Zone status change",
+  integration: "Integration",
 };
 
 export const eventSourceLabels: Record<CrisisEvent["source"], string> = {
   happyrobot: "HappyRobot",
   sensor: "Sensor",
-  operator: "Operador",
-  public: "Aviso ciudadano",
-  demo: "Inyector de demo",
-  scenario: "Guion del escenario",
+  operator: "Operator",
+  public: "Citizen report",
+  demo: "Demo injector",
+  scenario: "Scenario script",
 };
 
 export const severityRank: Record<Severity, number> = {
@@ -133,20 +133,20 @@ export function isOpenAction(action: Action) {
 }
 
 export function timeLabel(value: string) {
-  return new Intl.DateTimeFormat("es-ES", {
+  return new Intl.DateTimeFormat("en-US", {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
   }).format(new Date(value));
 }
 
-/** "hace 2 min" en lugar de una marca de tiempo absoluta. */
+/** "2 min ago" instead of absolute timestamp. */
 export function agoLabel(value: string, nowMs: number) {
   const seconds = Math.max(0, Math.round((nowMs - new Date(value).getTime()) / 1000));
-  if (seconds < 60) return `hace ${seconds} s`;
+  if (seconds < 60) return `${seconds}s ago`;
   const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `hace ${minutes} min`;
-  return `hace ${Math.round(minutes / 60)} h`;
+  if (minutes < 60) return `${minutes} min ago`;
+  return `${Math.round(minutes / 60)}h ago`;
 }
 
 export function clockLabel(totalSeconds: number) {
@@ -168,9 +168,9 @@ export function resourceName(resources: Resource[], resourceId: string | undefin
   return resources.find((resource) => resource.id === resourceId)?.name ?? resourceId;
 }
 
-/** Texto único para el modo de ejecución: nunca decimos "real" si es simulado. */
+/** Single text for execution mode. */
 export function executionLabel(mode: Action["executionMode"]) {
-  return mode === "happyrobot" ? "Ejecución real" : "Simulada";
+  return mode === "happyrobot" ? "Live execution" : "Simulated";
 }
 
 export type RunFn = (label: string, operation: () => Promise<void>) => void;

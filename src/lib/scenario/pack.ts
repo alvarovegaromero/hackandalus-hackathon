@@ -24,7 +24,7 @@ export const scenarioPackSchema = z
     durationMin: z.number().positive(),
     facts: z.array(factDefSchema).min(1),
     sources: z.array(sourceSchema).min(1),
-    // Spanish message templates per fact kind; placeholders: {entity} {value} {place}.
+    // Message templates per fact kind; placeholders: {entity} {value} {place}.
     templates: z.record(z.string(), z.array(z.string().min(1)).min(1)),
     events: z.array(scenarioEventSchema).min(1),
   })

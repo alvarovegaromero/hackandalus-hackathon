@@ -1,16 +1,15 @@
-// PROPIETARIO: agente de endurecimiento de la API y validación de entrada.
+// OWNER: API hardening and input validation agent.
 //
-// Capa única de validación y de respuestas de error para todas las rutas de
-// `app/api`. Antes de este módulo cada ruta hacía `(await request.json()) as T`,
-// que es un casteo de TypeScript sin ninguna comprobación en tiempo de
-// ejecución: un cuerpo malformado reventaba con un 500 y una zona inexistente
-// se aceptaba en silencio.
+// Single layer of validation and error responses for all routes in
+// `app/api`. Before this module, each route used `(await request.json()) as T`,
+// which is a TypeScript cast with no runtime checks: a malformed body
+// crashed with a 500 and a non-existent zone was accepted silently.
 //
-// Reglas que impone este módulo:
-//  - Todas las respuestas de error tienen la misma forma, en castellano.
-//  - Todos los cuerpos se validan con zod antes de tocar el store.
-//  - Las referencias (zona, recurso, contacto) se comprueban contra el estado
-//    vivo, no solo contra el tipo.
+// Rules enforced by this module:
+//  - All error responses have the same shape.
+//  - All bodies are validated with zod before touching the store.
+//  - References (zone, resource, contact) are checked against live state,
+//    not just against the type.
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -18,12 +17,12 @@ import { z } from "zod";
 import { getSituation } from "./store";
 
 // ---------------------------------------------------------------------------
-// Forma de los errores
+// Error shape
 // ---------------------------------------------------------------------------
 
 /**
- * Códigos de error de la API. Son identificadores estables para el cliente,
- * así que van en ASCII sin acentos; el texto legible sí lleva acentos.
+ * API error codes. These are stable identifiers for the client,
+ * so they remain ASCII without accents.
  */
 export type ApiErrorCode =
   | "cuerpo_invalido"
@@ -44,8 +43,8 @@ export interface ApiErrorDetail {
 }
 
 /**
- * Cuerpo de error común a toda la API. `error` se mantiene como cadena porque
- * es lo que ya leían la interfaz y los tests; `code` y `detalles` son aditivos.
+ * Error body common to the entire API. `error` is kept as a string because
+ * it was already read by the UI and tests; `code` and `detalles` are additive.
  */
 export interface ApiErrorBody {
   error: string;
@@ -58,12 +57,12 @@ const NO_CACHE_HEADERS = {
   pragma: "no-cache",
 } as const;
 
-/** Respuesta correcta con cabeceras de no-cache: el estado cambia cada segundo. */
+/** Successful response with no-cache headers: state changes every second. */
 export function apiOk<T>(body: T, status = 200, extraHeaders: Record<string, string> = {}) {
   return NextResponse.json(body, { status, headers: { ...NO_CACHE_HEADERS, ...extraHeaders } });
 }
 
-/** Respuesta de error con la forma única de la API. */
+/** Error response with the unique API shape. */
 export function apiError(
   code: ApiErrorCode,
   error: string,
@@ -76,26 +75,26 @@ export function apiError(
 }
 
 /**
- * Traduce un error lanzado por el store a un código HTTP con criterio:
- * "no encontrado" es 404, cualquier otra cosa inesperada es 500 (no 404, como
- * hacían todas las rutas antes).
+ * Translates an error thrown by the store into an appropriate HTTP code:
+ * "not found" is 404, any unexpected error is 500 (not 404, as all routes
+ * previously did).
  */
 export function apiErrorFromThrown(error: unknown, contexto: string) {
   const mensaje = error instanceof Error ? error.message : String(error);
   if (/not found|no encontrad/i.test(mensaje)) {
-    return apiError("no_encontrado", `${contexto}: no se encontró el recurso solicitado.`, 404);
+    return apiError("no_encontrado", `${contexto}: requested resource was not found.`, 404);
   }
-  // No se filtra el mensaje crudo al cliente más allá de lo necesario para
-  // depurar la demo, pero sí se deja visible: es un entorno de hackathon.
-  return apiError("error_interno", `${contexto}: error interno (${mensaje}).`, 500);
+  // The raw message is not filtered beyond what is necessary to debug the demo,
+  // but is left visible: this is a hackathon environment.
+  return apiError("error_interno", `${contexto}: internal error (${mensaje}).`, 500);
 }
 
-/** Handler para métodos no permitidos, con la cabecera `Allow` correcta. */
+/** Handler for disallowed methods, with the correct `Allow` header. */
 export function methodNotAllowed(permitidos: string[]) {
   return () =>
     apiError(
       "metodo_no_permitido",
-      `Método no permitido. Métodos válidos en esta ruta: ${permitidos.join(", ")}.`,
+      `Method not allowed. Valid methods on this route: ${permitidos.join(", ")}.`,
       405,
       undefined,
       { allow: permitidos.join(", ") },
@@ -103,18 +102,18 @@ export function methodNotAllowed(permitidos: string[]) {
 }
 
 // ---------------------------------------------------------------------------
-// Lectura y validación del cuerpo
+// Body reading and validation
 // ---------------------------------------------------------------------------
 
-/** Límite de cuerpo. Suficiente para cualquier señal real y corta los abusos. */
+/** Body size limit. Sufficient for any real signal and prevents abuse. */
 export const MAX_BODY_BYTES = 32 * 1024;
 
 export type ParsedBody<T> = { ok: true; data: T } | { ok: false; response: NextResponse };
 
 function contentTypeAceptable(request: Request): boolean {
   const raw = request.headers.get("content-type");
-  // Sin cabecera se acepta: `new Request(url, { body })` y algunos clientes no
-  // la envían, y el cuerpo se valida igualmente al parsear.
+  // Missing header is accepted: `new Request(url, { body })` and some clients
+  // omit it, and the body is validated during parsing anyway.
   if (!raw) return true;
   const tipo = raw.split(";")[0]!.trim().toLowerCase();
   return (
@@ -123,27 +122,27 @@ function contentTypeAceptable(request: Request): boolean {
 }
 
 function describeIssue(issue: z.core.$ZodIssue): ApiErrorDetail {
-  const campo = issue.path.length ? issue.path.join(".") : "(cuerpo)";
+  const campo = issue.path.length ? issue.path.join(".") : "(body)";
 
   switch (issue.code) {
     case "invalid_type":
-      return { campo, mensaje: `Se esperaba ${issue.expected} y llegó otro tipo de valor.` };
+      return { campo, mensaje: `Expected ${issue.expected}, received different type.` };
     case "invalid_value":
       return {
         campo,
-        mensaje: `Valor no válido. Valores admitidos: ${issue.values.map((value) => String(value)).join(", ")}.`,
+        mensaje: `Invalid value. Allowed values: ${issue.values.map((value) => String(value)).join(", ")}.`,
       };
     case "unrecognized_keys":
-      return { campo, mensaje: `Campos no reconocidos: ${issue.keys.join(", ")}.` };
+      return { campo, mensaje: `Unrecognized fields: ${issue.keys.join(", ")}.` };
     case "too_small":
       return {
         campo,
-        mensaje: `El valor es demasiado corto o pequeño (mínimo ${String(issue.minimum)}).`,
+        mensaje: `Value is too short or small (minimum ${String(issue.minimum)}).`,
       };
     case "too_big":
       return {
         campo,
-        mensaje: `El valor es demasiado largo o grande (máximo ${String(issue.maximum)}).`,
+        mensaje: `Value is too long or large (maximum ${String(issue.maximum)}).`,
       };
     default:
       return { campo, mensaje: issue.message };
@@ -151,9 +150,9 @@ function describeIssue(issue: z.core.$ZodIssue): ApiErrorDetail {
 }
 
 /**
- * Lee el cuerpo de la petición y lo valida contra un esquema zod.
- * Cubre: Content-Type incorrecto, cuerpo gigante, cuerpo vacío, JSON
- * malformado, JSON que no es un objeto y campos no válidos.
+ * Reads request body and validates it against a zod schema.
+ * Covers: incorrect Content-Type, oversized body, empty body,
+ * malformed JSON, non-object JSON, and invalid fields.
  */
 export async function parseJsonBody<T>(
   request: Request,
@@ -167,7 +166,7 @@ export async function parseJsonBody<T>(
       ok: false,
       response: apiError(
         "tipo_contenido_no_soportado",
-        "El cuerpo debe enviarse como application/json.",
+        "Body must be sent as application/json.",
         415,
       ),
     };
@@ -179,7 +178,7 @@ export async function parseJsonBody<T>(
       ok: false,
       response: apiError(
         "cuerpo_demasiado_grande",
-        `El cuerpo supera el máximo admitido de ${MAX_BODY_BYTES} bytes.`,
+        `Body exceeds maximum allowed size of ${MAX_BODY_BYTES} bytes.`,
         413,
       ),
     };
@@ -191,7 +190,7 @@ export async function parseJsonBody<T>(
   } catch {
     return {
       ok: false,
-      response: apiError("cuerpo_invalido", "No se pudo leer el cuerpo de la petición.", 400),
+      response: apiError("cuerpo_invalido", "Could not read request body.", 400),
     };
   }
 
@@ -200,7 +199,7 @@ export async function parseJsonBody<T>(
       ok: false,
       response: apiError(
         "cuerpo_demasiado_grande",
-        `El cuerpo supera el máximo admitido de ${MAX_BODY_BYTES} bytes.`,
+        `Body exceeds maximum allowed size of ${MAX_BODY_BYTES} bytes.`,
         413,
       ),
     };
@@ -211,14 +210,10 @@ export async function parseJsonBody<T>(
     if (!permitirVacio) {
       return {
         ok: false,
-        response: apiError(
-          "cuerpo_vacio",
-          "Falta el cuerpo de la petición: se espera un objeto JSON.",
-          400,
-        ),
+        response: apiError("cuerpo_vacio", "Missing request body: expected a JSON object.", 400),
       };
     }
-    // Un cuerpo vacío equivale a `{}`: el esquema decide si eso es suficiente.
+    // An empty body is equivalent to `{}`: the schema decides if that suffices.
     valor = {};
   } else {
     try {
@@ -226,7 +221,7 @@ export async function parseJsonBody<T>(
     } catch {
       return {
         ok: false,
-        response: apiError("json_invalido", "El cuerpo no es JSON válido.", 400),
+        response: apiError("json_invalido", "Body is not valid JSON.", 400),
       };
     }
   }
@@ -234,7 +229,7 @@ export async function parseJsonBody<T>(
   if (typeof valor !== "object" || valor === null || Array.isArray(valor)) {
     return {
       ok: false,
-      response: apiError("cuerpo_invalido", "El cuerpo debe ser un objeto JSON.", 400),
+      response: apiError("cuerpo_invalido", "Body must be a JSON object.", 400),
     };
   }
 
@@ -244,7 +239,7 @@ export async function parseJsonBody<T>(
       ok: false,
       response: apiError(
         "cuerpo_invalido",
-        "La petición no es válida: revisa los campos indicados.",
+        "Invalid request: check the specified fields.",
         400,
         resultado.error.issues.map(describeIssue),
       ),
@@ -255,7 +250,7 @@ export async function parseJsonBody<T>(
 }
 
 // ---------------------------------------------------------------------------
-// Esquemas de dominio
+// Domain schemas
 // ---------------------------------------------------------------------------
 
 export const severitySchema = z.enum(["low", "medium", "high", "critical"]);
@@ -284,7 +279,7 @@ export const demoKindSchema = z.enum([
   "integration-failure",
 ]);
 
-/** Estados que un operador puede fijar a mano desde la interfaz. */
+/** States that an operator can manually set from the UI. */
 export const operatorActionStatusSchema = z.enum([
   "pending",
   "approved",
@@ -299,11 +294,11 @@ const texto = (max: number) => z.string().trim().min(1).max(max);
 const identificador = z.string().trim().min(1).max(80);
 
 /**
- * Señal entrante. Los campos son opcionales porque el store aplica valores por
- * defecto, pero el objeto no puede estar vacío: un POST sin nada útil creaba
- * una señal fantasma "Nueva senal de crisis" en la zona por defecto.
- * Es estricto a propósito: un campo mal escrito (`zoneid`, `severidad`) debe
- * fallar de forma ruidosa en vez de perderse en silencio.
+ * Incoming signal. Fields are optional because the store applies defaults,
+ * but the object cannot be empty: a POST with nothing useful created a
+ * phantom signal in the default zone.
+ * Strict by design: a misspelled field (`zoneid`, `severidad`) must fail
+ * loudly rather than being lost silently.
  */
 export const incomingEventSchema = z
   .strictObject({
@@ -317,7 +312,7 @@ export const incomingEventSchema = z
     confirmed: z.boolean().nullable().optional(),
   })
   .refine((valor) => Boolean(valor.zoneId ?? valor.category ?? valor.title ?? valor.description), {
-    message: "Indica al menos zoneId, category, title o description para crear una señal.",
+    message: "Provide at least zoneId, category, title, or description to create a signal.",
   });
 
 export type IncomingEventInput = z.infer<typeof incomingEventSchema>;
@@ -339,9 +334,9 @@ export const markEventSchema = z.strictObject({
 });
 
 /**
- * Cuerpo de la ruta de estado, que ahora es solo de interfaz (cancelar,
- * reintentar o fijar estado). El callback externo de HappyRobot vive en
- * `app/api/webhooks/happyrobot`, con su propio secreto.
+ * Status route body, which is now UI-only (cancel, retry, or set status).
+ * The external HappyRobot callback lives in `app/api/webhooks/happyrobot`,
+ * with its own secret.
  */
 export const actionStatusSchema = z
   .strictObject({
@@ -352,7 +347,7 @@ export const actionStatusSchema = z
     error: texto(500).optional(),
   })
   .refine((valor) => Boolean(valor.operation ?? valor.status), {
-    message: "Indica una operación (cancel, retry o set-status) o un status válido.",
+    message: "Specify an operation (cancel, retry, or set-status) or a valid status.",
   });
 
 export type ActionStatusInput = z.infer<typeof actionStatusSchema>;
@@ -362,7 +357,7 @@ export const demoInjectSchema = z.strictObject({
 });
 
 // ---------------------------------------------------------------------------
-// Validación de referencias contra el estado vivo
+// Reference validation against live state
 // ---------------------------------------------------------------------------
 
 export interface ReferenciasAValidar {
@@ -372,9 +367,9 @@ export interface ReferenciasAValidar {
 }
 
 /**
- * Comprueba que las referencias del payload existen de verdad.
- * Este era el agujero silencioso: `zoneId: "zone-nope"` se guardaba y la señal
- * quedaba huérfana, sin zona a la que subir de prioridad.
+ * Checks that payload references actually exist.
+ * Previously, `zoneId: "zone-nope"` was saved and the signal became orphaned,
+ * with no zone to prioritize.
  */
 export function validarReferencias(referencias: ReferenciasAValidar): NextResponse | null {
   const situacion = getSituation();
@@ -386,7 +381,7 @@ export function validarReferencias(referencias: ReferenciasAValidar): NextRespon
   ) {
     detalles.push({
       campo: "zoneId",
-      mensaje: `La zona "${referencias.zoneId}" no existe. Zonas válidas: ${situacion.zones
+      mensaje: `Zone "${referencias.zoneId}" does not exist. Valid zones: ${situacion.zones
         .map((zona) => zona.id)
         .join(", ")}.`,
     });
@@ -398,7 +393,7 @@ export function validarReferencias(referencias: ReferenciasAValidar): NextRespon
   ) {
     detalles.push({
       campo: "resourceId",
-      mensaje: `El recurso "${referencias.resourceId}" no existe.`,
+      mensaje: `Resource "${referencias.resourceId}" does not exist.`,
     });
   }
 
@@ -408,37 +403,36 @@ export function validarReferencias(referencias: ReferenciasAValidar): NextRespon
   ) {
     detalles.push({
       campo: "contactId",
-      mensaje: `El contacto "${referencias.contactId}" no existe.`,
+      mensaje: `Contact "${referencias.contactId}" does not exist.`,
     });
   }
 
   if (!detalles.length) return null;
   return apiError(
     "referencia_desconocida",
-    "La petición apunta a elementos que no existen.",
+    "Request references elements that do not exist.",
     400,
     detalles,
   );
 }
 
 // ---------------------------------------------------------------------------
-// Protección de las rutas de demo
+// Demo route protection
 // ---------------------------------------------------------------------------
 
-/** Cabecera donde se envía el token de las rutas de demo. */
+/** Header where the demo route token is sent. */
 export const DEMO_TOKEN_HEADER = "x-demo-token";
 
 /**
- * Las rutas de demo manipulan y reinician el estado de la crisis, así que no
- * pueden quedar abiertas. Reglas, pensadas para que el presentador no pelee con
- * la autenticación delante del jurado:
+ * Demo routes manipulate and reset crisis state, so they cannot remain open.
+ * Rules designed so the presenter does not struggle with auth before the jury:
  *
- *  - `DEMO_API_TOKEN` definido: hay que enviar ese token (cabecera
- *    `x-demo-token`, `Authorization: Bearer <token>` o `?token=`).
- *  - `DEMO_API_TOKEN` vacío y NODE_ENV distinto de production: abierto, sin
- *    fricción. Es el modo de la demo en local.
- *  - `DEMO_API_TOKEN` vacío y NODE_ENV production: rutas desactivadas. Sin
- *    secreto no se exponen a internet.
+ *  - `DEMO_API_TOKEN` defined: must send that token (header `x-demo-token`,
+ *    `Authorization: Bearer <token>`, or `?token=`).
+ *  - `DEMO_API_TOKEN` empty and NODE_ENV is not production: open, frictionless.
+ *    This is local demo mode.
+ *  - `DEMO_API_TOKEN` empty and NODE_ENV is production: routes disabled.
+ *    Without a secret they are not exposed to the internet.
  */
 export function autorizarRutaDemo(request: Request): NextResponse | null {
   const esperado = process.env.DEMO_API_TOKEN?.trim();
@@ -447,7 +441,7 @@ export function autorizarRutaDemo(request: Request): NextResponse | null {
     if (process.env.NODE_ENV === "production") {
       return apiError(
         "no_autorizado",
-        "Las rutas de demo están desactivadas en producción. Define DEMO_API_TOKEN para habilitarlas.",
+        "Demo routes are disabled in production. Set DEMO_API_TOKEN to enable them.",
         401,
       );
     }
@@ -471,7 +465,7 @@ export function autorizarRutaDemo(request: Request): NextResponse | null {
 
   return apiError(
     "no_autorizado",
-    `Las rutas de demo exigen un token: envía la cabecera ${DEMO_TOKEN_HEADER} con el valor de DEMO_API_TOKEN.`,
+    `Demo routes require a token: send the ${DEMO_TOKEN_HEADER} header with the value of DEMO_API_TOKEN.`,
     401,
   );
 }

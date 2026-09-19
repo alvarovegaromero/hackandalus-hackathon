@@ -1,72 +1,72 @@
-name: Fallo
-description: Algo no funciona como debería en el centro de mando.
+name: Bug Report
+description: Something is not working as expected in the command center.
 title: "fix: "
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Antes de abrir el fallo: comprueba que estás en la rama correcta y que
-        has reiniciado `npm run dev` (el estado vive en memoria y se pierde al
-        reiniciar el servidor).
+        Before opening a bug report: verify you are on the correct branch and
+        that you have restarted `npm run dev` (state lives in memory and is lost
+        when the server restarts).
 
   - type: textarea
-    id: que-pasa
+    id: what-happens
     attributes:
-      label: Qué pasa
-      description: Qué has visto, y qué esperabas ver en su lugar.
+      label: What happened
+      description: What you saw, and what you expected to see instead.
       placeholder: |
-        Al aprobar una acción la cola la deja en "running" y nunca cambia.
-        Esperaba que pasara a "succeeded" en modo mock.
+        When approving an action, the queue leaves it in "running" and never changes.
+        I expected it to transition to "succeeded" in mock mode.
     validations:
       required: true
 
   - type: textarea
-    id: reproducir
+    id: reproduce
     attributes:
-      label: Cómo reproducirlo
-      description: Pasos exactos desde el arranque, incluyendo botones de demo o llamadas a la API.
+      label: How to reproduce
+      description: Exact steps from startup, including demo buttons or API calls.
       placeholder: |
         1. `npm run dev`
-        2. Pulsar "Nuevo incidente"
-        3. Aprobar la primera acción de la cola
+        2. Click "New incident"
+        3. Approve the first action in the queue
         4. ...
     validations:
       required: true
 
   - type: dropdown
-    id: zona
+    id: area
     attributes:
-      label: Dónde ocurre
+      label: Where it occurs
       options:
-        - Interfaz (app/)
-        - Rutas de API (app/api/)
-        - Lógica de dominio (lib/)
-        - Integración HappyRobot
-        - Tooling / hooks locales / documentación
-        - No lo sé
+        - Frontend / UI (app/)
+        - API Routes (app/api/)
+        - Domain logic (lib/)
+        - HappyRobot integration
+        - Tooling / local hooks / documentation
+        - I don't know
     validations:
       required: true
 
   - type: input
-    id: modo
+    id: mode
     attributes:
-      label: Modo de ejecución
-      description: Valor de `ACTION_EXECUTION_MODE`.
+      label: Execution mode
+      description: Value of `ACTION_EXECUTION_MODE`.
       placeholder: mock
     validations:
       required: true
 
   - type: textarea
-    id: entorno
+    id: environment
     attributes:
-      label: Entorno
-      description: Salida de `node -v` y `npm -v`, sistema operativo y rama.
+      label: Environment
+      description: Output of `node -v` and `npm -v`, operating system, and branch.
       render: shell
 
   - type: textarea
     id: logs
     attributes:
-      label: Logs o error
-      description: Pega la traza relevante. **No incluyas claves, teléfonos, correos ni contenido de interacciones reales.**
+      label: Logs or error
+      description: Paste the relevant stack trace. **Do not include real API keys, phone numbers, emails, or content of live interactions.**
       render: shell

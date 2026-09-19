@@ -24,7 +24,7 @@ export default function ResourcesPanel({ resources, zones, actions, waiting, now
   return (
     <div className="resources-tab">
       <section className={queue.length > 0 ? "waiting-box alarm" : "waiting-box"}>
-        <h3 className="section-head">Reparto de recursos entre zonas</h3>
+        <h3 className="section-head">Resource distribution across zones</h3>
         <p className="waiting-summary">{conflicts.summary}</p>
         {queue.length > 0 ? (
           <ul className="mini-list">
@@ -35,9 +35,9 @@ export default function ResourcesPanel({ resources, zones, actions, waiting, now
                 <li key={entry.actionId} className="mini-row sev-high">
                   <div>
                     <strong>
-                      {zone?.name ?? entry.zoneId} espera
+                      {zone?.name ?? entry.zoneId} waiting
                       {"estimatedWaitMinutes" in entry && entry.estimatedWaitMinutes !== null
-                        ? ` · unos ${entry.estimatedWaitMinutes} min`
+                        ? ` · approx. ${entry.estimatedWaitMinutes} min`
                         : ""}
                     </strong>
                     <small>
@@ -52,7 +52,7 @@ export default function ResourcesPanel({ resources, zones, actions, waiting, now
         ) : null}
       </section>
 
-      <h3 className="section-head">Dispositivo ({resources.length} recursos)</h3>
+      <h3 className="section-head">Deployment ({resources.length} resources)</h3>
       <div className="resource-list">
         {resources.map((resource) => {
           const zone = zones.find((candidate) => candidate.id === resource.zoneId);
@@ -62,18 +62,18 @@ export default function ResourcesPanel({ resources, zones, actions, waiting, now
               <div>
                 <h3>{resource.name}</h3>
                 <p>
-                  {resource.type} · capacidad {resource.capacity} · sabe hacer{" "}
+                  {resource.type} · capacity {resource.capacity} · capabilities:{" "}
                   {resource.capabilities.join(", ")}
                 </p>
                 {action ? (
                   <p className="action-trace">
-                    Atado a: {action.objective}
-                    {resource.assignedAt ? ` · desde ${agoLabel(resource.assignedAt, nowMs)}` : ""}
+                    Assigned to: {action.objective}
+                    {resource.assignedAt ? ` · since ${agoLabel(resource.assignedAt, nowMs)}` : ""}
                   </p>
                 ) : null}
               </div>
               <span>{resourceStatusLabels[resource.status]}</span>
-              <small>{zone?.name ?? "sin zona fija"}</small>
+              <small>{zone?.name ?? "no fixed zone"}</small>
             </article>
           );
         })}

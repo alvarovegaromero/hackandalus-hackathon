@@ -5,7 +5,7 @@ import { executeAction } from "./integrations/happyrobot";
 const event = {
   id: "11111111-1111-4111-8111-111111111111",
   incidentId: "22222222-2222-4222-8222-222222222222",
-  summary: "Acceso cortado",
+  summary: "Blocked access",
   severity: "high" as const,
   source: "operator" as const,
 };

@@ -1,7 +1,9 @@
+// OWNER: coordination (not edited by module agents).
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// El adaptador se simula para poder controlar el momento exacto en que
-// responde el ejecutor externo. Todo lo demás del módulo se mantiene real.
+// The adapter is mocked to control the exact moment when
+// the external executor responds. Everything else in the module remains real.
 const externo = vi.hoisted(() => ({
   impl: null as null | ((...args: unknown[]) => Promise<unknown>),
 }));
@@ -40,8 +42,8 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("descartar una señal deshace su efecto", () => {
-  it("revierte riesgo, estado y necesidad, y cancela la acción que la motivó", () => {
+describe("discarding a signal undoes its effect", () => {
+  it("reverts risk, status, and need, and cancels the motivating action", () => {
     const antes = getSituation().zones.find((zona) => zona.id === "zone-east")!;
 
     const { event } = addEvent({
@@ -70,7 +72,7 @@ describe("descartar una señal deshace su efecto", () => {
     expect(accion?.status).toBe("cancelled");
   });
 
-  it("no arrastra la necesidad de otra señal viva que pedía lo mismo", () => {
+  it("does not drag down need from another live signal requesting the same", () => {
     const primera = addEvent({
       zoneId: "zone-south",
       category: "refugio",
@@ -90,7 +92,7 @@ describe("descartar una señal deshace su efecto", () => {
     expect(zona.needs).toContain("refugio");
   });
 
-  it("vuelve a aplicar el efecto si la señal se confirma después de haberse descartado", () => {
+  it("reapplies effect if signal is confirmed after being discarded", () => {
     const { event } = addEvent({
       zoneId: "zone-east",
       category: "rumor",
@@ -109,8 +111,8 @@ describe("descartar una señal deshace su efecto", () => {
   });
 });
 
-describe("una respuesta tardía no puede pisar una decisión del operador", () => {
-  it("mantiene la cancelación aunque el ejecutor externo conteste después", async () => {
+describe("a delayed response cannot overwrite an operator decision", () => {
+  it("maintains cancellation even if external executor responds later", async () => {
     process.env.ACTION_EXECUTION_MODE = "happyrobot";
     let resolver: (valor: unknown) => void = () => undefined;
     externo.impl = () => new Promise((resolve) => (resolver = resolve));
@@ -132,7 +134,7 @@ describe("una respuesta tardía no puede pisar una decisión del operador", () =
     expect(final?.externalActionId).not.toBe("hr-tardio");
   });
 
-  it("descarta la respuesta tardía de un intento anterior tras un reintento", async () => {
+  it("discards delayed response from previous attempt after a retry", async () => {
     process.env.ACTION_EXECUTION_MODE = "happyrobot";
     let resolver: (valor: unknown) => void = () => undefined;
     externo.impl = () => new Promise((resolve) => (resolver = resolve));
@@ -153,8 +155,8 @@ describe("una respuesta tardía no puede pisar una decisión del operador", () =
   });
 });
 
-describe("acciones sin respuesta", () => {
-  it("pasan a un estado explícito y liberan su recurso en lugar de quedarse en curso", async () => {
+describe("unresponsive actions", () => {
+  it("transition to an explicit state and release their resource instead of remaining in progress", async () => {
     process.env.ACTION_EXECUTION_MODE = "happyrobot";
     externo.impl = () => new Promise(() => undefined);
 
@@ -177,8 +179,8 @@ describe("acciones sin respuesta", () => {
   });
 });
 
-describe("aprobar una acción sin recurso disponible", () => {
-  it("la bloquea y no llama al ejecutor externo", async () => {
+describe("approving an action without available resource", () => {
+  it("blocks it and does not call external executor", async () => {
     const llamadas: unknown[] = [];
     externo.impl = (...args) => {
       llamadas.push(args);
@@ -200,8 +202,8 @@ describe("aprobar una acción sin recurso disponible", () => {
   });
 });
 
-describe("inyectores de demo", () => {
-  it("la caída de recurso invalida las acciones que dependían de él", () => {
+describe("demo injectors", () => {
+  it("resource outage invalidates actions depending on it", () => {
     const antes = getSituation();
     const accionSemilla = antes.actions[0];
 
@@ -214,7 +216,7 @@ describe("inyectores de demo", () => {
     expect(invalidadas).toContain(accionSemilla.id);
   });
 
-  it("el fallo de integración no marca como fallida una acción ya completada", async () => {
+  it("integration failure does not mark an already completed action as failed", async () => {
     const accion = getSituation().actions[0];
     const completada = await approveAction(accion.id);
     expect(completada.status).toBe("succeeded");
@@ -226,8 +228,8 @@ describe("inyectores de demo", () => {
   });
 });
 
-describe("idempotencia y deduplicación", () => {
-  it("cada reintento estrena clave de idempotencia", () => {
+describe("idempotency and deduplication", () => {
+  it("each retry gets a new idempotency key", () => {
     const accion = getSituation().actions[0];
     expect(accion.idempotencyKey).toBe(`${accion.id}:1`);
 
@@ -237,7 +239,7 @@ describe("idempotencia y deduplicación", () => {
     expect(reintentada.externalActionId).toBeUndefined();
   });
 
-  it("una señal repetida se fusiona y cuenta las veces que llegó", () => {
+  it("a repeated signal fuses and increments occurrences", () => {
     const primera = addEvent({
       zoneId: "zone-east",
       category: "route-blocked",
@@ -256,7 +258,7 @@ describe("idempotencia y deduplicación", () => {
     expect(segunda.event.occurrences).toBe(2);
   });
 
-  it("una señal descartada no absorbe señales nuevas iguales", () => {
+  it("a discarded signal does not absorb new identical signals", () => {
     const primera = addEvent({
       zoneId: "zone-east",
       category: "route-blocked",

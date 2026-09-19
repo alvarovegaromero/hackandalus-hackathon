@@ -1,18 +1,17 @@
-// PROPIETARIO: agente de integración HappyRobot, contactos y escalado.
-// Modelo de a quién se avisa, por qué canal y qué se le cuenta.
+// OWNER: HappyRobot integration, contacts, and escalation agent.
+// Model of who is notified, through which channel, and what they are told.
 //
-// El reto pregunta literalmente "quién es avisado, qué se le cuenta y en qué
-// orden". Un vecino, un bombero y un responsable político no necesitan lo
-// mismo: aquí viven la selección de contacto, la elección de canal y el
-// briefing específico de cada rol.
+// The challenge literally asks "who is notified, what they are told, and in what
+// order". A resident, a firefighter, and an elected official do not need the
+// same thing: here live contact selection, channel choice, and role-specific briefing.
 
 import type { ActionChannel, Contact, ContactRole, LearnedWeights } from "./types";
 
 // ---------------------------------------------------------------------------
-// Categorias -> roles
+// Categories -> roles
 // ---------------------------------------------------------------------------
 
-/** Roles que conviene avisar para cada categoría de necesidad, por orden. */
+/** Roles to notify for each need category, in order. */
 export const roleByCategory: Record<string, ContactRole[]> = {
   incendio: ["field-coordinator", "operations-lead", "authority"],
   evacuacion: ["field-coordinator", "public-safety", "operations-lead"],
@@ -27,8 +26,8 @@ export const roleByCategory: Record<string, ContactRole[]> = {
 };
 
 /**
- * Sinónimos y variantes (español/inglés, con y sin guiones) que llegan desde
- * las señales de escenario, la demo y los callbacks de HappyRobot.
+ * Synonyms and variants (Spanish/English, with and without hyphens) arriving from
+ * scenario signals, demo injection, and HappyRobot callbacks.
  */
 const categoryAliases: Record<string, keyof typeof roleByCategory> = {
   fire: "incendio",
@@ -63,7 +62,7 @@ const categoryAliases: Record<string, keyof typeof roleByCategory> = {
   "fallo-de-integracion": "integracion",
 };
 
-/** Normaliza una categoría: minúsculas, sin acentos y con guiones. */
+/** Normalizes a category: lowercase, without accents, hyphen-separated. */
 export function normalizeCategory(category: string): string {
   return category
     .normalize("NFD")
@@ -73,14 +72,14 @@ export function normalizeCategory(category: string): string {
     .replace(/[\s_]+/g, "-");
 }
 
-/** Roles preferentes para una categoría, del más directo al más institucional. */
+/** Preferred roles for a category, from most direct to most institutional. */
 export function rolesForCategory(category: string): ContactRole[] {
   const key = normalizeCategory(category);
   const direct = roleByCategory[key];
   if (direct) return direct;
   const alias = categoryAliases[key];
   if (alias && roleByCategory[alias]) return roleByCategory[alias];
-  // Coincidencia parcial: "evacuacion-costa" sigue siendo evacuacion.
+  // Partial match: "evacuacion-costa" is still evacuacion.
   for (const known of Object.keys(roleByCategory)) {
     if (key.includes(known) || known.includes(key)) return roleByCategory[known];
   }
@@ -88,7 +87,7 @@ export function rolesForCategory(category: string): ContactRole[] {
 }
 
 // ---------------------------------------------------------------------------
-// Selección de contacto
+// Contact selection
 // ---------------------------------------------------------------------------
 
 export interface RankedContact {
@@ -103,9 +102,9 @@ function successRate(stat: { attempts: number; successes: number } | undefined):
 }
 
 /**
- * Ordena los contactos para una zona y categoría. La puntuación combina el
- * rol adecuado, la cercanía a la zona, la capacidad de respuesta observada y
- * lo aprendido en ejecuciones anteriores.
+ * Ranks contacts for a zone and category. Score combines appropriate
+ * role, proximity to zone, observed responsiveness, and
+ * learnings from previous runs.
  */
 export function rankContacts(
   contacts: Contact[],
@@ -151,8 +150,8 @@ export function rankContacts(
       }
 
       if (canReceiveLiveAction(contact)) {
-        // Desempate suave: si dos contactos valen igual, preferimos al que
-        // puede recibir ejecución real y no obliga a degradar a simulación.
+        // Soft tie-breaker: if two contacts score equally, prefer one that can
+        // receive real execution and does not force simulation fallback.
         score += 6;
         motivos.push("aprobado para ejecución real de demo");
       }
@@ -162,7 +161,7 @@ export function rankContacts(
     .sort((a, b) => b.score - a.score);
 }
 
-/** Elige el contacto más adecuado para una zona y categoría. */
+/** Selects the most appropriate contact for a zone and category. */
 export function selectContact(
   contacts: Contact[],
   zoneId: string | null,
@@ -173,7 +172,7 @@ export function selectContact(
   return rankContacts(contacts, zoneId, category, learning)[0]?.contact ?? null;
 }
 
-/** Elige el mejor contacto de un rol concreto, preferiblemente en la zona. */
+/** Selects the best contact for a specific role, preferably in the zone. */
 export function selectContactByRole(
   contacts: Contact[],
   zoneId: string | null,
@@ -197,10 +196,10 @@ export function selectContactByRole(
 }
 
 // ---------------------------------------------------------------------------
-// Selección de canal
+// Channel selection
 // ---------------------------------------------------------------------------
 
-/** Valor de cada canal cuando hay que interrumpir a alguien ya. */
+/** Score of each channel when someone must be interrupted immediately. */
 const urgentChannelScore: Record<ActionChannel, number> = {
   call: 100,
   sms: 78,
@@ -211,7 +210,7 @@ const urgentChannelScore: Record<ActionChannel, number> = {
   webhook: 12,
 };
 
-/** Valor de cada canal cuando lo importante es dejar constancia escrita. */
+/** Score of each channel when creating a written record is key. */
 const calmChannelScore: Record<ActionChannel, number> = {
   email: 82,
   slack: 72,
@@ -223,9 +222,9 @@ const calmChannelScore: Record<ActionChannel, number> = {
 };
 
 /**
- * Sesgo por rol: a un voluntario o a un vecino se le manda un mensaje corto,
- * a un coordinador de campo se le llama, y a una autoridad se le deja algo
- * escrito que pueda reenviar.
+ * Bias by role: a volunteer or resident receives a short text,
+ * a field coordinator receives a phone call, and an authority
+ * receives a written message they can forward.
  */
 const roleChannelBias: Record<ContactRole, Partial<Record<ActionChannel, number>>> = {
   "field-coordinator": { call: 25, sms: 5 },
@@ -242,8 +241,8 @@ export interface ChannelChoice {
 }
 
 /**
- * Canal preferido para un contacto, teniendo en cuenta la urgencia, el orden
- * de preferencia declarado, el rol y lo aprendido en ejecuciones anteriores.
+ * Preferred channel for a contact, considering urgency, declared
+ * preference order, role, and learnings from previous runs.
  */
 export function selectChannelWithReason(
   contact: Contact,
@@ -298,7 +297,7 @@ export function selectChannelWithReason(
   return { channel: best.channel, reason: best.reason };
 }
 
-/** Version compacta usada por el store. */
+/** Compact version used by the store. */
 export function selectChannel(
   contact: Contact,
   urgent: boolean,
@@ -308,14 +307,14 @@ export function selectChannel(
 }
 
 // ---------------------------------------------------------------------------
-// Salvaguarda de demo
+// Demo safeguards
 // ---------------------------------------------------------------------------
 
 /**
- * true si el dato de contacto sirve para llamar o escribir de verdad.
- * La persistencia redacta teléfonos y correos antes de tocar disco, así que un
- * estado restaurado puede traer marcadores como "[teléfono omitido]": eso no
- * es un destinatario, y darlo por bueno sería mandar una llamada a la nada.
+ * true if contact destination can be used for real calls or messages.
+ * Persistence redacts phone numbers and emails before touching disk, so a
+ * restored state may contain placeholders like "[phone omitted]": that is
+ * not a destination, and treating it as valid would dispatch a call to nowhere.
  */
 export function isUsableDestination(value: string | null | undefined): boolean {
   if (!value) return false;
@@ -327,14 +326,14 @@ export function isUsableDestination(value: string | null | undefined): boolean {
   return esCorreo || esTelefono;
 }
 
-/** Un contacto solo puede recibir ejecución real si está aprobado para demo. */
+/** A contact can only receive live execution if approved for demo. */
 export function canReceiveLiveAction(contact: Contact): boolean {
   return (
     contact.demoSafe && (isUsableDestination(contact.phone) || isUsableDestination(contact.email))
   );
 }
 
-/** Explica en castellano por qué un contacto no puede recibir acción real. */
+/** Explains why a contact cannot receive live action. */
 export function liveActionBlockReason(contact: Contact | null): string | null {
   if (!contact) {
     return "la acción no tiene contacto asignado y ningún destinatario está aprobado para la demo";
@@ -348,18 +347,18 @@ export function liveActionBlockReason(contact: Contact | null): string | null {
   return null;
 }
 
-/** Destinatario concreto para un canal, o null si ese canal no es utilizable. */
+/** Concrete destination for a channel, or null if channel is unusable. */
 export function contactDestination(contact: Contact, channel: ActionChannel): string | null {
   if (channel === "call" || channel === "sms" || channel === "whatsapp") {
     return isUsableDestination(contact.phone) ? contact.phone : null;
   }
   if (channel === "email") return isUsableDestination(contact.email) ? contact.email : null;
-  // slack, ticket y webhook se resuelven en HappyRobot con el id del contacto.
+  // slack, ticket, and webhook resolve in HappyRobot with contact id.
   return contact.id;
 }
 
 // ---------------------------------------------------------------------------
-// Qué se le cuenta a cada rol
+// Role briefings
 // ---------------------------------------------------------------------------
 
 export interface BriefingInput {
@@ -370,17 +369,17 @@ export interface BriefingInput {
 }
 
 export interface Briefing {
-  /** Frase de apertura: qué ocurre y por qué le llamamos a él. */
+  /** Opening sentence: what is happening and why we are calling them. */
   headline: string;
-  /** Detalle útil para ese rol concreto. */
+  /** Useful detail for this specific role. */
   detail: string;
-  /** Qué necesitamos de vuelta: esto alimenta el bucle de nueva información. */
+  /** What we need back: this feeds the new information loop. */
   askFor: string;
 }
 
 /**
- * Mensaje adaptado al rol. El objetivo operativo es el mismo, pero el nivel de
- * detalle, el tono y lo que se pide de vuelta cambian por completo.
+ * Message tailored to role. The operational objective is the same, but the level
+ * of detail, tone, and requested information change completely.
  */
 export function briefingForRole(role: ContactRole, input: BriefingInput): Briefing {
   const urgencia = input.urgent ? "Prioridad inmediata" : "Prioridad alta";
@@ -408,7 +407,7 @@ export function briefingForRole(role: ContactRole, input: BriefingInput): Briefi
     case "volunteer":
       return {
         headline: `Aviso de ${input.zoneName}.`,
-        // A un voluntario o vecino se le dan instrucciones, no analisis.
+        // A volunteer or resident receives instructions, not analysis.
         detail: `${input.objective} Sigue las indicaciones del punto de encuentro y no te desplaces por tu cuenta.`,
         askFor: "Responde OK si puedes acudir, o NO si no estás disponible.",
       };

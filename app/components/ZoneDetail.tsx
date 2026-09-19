@@ -42,17 +42,17 @@ export default function ZoneDetail({ zone, situation, nowMs, onClose, onCreateAc
   const rest = (priority?.score ?? 0) - declared;
   const rows = [
     ...factors,
-    ...(rest !== 0 ? [{ label: "Ajuste no desglosado", value: rest }] : []),
+    ...(rest !== 0 ? [{ label: "Unitemized adjustment", value: rest }] : []),
   ];
   const maxValue = Math.max(1, ...rows.map((row) => Math.abs(row.value)));
 
   return (
-    <section className="panel zone-detail" aria-label={`Detalle de ${zone.name}`}>
+    <section className="panel zone-detail" aria-label={`Details for ${zone.name}`}>
       <div className="panel-title">
         <button
           className="icon-button"
           onClick={onClose}
-          aria-label="Cerrar el detalle y volver a las prioridades"
+          aria-label="Close details and return to priorities"
         >
           <ArrowLeft size={16} aria-hidden="true" />
         </button>
@@ -62,19 +62,19 @@ export default function ZoneDetail({ zone, situation, nowMs, onClose, onCreateAc
 
       <div className="zone-stats">
         <div>
-          <span>Prioridad</span>
+          <span>Priority</span>
           <strong>{rank > 0 ? `#${rank}` : "—"}</strong>
         </div>
         <div>
-          <span>Puntuación</span>
+          <span>Score</span>
           <strong>{priority?.score ?? zone.riskScore}</strong>
         </div>
         <div>
-          <span>Personas en riesgo</span>
-          <strong>{zone.populationAtRisk.toLocaleString("es-ES")}</strong>
+          <span>People at risk</span>
+          <strong>{zone.populationAtRisk.toLocaleString("en-US")}</strong>
         </div>
         <div>
-          <span>{typeof zone.minutesToImpact === "number" ? "Impacto en" : "Actualizada"}</span>
+          <span>{typeof zone.minutesToImpact === "number" ? "Impact in" : "Updated"}</span>
           <strong>
             {typeof zone.minutesToImpact === "number"
               ? `${zone.minutesToImpact} min`
@@ -85,18 +85,18 @@ export default function ZoneDetail({ zone, situation, nowMs, onClose, onCreateAc
 
       {zone.vulnerableSites && zone.vulnerableSites.length > 0 ? (
         <>
-          <h3 className="section-head">Puntos vulnerables ({zone.vulnerableSites.length})</h3>
+          <h3 className="section-head">Vulnerable sites ({zone.vulnerableSites.length})</h3>
           <ul className="mini-list">
             {zone.vulnerableSites.map((site) => (
               <li key={site.id} className={`mini-row ${site.evacuated ? "" : "sev-high"}`}>
                 <div>
                   <strong>{site.name}</strong>
                   <small>
-                    {site.kind} · {site.people} personas · peso ×{site.multiplier}
+                    {site.kind} · {site.people} people · weight ×{site.multiplier}
                   </small>
                 </div>
                 <span className={site.evacuated ? "pill zone-stable" : "pill zone-critical"}>
-                  {site.evacuated ? "Evacuado" : "Sin evacuar"}
+                  {site.evacuated ? "Evacuated" : "Unevacuated"}
                 </span>
               </li>
             ))}
@@ -104,8 +104,8 @@ export default function ZoneDetail({ zone, situation, nowMs, onClose, onCreateAc
         </>
       ) : null}
 
-      <h3 className="section-head">Por qué puntúa así</h3>
-      <p className="muted-note">{priority?.reason ?? "Sin motivo registrado para esta zona."}</p>
+      <h3 className="section-head">Score rationale</h3>
+      <p className="muted-note">{priority?.reason ?? "No rationale recorded for this zone."}</p>
       <ul className="factor-list">
         {rows.map((row) => (
           <li key={row.label}>
@@ -120,7 +120,7 @@ export default function ZoneDetail({ zone, situation, nowMs, onClose, onCreateAc
           </li>
         ))}
         <li className="factor-total">
-          <span className="factor-label">Puntuación total</span>
+          <span className="factor-label">Total score</span>
           <span />
           <b>{priority?.score ?? zone.riskScore}</b>
         </li>
@@ -128,7 +128,7 @@ export default function ZoneDetail({ zone, situation, nowMs, onClose, onCreateAc
 
       {zone.needs.length > 0 ? (
         <>
-          <h3 className="section-head">Necesidades abiertas</h3>
+          <h3 className="section-head">Open needs</h3>
           <div className="chip-row">
             {zone.needs.map((need) => (
               <span key={need} className="pill need">
@@ -139,9 +139,9 @@ export default function ZoneDetail({ zone, situation, nowMs, onClose, onCreateAc
         </>
       ) : null}
 
-      <h3 className="section-head">Señales de la zona ({events.length})</h3>
+      <h3 className="section-head">Zone signals ({events.length})</h3>
       {events.length === 0 ? (
-        <p className="muted-note">Todavía no ha entrado ninguna señal de esta zona.</p>
+        <p className="muted-note">No signals received from this zone yet.</p>
       ) : (
         <ul className="mini-list">
           {events.map((event) => (
@@ -151,11 +151,11 @@ export default function ZoneDetail({ zone, situation, nowMs, onClose, onCreateAc
                 <small>
                   {severityLabels[event.severity]} · {confidenceLabels[event.confidence]} ·{" "}
                   {event.confirmed === true
-                    ? "confirmada"
+                    ? "confirmed"
                     : event.confirmed === false
-                      ? "descartada"
-                      : "sin verificar"}
-                  {event.occurrences > 1 ? ` · ${event.occurrences} avisos` : ""}
+                      ? "discarded"
+                      : "unverified"}
+                  {event.occurrences > 1 ? ` · ${event.occurrences} reports` : ""}
                 </small>
               </div>
               <span className="pill">{agoLabel(event.createdAt, nowMs)}</span>
@@ -164,9 +164,9 @@ export default function ZoneDetail({ zone, situation, nowMs, onClose, onCreateAc
         </ul>
       )}
 
-      <h3 className="section-head">Recursos ligados ({resources.length})</h3>
+      <h3 className="section-head">Linked resources ({resources.length})</h3>
       {resources.length === 0 ? (
-        <p className="muted-note">Ningún recurso tiene base ni despliegue en esta zona.</p>
+        <p className="muted-note">No resources based or deployed in this zone.</p>
       ) : (
         <ul className="mini-list">
           {resources.map((resource) => (
@@ -174,7 +174,7 @@ export default function ZoneDetail({ zone, situation, nowMs, onClose, onCreateAc
               <div>
                 <strong>{resource.name}</strong>
                 <small>
-                  {resource.type} · capacidad {resource.capacity} ·{" "}
+                  {resource.type} · capacity {resource.capacity} ·{" "}
                   {resource.capabilities.join(", ")}
                 </small>
               </div>
@@ -186,9 +186,9 @@ export default function ZoneDetail({ zone, situation, nowMs, onClose, onCreateAc
         </ul>
       )}
 
-      <h3 className="section-head">Acciones abiertas ({actions.length})</h3>
+      <h3 className="section-head">Open actions ({actions.length})</h3>
       {actions.length === 0 ? (
-        <p className="muted-note">No hay acciones vivas en esta zona.</p>
+        <p className="muted-note">No active actions in this zone.</p>
       ) : (
         <ul className="mini-list">
           {actions.map((action) => (
@@ -196,7 +196,7 @@ export default function ZoneDetail({ zone, situation, nowMs, onClose, onCreateAc
               <div>
                 <strong>{action.objective}</strong>
                 <small>
-                  {actionStatusLabels[action.status]} · {action.target} · intento {action.attempt}
+                  {actionStatusLabels[action.status]} · {action.target} · attempt {action.attempt}
                 </small>
               </div>
               <span className={action.executionMode === "happyrobot" ? "pill live" : "pill mock"}>
@@ -209,14 +209,14 @@ export default function ZoneDetail({ zone, situation, nowMs, onClose, onCreateAc
 
       {chains.length > 0 ? (
         <>
-          <h3 className="section-head">Cadenas de escalado ({chains.length})</h3>
+          <h3 className="section-head">Escalation chains ({chains.length})</h3>
           <ul className="mini-list">
             {chains.map((chain) => (
               <li key={chain.id} className="mini-row">
                 <div>
                   <strong>{chain.objective}</strong>
                   <small>
-                    Escalón {Math.min(chain.currentStep + 1, chain.steps.length)} de{" "}
+                    Step {Math.min(chain.currentStep + 1, chain.steps.length)} of{" "}
                     {chain.steps.length}
                   </small>
                 </div>
@@ -228,7 +228,7 @@ export default function ZoneDetail({ zone, situation, nowMs, onClose, onCreateAc
       ) : null}
 
       <button className="wide-button" onClick={() => onCreateAction(zone.id)}>
-        <Plus size={15} aria-hidden="true" /> Crear una acción en esta zona
+        <Plus size={15} aria-hidden="true" /> Create an action in this zone
       </button>
     </section>
   );

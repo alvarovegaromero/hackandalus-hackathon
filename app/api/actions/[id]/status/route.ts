@@ -1,14 +1,13 @@
-// PROPIETARIO: agente de endurecimiento de la API y validacion de entrada.
+// OWNER: API hardening and input validation agent.
 //
-// Ruta de INTERFAZ para operar sobre una accion: cancelar, reintentar o fijar
-// su estado a mano. NO es el callback de HappyRobot.
+// UI route to operate on an action: cancel, retry, or manually set its
+// status. This is NOT the HappyRobot callback.
 //
-// Antes esta ruta mezclaba las dos responsabilidades y exigia el secreto del
-// webhook: con `HAPPYROBOT_WEBHOOK_SECRET` definido, como recomienda
-// `.env.example`, los botones de cancelar y reintentar devolvian 401 y la
-// interfaz quedaba inservible. El callback externo vive ahora en
-// `app/api/webhooks/happyrobot`, con su propio secreto, y aqui no se pide
-// ninguno: son operaciones humanas desde el panel.
+// Previously this route mixed both responsibilities and required the webhook
+// secret: with `HAPPYROBOT_WEBHOOK_SECRET` defined, as recommended by
+// `.env.example`, cancel and retry buttons returned 401 and broke the UI.
+// The external callback now lives in `app/api/webhooks/happyrobot`, with its
+// own secret, and none is required here: these are human operations from the panel.
 
 import { cancelAction, getSituation, retryAction, setActionStatus } from "@/lib/store";
 import type { Action } from "@/lib/types";
@@ -23,7 +22,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-/** Busca por id local o por id externo, igual que hace el store. */
+/** Finds by local ID or external ID, same as the store. */
 function findAction(actionId: string): Action | undefined {
   return getSituation().actions.find(
     (candidate) => candidate.id === actionId || candidate.externalActionId === actionId,
@@ -39,23 +38,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const actionId = payload.localActionId ?? id;
   const action = findAction(actionId);
   if (!action) {
-    return apiError(
-      "no_encontrado",
-      `No existe ninguna acción con identificador "${actionId}".`,
-      404,
-    );
+    return apiError("no_encontrado", `No action found with identifier "${actionId}".`, 404);
   }
 
   const operation = payload.operation ?? "set-status";
 
   try {
     if (operation === "cancel") {
-      // Cancelar algo ya terminado o ya cancelado no es un error del servidor:
-      // es un conflicto de estado y se responde 409.
+      // Cancelling an already finished or cancelled action is not a server error:
+      // it is a state conflict and returns 409.
       if (action.status === "succeeded" || action.status === "cancelled") {
         return apiError(
           "conflicto",
-          `La acción ya está en estado "${action.status}" y no se puede cancelar.`,
+          `Action is already in "${action.status}" state and cannot be cancelled.`,
           409,
         );
       }
@@ -66,16 +61,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       if (action.status === "running") {
         return apiError(
           "conflicto",
-          "La acción está en curso: cancélala antes de reintentarla.",
+          "Action is currently running: cancel it before retrying.",
           409,
         );
       }
       if (action.status === "succeeded") {
-        return apiError(
-          "conflicto",
-          "La acción ya terminó con éxito: no tiene sentido reintentarla.",
-          409,
-        );
+        return apiError("conflicto", "Action already succeeded: retrying makes no sense.", 409);
       }
       return apiOk({ action: retryAction(action.id) });
     }
@@ -83,15 +74,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (!payload.status) {
       return apiError(
         "cuerpo_invalido",
-        "Para fijar el estado hay que indicar el campo status.",
+        "Setting status requires specifying the status field.",
         400,
-        [{ campo: "status", mensaje: "Campo obligatorio con la operación set-status." }],
+        [{ campo: "status", mensaje: "Required field for set-status operation." }],
       );
     }
 
-    // Cambio de estado iniciado por el operador: el actor es "operator", no
-    // "happyrobot", para que la auditoria no atribuya a la integracion algo
-    // que hizo una persona.
+    // Status change initiated by operator: actor is "operator", not
+    // "happyrobot", so the audit trail does not attribute a human action
+    // to the integration.
     const updated = setActionStatus(
       action.id,
       payload.status,
@@ -101,7 +92,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     );
     return apiOk({ action: updated });
   } catch (error) {
-    return apiErrorFromThrown(error, "No se pudo actualizar la acción");
+    return apiErrorFromThrown(error, "Could not update action");
   }
 }
 

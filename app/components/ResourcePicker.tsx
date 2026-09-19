@@ -30,7 +30,7 @@ export default function ResourcePicker({ action, resources, zones, busy, onAssig
 
   return (
     <div className="resource-picker">
-      <h4>Recursos candidatos para esta acción</h4>
+      <h4>Candidate resources for this action</h4>
       {usable.length === 0 ? (
         <p className="muted-note warn">
           {explainUnassignable(
@@ -53,23 +53,23 @@ export default function ResourcePicker({ action, resources, zones, busy, onAssig
               <div>
                 <strong>
                   {candidate.resource.name}
-                  {current ? <em className="count-tag">asignado ahora</em> : null}
+                  {current ? <em className="count-tag">currently assigned</em> : null}
                 </strong>
                 <small>
-                  Cubre {candidate.matched.join(", ") || "nada específico"} ·{" "}
+                  Covers {candidate.matched.join(", ") || "nothing specific"} ·{" "}
                   {candidate.distance === null
-                    ? "recurso regional sin base fija"
-                    : `distancia ${Math.round(candidate.distance)}`}{" "}
-                  · capacidad {candidate.resource.capacity} ·{" "}
+                    ? "regional resource without fixed base"
+                    : `distance ${Math.round(candidate.distance)}`}{" "}
+                  · capacity {candidate.resource.capacity} ·{" "}
                   {resourceStatusLabels[candidate.resource.status]}
                 </small>
               </div>
               <button
                 onClick={() => onAssign(candidate.resource.id)}
                 disabled={busy || current}
-                aria-label={`Asignar ${candidate.resource.name} a la acción ${action.objective}`}
+                aria-label={`Assign ${candidate.resource.name} to action ${action.objective}`}
               >
-                <Check size={14} aria-hidden="true" /> Asignar
+                <Check size={14} aria-hidden="true" /> Assign
               </button>
             </li>
           );
@@ -78,7 +78,7 @@ export default function ResourcePicker({ action, resources, zones, busy, onAssig
 
       {discarded.length > 0 ? (
         <details>
-          <summary>Por qué se descartaron los otros {discarded.length}</summary>
+          <summary>Why the other {discarded.length} were discarded</summary>
           <ul className="mini-list">
             {discarded.map((candidate) => (
               <li key={candidate.resource.id} className="mini-row">

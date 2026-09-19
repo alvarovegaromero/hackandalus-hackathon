@@ -1,29 +1,29 @@
-// PROPIETARIO: agente de autonomía graduada y coste de oportunidad.
+// OWNER: graduated autonomy and opportunity cost agent.
 //
-// Dos preguntas del reto se responden aquí:
+// Two challenge questions are answered here:
 //
-//  1. "Decide y actúa por su cuenta". Un sistema que pide permiso para todo es
-//     un asistente con botones. Uno que no lo pide para nada no es
-//     supervisable. La salida es graduar por reversibilidad: lo que se puede
-//     deshacer lo hace el sistema solo, lo que no se puede deshacer lo firma
-//     una persona.
-//  2. "Tienes tres ambulancias y cinco sitios pidiéndolas". Repartir deja a
-//     alguien esperando; aquí se construye la lista de espera con cuánto
-//     espera cada zona, por qué y quién se llevó el recurso.
+//  1. "Decides and acts on its own". A system that asks permission for everything is
+//     an assistant with buttons. One that never asks is not
+//     supervisable. The solution is graduation by reversibility: what can be
+//     undone is done autonomously by the system; what cannot be undone is signed
+//     off by a human.
+//  2. "You have three ambulances and five sites requesting them". Allocation leaves
+//     someone waiting; here the waiting list is built detailing how long
+//     each zone waits, why, and who took the resource.
 //
-// Reglas de diseño, en este orden de mando:
+// Design rules, in order of precedence:
 //
-//   a) `autonomyPaused` manda sobre todo. Si un operador para la autonomía,
-//      absolutamente todo pasa a aprobación humana.
-//   b) Ante la duda, el nivel más conservador. Una acción que no se puede
-//      clasificar, o una regla que falta, o una confianza desconocida, caen
-//      siempre en `approval`. Nunca al revés.
-//   c) Lo irreversible no se automatiza jamás, ni con confianza 1.
-//   d) Una acción que ya aprobó una persona no la degrada el motor.
+//   a) `autonomyPaused` overrides everything. If an operator pauses autonomy,
+//      absolutely everything requires human approval.
+//   b) When in doubt, the most conservative level. An action that cannot be
+//      classified, a missing rule, or an unknown confidence, always falls
+//      back to `approval`. Never the reverse.
+//   c) Irreversible actions are never automated, even with confidence 1.
+//   d) An action already approved by a human is not degraded by the engine.
 //
-// Todo es determinista: tablas de palabras clave y aritmética. Sin modelos de
-// lenguaje y sin aleatoriedad, para que la misma acción dé siempre el mismo
-// nivel y el motivo se pueda enseñar a un jurado.
+// Everything is deterministic: keyword tables and arithmetic. No language models
+// and no randomness, so the same action always yields the same
+// level and the rationale can be presented to a jury.
 
 import { necesidadesDeAccion, rankResourcesForAction, resolveResourceConflicts } from "./resources";
 import type {
@@ -41,13 +41,13 @@ import type {
 } from "./types";
 
 // ---------------------------------------------------------------------------
-// Entradas tolerantes
+// Tolerant inputs
 // ---------------------------------------------------------------------------
 
 /**
- * Lo que este motor necesita de una acción. Todo opcional a propósito: el
- * store llama antes de que la acción exista del todo, y la falta de datos
- * tiene que empujar hacia la aprobación humana, no reventar.
+ * What this engine needs from an action. All optional by design: the
+ * store calls before the action fully exists, and missing data
+ * must push towards human approval, not crash.
  */
 export type AccionParaAutonomia = Partial<
   Pick<
@@ -64,23 +64,23 @@ export type AccionParaAutonomia = Partial<
   >
 >;
 
-/** Lo que se mira de la señal que originó la acción. */
+/** What is examined from the signal that prompted the action. */
 export type SenalParaAutonomia = Partial<
   Pick<CrisisEvent, "id" | "category" | "confidence" | "confirmed" | "assessment">
 >;
 
 export interface AutonomyContext {
-  /** Confianza 0..1 ya calculada. Manda sobre cualquier otra fuente. */
+  /** Confidence 0..1 already calculated. Preempts any other source. */
   confidence?: number | null;
-  /** Señal que originó la acción; de ella salen categoría y confianza. */
+  /** Signal that prompted the action; yields category and confidence. */
   event?: SenalParaAutonomia | null;
-  /** Categoría explícita, cuando se conoce sin tener la señal delante. */
+  /** Explicit category, when known without having the signal. */
   category?: string | null;
-  /** Interruptor general del estado. */
+  /** Global state switch. */
   autonomyPaused?: boolean;
 }
 
-/** Trozo de estado que basta para decidir. */
+/** State slice sufficient for decision making. */
 export type EstadoParaAutonomia = Pick<SituationState, "autonomyRules" | "autonomyPaused"> &
   Partial<Pick<SituationState, "events">>;
 
@@ -89,14 +89,14 @@ export interface AutonomyDecision {
   actionKind: ActionKind | null;
   reversibility: Reversibility | null;
   rule: AutonomyRule | null;
-  /** Confianza usada al decidir, 0..1, o null si no se conocía. */
+  /** Confidence used when deciding, 0..1, or null if unknown. */
   confidence: number | null;
-  /** Motivo en español, escrito para enseñarlo en pantalla. */
+  /** Reason in Spanish, formatted for display on screen. */
   reason: string;
 }
 
 // ---------------------------------------------------------------------------
-// Etiquetas legibles
+// Readable labels
 // ---------------------------------------------------------------------------
 
 export const ETIQUETA_NIVEL: Record<AutonomyLevel, string> = {
@@ -111,7 +111,7 @@ export const ETIQUETA_REVERSIBILIDAD: Record<Reversibility, string> = {
   irreversible: "irreversible",
 };
 
-/** Cómo se nombra cada tipo de acción dentro de una frase. */
+/** How each action kind is named within a sentence. */
 export const ETIQUETA_TIPO: Record<ActionKind, string> = {
   verificar: "comprobar un dato",
   avisar: "avisar a un responsable",
@@ -125,30 +125,30 @@ function porcentaje(valor: number) {
   return `${Math.round(valor * 100)} %`;
 }
 
-/** Quita acentos y baja a minúsculas para poder comparar texto libre. */
+/** Removes accents and converts to lowercase to compare free text. */
 function normalizar(texto: string) {
   return texto.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
 // ---------------------------------------------------------------------------
-// Clasificación
+// Classification
 // ---------------------------------------------------------------------------
 
 /**
- * Tabla de tipos, ordenada de consecuencia más grave a más leve. La primera
- * coincidencia gana, así que una acción que huele a evacuación y a asignación
- * de recurso a la vez se queda en evacuación, que es lo conservador.
+ * Types table, ordered from most severe to least severe consequence. The first
+ * match wins, so an action with traces of both evacuation and resource
+ * allocation defaults to evacuation, which is conservative.
  *
- * Ojo con dos trampas de este repositorio:
+ * Beware of two traps in this repository:
  *
- *  - store.ts redacta TODOS los objetivos como "Coordinar respuesta de
- *    <categoría> en <zona>". La palabra "coordinar" aparece siempre, así que
- *    no puede ser clave de nada: convertiría cualquier acción en un aviso. La
- *    señal útil es la categoría, que se extrae del propio objetivo. El agente
- *    de recursos se topó con lo mismo y lo dejó documentado en resources.ts.
- *  - casi todas las acciones llevan `resourceId`, porque el store asigna un
- *    recurso al proponerlas. Llevar recurso NO es prueba de que la acción sea
- *    "asignar-recurso"; por eso el campo no se usa como señal.
+ *  - store.ts writes ALL objectives as "Coordinar respuesta de
+ *    <categoría> en <zona>". The word "coordinar" always appears, so it
+ *    cannot be a keyword for anything: it would turn every action into an alert. The
+ *    useful signal is the category, extracted from the objective itself. The resource
+ *    agent encountered the same thing and documented it in resources.ts.
+ *  - nearly all actions carry `resourceId`, because the store assigns a
+ *    resource upon proposing them. Having a resource is NOT proof that the action is
+ *    "asignar-recurso"; hence that field is not used as a signal.
  */
 const TABLA_TIPOS: { tipo: ActionKind; claves: string[] }[] = [
   {
@@ -229,7 +229,7 @@ const TABLA_TIPOS: { tipo: ActionKind; claves: string[] }[] = [
   },
 ];
 
-/** Destinatarios que no son una persona concreta sino un colectivo. */
+/** Recipients that are not a specific individual but a collective. */
 const DESTINATARIOS_COLECTIVOS = [
   "poblacion",
   "vecinos",
@@ -239,12 +239,12 @@ const DESTINATARIOS_COLECTIVOS = [
   "usuarios",
 ];
 
-/** Canales por los que se puede lanzar un aviso masivo. */
+/** Channels used to broadcast a mass alert. */
 const CANALES_DE_DIFUSION = new Set(["sms", "whatsapp", "email"]);
 
 /**
- * Categoría de la señal que hay detrás de la acción. Se prefiere el dato
- * explícito; si no lo hay, se extrae del objetivo que redacta el store.
+ * Category of the signal behind the action. Explicit data is preferred;
+ * otherwise extracted from the objective composed by the store.
  */
 export function categoriaDeAccion(
   action: AccionParaAutonomia,
@@ -266,15 +266,15 @@ function coincide(texto: string, claves: string[]) {
 }
 
 /**
- * Deduce el tipo de acción a partir de la categoría, el objetivo, el canal y
- * el destinatario. Devuelve null cuando no hay señal suficiente: quien llama
- * tiene que tratar ese null como "aprobación humana", nunca como "adelante".
+ * Deduce the action kind from category, objective, channel, and
+ * recipient. Returns null when signal is insufficient: caller
+ * must treat null as "human approval", never "proceed".
  */
 export function classifyAction(
   action: AccionParaAutonomia,
   context: AutonomyContext = {},
 ): ActionKind | null {
-  // Si alguien ya declaró el tipo, se respeta: es más fiable que adivinarlo.
+  // If someone already declared the type, respect it: more reliable than guessing.
   if (action.actionKind) return action.actionKind;
 
   const categoria = categoriaDeAccion(action, context);
@@ -287,8 +287,8 @@ export function classifyAction(
 
   for (const grupo of TABLA_TIPOS) {
     if (grupo.tipo === "aviso-masivo") {
-      // Un aviso por canal de difusión a un colectivo es masivo aunque el
-      // texto no lo diga con esas palabras.
+      // An alert sent via broadcast channel to a collective is mass even if
+      // text does not explicitly say so.
       const colectivo = coincide(texto, DESTINATARIOS_COLECTIVOS);
       const difusion = action.channel ? CANALES_DE_DIFUSION.has(action.channel) : false;
       if (coincide(texto, grupo.claves) || (colectivo && difusion)) return "aviso-masivo";
@@ -296,8 +296,8 @@ export function classifyAction(
     }
 
     if (grupo.tipo === "verificar") {
-      // Una acción abierta para resolver la duda sobre una señal es una
-      // verificación, pero solo si no ha encajado antes en algo más grave.
+      // An action opened to resolve doubt about a signal is a
+      // verification, but only if it didn't match something more severe first.
       if (action.verifiesEventId) return "verificar";
       if (coincide(texto, grupo.claves)) return "verificar";
       continue;
@@ -310,10 +310,10 @@ export function classifyAction(
 }
 
 // ---------------------------------------------------------------------------
-// Confianza
+// Confidence
 // ---------------------------------------------------------------------------
 
-/** Traducción de la etiqueta de confianza a número, cuando no hay triaje calibrado. */
+/** Maps confidence label to number, when calibrated triage is absent. */
 const ESCALA_CONFIANZA: Record<Confidence, number> = {
   low: 0.35,
   medium: 0.6,
@@ -321,10 +321,9 @@ const ESCALA_CONFIANZA: Record<Confidence, number> = {
 };
 
 /**
- * Confianza 0..1 con la que se decide. Por orden: el valor explícito, el
- * triaje calibrado de la señal, y como último recurso la etiqueta de
- * confianza corregida por la verificación. null = no se sabe, y no saber
- * empuja a aprobación.
+ * Confidence 0..1 used for decision. In order: explicit value,
+ * calibrated signal triage, and as last resort confidence label
+ * adjusted for verification. null = unknown, which pushes to approval.
  */
 export function confianzaDeContexto(context: AutonomyContext = {}): number | null {
   if (typeof context.confidence === "number" && Number.isFinite(context.confidence)) {
@@ -341,8 +340,8 @@ export function confianzaDeContexto(context: AutonomyContext = {}): number | nul
     return Math.min(1, Math.max(0, event.assessment.confidence));
   }
 
-  // Una señal descartada no sostiene nada; una confirmada por una persona o un
-  // sensor vale más que su etiqueta de origen.
+  // A discarded signal supports nothing; one confirmed by a human or a
+  // sensor is worth more than its source label.
   if (event.confirmed === false) return 0.1;
   if (!event.confidence) return event.confirmed === true ? 0.95 : null;
 
@@ -351,7 +350,7 @@ export function confianzaDeContexto(context: AutonomyContext = {}): number | nul
 }
 
 // ---------------------------------------------------------------------------
-// Decisión de autonomía
+// Autonomy decision
 // ---------------------------------------------------------------------------
 
 function decisionDeAprobacion(
@@ -371,10 +370,10 @@ function decisionDeAprobacion(
 }
 
 /**
- * Decide con qué nivel de autonomía se despacha una acción y por qué.
+ * Decides what level of autonomy to dispatch an action with and why.
  *
- * El orden de las comprobaciones es la política: pausa general, decisión
- * humana previa, clasificación, regla, reversibilidad y umbral de confianza.
+ * Check order embodies the policy: global pause, previous human
+ * decision, classification, rule, reversibility, and confidence threshold.
  */
 export function decideAutonomy(
   action: AccionParaAutonomia,
@@ -386,7 +385,7 @@ export function decideAutonomy(
   const rule =
     kind && Array.isArray(rules) ? (rules.find((item) => item.actionKind === kind) ?? null) : null;
 
-  // a) El interruptor general manda sobre todo lo demás.
+  // a) Global switch overrides everything else.
   if (context.autonomyPaused) {
     return decisionDeAprobacion(
       "Espera aprobación humana porque la autonomía está en pausa: un operador ha detenido el despacho automático y ninguna acción sale sola hasta que la reanude.",
@@ -396,7 +395,7 @@ export function decideAutonomy(
     );
   }
 
-  // d) Lo que ya firmó una persona no lo degrada el motor.
+  // d) What a human already signed off on is not degraded by the engine.
   if (action.approvedBy === "operator" || (action.approvedBy && action.approvedBy !== "system")) {
     return {
       level: "auto",
@@ -408,7 +407,7 @@ export function decideAutonomy(
     };
   }
 
-  // b) Sin clasificación no hay automatismo.
+  // b) Without classification, no automation.
   if (!kind) {
     const objetivo = action.objective ? ` ("${action.objective}")` : "";
     return decisionDeAprobacion(
@@ -431,7 +430,7 @@ export function decideAutonomy(
   const etiqueta = ETIQUETA_TIPO[kind];
   const reversibilidad = ETIQUETA_REVERSIBILIDAD[rule.reversibility];
 
-  // c) Lo irreversible nunca se automatiza, ni con confianza 1.
+  // c) Irreversible actions are never automated, even with confidence 1.
   if (rule.reversibility === "irreversible") {
     return decisionDeAprobacion(
       `Espera aprobación humana porque ${etiqueta} es irreversible: no hay forma de deshacerlo una vez hecho. ${rule.rationale}`,
@@ -441,8 +440,8 @@ export function decideAutonomy(
     );
   }
 
-  // Umbral de confianza: lo parcialmente reversible solo sale solo si la
-  // información es muy buena. Si no se conoce la confianza, no sale.
+  // Confidence threshold: partially reversible only automated if
+  // information is very high quality. If confidence is unknown, it doesn't proceed.
   if (typeof rule.confidenceThreshold === "number") {
     if (confidence === null) {
       return decisionDeAprobacion(
@@ -466,8 +465,8 @@ export function decideAutonomy(
       );
     }
 
-    // Supera el umbral: se automatiza, pero avisando siempre. Aunque la regla
-    // escrita diga "approval", el umbral es justo la puerta que la abre.
+    // Exceeds threshold: automated, but always notifying. Even if written
+    // rule says "approval", the threshold is precisely the gate opening it.
     const level: AutonomyLevel = rule.level === "auto" ? "auto" : "auto-notify";
     return {
       level,
@@ -506,10 +505,10 @@ export function decideAutonomy(
 }
 
 // ---------------------------------------------------------------------------
-// Guardián para el store
+// Guardian for the store
 // ---------------------------------------------------------------------------
 
-/** Busca la señal que explica una acción, para poder mirar su confianza. */
+/** Finds the signal explaining an action, to inspect its confidence. */
 function senalDeLaAccion(action: AccionParaAutonomia, events: CrisisEvent[] | undefined) {
   if (!events || events.length === 0) return null;
 
@@ -521,8 +520,8 @@ function senalDeLaAccion(action: AccionParaAutonomia, events: CrisisEvent[] | un
   const objetivo = normalizar(action.objective ?? "");
   if (!action.zoneId || objetivo.length === 0) return null;
 
-  // La más reciente de la zona cuya categoría aparece en el objetivo: es
-  // justamente la que el store usó para redactarlo.
+  // The most recent in the zone whose category appears in the objective:
+  // exactly the one the store used to compose it.
   return (
     events.find(
       (event) =>
@@ -534,9 +533,9 @@ function senalDeLaAccion(action: AccionParaAutonomia, events: CrisisEvent[] | un
 }
 
 /**
- * Decisión completa a partir del estado, con la señal y la pausa ya resueltas.
- * Es lo que el store debe usar para sellar `action.autonomy` y para escribir
- * el motivo en la auditoría.
+ * Complete decision from state, with signal and pause already resolved.
+ * Store must use this to stamp `action.autonomy` and write
+ * rationale to audit log.
  */
 export function autonomyDecisionFor(
   action: AccionParaAutonomia | null | undefined,
@@ -558,11 +557,11 @@ export function autonomyDecisionFor(
 }
 
 /**
- * Guardián de una sola línea: ¿se puede despachar esta acción sin preguntar?
+ * One-line guardian: can this action be dispatched without asking?
  *
- * Está escrito para ser imposible de saltarse por accidente. Cualquier hueco
- * (sin acción, sin estado, sin reglas, sin objetivo, estado de acción que no
- * sea "pending", pausa activa o `autonomyPaused` indefinido) devuelve false.
+ * Written to be impossible to bypass accidentally. Any gap
+ * (no action, no state, no rules, no objective, status other than
+ * "pending", active pause or undefined `autonomyPaused`) returns false.
  */
 export function canAutoDispatch(
   action: AccionParaAutonomia | null | undefined,
@@ -570,18 +569,18 @@ export function canAutoDispatch(
 ): boolean {
   if (!action || !state) return false;
   if (!Array.isArray(state.autonomyRules) || state.autonomyRules.length === 0) return false;
-  // Se exige un false explícito: un estado sin el interruptor no es un estado
-  // con la autonomía encendida.
+  // Requires explicit false: a state without the switch is not a state
+  // with autonomy enabled.
   if (state.autonomyPaused !== false) return false;
   if (!action.objective) return false;
-  // Solo se despacha sola una acción recién propuesta. Lo demás ya tiene dueño.
+  // Only newly proposed actions can be auto-dispatched. Everything else already has an owner.
   if (action.status !== "pending") return false;
 
   return autonomyDecisionFor(action, state).level !== "approval";
 }
 
 // ---------------------------------------------------------------------------
-// Política legible
+// Readable policy
 // ---------------------------------------------------------------------------
 
 export interface AutonomyPolicyLine {
@@ -590,7 +589,7 @@ export interface AutonomyPolicyLine {
   reversibility: Reversibility;
   levelLabel: string;
   reversibilityLabel: string;
-  /** Frase completa, lista para pintar. */
+  /** Complete sentence, ready for display. */
   text: string;
 }
 
@@ -600,8 +599,8 @@ export interface AutonomyPolicySummary {
 }
 
 /**
- * Resumen legible de la política vigente. La supervisión solo cuenta si se
- * entiende: esto es lo que se pinta en pantalla al lado del interruptor.
+ * Readable summary of current policy. Supervision only counts if
+ * understood: this is rendered on screen next to the toggle.
  */
 export function describeAutonomy(
   rules: AutonomyRule[] | null | undefined,
@@ -657,13 +656,13 @@ export function describeAutonomy(
 }
 
 // ---------------------------------------------------------------------------
-// Coste de oportunidad: quién espera, cuánto y por qué
+// Opportunity cost: who waits, how long, and why
 // ---------------------------------------------------------------------------
 
 /**
- * Cuánto ocupa un recurso una tarea, por la necesidad principal que cubre.
- * Son minutos de planificación, no una simulación: sirven para ordenar la cola
- * y para decirle al operador si una zona espera diez minutos o casi una hora.
+ * How long a resource is occupied by a task, based on the primary need covered.
+ * Planning minutes, not simulation: used to sort the queue
+ * and inform operator whether a zone waits ten minutes or nearly an hour.
  */
 const MINUTOS_POR_NECESIDAD: Record<string, number> = {
   extincion: 45,
@@ -681,19 +680,19 @@ const MINUTOS_POR_NECESIDAD: Record<string, number> = {
 
 const MINUTOS_POR_DEFECTO = 20;
 
-/** Minutos estimados que una acción tendrá ocupado el recurso que pide. */
+/** Estimated minutes an action will occupy its requested resource. */
 export function duracionEstimadaMinutos(action: Pick<Action, "objective" | "channel">): number {
   const principal = necesidadesDeAccion(action.objective ?? "", action.channel)[0];
   return MINUTOS_POR_NECESIDAD[principal] ?? MINUTOS_POR_DEFECTO;
 }
 
 /**
- * Lista de espera lista para el estado: quién se queda sin recurso, cuál
- * quería, quién se lo llevó, cuánto tendrá que esperar y por qué.
+ * Waiting list ready for state: who is without a resource, which was
+ * requested, who took it, how long the wait will be, and why.
  *
- * Envuelve `resolveResourceConflicts` del agente de recursos, que es quien
- * reparte y redacta el motivo. Aquí solo se añade lo que el reparto no da: el
- * recurso deseado y la estimación de espera.
+ * Wraps `resolveResourceConflicts` from resource agent, which allocates
+ * and drafts reasons. Only adds what allocation doesn't provide: desired
+ * resource and wait estimation.
  */
 export function buildWaitingList(
   actions: Action[],
@@ -708,7 +707,7 @@ export function buildWaitingList(
   );
 }
 
-/** Traduce la espera del reparto a `WaitingDemand[]`, con estimación incluida. */
+/** Translates allocation wait to `WaitingDemand[]`, including estimation. */
 function construirEspera(
   waiting: ReturnType<typeof resolveResourceConflicts>["waiting"],
   actions: Action[],
@@ -717,7 +716,7 @@ function construirEspera(
 ): WaitingDemand[] {
   const porId = new Map(actions.map((action) => [action.id, action]));
   const nombreRecurso = new Map(resources.map((resource) => [resource.id, resource.name]));
-  // Cuántas zonas van ya por delante en la cola de cada recurso.
+  // How many zones are already ahead in queue for each resource.
   const colaPorRecurso = new Map<string, number>();
 
   return waiting.map((item) => {
@@ -726,7 +725,7 @@ function construirEspera(
       ? { zoneId: action.zoneId, objective: action.objective, channel: action.channel }
       : null;
 
-    // Qué recurso querría esta acción si no hubiera competencia.
+    // Which resource this action would want without competition.
     const deseado = peticion
       ? (rankResourcesForAction(peticion, resources, zones).find(
           (candidato) => candidato.compatible && candidato.resource.status !== "unavailable",
@@ -740,8 +739,8 @@ function construirEspera(
     let detalle: string;
 
     if (!bloqueante || !wantedResourceId) {
-      // Nadie tiene ese recurso porque no existe uno capaz y libre: la espera
-      // no depende de una tarea que termine, sino de que llegue apoyo externo.
+      // Nobody holds this resource because none capable and free exists: wait
+      // does not depend on a task finishing, but on external support arriving.
       detalle =
         " Sin espera estimable: ningún recurso capaz puede liberarse para esta zona, hace falta apoyo externo.";
     } else {
@@ -771,8 +770,8 @@ function construirEspera(
 }
 
 /**
- * Lista de espera más el resumen en español del reparto, para no tener que
- * repartir dos veces cuando la interfaz quiere las dos cosas.
+ * Waiting list plus allocation Spanish summary, avoiding double allocation
+ * when UI requests both.
  */
 export function buildWaitingReport(actions: Action[], resources: Resource[], zones: CrisisZone[]) {
   const resolution = resolveResourceConflicts(actions, resources, zones);

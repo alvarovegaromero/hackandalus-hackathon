@@ -31,7 +31,7 @@ export type ActionStatus = "proposed" | "cancelled" | "simulated" | "blocked";
 export function simulatePlan(event: CrisisEvent): Plan {
   return {
     priority: event.severity,
-    rationale: `Simulación determinista: se revisa el plan con el nuevo evento (${event.severity}).`,
-    actions: [{ kind: "review", description: `Revisar situación: ${event.summary}` }],
+    rationale: `Deterministic simulation: plan is reviewed with the new event (${event.severity}).`,
+    actions: [{ kind: "review", description: `Review situation: ${event.summary}` }],
   };
 }

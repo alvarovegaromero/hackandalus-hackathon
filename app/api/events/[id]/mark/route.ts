@@ -1,5 +1,5 @@
-// PROPIETARIO: agente de endurecimiento de la API y validacion de entrada.
-// Confirmacion o descarte de una senal por parte de un operador.
+// OWNER: API hardening and input validation agent.
+// Operator confirmation or dismissal of a signal.
 
 import { markEvent } from "@/lib/store";
 import {
@@ -14,8 +14,8 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  // `confirmed` es obligatorio: antes un cuerpo sin ese campo se interpretaba
-  // como "descartar" por culpa de `Boolean(payload.confirmed)`.
+  // `confirmed` is required: previously a body missing this field was interpreted
+  // as "discard" due to `Boolean(payload.confirmed)`.
   const parsed = await parseJsonBody(request, markEventSchema, { permitirVacio: false });
   if (!parsed.ok) return parsed.response;
 
@@ -23,7 +23,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const event = markEvent(id, parsed.data.confirmed);
     return apiOk({ event });
   } catch (error) {
-    return apiErrorFromThrown(error, "No se pudo marcar la señal");
+    return apiErrorFromThrown(error, "Could not mark signal");
   }
 }
 

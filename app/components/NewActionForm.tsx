@@ -65,7 +65,7 @@ export default function NewActionForm({
           channel,
           target: effectiveTarget,
           objective: objective.trim(),
-          reason: reason.trim() || "Acción creada manualmente por el operador.",
+          reason: reason.trim() || "Action manually created by operator.",
           zoneId,
           resourceId: resourceId || undefined,
           contactId: contactId || undefined,
@@ -76,12 +76,12 @@ export default function NewActionForm({
       }}
     >
       <div className="new-action-head">
-        <h3>Nueva acción manual</h3>
+        <h3>New manual action</h3>
         <button
           type="button"
           className="icon-button"
           onClick={onClose}
-          aria-label="Cerrar el formulario de acción"
+          aria-label="Close action form"
         >
           <X size={16} aria-hidden="true" />
         </button>
@@ -89,7 +89,7 @@ export default function NewActionForm({
 
       <div className="field-grid">
         <label>
-          <span>Zona</span>
+          <span>Zone</span>
           <select value={zoneId} onChange={(changeEvent) => setZoneId(changeEvent.target.value)}>
             {zones.map((zone) => (
               <option key={zone.id} value={zone.id}>
@@ -100,7 +100,7 @@ export default function NewActionForm({
         </label>
 
         <label>
-          <span>Canal</span>
+          <span>Channel</span>
           <select
             value={channel}
             onChange={(changeEvent) => setChannel(changeEvent.target.value as ActionChannel)}
@@ -114,28 +114,28 @@ export default function NewActionForm({
         </label>
 
         <label>
-          <span>Contacto</span>
+          <span>Contact</span>
           <select
             value={contactId}
             onChange={(changeEvent) => setContactId(changeEvent.target.value)}
           >
-            <option value="">Sin contacto asignado</option>
+            <option value="">No contact assigned</option>
             {contacts.map((contact) => (
               <option key={contact.id} value={contact.id}>
                 {contact.name} · {roleLabels[contact.role]}
-                {contact.demoSafe ? "" : " (solo simulación)"}
+                {contact.demoSafe ? "" : " (simulation only)"}
               </option>
             ))}
           </select>
         </label>
 
         <label>
-          <span>Recurso</span>
+          <span>Resource</span>
           <select
             value={resourceId}
             onChange={(changeEvent) => setResourceId(changeEvent.target.value)}
           >
-            <option value="">Que lo elija el sistema</option>
+            <option value="">Let system assign</option>
             {resources.map((resource) => (
               <option
                 key={resource.id}
@@ -143,51 +143,51 @@ export default function NewActionForm({
                 disabled={resource.status === "unavailable"}
               >
                 {resource.name}
-                {resource.status === "unavailable" ? " (fuera de servicio)" : ""}
+                {resource.status === "unavailable" ? " (out of service)" : ""}
               </option>
             ))}
           </select>
         </label>
 
         <label className="span-2">
-          <span>Objetivo</span>
+          <span>Objective</span>
           <input
             value={objective}
             onChange={(changeEvent) => setObjective(changeEvent.target.value)}
-            placeholder="Avisar a los refugios de la saturación prevista"
+            placeholder="Notify shelters of expected capacity"
             required
           />
         </label>
 
         <label className="span-2">
-          <span>Destinatario</span>
+          <span>Recipient</span>
           <input
             value={target}
             onChange={(changeEvent) => setTarget(changeEvent.target.value)}
-            placeholder={selectedContact ? selectedContact.name : "A quién se dirige la acción"}
+            placeholder={selectedContact ? selectedContact.name : "Target recipient of the action"}
           />
         </label>
 
         <label className="span-2">
-          <span>Motivo</span>
+          <span>Reason</span>
           <input
             value={reason}
             onChange={(changeEvent) => setReason(changeEvent.target.value)}
-            placeholder="Por qué el operador la crea"
+            placeholder="Reason for manual creation"
           />
         </label>
       </div>
 
       {selectedContact && !selectedContact.demoSafe ? (
         <p className="muted-note warn">
-          {selectedContact.name} no está aprobado para ejecución real: esta acción se quedará en
-          simulación.
+          {selectedContact.name} is not approved for live execution: this action will remain
+          simulated.
         </p>
       ) : null}
 
       <div className="new-action-foot">
         <button type="submit" className="primary" disabled={!canSubmit}>
-          <Send size={15} aria-hidden="true" /> Crear acción
+          <Send size={15} aria-hidden="true" /> Create action
         </button>
       </div>
     </form>

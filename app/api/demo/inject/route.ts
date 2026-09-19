@@ -1,5 +1,5 @@
-// PROPIETARIO: agente de endurecimiento de la API y validacion de entrada.
-// Inyeccion de averias de demo. Ruta protegida: manipula el estado de la crisis.
+// OWNER: API hardening and input validation agent.
+// Demo fault injection. Protected route: manipulates crisis state.
 
 import { injectDemo } from "@/lib/store";
 import {
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   try {
     return apiOk(injectDemo(parsed.data.kind ?? "incident"));
   } catch (error) {
-    return apiErrorFromThrown(error, "No se pudo inyectar la avería de demo");
+    return apiErrorFromThrown(error, "Could not inject demo fault");
   }
 }
 

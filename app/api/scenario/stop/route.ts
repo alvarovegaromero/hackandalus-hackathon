@@ -1,6 +1,6 @@
-// PROPIETARIO: agente del escenario que avanza solo.
-// Pausa el guion. No es un reinicio: el tiempo de guion consumido se conserva
-// y volver a llamar a /api/scenario/start continua donde se quedo.
+// OWNER: self-advancing scenario agent.
+// Pauses the script. This is not a reset: elapsed script time is preserved
+// and calling /api/scenario/start again continues where it left off.
 
 import { stopHeartbeat } from "@/lib/scenario";
 import { stopScenarioRun } from "@/lib/store";
@@ -10,12 +10,12 @@ export const dynamic = "force-dynamic";
 
 export async function POST() {
   try {
-    // Primero se apaga el latido: si no, un tick en vuelo podria disparar un
-    // beat justo despues de que el operador haya pedido parar.
+    // Stop heartbeat first: otherwise an in-flight tick could fire a
+    // beat right after the operator requested to stop.
     stopHeartbeat();
     return apiOk(stopScenarioRun());
   } catch (error) {
-    return apiErrorFromThrown(error, "No se pudo detener el escenario");
+    return apiErrorFromThrown(error, "Could not stop scenario");
   }
 }
 

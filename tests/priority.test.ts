@@ -1,4 +1,4 @@
-// PROPIETARIO: agente del motor de prioridad.
+// OWNER: priority engine agent.
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   buildDedupeKey,
@@ -25,10 +25,10 @@ beforeEach(() => {
 });
 
 // ---------------------------------------------------------------------------
-// Utilidades de prueba
+// Test utilities
 // ---------------------------------------------------------------------------
 
-/** Instante fijo de referencia: el decaimiento es determinista en los tests. */
+/** Fixed reference timestamp: decay is deterministic in tests. */
 const AHORA = "2026-03-01T12:00:00.000Z";
 
 function haceMinutos(minutos: number) {
@@ -118,7 +118,7 @@ function ranking(
 }
 
 // ---------------------------------------------------------------------------
-// Comportamiento de extremo a extremo (pruebas originales del módulo)
+// End-to-end behavior (original module tests)
 // ---------------------------------------------------------------------------
 
 describe("crisis priority engine", () => {
@@ -202,38 +202,38 @@ describe("crisis priority engine", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Tabla 1: cuánto pesa cada señal
+// Table 1: signal weight
 // ---------------------------------------------------------------------------
 
-describe("tabla de pesos de señal", () => {
+describe("signal weight table", () => {
   const casos: Array<{ nombre: string; evento: CrisisEvent; esperado: number }> = [
     {
-      nombre: "crítica confirmada con confianza alta: pesa entera",
+      nombre: "critical confirmed with high confidence: full weight",
       evento: senal({ severity: "critical", confidence: "high", confirmed: true }),
       esperado: 160,
     },
     {
-      nombre: "crítica sin verificar con confianza alta: castigo leve",
+      nombre: "critical unverified with high confidence: slight penalty",
       evento: senal({ severity: "critical", confidence: "high", confirmed: null }),
       esperado: 160 * 0.85,
     },
     {
-      nombre: "alta confirmada con confianza alta",
+      nombre: "high confirmed with high confidence",
       evento: senal({ severity: "high", confidence: "high", confirmed: true }),
       esperado: 70,
     },
     {
-      nombre: "alta sin verificar con confianza media: castigo doble",
+      nombre: "high unverified with medium confidence: double penalty",
       evento: senal({ severity: "high", confidence: "medium", confirmed: null }),
       esperado: 70 * 0.75 * 0.6,
     },
     {
-      nombre: "media confirmada con confianza media",
+      nombre: "medium confirmed with medium confidence",
       evento: senal({ severity: "medium", confidence: "medium", confirmed: true }),
       esperado: 28 * 0.75,
     },
     {
-      nombre: "baja sin verificar con confianza baja: ruido, pesa casi nada",
+      nombre: "low unverified with low confidence: noise, minimal weight",
       evento: senal({ severity: "low", confidence: "low", confirmed: null }),
       esperado: 8 * 0.4 * 0.3,
     },
@@ -245,7 +245,7 @@ describe("tabla de pesos de señal", () => {
     });
   }
 
-  it("una señal sin verificar siempre pesa menos que la misma confirmada", () => {
+  it("an unverified signal always weighs less than the same confirmed signal", () => {
     const sinVerificar = senal({ severity: "high", confidence: "low", confirmed: null });
     const confirmada = senal({ severity: "high", confidence: "low", confirmed: true });
 
@@ -254,8 +254,8 @@ describe("tabla de pesos de señal", () => {
     );
   });
 
-  it("una señal crítica sin verificar sigue pesando más que una baja confirmada", () => {
-    // Sin datos completos hay que decidir igual: una crítica creíble manda.
+  it("an unverified critical signal still weighs more than a confirmed low signal", () => {
+    // Must decide even without complete data: credible critical signal dominates.
     const critica = senal({ severity: "critical", confidence: "high", confirmed: null });
     const baja = senal({ severity: "low", confidence: "high", confirmed: true });
 
@@ -266,38 +266,38 @@ describe("tabla de pesos de señal", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Tabla 2: decaimiento temporal
+// Table 2: time decay
 // ---------------------------------------------------------------------------
 
-describe("tabla de decaimiento temporal", () => {
+describe("time decay table", () => {
   const casos: Array<{ nombre: string; evento: CrisisEvent; esperado: number }> = [
     {
-      nombre: "recién llegada: pesa entera",
+      nombre: "fresh arrival: full weight",
       evento: senal({ severity: "high", confirmed: true, createdAt: AHORA }),
       esperado: 1,
     },
     {
-      nombre: "alta confirmada a su vida media (25 min): la mitad",
+      nombre: "high confirmed at half-life (25 min): half weight",
       evento: senal({ severity: "high", confirmed: true, createdAt: haceMinutos(25) }),
       esperado: 0.5,
     },
     {
-      nombre: "crítica confirmada a los 45 min: la mitad",
+      nombre: "critical confirmed at 45 min: half weight",
       evento: senal({ severity: "critical", confirmed: true, createdAt: haceMinutos(45) }),
       esperado: 0.5,
     },
     {
-      nombre: "baja sin verificar a los 12 min: ya casi no cuenta",
+      nombre: "low unverified at 12 min: barely counts",
       evento: senal({ severity: "low", confirmed: null, createdAt: haceMinutos(12) }),
       esperado: 0.25,
     },
     {
-      nombre: "confirmada muy antigua: nunca se olvida del todo (suelo 0,3)",
+      nombre: "very old confirmed: never fully forgotten (floor 0.3)",
       evento: senal({ severity: "critical", confirmed: true, createdAt: haceMinutos(600) }),
       esperado: 0.3,
     },
     {
-      nombre: "sin verificar muy antigua: cae al suelo 0,05",
+      nombre: "very old unverified: drops to floor 0.05",
       evento: senal({ severity: "low", confirmed: null, createdAt: haceMinutos(600) }),
       esperado: 0.05,
     },
@@ -309,7 +309,7 @@ describe("tabla de decaimiento temporal", () => {
     });
   }
 
-  it("lo que se sabía a las 12:00 pesa menos a las 12:20", () => {
+  it("what was known at 12:00 weighs less at 12:20", () => {
     const doce = senal({ severity: "high", confirmed: true, createdAt: AHORA });
     const doceVeinte = signalWeight(doce, { now: haceMinutos(-20) });
 
@@ -318,15 +318,19 @@ describe("tabla de decaimiento temporal", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Tabla 3: repeticiones con rendimientos decrecientes
+// Table 3: repetitions with diminishing returns
 // ---------------------------------------------------------------------------
 
-describe("tabla de repeticiones", () => {
+describe("repetitions table", () => {
   const casos: Array<{ nombre: string; occurrences: number; esperado: number }> = [
-    { nombre: "una sola vez: sin refuerzo", occurrences: 1, esperado: 1 },
-    { nombre: "dos veces", occurrences: 2, esperado: 1 + Math.log(2) * 0.4 },
-    { nombre: "cinco veces", occurrences: 5, esperado: 1 + Math.log(5) * 0.4 },
-    { nombre: "veinte veces: tope 1,8, no crece sin freno", occurrences: 20, esperado: 1.8 },
+    { nombre: "single occurrence: no reinforcement", occurrences: 1, esperado: 1 },
+    { nombre: "two occurrences", occurrences: 2, esperado: 1 + Math.log(2) * 0.4 },
+    { nombre: "five occurrences", occurrences: 5, esperado: 1 + Math.log(5) * 0.4 },
+    {
+      nombre: "twenty occurrences: cap 1.8, does not grow unbounded",
+      occurrences: 20,
+      esperado: 1.8,
+    },
   ];
 
   for (const caso of casos) {
@@ -335,7 +339,7 @@ describe("tabla de repeticiones", () => {
     });
   }
 
-  it("repetir cinco veces refuerza, pero muy lejos de multiplicar por cinco", () => {
+  it("repeating five times reinforces, but far below multiplying by five", () => {
     const unaVez = signalWeight(senal({ occurrences: 1 }), { now: AHORA });
     const cincoVeces = signalWeight(senal({ occurrences: 5 }), { now: AHORA });
 
@@ -345,10 +349,10 @@ describe("tabla de repeticiones", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Tabla 4: decisiones con información incompleta
+// Table 4: decisions under incomplete information
 // ---------------------------------------------------------------------------
 
-describe("tabla de decisiones de prioridad", () => {
+describe("priority decision table", () => {
   const zonaB = (overrides: Partial<CrisisZone> = {}) =>
     zona({ id: "zone-b", name: "Zona B", ...overrides });
 
@@ -361,7 +365,7 @@ describe("tabla de decisiones de prioridad", () => {
     esperado: string;
   }> = [
     {
-      nombre: "una crítica confirmada gana a seis señales de ruido",
+      nombre: "one confirmed critical signal beats six noise signals",
       zonas: [zona(), zonaB()],
       eventos: [
         senal({ id: "evt-critica", severity: "critical", confidence: "high", confirmed: true }),
@@ -379,7 +383,7 @@ describe("tabla de decisiones de prioridad", () => {
       esperado: "zone-a",
     },
     {
-      nombre: "con la misma señal manda la población expuesta",
+      nombre: "with identical signals exposed population dictates priority",
       zonas: [zona({ populationAtRisk: 600 }), zonaB({ populationAtRisk: 3000 })],
       eventos: [
         senal({ id: "evt-a", severity: "high", confirmed: true }),
@@ -388,7 +392,7 @@ describe("tabla de decisiones de prioridad", () => {
       esperado: "zone-b",
     },
     {
-      nombre: "una señal fresca gana a la misma señal de hace una hora",
+      nombre: "a fresh signal beats the same signal from an hour ago",
       zonas: [zona(), zonaB()],
       eventos: [
         senal({ id: "evt-a", severity: "high", confirmed: true, createdAt: AHORA }),
@@ -403,7 +407,7 @@ describe("tabla de decisiones de prioridad", () => {
       esperado: "zone-a",
     },
     {
-      nombre: "una señal confirmada gana a la misma sin verificar",
+      nombre: "a confirmed signal beats the same unverified signal",
       zonas: [zona(), zonaB()],
       eventos: [
         senal({ id: "evt-a", severity: "high", confidence: "medium", confirmed: true }),
@@ -418,7 +422,7 @@ describe("tabla de decisiones de prioridad", () => {
       esperado: "zone-a",
     },
     {
-      nombre: "una señal repetida cinco veces gana a la misma señal suelta",
+      nombre: "a signal repeated five times beats the same single signal",
       zonas: [zona(), zonaB()],
       eventos: [
         senal({ id: "evt-a", occurrences: 5 }),
@@ -427,7 +431,7 @@ describe("tabla de decisiones de prioridad", () => {
       esperado: "zone-a",
     },
     {
-      nombre: "las señales descartadas no cuentan",
+      nombre: "discarded signals do not count",
       zonas: [zona(), zonaB()],
       eventos: [
         senal({ id: "evt-a", severity: "critical", confidence: "high", confirmed: false }),
@@ -442,19 +446,19 @@ describe("tabla de decisiones de prioridad", () => {
       esperado: "zone-b",
     },
     {
-      nombre: "un recurso caído sube la presión de su zona",
+      nombre: "a downed resource increases pressure on its zone",
       zonas: [zona(), zonaB()],
       recursos: [recurso({ id: "res-a", zoneId: "zone-a", status: "unavailable" })],
       esperado: "zone-a",
     },
     {
-      nombre: "una acción completada con éxito baja la presión de su zona",
+      nombre: "a successfully completed action lowers pressure on its zone",
       zonas: [zona(), zonaB()],
       acciones: [accion({ id: "act-a", zoneId: "zone-a", status: "succeeded" })],
       esperado: "zone-b",
     },
     {
-      nombre: "una acción solo propuesta todavía no alivia nada",
+      nombre: "a merely proposed action does not relieve anything yet",
       zonas: [zona({ riskScore: 21 }), zonaB({ riskScore: 20 })],
       acciones: [accion({ id: "act-a", zoneId: "zone-a", status: "pending", completedAt: null })],
       esperado: "zone-a",
@@ -475,10 +479,10 @@ describe("tabla de decisiones de prioridad", () => {
 });
 
 // ---------------------------------------------------------------------------
-// El ruido no puede ganar a la señal (criterio de aceptación 1)
+// Noise resistance (acceptance criterion 1)
 // ---------------------------------------------------------------------------
 
-describe("resistencia al ruido", () => {
+describe("noise resistance", () => {
   const categoriasRuido = [
     "rumor-vecinal",
     "foto-sin-contexto",
@@ -504,7 +508,7 @@ describe("resistencia al ruido", () => {
     }
   }
 
-  it("ocho señales bajas sin verificar dejan a la zona en la mitad baja del ranking", () => {
+  it("eight unverified low signals leave the zone in the bottom half of ranking", () => {
     inyectarRuido();
 
     const priorities = getSituation().plan.priorities;
@@ -514,7 +518,7 @@ describe("resistencia al ruido", () => {
     expect(priorities[0].zoneId).not.toBe("zone-islands");
   });
 
-  it("el ruido no adelanta a una zona con una señal crítica confirmada", () => {
+  it("noise does not overtake a zone with a confirmed critical signal", () => {
     addEvent({
       source: "operator",
       title: "Frente activo confirmado",
@@ -535,7 +539,7 @@ describe("resistencia al ruido", () => {
     expect(ruidosa.score).toBeLessThan(critica.score / 2);
   });
 
-  it("ocho necesidades nacidas del ruido no inflan la zona a perpetuidad", () => {
+  it("eight noise-generated needs do not inflate zone indefinitely", () => {
     inyectarRuido();
 
     const situacion = getSituation();
@@ -548,17 +552,17 @@ describe("resistencia al ruido", () => {
     )!;
 
     expect(islas.needs.length).toBeGreaterThanOrEqual(9);
-    // Nueve necesidades a 8 puntos cada una serían 72; el techo lo impide.
+    // Nine needs at 8 points each would be 72; cap prevents it.
     expect(necesidades.value).toBeLessThanOrEqual(28);
   });
 });
 
 // ---------------------------------------------------------------------------
-// Resolver algo baja la prioridad (criterio de aceptación 2)
+// Adaptation: priority also decreases (acceptance criterion 2)
 // ---------------------------------------------------------------------------
 
-describe("adaptación: la prioridad también baja", () => {
-  it("completar con éxito una acción baja la puntuación de su zona", async () => {
+describe("adaptation: priority also decreases", () => {
+  it("successfully completing an action lowers its zone score", async () => {
     const antes = getSituation();
     const zonaTop = antes.plan.priorities[0].zoneId;
     const puntuacionAntes = antes.plan.priorities[0].score;
@@ -575,7 +579,7 @@ describe("adaptación: la prioridad también baja", () => {
     expect(puntuacionDespues).toBeLessThan(puntuacionAntes);
   });
 
-  it("el alivio aparece como factor negativo explicable", () => {
+  it("relief appears as an explainable negative factor", () => {
     const zonaConAccion = zona({ riskScore: 40, needs: ["triaje"] });
     const conAlivio = explainZone(zonaConAccion, [], [], [accion({ status: "succeeded" })], {
       now: AHORA,
@@ -590,7 +594,7 @@ describe("adaptación: la prioridad también baja", () => {
     expect(conAlivio.score).toBeLessThan(sinAlivio.score);
   });
 
-  it("el alivio caduca: una acción resuelta hace una hora calma menos que una recién resuelta", () => {
+  it("relief decays: an action resolved an hour ago calms less than a newly resolved one", () => {
     const zonaBase = zona({ riskScore: 40, needs: ["triaje"] });
     const reciente = scoreZone(zonaBase, [], [], [accion({ completedAt: AHORA })], { now: AHORA });
     const antigua = scoreZone(zonaBase, [], [], [accion({ completedAt: haceMinutos(60) })], {
@@ -600,7 +604,7 @@ describe("adaptación: la prioridad también baja", () => {
     expect(antigua).toBeGreaterThan(reciente);
   });
 
-  it("el alivio nunca puede borrar la zona entera", () => {
+  it("relief can never erase the entire zone score", () => {
     const acciones = Array.from({ length: 10 }, (_, index) =>
       accion({ id: `act-${index}`, status: "succeeded" }),
     );
@@ -609,7 +613,7 @@ describe("adaptación: la prioridad también baja", () => {
     expect(puntuacion).toBeGreaterThan(0);
   });
 
-  it("una acción fallida no alivia nada", () => {
+  it("a failed action provides no relief", () => {
     const zonaBase = zona({ riskScore: 40 });
     const conFallo = scoreZone(zonaBase, [], [], [accion({ status: "failed" })], { now: AHORA });
     const sinAcciones = scoreZone(zonaBase, [], [], [], { now: AHORA });
@@ -619,11 +623,11 @@ describe("adaptación: la prioridad también baja", () => {
 });
 
 // ---------------------------------------------------------------------------
-// La explicación tiene que cuadrar (criterio de aceptación 4)
+// Explainability (acceptance criterion 4)
 // ---------------------------------------------------------------------------
 
-describe("explicabilidad", () => {
-  it("los factores suman exactamente la puntuación en cada zona del plan", async () => {
+describe("explainability", () => {
+  it("factors sum exactly to the score in each zone of the plan", async () => {
     addEvent({
       zoneId: "zone-south",
       category: "refugio",
@@ -644,7 +648,7 @@ describe("explicabilidad", () => {
     }
   });
 
-  it("el desglose nombra los factores reales y no valores fijos", () => {
+  it("breakdown names real factors and not fixed values", () => {
     const explicacion = explainZone(
       zona({ riskScore: 30, populationAtRisk: 2400, needs: ["triaje"] }),
       [senal({ severity: "high", confirmed: true })],
@@ -664,9 +668,9 @@ describe("explicabilidad", () => {
     );
   });
 
-  it("no cuenta dos veces el efecto que el store ya aplicó sobre el riesgo de la zona", () => {
-    // El store sube `riskScore` al recibir la señal; el motor lo descuenta para
-    // recontarlo con credibilidad y decaimiento propios.
+  it("does not double-count effect that store already applied to zone risk", () => {
+    // The store raises `riskScore` upon receiving the signal; priority engine discounts it
+    // to recount with its own credibility and decay.
     const explicacion = explainZone(
       zona({ riskScore: 38 }),
       [senal({ appliedRiskDelta: 18, severity: "critical", confirmed: true })],
@@ -679,7 +683,7 @@ describe("explicabilidad", () => {
     expect(riesgoBase.value).toBe(20);
   });
 
-  it("la razón explica la señal dominante y su antigüedad", () => {
+  it("reason explains dominant signal and its age", () => {
     const explicacion = explainZone(
       zona(),
       [senal({ severity: "critical", confidence: "high", confirmed: true, occurrences: 3 })],
@@ -695,11 +699,11 @@ describe("explicabilidad", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Determinismo
+// Determinism
 // ---------------------------------------------------------------------------
 
-describe("determinismo", () => {
-  it("las mismas entradas producen el mismo ranking", () => {
+describe("determinism", () => {
+  it("same inputs produce same ranking", () => {
     const zonas = [zona(), zona({ id: "zone-b", name: "Zona B", populationAtRisk: 1500 })];
     const eventos = [
       senal({ severity: "high", confirmed: true }),
@@ -713,7 +717,7 @@ describe("determinismo", () => {
     expect(segundo.summary).toBe(primero.summary);
   });
 
-  it("los empates se resuelven por identificador y no por orden de llegada", () => {
+  it("ties are resolved by identifier and not by arrival order", () => {
     const gemelaA = zona({ id: "zone-a" });
     const gemelaB = zona({ id: "zone-b" });
 
@@ -721,7 +725,7 @@ describe("determinismo", () => {
     expect(ranking([gemelaB, gemelaA])[0].zoneId).toBe("zone-a");
   });
 
-  it("devuelve un plan completo con previousVersion, changes y trigger", () => {
+  it("returns complete plan with previousVersion, changes, and trigger", () => {
     const plan = buildPlan(4, [zona()], [], [], [], ["act-invalidada"], { now: AHORA });
 
     expect(plan.version).toBe(4);

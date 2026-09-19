@@ -1,3 +1,5 @@
+// OWNER: resource allocation agent.
+
 import { describe, expect, it } from "vitest";
 import {
   assignResource,
@@ -12,14 +14,14 @@ import type { Action, ActionChannel, Resource } from "@/lib/types";
 
 const zones = structuredClone(seedZones);
 
-/** Copia limpia de los recursos semilla para cada prueba. */
+/** Clean copy of seed resources for each test. */
 function recursos(): Resource[] {
   return structuredClone(seedResources);
 }
 
 let contador = 0;
 
-/** Accion minima de prueba; solo se rellena lo que mira el motor de recursos. */
+/** Minimal test action; only fields inspected by resource engine are populated. */
 function accion(overrides: Partial<Action> & Pick<Action, "zoneId" | "objective">): Action {
   contador += 1;
   const at = new Date(Date.UTC(2026, 0, 1, 0, 0, contador)).toISOString();
@@ -44,10 +46,10 @@ function accion(overrides: Partial<Action> & Pick<Action, "zoneId" | "objective"
   };
 }
 
-describe("seleccion de recurso", () => {
-  it("prefiere la capacidad correcta antes que el recurso mas cercano", () => {
-    // En Sierra Morena el recurso de casa es la brigada INFOCA, pero lo que se
-    // pide es triaje sanitario: la brigada no sabe hacerlo y queda descartada.
+describe("resource selection", () => {
+  it("prefers correct capability over closest resource", () => {
+    // In Sierra Morena the home resource is the INFOCA crew, but what is
+    // requested is medical triage: crew cannot do it and is discarded.
     const decision = selectResourceForAction(
       { zoneId: "zone-north", objective: "triaje sanitario", channel: "call" },
       recursos(),
@@ -60,8 +62,8 @@ describe("seleccion de recurso", () => {
     expect(decision!.reason).toContain("Puntuación");
   });
 
-  it("a igualdad de capacidad elige el mas cercano a la zona", () => {
-    // Dos unidades sanitarias equivalentes: gana la que ya esta en la zona.
+  it("with equal capability selects the closest to the zone", () => {
+    // Two equivalent medical units: the one already in the zone wins.
     const decision = selectResourceForAction(
       { zoneId: "zone-east", objective: "triaje sanitario", channel: "call" },
       recursos(),
@@ -81,9 +83,9 @@ describe("seleccion de recurso", () => {
     expect(granada.score).toBeGreaterThan(sevilla.score);
   });
 
-  it("devuelve null cuando ningun recurso cubre la necesidad", () => {
-    // Sin la brigada INFOCA nadie sabe extinguir: no hay recurso ideal ni
-    // aproximado, y el motor lo dice en vez de mandar a cualquiera.
+  it("returns null when no resource covers the need", () => {
+    // Without INFOCA crew nobody can extinguish: there is no ideal or
+    // approximate resource, and the engine states so instead of dispatching anyone.
     const sinBrigada = recursos().filter((resource) => resource.id !== "res-field-1");
     const decision = selectResourceForAction(
       { zoneId: "zone-north", objective: "incendio forestal activo", channel: "call" },
@@ -94,7 +96,7 @@ describe("seleccion de recurso", () => {
     expect(decision).toBeNull();
   });
 
-  it("nunca elige un recurso fuera de servicio", () => {
+  it("never selects an out-of-service resource", () => {
     const pool = recursos();
     for (const resource of pool) {
       if (resource.id !== "res-med-2") resource.status = "unavailable";
@@ -107,7 +109,7 @@ describe("seleccion de recurso", () => {
     );
     expect(decision!.resourceId).toBe("res-med-2");
 
-    // Y si tambien cae la ultima unidad sanitaria, no hay eleccion posible.
+    // And if the last medical unit also drops, no choice is possible.
     pool.find((resource) => resource.id === "res-med-2")!.status = "unavailable";
     expect(
       selectResourceForAction(
@@ -118,7 +120,7 @@ describe("seleccion de recurso", () => {
     ).toBeNull();
   });
 
-  it("cuando cae la unidad sanitaria de Sevilla no manda a la brigada de Sierra Morena", () => {
+  it("when Seville medical unit drops does not dispatch Sierra Morena crew", () => {
     const pool = recursos();
     pool.find((resource) => resource.id === "res-med-1")!.status = "unavailable";
 
@@ -133,8 +135,8 @@ describe("seleccion de recurso", () => {
   });
 });
 
-describe("estado de los recursos", () => {
-  it("asigna y libera el recurso al terminar la accion", () => {
+describe("resource status", () => {
+  it("assigns and releases resource upon action completion", () => {
     const pool = recursos();
     const asignado = assignResource(pool, "res-med-1", "act-1", "2026-01-01T00:00:00.000Z");
 
@@ -147,7 +149,7 @@ describe("estado de los recursos", () => {
     expect(liberado!.assignedAt).toBeNull();
   });
 
-  it("no asigna un recurso fuera de servicio", () => {
+  it("does not assign an out-of-service resource", () => {
     const pool = recursos();
     pool.find((resource) => resource.id === "res-med-1")!.status = "unavailable";
 
@@ -156,8 +158,8 @@ describe("estado de los recursos", () => {
   });
 });
 
-describe("caida de un recurso", () => {
-  it("busca sustituto para las acciones que dependian del recurso caido", () => {
+describe("resource outage", () => {
+  it("searches replacement for actions depending on downed resource", () => {
     const pool = recursos();
     const caido = pool.find((resource) => resource.id === "res-med-1")!;
     caido.status = "unavailable";
@@ -184,7 +186,7 @@ describe("caida de un recurso", () => {
     expect(movimientos[0].reason).toContain("Sustitución tras la caída de EPES Sevilla Alpha");
   });
 
-  it("deja el sustituto a null cuando no hay ninguno posible", () => {
+  it("leaves replacement as null when none is possible", () => {
     const pool = recursos();
     const caido = pool.find((resource) => resource.id === "res-field-1")!;
     caido.status = "unavailable";
@@ -208,7 +210,7 @@ describe("caida de un recurso", () => {
     expect(movimientos[0].reason).toContain("apoyo externo");
   });
 
-  it("da el unico sustituto a la zona mas urgente y explica quien se queda sin el", () => {
+  it("allocates the only replacement to most urgent zone and explains who is left without one", () => {
     const pool = recursos();
     const caido = pool.find((resource) => resource.id === "res-med-1")!;
     caido.status = "unavailable";
@@ -235,14 +237,14 @@ describe("caida de un recurso", () => {
     const centro = movimientos.find((movimiento) => movimiento.actionId === "act-centro")!;
     const este = movimientos.find((movimiento) => movimiento.actionId === "act-este")!;
 
-    // Sevilla Hub esta en estado activo y con mas poblacion: se lleva el unico
-    // sustituto sanitario y Granada se queda sin el, dicho explicitamente.
+    // Seville Hub is active and has more population: gets the only medical
+    // replacement, and Granada is left without, explicitly stated.
     expect(centro.toResourceId).toBe("res-med-2");
     expect(este.toResourceId).toBeNull();
     expect(este.reason).toContain("Sin sustituto");
   });
 
-  it("no toca las acciones ya cerradas", () => {
+  it("does not touch already closed actions", () => {
     const pool = recursos();
     pool.find((resource) => resource.id === "res-med-1")!.status = "unavailable";
 
@@ -260,10 +262,10 @@ describe("caida de un recurso", () => {
   });
 });
 
-describe("competencia entre zonas por el mismo recurso", () => {
-  it("reparte el recurso escaso por urgencia y deja en espera al resto", () => {
+describe("contention between zones for the same resource", () => {
+  it("allocates scarce resource by urgency and places the rest on waiting list", () => {
     const pool = recursos();
-    // Solo queda una unidad sanitaria en todo el dispositivo.
+    // Only one medical unit remains in the entire deployment.
     pool.find((resource) => resource.id === "res-med-1")!.status = "unavailable";
 
     const acciones = [
@@ -296,7 +298,7 @@ describe("competencia entre zonas por el mismo recurso", () => {
     expect(reparto.summary).toContain("en espera");
   });
 
-  it("no deja a nadie esperando cuando cada necesidad tiene su recurso", () => {
+  it("leaves no one waiting when each need has a resource", () => {
     const acciones = [
       accion({
         id: "act-fuego",
@@ -326,7 +328,7 @@ describe("competencia entre zonas por el mismo recurso", () => {
     expect(reparto.summary).toContain("nadie queda en espera");
   });
 
-  it("cuenta el recurso mas disputado en el resumen", () => {
+  it("reports the most contested resource in summary", () => {
     const pool = recursos();
     pool.find((resource) => resource.id === "res-med-1")!.status = "unavailable";
 
