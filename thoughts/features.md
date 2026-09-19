@@ -1,4 +1,9 @@
-# Features built and how they work
+# Historical feature inventory
+
+> Historical reference, not a current implementation checklist. The served
+> dashboard is a SKETCH. The unused triage and autonomy modules described in
+> sections 6 and 8, and their isolated tests, have been removed. Their earlier
+> source remains in Git history. See TASKS.md for current work.
 
 Inventory of what was built in the `feat/crisis-command-center` branch
 (state in memory), now merged at the repository root (`app/`, `lib/`,
@@ -20,9 +25,9 @@ API routes, 14 interface components.
 | Resources                      | Where the media goes and who waits                            | `lib/resources.ts`                                        | `tests/resources.test.ts` (14)           |
 | Contacts and escalation        | Who is notified, by what channel, what is requested           | `lib/contacts.ts`, `lib/escalation.ts`                    | `tests/integration.test.ts` (32, shared) |
 | HappyRobot                     | External execution and callbacks                              | `lib/happyrobot.ts`, `app/api/webhooks/happyrobot/`       | `tests/integration.test.ts`              |
-| Triage                         | Act, verify or discard with probability                       | `lib/triage.ts`                                           | `tests/triage.test.ts`                   |
+| Triage                         | Act, verify or discard with probability                       | Removed; historical section 6                             | Removed                                  |
 | Assumptions                    | When to throw away the plan                                   | `lib/assumptions.ts`                                      | `tests/assumptions.test.ts` (18)         |
-| Autonomy                       | What it does alone and what requires permission; waiting list | `lib/autonomy.ts`                                         | `tests/autonomy.test.ts`                 |
+| Autonomy                       | What it does alone and what requires permission; waiting list | Removed; historical section 8                             | Removed                                  |
 | Scenario                       | The crisis advances alone                                     | `lib/scenario.ts`, `app/api/scenario/`                    | `tests/scenario.test.ts` (27)            |
 | Persistence, history, learning | Survive the reboot and learn                                  | `lib/persistence.ts`, `lib/history.ts`, `lib/learning.ts` | `tests/persistence.test.ts` (32)         |
 | Validation and API             | Secure input, consistent errors                               | `lib/validation.ts`, `app/api/**`                         | `tests/api.test.ts` (17)                 |

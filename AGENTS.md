@@ -36,3 +36,7 @@ The repository uses the standard Next.js `src/` directory layout: the served
 command center lives in `src/app/`, `src/components/`, `src/lib/`, and `tests/`.
 Keep the module-owner line (`// OWNER: …`) in `src/lib/**`, following PROJECT.md's
 English-language rule for its label, and keep the digital-twin docs and tests in sync.
+
+The served dashboard is a **SKETCH**, not an approved product design. Preserve
+the visible prototype notice and do not infer the target architecture from its
+partially connected controls. See PROJECT.md and docs/README.md.

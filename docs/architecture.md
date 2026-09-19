@@ -1,7 +1,14 @@
 # Architecture and Decisions
 
+> **SKETCH:** The dashboard is an exploratory prototype with demo scenario data
+> and partially connected controls. It is not an approved product design or an
+> operational emergency response system.
+
 This document explains **why** the system is built this way. The _what_ is in the
-README; here are the decisions and their trade-offs.
+README; here are the decisions and their trade-offs. This document describes
+the served command center (`src/app/` and `src/lib/`). The reusable Workflow and batch ingestion modules are not connected to
+that runtime; see [input-architecture.md](input-architecture.md)
+and the [documentation index](README.md) before designing the combined architecture.
 
 Context that shapes everything else: this is a weekend hackathon project,
 written in parallel by multiple agents, and what is evaluated is a live demo lasting
@@ -29,7 +36,7 @@ correct" and "demonstrable on Sunday without crashing."
                                       │
                          ┌────────────▼────────────┐
                          │ GET /api/situation      │
-                         │ app/page.tsx (polling)  │
+                         │ src/app/page.tsx (polling)  │
                          │ human approves/cancels  │
                          └─────────────────────────┘
 ```
@@ -40,7 +47,7 @@ A core rule underpins the design: **`store.ts` maintains state and orchestrates,
 
 ## Decision 1 — State lives in memory, with optional JSON persistence
 
-`lib/store.ts` stores the entire situation (signals, zones, resources, contacts,
+`src/lib/store.ts` stores the entire situation (signals, zones, resources, contacts,
 actions, plans, audit log) in an object attached to `globalThis`. There is no
 database.
 
@@ -61,30 +68,31 @@ database.
 
 **The trade-offs.**
 
-- State is lost when restarting the server. This is acceptable: `POST /api/demo/reset`
+- With persistence disabled, state is lost when restarting the server. `POST /api/demo/reset`
   exists precisely to return to the starting point intentionally.
 - Does not survive multiple server instances. There is no horizontal deployment,
   so this does not matter.
 - Tests share state within a process, which is why `tests/` calls
   `resetSituation()` in `beforeEach`.
 
-**Persistence is optional and disabled by default.** `lib/persistence.ts` writes
+**Persistence is optional and disabled by default.** `src/lib/persistence.ts` writes
 plain JSON under `.data/` and only activates if `CRISIS_PERSISTENCE=on`. It uses
 JSON files rather than SQLite to avoid native dependencies (compilation,
 platform-specific binaries) in a project that must run on any team member's
 laptop. Its functions must never throw: a full disk cannot crash the demo; at
 worst, it might lose history.
 
-> Current real status: functions in `persistence.ts` are deliberate stubs
-> (`loadState` returns `null`, `saveState` does nothing). The contract is
-> established and `store.ts` already calls it; implementation is pending work
-> for the agent owning that module.
+The implementation validates versioned envelopes on load, redacts contact details,
+debounces state writes and atomically replaces JSON files. Runs and learned
+weights have separate files. Disk failures produce diagnostics and safe defaults;
+`tests/persistence.test.ts` covers recovery and persistence behavior. This is
+local storage, not durable shared storage for a multi-instance deployment.
 
 ---
 
 ## Decision 2 — Priority is deterministic, not decided by a language model
 
-`lib/priority.ts` scores each zone with an explicit formula: zone base risk,
+`src/lib/priority.ts` scores each zone with an explicit formula: zone base risk,
 severity and confidence of live signals, whether they are confirmed, population
 at risk, open needs, and unavailable resources. The output is a number and a
 factor breakdown (`PriorityFactor[]`) that the interface displays as-is.
@@ -161,11 +169,11 @@ This is also the exact design a real crisis command center would require.
 
 ## Decision 4 — Modules with a clear owner
 
-`lib/` is split by responsibility, and each file declares its owner on the first
+`src/lib/` is split by responsibility, and each file declares its owner on the first
 line:
 
 ```ts
-// PROPIETARIO: agente del motor de prioridad.
+// OWNER: priority engine agent.
 ```
 
 | Module           | Responsibility                                                                                        |
@@ -191,8 +199,8 @@ line:
   the same function would result in conflicts or, worse, silent merges that break
   functionality. A file with a single owner prevents these collisions.
 - `types.ts` as a contract allows a module to be written against the _shape_ of
-  another without waiting for its implementation. That is why `persistence.ts` can
-  currently exist as stubs without blocking anyone.
+  another without depending on its internal implementation. Persistence uses
+  those same shared types to validate and restore saved state.
 - Concentrating orchestration in `store.ts` provides a single place to understand
   the complete cycle. When someone asks "what happens when a signal arrives?", the
   answer is in one file.
@@ -208,7 +216,7 @@ is in charge.
 
 ## Decision 5 — Browser polling, not WebSockets
 
-`app/page.tsx` polls `GET /api/situation` periodically and re-renders. There is no
+`src/app/page.tsx` polls `GET /api/situation` periodically and re-renders. There is no
 real-time push channel.
 
 **Why.** State is small, the server is local, and a demo cannot tell the
@@ -231,7 +239,7 @@ clocks for the same engine, because the demo clock cannot fail.
 
 ## Decision 6 — The scenario is scripted, but can be triggered manually
 
-`lib/scenario.ts` plays scripts made of timestamped _beats_—there are three:
+`src/lib/scenario.ts` plays scripts made of timestamped _beats_—there are three:
 wildfire, blackout, and flood—the fire front advances, wind shifts, a road is cut,
 a resource goes down. They can be started, paused, and accelerated via
 `/api/scenario/*`. Additionally, UI buttons allow injecting any of these
@@ -246,15 +254,15 @@ and interactive demo powered by the same underlying engine.
 
 ## What is implemented and what is not
 
-| Component                                                              | Status                                                                                                         |
-| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| In-memory state, replanning, audit trail                               | Implemented                                                                                                    |
-| Deterministic priority engine with factor breakdown                    | Implemented                                                                                                    |
-| Resource allocation, contacts, escalation chains                       | Implemented                                                                                                    |
-| HappyRobot adapter with retries, timeout, and idempotency              | Implemented (route and payload **unverified** against private documentation; see `docs/happyDocumentation.md`) |
-| Human approval and action queue                                        | Implemented                                                                                                    |
-| Input validation and homogeneous error responses across the entire API | Implemented                                                                                                    |
-| Self-advancing script with three scenarios and adjustable speed        | Implemented                                                                                                    |
-| Digital twin with accuracy, divergence, and uncertainty metrics        | Implemented                                                                                                    |
-| JSON persistence                                                       | Contract defined, implementation pending                                                                       |
-| Cross-execution learning                                               | Contract defined, accumulates statistics in memory; does not yet influence scoring                             |
+| Component                                                              | Status                                                                                                           |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| In-memory state, replanning, audit trail                               | Implemented                                                                                                      |
+| Deterministic priority engine with factor breakdown                    | Implemented                                                                                                      |
+| Resource allocation, contacts, escalation chains                       | Implemented                                                                                                      |
+| HappyRobot adapter with retries, timeout, and idempotency              | Implemented (route and payload **unverified** against private documentation; see `docs/happyDocumentation.md`)   |
+| Human approval and action queue                                        | Implemented                                                                                                      |
+| Input validation and homogeneous error responses across the entire API | Implemented                                                                                                      |
+| Self-advancing script with three scenarios and adjustable speed        | Implemented                                                                                                      |
+| Digital twin with accuracy, divergence, and uncertainty metrics        | Implemented                                                                                                      |
+| JSON persistence                                                       | Implemented, opt-in local JSON with validation, redaction and atomic writes                                      |
+| Cross-execution learning                                               | Implemented statistics and optional persistence; influences contact/channel selection, not zone priority scoring |

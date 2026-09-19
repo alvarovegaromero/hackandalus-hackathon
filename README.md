@@ -1,5 +1,9 @@
 # FARO
 
+> **SKETCH:** The dashboard is an exploratory prototype with demo scenario data
+> and partially connected controls. It is not an approved product design or an
+> operational emergency response system.
+
 Agentic command center for a wildfire in Sierra Bermeja (Málaga):
 our submission for the HappyRobot crisis management challenge in HackSpain 2026. A single Next.js project deployable on Vercel; the npm package is named
 `butterfish`. The product vision, scenario, and demo script are in
@@ -7,19 +11,16 @@ our submission for the HappyRobot crisis management challenge in HackSpain 2026.
 and the design context (data model, feature inventory,
 open decisions) in [thoughts/](thoughts/README.md).
 
-**Status.** The repository contains two parts:
+**Status.** The application is unified under `src/`. Next.js serves
+`src/app/`, with sketch UI components in `src/components/` and the active
+command-center backend in `src/lib/`. It includes the HTTP API, scripted
+scenarios, human-approved actions and the digital twin. State lives in server
+memory with optional local JSON persistence.
 
-- The **command center** (`app/`, `lib/`, `tests/`): the full vertical slice
-  ported from `feat/crisis-command-center` plus the digital twin. This is what
-  `npm run dev` serves: operator dashboard, HTTP API, self-advancing crisis
-  scenario scripts, action queue with human approval, HappyRobot adapter,
-  and digital twin. State lives in server memory.
-- The **platform base** (`src/`, `supabase/`): Next.js with Vercel Workflow,
-  AI SDK, Supabase clients, batch event ingestion with deduplication, and the
-  Sierra Bermeja scenario engine. Its routes under `src/app` **are not served**
-  while `app/` exists at the root (Next prioritizes `app/` over `src/app`); workflow
-  and ingestion are exercised only via tests. Unifying both parts is the
-  first item in [TASKS.md](TASKS.md).
+Reusable Workflow, AI SDK, Supabase, batch ingestion and Sierra Bermeja
+scenario modules also live under `src/`, but are not connected to the served
+command-center flow. The obsolete scaffold UI and duplicate route files have
+been removed. Integrating these modules remains tracked in [TASKS.md](TASKS.md).
 
 The scenario (wildfire in Sierra Bermeja) and name are confirmed; the seed and
 default command center script still name Sierra Morena and updating this is tracked.
@@ -126,26 +127,26 @@ are permitted. No scanner detects every secret.
                         └─────────────────────────┘
 ```
 
-`lib/store.ts` maintains state and orchestrates, but does not make domain decisions: each
+`src/lib/store.ts` maintains state and orchestrates, but does not make domain decisions: each
 decision lives in a specialized module declaring its owner in the first line
 (`// OWNER: …`). Priority is calculated by an explainable formula, not a language
 model.
 
-| File                                                      | Responsibility                                                                 |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `lib/types.ts`                                            | Shared types; the contract between modules.                                    |
-| `lib/store.ts`                                            | Crisis state and lifecycle orchestration.                                      |
-| `lib/validation.ts`                                       | Body validation with Zod and uniform error formatting.                         |
-| `lib/priority.ts`, `lib/triage.ts`                        | Zone scoring, calibrated triage, and plan construction.                        |
-| `lib/resources.ts`                                        | Resource selection, assignment, and release.                                   |
-| `lib/contacts.ts`, `lib/escalation.ts`                    | Contact notification, channel selection, and escalation chains.                |
-| `lib/autonomy.ts`, `lib/assumptions.ts`                   | Graduated autonomy and live plan assumptions.                                  |
-| `lib/digitalTwin.ts`                                      | Digital twin: perceived world from signals vs simulated ground truth accuracy. |
-| `lib/happyrobot.ts`                                       | HappyRobot adapter; the single outbound communication point.                   |
-| `lib/scenario.ts`, `lib/seed.ts`                          | Scenario scripts driving crisis progression and initial state.                 |
-| `lib/history.ts`, `lib/learning.ts`, `lib/persistence.ts` | History and plan diffs, learned statistics, optional JSON storage.             |
-| `app/page.tsx`, `app/components/`                         | Operator dashboard.                                                            |
-| `app/api/`                                                | HTTP API surface.                                                              |
+| File                                                                  | Responsibility                                                                 |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `src/lib/types.ts`                                                    | Shared types; the contract between modules.                                    |
+| `src/lib/store.ts`                                                    | Crisis state and lifecycle orchestration.                                      |
+| `src/lib/validation.ts`                                               | Body validation with Zod and uniform error formatting.                         |
+| `src/lib/priority.ts`                                                 | Zone scoring and plan construction.                                            |
+| `src/lib/resources.ts`                                                | Resource selection, assignment, and release.                                   |
+| `src/lib/contacts.ts`, `src/lib/escalation.ts`                        | Contact notification, channel selection, and escalation chains.                |
+| `src/lib/assumptions.ts`                                              | Plan assumptions and world-state updates.                                      |
+| `src/lib/digitalTwin.ts`                                              | Digital twin: perceived world from signals vs simulated ground truth accuracy. |
+| `src/lib/happyrobot.ts`                                               | HappyRobot adapter; the single outbound communication point.                   |
+| `src/lib/scenario.ts`, `src/lib/seed.ts`                              | Scenario scripts driving crisis progression and initial state.                 |
+| `src/lib/history.ts`, `src/lib/learning.ts`, `src/lib/persistence.ts` | History and plan diffs, learned statistics, optional JSON storage.             |
+| `src/app/page.tsx`, `src/components/`                                 | Operator dashboard.                                                            |
+| `src/app/api/`                                                        | HTTP API surface.                                                              |
 
 The rationale behind these decisions is detailed in [docs/architecture.md](docs/architecture.md).
 
@@ -153,7 +154,6 @@ The rationale behind these decisions is detailed in [docs/architecture.md](docs/
 
 | Route                                     | Responsibility                                                         |
 | ----------------------------------------- | ---------------------------------------------------------------------- |
-| `src/app`, `src/components`               | Scaffolding dashboard and endpoints (not served while `app/` exists)   |
 | `src/lib/domain.ts`                       | Zod-validated events and plans                                         |
 | `src/lib/ingest.ts`, `ingest-server.ts`   | Batch event ingestion with deduplication and optional Supabase storage |
 | `src/lib/scenario`, `src/lib/signals`     | Sierra Bermeja scenario engine and signal schemas                      |
@@ -161,10 +161,13 @@ The rationale behind these decisions is detailed in [docs/architecture.md](docs/
 | `src/workflows/crisis.ts`                 | Persistent crisis planning workflow                                    |
 | `src/lib/supabase`, `supabase/migrations` | Clients, Realtime subscription, and default-deny RLS schema            |
 
-The `@/` alias resolves first against the root and second against `src/`, in both
+The `@/` alias resolves to `src/` in both
 TypeScript and Vitest. Ingestion design is in
 [docs/input-architecture.md](docs/input-architecture.md) and the proposed data
-model in [docs/data-model.md](docs/data-model.md).
+model in [docs/data-model.md](docs/data-model.md). The obsolete platform
+dashboard has been removed; its scenario engine, ingestion modules and Workflow
+remain available for integration. See the [documentation index](docs/README.md)
+for the distinction between current behavior and proposals.
 
 ## The Demo
 
@@ -272,7 +275,7 @@ authorized by the team.
 ## Tests
 
 `npm test` runs 16 test suites: `tests/` covers the command center (priority,
-resources, triage, autonomy, assumptions, persistence, digital twin, routes,
+resources, assumptions, persistence, digital twin, routes,
 and simulated adapter callbacks), `src/` covers ingestion and the scenario engine,
 and `scripts/hooks.test.ts` covers hook guards. Command center tests share the
 process and call `resetSituation()` in `beforeEach`.
@@ -299,7 +302,7 @@ GPS or textual location, distinguishes reporter from incident location, and
 normalizes all channels before triage. The server supplies crisis identity and
 provenance. Receipt waits for persistence and durable scheduling; interpretation
 runs asynchronously. This contract is not implemented yet; the current API and
-route-tree limitations above still apply. Luis's scenario engine and batch
+backend integration limitations above still apply. Luis's scenario engine and batch
 orchestration are retained through adapter migration.
 
 ## License

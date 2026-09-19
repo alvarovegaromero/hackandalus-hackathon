@@ -7,14 +7,14 @@ decided, so nobody has to rediscover it.
 It is written against the platform base under `src/`: Next.js, Supabase with
 RLS, Vercel Workflow, AI SDK and Zod. Much of the content comes from the
 command center first built on `feat/crisis-command-center` with in-memory
-state and now merged at the repository root (`app/`, `lib/`, `tests/`); these
-documents transfer that work to the definitive base.
+state, now consolidated into `src/app/`, `src/components/`, `src/lib/` and
+`tests/`. These documents preserve historical design and integration context.
 
 ## What is here
 
 | Document                               | What it is for                                                                                                                                      | Read it if…                                                     |
 | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| [data-model.md](data-model.md)         | Full data model on Supabase: 29 tables with DDL and per-field rationale, the Zod contract, flows, RLS, Realtime, scalability and the migration plan | You are going to touch the schema, a repository or a Zod schema |
+| [Data model](../docs/data-model.md)    | Full data model on Supabase: 29 tables with DDL and per-field rationale, the Zod contract, flows, RLS, Realtime, scalability and the migration plan | You are going to touch the schema, a repository or a Zod schema |
 | [features.md](features.md)             | What was built, module by module: functions, formulas, verification and what is still unwired                                                       | You are going to reimplement or port a module                   |
 | [open-questions.md](open-questions.md) | What nobody has decided yet, ordered by the phase it blocks                                                                                         | You want to know what still needs agreement                     |
 
@@ -25,7 +25,7 @@ it; if they disagree, the source of truth wins and this folder gets updated.
 ## How to use it if you are an agent
 
 1. Read `AGENTS.md` and `CHALLENGE.md` first, as always.
-2. Before touching the schema, read section 2 of `data-model.md`
+2. Before touching the schema, read section 2 of `../docs/data-model.md`
    (principles) and your module's table. Each module writes only its own
    tables.
 3. If your task is to port a module, `features.md` has its functions, its
@@ -42,6 +42,5 @@ it; if they disagree, the source of truth wins and this folder gets updated.
   and tick it off in `open-questions.md`. Do not delete: the rationale still
   holds.
 - Figures only if they were measured. If it is an estimate, say so.
-- Prose in English. Code and SQL identifiers in English. Product-facing copy
-  (what the operator reads on screen) stays in Spanish, because the product is
-  in Spanish; quote it as such.
+- All maintained content, identifiers and product-facing copy are in English.
+  Preserve real-world proper names.
