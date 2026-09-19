@@ -6,10 +6,10 @@
 > `@happyrobot-ai/sdk` 0.1.50 (MIT), the public product pages and the
 > step-by-step tutorial on happyrobot.ai. Treat it as verified for URL, auth,
 > trigger and run endpoints; treat payload field names inside a workflow as
-> ours to define. **The adapter in `src/lib/happyrobot.ts` still ships defaults
-> invented before this contract was known; see "Gap between code and contract"
-> before enabling live mode.** Ask the HappyRobot team at the event for the
-> docs access code to confirm concurrency and cost limits.
+> ours to define. The adapter in `src/lib/happyrobot.ts` follows this contract
+> and the trigger params of the FARO workflows described below; live runs have
+> not been exercised yet. Ask the HappyRobot team at the event for the docs
+> access code to confirm concurrency and cost limits.
 
 ## Executive Summary
 
@@ -114,46 +114,105 @@ node). Consequences:
 
 ### Responsibilities
 
-Local app (`src/`): ingest events (`POST /api/events`), keep state,
-score priorities, propose actions, require human approval, track status and
-failures, show everything to the operator.
+Local app (`src/`): ingest reports (`POST /api/signals`, `POST /api/events`),
+keep state, score priorities, propose actions, require human approval, track
+status and failures, show everything to the operator.
 
 HappyRobot: call or message demo contacts, ask for confirmations, extract
 structured answers, escalate to coordinators, and post results back.
 
+### FARO workflows in the hackathon workspace (EU cluster)
+
+Built by the team in HappyRobot; ids are identifiers, not secrets. None is
+published yet and each still ends in a `BLOCKED` code node that must become a
+Webhook node posting to FARO (see TASKS.md).
+
+| Workflow                          | Id                                     | Direction | FARO side                                            |
+| --------------------------------- | -------------------------------------- | --------- | ---------------------------------------------------- |
+| FARO — Resource Dispatch          | `01a0b6ed-542f-7485-a6c4-d13e192b6235` | outbound  | `HAPPYROBOT_DISPATCH_WORKFLOW_ID`; callback `dispatch_result` |
+| FARO — Public Alert — SMS         | `01a0b8d3-914c-76c0-b7a9-dc1abe0afe0e` | outbound  | `HAPPYROBOT_PUBLIC_ALERT_WORKFLOW_ID`; callback `public_alert_result` |
+| FARO — Inbound Reporter — Voice   | `01a0b6ac-8ae4-7400-8ae6-df29f46c2246` | inbound   | posts `normalized_report` to `POST /api/signals`     |
+| FARO — Inbound Reporter — SMS     | `01a0b6bb-23ef-7202-a282-12a8d5dd3c01` | inbound   | same; needs a bound number and SMS credentials       |
+| FARO — Inbound Reporter — WhatsApp| `01a0b6c9-4d1c-707e-85d7-d0f30682b3a1` | inbound   | optional; no Meta credentials                        |
+
 ### Integration flow
 
-1. Event enters via UI or `POST /api/events`; state and priorities update.
+1. A report enters via `POST /api/signals` (citizen or HappyRobot), the UI or
+   `POST /api/events`; state and priorities update.
 2. The app proposes actions; the operator approves a high-impact one.
-3. `src/lib/happyrobot.ts` triggers the workflow run (idempotency key per attempt).
-4. HappyRobot runs the channel-specific agent.
-5. The workflow's Webhook node posts status and `newInformation` to
-   `POST /api/webhooks/happyrobot`.
-6. The app records the result, ingests new signals and replans.
+3. `src/lib/happyrobot.ts` picks the workflow by channel (`call` → dispatch,
+   `sms` → public alert, otherwise the generic workflow) and triggers a run in
+   `HAPPYROBOT_ENVIRONMENT` with an idempotency key per attempt. The `run_id`
+   becomes the action's `externalActionId`.
+4. HappyRobot runs the agent and its deterministic code nodes.
+5. The workflow's Webhook node posts the result to `POST /api/webhooks/happyrobot`
+   with `x-happyrobot-secret`.
+6. The app moves the action, updates resource availability, ingests what the
+   responder said as a signal and replans.
 
-### Outbound trigger payload (what we send as `payload`)
+### Outbound trigger payloads (`payload` of `POST /workflows/{id}/runs`)
+
+Built by `buildDispatchPayload`, `buildPublicAlertPayload` and
+`buildGenericPayload`; the keys are the trigger params defined in each workflow.
+
+Resource Dispatch (`dispatch_id` is the idempotency key `<action>:<attempt>`):
 
 ```json
 {
-  "channel": "voice | sms | email",
-  "target": "recipient-or-system-id",
-  "destination": "+34600000000 | name@example.org",
-  "objective": "Short task the HappyRobot agent must complete",
-  "briefing": { "headline": "...", "detail": "...", "askFor": "..." },
-  "metadata": {
-    "localActionId": "act_123",
-    "zoneId": "north",
-    "reason": "Evacuation priority increased after wind shift",
-    "idempotencyKey": "act_123:1",
-    "callbackUrl": "https://<public-host>/api/webhooks/happyrobot"
-  }
+  "dispatch_id": "act_123:1",
+  "incident_id": "faro-sierra-bermeja-demo",
+  "plan_id": "plan_7",
+  "action_id": "act_123",
+  "resource_id": "res-field-1",
+  "resource_display_name": "INFOCA Sierra Bravo",
+  "resource_type": "field",
+  "resource_contact_name": "Field coordinator",
+  "resource_phone": "+34600000000",
+  "mission_summary": "Confirm deployment to the north sector",
+  "mission_destination": "Sierra Bermeja north",
+  "mission_requested_eta": "",
+  "mission_instructions": "...",
+  "context": "...",
+  "requested_at": "2026-09-19T12:00:00.000Z"
 }
 ```
 
-These keys become the workflow's trigger variables; the agent prompt and the
-Webhook node reference them by name.
+Public Alert (the HappyRobot gate only sends when `approval_status` is `approved`;
+`recipients` are the explicit demo-safe numbers, never discovered):
 
-### Inbound callback shape (what the workflow posts to us)
+```json
+{
+  "action_id": "act_124",
+  "incident_id": "faro-sierra-bermeja-demo",
+  "plan_id": "plan_7",
+  "approval_status": "approved",
+  "approval_approved_by": "operator",
+  "approval_approved_at": "2026-09-19T12:00:00.000Z",
+  "audience_id": "zone-north",
+  "audience_label": "Sierra Bermeja north",
+  "simulated_population_count": 1200,
+  "recipients": [{ "recipient_id": "con-demo", "phone": "+34600000000" }],
+  "message": "...",
+  "requested_at": "2026-09-19T12:00:00.000Z"
+}
+```
+
+### Inbound callbacks (`POST /api/webhooks/happyrobot`)
+
+Header: `x-happyrobot-secret`. Optional dedup header: `x-happyrobot-delivery-id`.
+The route accepts the object or its `*_json` string variable.
+
+`dispatch_result` (from "Normalize Outcome"): `dispatch_status` in `accepted`,
+`accepted_with_constraint` → action `succeeded`; `rejected`, `unavailable`,
+`unclear` → `blocked` (operator decides) and the resource becomes `unavailable`
+for `rejected`/`unavailable`; `no_answer`, `failed` → `failed`.
+`responder_statement` and `claims` enter as a `dispatch-feedback` signal.
+
+`public_alert_result` (from "Build Public Alert Result"): `completed` →
+`succeeded`; `partial` → `blocked` with the failed count; `failed` → `failed`;
+`not_approved` → `blocked` (gate refusal).
+
+Generic shape, still accepted:
 
 ```json
 {
@@ -162,40 +221,34 @@ Webhook node reference them by name.
   "status": "completed | failed | needs_human | in_progress",
   "summary": "What happened",
   "newInformation": [
-    {
-      "type": "road_blocked",
-      "zoneId": "north",
-      "description": "MA-8301 blocked at km 12",
-      "severity": "high",
-      "confidence": "high",
-      "confirmed": true
-    }
+    { "type": "road_blocked", "zoneId": "north", "description": "MA-8301 blocked at km 12" }
   ]
 }
 ```
 
-Header: `x-happyrobot-secret`. Optional dedup header: `x-happyrobot-delivery-id`.
-Accepted `status` values are mapped in the route (`completed`, `success`,
-`in_progress`, `needs_human`, `failed`, `cancelled`, and aliases).
+### Inbound reports (`POST /api/signals`)
 
-## Gap between code and contract
+The Inbound Reporter workflows post their `normalized_report` (or
+`normalized_report_json`) with `x-happyrobot-secret`. The route resolves the
+producer from the credential, validates the report, builds the
+`NormalizedReport` envelope (`docs/input-contract.md`) and projects it as an
+unconfirmed command-center event. Intake rules, not triage: `people.immediate_danger`
+raises severity to `high`; a reporter at the scene raises confidence to `high`.
+A zone is only a candidate matched by name. Acceptance is in memory
+(`storage: "memory"`); the same `native_interaction_id` within 15 minutes is
+merged, not duplicated.
 
-`src/lib/happyrobot.ts` and `.env.example` predate this information. Everything is
-environment-configurable, but the following defaults and checks are wrong for
-the real API and must change before live mode works:
+### Remaining gaps
 
-| Setting / check                          | Current default                     | Real contract                                     |
-| ---------------------------------------- | ----------------------------------- | ------------------------------------------------- |
-| `HAPPYROBOT_BASE_URL`                    | `https://api.happyrobot.ai`         | `https://platform.happyrobot.ai/api/v2`           |
-| `HAPPYROBOT_ACTION_PATH`                 | `/agents/{agentId}/actions`         | `/workflows/{workflowId}/runs`                    |
-| `HAPPYROBOT_PAYLOAD_SHAPE=trigger` body  | `{ "input": ..., "idempotencyKey" }` | `{ "payload": ..., "environment": ... }`          |
-| `HAPPYROBOT_RESPONSE_ID_PATH`            | `id,actionId,action_id,data.id`     | `run_id`                                          |
-| `isHappyRobotConfigured()`               | requires `HAPPYROBOT_AGENT_ID`      | only workflow id and API key are needed           |
-| Status after live dispatch               | stays `running` until callback      | add `GET /runs/{run_id}` polling as fallback      |
-| `HAPPYROBOT_IDEMPOTENCY_HEADER`          | sent as `idempotency-key`           | not documented publicly; harmless, keep in payload too |
+| Gap                                            | Status                                                                 |
+| ---------------------------------------------- | ---------------------------------------------------------------------- |
+| Workflows end in `BLOCKED` nodes               | Replace with Webhook nodes to a public FARO URL (tunnel in local dev). |
+| Status after live dispatch                     | Stays `running` until the callback; add `GET /runs/{run_id}` polling.  |
+| Webhook triggers without `enhanced_security`   | Enable API key auth on Dispatch and Public Alert triggers.             |
+| SMS provider                                   | Telnyx number is not toll-free and no Twilio credentials exist.        |
+| `HAPPYROBOT_IDEMPOTENCY_HEADER`                | Not documented publicly; harmless, the key also travels as `dispatch_id`. |
 
-Tracked in `TASKS.md` ("Verify live HappyRobot contract"). Do not resolve
-credentials or workflow ids with invented values.
+Do not resolve credentials or workflow ids with invented values.
 
 ## Mocking without credentials
 
@@ -225,10 +278,10 @@ Tests in `tests/integration.test.ts` stub `fetch` and must never reach the netwo
 
 ## Implementation Checklist
 
-- Build the workflow (UI or MCP): Webhook trigger with the outbound payload
-  schema, voice/SMS agent, AI Extract with the `newInformation` fields, Webhook
-  node posting to our callback with the shared secret.
-- Align adapter defaults with the contract table above; relax the agent-id check.
+- Finish the workflows (UI or MCP): replace each `BLOCKED` node with a Webhook
+  node posting to our callback or signals route with the shared secret; publish
+  to `development` first.
+- Set the workflow ids and the EU base URL in `.env.local`.
 - Keep `ACTION_EXECUTION_MODE=mock` by default; enable `happyrobot` only with
   approved `demoSafe` recipients and explicit approval for each live action.
 - Store credentials in `.env.local` only (Next.js does not read `env.local`).

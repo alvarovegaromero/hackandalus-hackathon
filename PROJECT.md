@@ -31,7 +31,8 @@ connected; the sketch must not be treated as the target architecture.
 Status: the codebase is unified under the standard Next.js `src/` directory
 (`src/app/`, `src/components/`, and `src/lib/`): operator panel,
 HTTP API, self-advancing scenario scripts, action queue with human approval,
-HappyRobot adapter (contract unverified, `mock` mode by default) and the digital
+HappyRobot adapter (aligned with the public SDK contract, `mock` mode by default,
+live runs not yet exercised), report intake at `POST /api/signals`, and the digital
 twin. Persistence is in-memory (optional JSON under `.data/`); Supabase, operator
 authentication and live HappyRobot communications are not connected. The seed and default script
 still name Sierra Morena; the confirmed scenario is Sierra Bermeja (see
@@ -138,7 +139,7 @@ module-specific docs or use the sketch as the target architecture.
   integration contract review; it is not yet a frozen or implemented API.
 - `docs/`: design and implementation guides. `docs/architecture.md` explains the
   command-center decisions, `docs/security.md` its credential and demo-recipient
-  rules, `docs/happyDocumentation.md` the unverified HappyRobot contract,
+  rules, `docs/happyDocumentation.md` the HappyRobot contract and workflow payloads,
   `docs/data-model.md` the Supabase model, `docs/input-architecture.md` batch
   event ingestion (current route split and migration); `docs/event-telemetry.md`
   describes the served single-event ingestion and SSE slice,

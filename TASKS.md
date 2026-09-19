@@ -122,8 +122,13 @@ are in the source document.
 - [ ] Connect dashboard to Supabase Realtime subscriptions.
 - [ ] Persist pause, cancellation, and human overrides, honoring them during execution.
 - [ ] Add AI SDK tools and subagents based on agreed operations.
-- [x] HappyRobot adapter with timeout, retries, and shared-secret authenticated webhook (`src/lib/happyrobot.ts`, `src/app/api/webhooks/happyrobot`). Live API contract remains unverified: see `docs/happyDocumentation.md`.
-- [ ] Verify live HappyRobot contract and test an action with approved demo recipients.
+- [x] HappyRobot adapter with timeout, retries, and shared-secret authenticated webhook (`src/lib/happyrobot.ts`, `src/app/api/webhooks/happyrobot`), aligned with the public SDK contract (`POST /workflows/{id}/runs`, `run_id`) and the FARO workflow trigger params. See `docs/happyDocumentation.md`.
+- [x] Webhook accepts the `dispatch_result` and `public_alert_result` payloads produced by the FARO workflows; `POST /api/signals` accepts public reports and the Inbound Reporter `normalized_report` (in memory).
+- [ ] Replace the `BLOCKED` terminal nodes of the five FARO workflows with Webhook nodes posting to a public FARO URL (`/api/signals`, `/api/webhooks/happyrobot`) with the shared secret; publish to `development` first.
+- [ ] Enable `enhanced_security` (API key) on the Dispatch and Public Alert webhook triggers.
+- [ ] Poll `GET /runs/{run_id}` as a fallback when no callback arrives; today a live action stays `running` until the webhook fires.
+- [ ] Decide the SMS provider for Public Alert and Inbound SMS (Telnyx number is not toll-free; no Twilio credentials).
+- [ ] Run one live dispatch against an approved demo recipient and record the result.
 - [ ] Add waits, retries, and failure recovery to workflow.
 - [x] Demonstrate replanning when situation changes mid-execution:
       self-advancing scripts, chaos fault injection, and plan version diffs in command center.

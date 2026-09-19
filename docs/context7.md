@@ -45,22 +45,22 @@ describe the current stack, not a promise that Context7 indexes every release.
 Resolve each library by name and inspect the source and available versions before
 using its returned ID; IDs are not hardcoded or invented for missing libraries.
 
-| Technology    | Search name             | Scope / version guard                                                                         |
-| ------------- | ----------------------- | --------------------------------------------------------------------------------------------- |
-| Next.js       | Next.js                 | App Router, route handlers, Next.js 16                                                        |
-| React         | React                   | Components and hooks, React 19                                                                |
-| TypeScript    | TypeScript              | Type checking and configuration, TypeScript 6                                                 |
-| AI SDK        | Vercel AI SDK           | `ai` 7; tools, agents, structured output                                                      |
-| Workflow      | Vercel Workflow DevKit  | `workflow` 4; durable steps and hooks; avoid v5-only APIs                                     |
-| Supabase      | Supabase JavaScript     | `@supabase/supabase-js` 2; clients, auth, Realtime                                            |
-| PostgreSQL    | PostgreSQL / Supabase   | Match the actual database server version; follow the database skill                           |
-| Zod           | Zod                     | Validation and schemas, Zod 4                                                                 |
-| Tailwind CSS  | Tailwind CSS            | CSS-first configuration, Tailwind 4                                                           |
-| Maps          | Leaflet / React Leaflet | Leaflet 1.9 and React Leaflet 5                                                               |
-| UI primitives | shadcn/ui               | Reference only; current primitives are local, not an installed shadcn package                 |
-| Tests         | Vitest                  | Match installed Vitest 5 APIs                                                                 |
-| TypeSafe/Jev  | TypeSafe                | Optional integration; not an installed SDK or selected production model                       |
-| HappyRobot    | HappyRobot              | Verify official contract and `docs/happyDocumentation.md`; current adapter remains unverified |
+| Technology    | Search name             | Scope / version guard                                                                                       |
+| ------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Next.js       | Next.js                 | App Router, route handlers, Next.js 16                                                                      |
+| React         | React                   | Components and hooks, React 19                                                                              |
+| TypeScript    | TypeScript              | Type checking and configuration, TypeScript 6                                                               |
+| AI SDK        | Vercel AI SDK           | `ai` 7; tools, agents, structured output                                                                    |
+| Workflow      | Vercel Workflow DevKit  | `workflow` 4; durable steps and hooks; avoid v5-only APIs                                                   |
+| Supabase      | Supabase JavaScript     | `@supabase/supabase-js` 2; clients, auth, Realtime                                                          |
+| PostgreSQL    | PostgreSQL / Supabase   | Match the actual database server version; follow the database skill                                         |
+| Zod           | Zod                     | Validation and schemas, Zod 4                                                                               |
+| Tailwind CSS  | Tailwind CSS            | CSS-first configuration, Tailwind 4                                                                         |
+| Maps          | Leaflet / React Leaflet | Leaflet 1.9 and React Leaflet 5                                                                             |
+| UI primitives | shadcn/ui               | Reference only; current primitives are local, not an installed shadcn package                               |
+| Tests         | Vitest                  | Match installed Vitest 5 APIs                                                                               |
+| TypeSafe/Jev  | TypeSafe                | Optional integration; not an installed SDK or selected production model                                     |
+| HappyRobot    | HappyRobot              | Official docs are access-gated; the adapter follows the public SDK contract in `docs/happyDocumentation.md` |
 
 If a library or installed version is missing, use its bundled documentation or
 official website and state the coverage gap. The TypeSafe skill provides its

@@ -10,8 +10,10 @@ into this checkout.
 Confirmed on 2026-09-19. This is the target contract for report intake and the
 normalization boundary before triage. It supersedes the earlier requirement
 that a reporter supply `title`, `body`, `category`, `severity`, or confidence.
-The envelope schema (`src/lib/report.ts`) and the scenario adapter are implemented;
-public validation, intake and the route are not yet exposed by the running application.
+The envelope schema (`src/lib/report.ts`), the scenario adapter, the public and
+HappyRobot intake (`src/lib/signals/intake.ts`) and the route `POST /api/signals`
+are implemented. Acceptance is in-memory (`storage: "memory"`): durable
+persistence and Workflow scheduling remain pending.
 
 The [architecture review](architecture-review.md) and [contracts v0](contracts-v0.md)
 propose scheduling recovery and retry identity for team validation. Those drafts
@@ -191,12 +193,16 @@ remain. Integrate them into the served API after reconciling the report contract
 ## First implementation slice
 
 - [x] Add the envelope schema (`src/lib/report.ts`) and the scenario adapter.
-- [ ] Add the public report validator and the remaining channel adapters.
-- [ ] Test text-only reports, textual/GPS locations, coordinate pairing/ranges,
-      reporter vs incident semantics, unknown fields and missing extraction.
+- [x] Add the public report validator and the HappyRobot Inbound Reporter adapter
+      (`src/lib/signals/intake.ts`); the sensor adapter remains pending.
+- [x] Test text-only reports, textual locations, unknown fields, mixed batches,
+      transport retries and the producer resolved from the credential
+      (`tests/signals.test.ts`). GPS coordinate pairing/ranges are covered by the
+      envelope schema; reporter vs incident semantics stay `unknown` for HappyRobot.
 - [x] Test scenario retry identity, structured readings and no ground-truth leak.
+- [x] Expose the route under `src/app/api/signals` (in-memory acceptance).
 - [ ] Resolve durable persistence and scheduling recovery; migrate the workflow
-      input and expose the new route under `src/app/`.
+      input to the envelope.
 - [ ] Test mixed batches, duplicate deliveries, scheduling failure and recovery.
 - [ ] Add the reporting form: text, optional device location or incident pin,
       textual place alternative, and a receipt distinct from triage results.

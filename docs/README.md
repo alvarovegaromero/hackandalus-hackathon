@@ -14,12 +14,12 @@ Next.js serves `src/app/`; `src/lib/` implements the command center and `tests/`
 it. The dashboard polls the HTTP API. State lives in memory, with optional local
 JSON persistence. Outbound communications default to mock mode.
 
-| Document                                      | Purpose                                                  |
-| --------------------------------------------- | -------------------------------------------------------- |
-| [Architecture decisions](architecture.md)     | Served runtime, module responsibilities and trade-offs.  |
-| [Security](security.md)                       | Credentials, operator approval and demo recipients.      |
-| [HappyRobot contract](happyDocumentation.md)  | Integration notes; live API contract remains unverified. |
-| [Dashboard design](dashboard-design-guide.md) | Visual and interaction guidance.                         |
+| Document                                      | Purpose                                                                      |
+| --------------------------------------------- | ---------------------------------------------------------------------------- |
+| [Architecture decisions](architecture.md)     | Served runtime, module responsibilities and trade-offs.                      |
+| [Security](security.md)                       | Credentials, operator approval and demo recipients.                          |
+| [HappyRobot contract](happyDocumentation.md)  | Verified public API contract, FARO workflow payloads, callbacks and mocking. |
+| [Dashboard design](dashboard-design-guide.md) | Visual and interaction guidance.                                             |
 
 ## Contracts and integration work
 
@@ -48,12 +48,12 @@ graduated autonomy remain future work; the active flow uses deterministic zone
 scoring and human-approved actions. `src/lib/report.ts` remains the shared
 input envelope used by the scenario adapter.
 
-| Document                                      | Status                                                                                       |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| [Report intake contract](input-contract.md)   | Confirmed target contract; envelope and scenario adapter implemented, public intake pending. |
-| [Input architecture](input-architecture.md)   | Current ingestion behavior and migration boundaries.                                         |
-| [Data model](data-model.md)                   | Canonical proposal, not the deployed schema; replaces the duplicate in `thoughts/`.          |
-| [Database migration](../supabase/migrations/) | Implemented SQL files; application to a development database remains pending.                |
+| Document                                      | Status                                                                                                               |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| [Report intake contract](input-contract.md)   | Confirmed contract; `POST /api/signals` serves public and HappyRobot reports in memory; durable persistence pending. |
+| [Input architecture](input-architecture.md)   | Current ingestion behavior and migration boundaries.                                                                 |
+| [Data model](data-model.md)                   | Canonical proposal, not the deployed schema; replaces the duplicate in `thoughts/`.                                  |
+| [Database migration](../supabase/migrations/) | Implemented SQL files; application to a development database remains pending.                                        |
 
 ## Product and design context
 
