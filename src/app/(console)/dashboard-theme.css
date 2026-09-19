@@ -220,3 +220,35 @@
   height: 24px;
   color: var(--muted);
 }
+
+/* Console tabs shared by /dashboard and /dashboard/drills. */
+.console-nav {
+  display: flex;
+  gap: 4px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.console-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 4px;
+  font-size: var(--size-meta);
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+}
+.console-nav a:hover {
+  color: var(--ink);
+}
+.console-nav a[aria-current="page"] {
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: inset 0 -2px var(--focus);
+}
+.console-nav a:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}

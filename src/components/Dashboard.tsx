@@ -6,6 +6,7 @@
 import { FaroIcon, FaroWordmark } from "@/components/landing/logo";
 import { MapSkeleton } from "@/components/Skeleton";
 import dynamic from "next/dynamic";
+import ConsoleNav from "@/components/console-nav";
 import { useEffect, useMemo, useState } from "react";
 import { TriangleAlert } from "lucide-react";
 import type { CrisisZone } from "@/lib/types";
@@ -118,6 +119,7 @@ export default function Dashboard({
             <FaroWordmark className="h-4 w-auto" />
             <span className="sr-only">FARO</span>
           </h1>
+          <ConsoleNav current="live" />
           <span className="text-body text-muted">Sierra Bermeja wildfire</span>
           {coordinator.state?.executionMode === "simulation" && (
             <span className="rounded-sm border border-muted px-1.5 text-meta font-semibold tracking-wide text-ink uppercase">
