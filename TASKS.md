@@ -128,6 +128,17 @@ ejecución robusta, aprendizaje y ensayo) están en el documento fuente.
 - [ ] Ampliar el gemelo digital como campo de pruebas para comparar alternativas
       antes de ejecutar acciones reales (ver Fase 3 y 4).
 
+## Report intake contract — confirmed, implementation pending
+
+- [x] Fix the simple payload and normalization boundary in
+      [docs/input-contract.md](docs/input-contract.md): text, optional location,
+      trusted metadata, synchronous receipt and asynchronous interpretation.
+- [x] Identify compatibility work for Luis's scenario bridge and batch ingestion.
+- [ ] Implement validators and adapters, preserving scenario evidence and retry IDs.
+- [ ] Reconcile persistence and scheduling recovery, migrate the workflow consumer,
+      and expose intake in root `app/` as part of route-tree consolidation.
+- [ ] Add a reporting form with optional GPS, incident pin or textual location.
+
 ## Referencias
 
 - [README.md](README.md): instalación, comandos y límites actuales.
@@ -139,7 +150,7 @@ ejecución robusta, aprendizaje y ensayo) están en el documento fuente.
 - [CHALLENGE.md](CHALLENGE.md): requisitos originales del reto.
 - [docs/architecture.md](docs/architecture.md) y [docs/security.md](docs/security.md):
   decisiones y reglas de seguridad del centro de mando.
-- [docs/input-architecture.md](docs/input-architecture.md): diseño y guía de
-  implementación de la ingesta de eventos (Hito A síncrono con procesamiento de
-  lotes concurrente; Hito B async/topic aplazado). Empezar por el Hito A para
-  las tareas de ingesta de la Fase 3 (persistir y deduplicar eventos).
+- [docs/input-architecture.md](docs/input-architecture.md): current ingestion,
+  route-tree limitations and migration milestones.
+- [docs/input-contract.md](docs/input-contract.md): confirmed report payload and
+  normalization contract; implementation remains pending.
