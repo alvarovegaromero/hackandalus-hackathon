@@ -154,10 +154,10 @@ export default function LandingPage() {
               <a href="#problem">The response</a>
             </li>
             <li>
-              <a href="#control">Human control</a>
+              <a href="#learn">Learning</a>
             </li>
             <li>
-              <a href="#learn">Learning</a>
+              <a href="#control">Human control</a>
             </li>
           </ul>
           <DashboardLink className="lp-btn lp-btn-outline lp-nav-cta" />
@@ -227,28 +227,6 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
-        <section className="lp-control" id="control" aria-labelledby="control-title">
-          <div className="lp-wrap lp-control-grid">
-            <div className="lp-control-copy">
-              <p className="lp-section-label">Human control</p>
-              <h2 id="control-title">
-                People will act on these alerts.
-                <br />
-                People must approve them.
-              </h2>
-            </div>
-            <div className="lp-control-copy">
-              <p className="lp-control-promise">Mass alerts always need human approval.</p>
-              <details className="lp-consequence">
-                <summary>Before an alert is sent</summary>
-                <p>
-                  Review who will receive the warning and what it asks them to do. Approve, hold or
-                  override.
-                </p>
-              </details>
-            </div>
-          </div>
-        </section>
         <section className="lp-learn" id="learn" aria-labelledby="learn-title">
           <div className="lp-wrap lp-learn-grid">
             <div>
@@ -302,6 +280,28 @@ export default function LandingPage() {
             Training simulator with synthetic geography. Approved lessons brief the next drill; they
             do not yet change the live coordinator.
           </p>
+        </section>
+        <section className="lp-control" id="control" aria-labelledby="control-title">
+          <div className="lp-wrap lp-control-grid">
+            <div className="lp-control-copy">
+              <p className="lp-section-label">Human control</p>
+              <h2 id="control-title">
+                People will act on these alerts.
+                <br />
+                People must approve them.
+              </h2>
+            </div>
+            <div className="lp-control-copy">
+              <p className="lp-control-promise">Mass alerts always need human approval.</p>
+              <details className="lp-consequence">
+                <summary>Before an alert is sent</summary>
+                <p>
+                  Review who will receive the warning and what it asks them to do. Approve, hold or
+                  override.
+                </p>
+              </details>
+            </div>
+          </div>
         </section>
         <section className="lp-demo lp-wrap" id="demo" aria-labelledby="demo-title">
           <div className="lp-demo-top">
