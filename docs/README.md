@@ -27,6 +27,10 @@ for routing, imported assets and maintenance.
 **Dashboard status: SKETCH.** The visible prototype banner has been removed. The interface is exploratory, with partially connected
 controls; it does not define the approved product or target architecture.
 
+[Wildfire drills](emergency-drills.md) documents the isolated
+`/dashboard/drills` training workspace: procedural 3D wildfire
+exercises, a browser notebook and reviewed lessons reused in matching rehearsals.
+
 Next.js serves `src/app/`; `src/lib/` implements the command center and `tests/` covers
 it. The dashboard polls durable coordinator state and missions in Supabase through
 the HTTP API and receives stored event/filter activity through SSE. Legacy scaffold

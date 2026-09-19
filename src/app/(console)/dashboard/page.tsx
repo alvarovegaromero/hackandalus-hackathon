@@ -5,7 +5,9 @@ import { publicDemoExpiresAt } from "@/lib/demo-access";
 export const dynamic = "force-dynamic";
 
 export default function DashboardPage() {
-  if (process.env.NODE_ENV === "development") return <Dashboard demoControlsEnabled />;
+  const demoControlsEnabled = process.env.ACTION_EXECUTION_MODE !== "happyrobot";
+  if (process.env.NODE_ENV === "development")
+    return <Dashboard demoControlsEnabled={demoControlsEnabled} />;
   const expiresAt = publicDemoExpiresAt();
   if (!expiresAt) {
     return (
@@ -18,5 +20,5 @@ export default function DashboardPage() {
       </main>
     );
   }
-  return <Dashboard demoControlsEnabled expiresAt={expiresAt} />;
+  return <Dashboard demoControlsEnabled={demoControlsEnabled} expiresAt={expiresAt} />;
 }

@@ -4,6 +4,7 @@
 @theme inline {
   --color-bg: var(--bg);
   --color-panel: var(--panel);
+  --color-glass: var(--glass);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-line: var(--line);
@@ -23,21 +24,23 @@
 
 :root {
   /* Surfaces and text */
-  --bg: #131720;
-  --panel: #1b212b; /* the only region fill; no borders or shadows on cards */
-  --ink: #f4f2ec; /* 16.0:1 on bg: data and primary text */
-  --muted: #b1b7bd; /* 8.9:1: labels, axes, secondary text */
-  --line: #353b44; /* hairlines inside lists only */
-  --grid: #2b323c; /* chart gridlines, recessive by design */
+  --bg: #0e1218;
+  --panel: #1b212b; /* opaque fallback and overlays that must hide the map */
+  --glass: #f4f2ec0a; /* translucent module fill over the backdrop */
+  --glass-edge: #f4f2ec17;
+  --ink: #f4f2ec; /* 16.9:1 on bg: data and primary text */
+  --muted: #b1b7bd; /* 9.4:1: labels, axes, secondary text */
+  --line: #f4f2ec14; /* hairlines inside lists only */
+  --grid: #f4f2ec10; /* chart gridlines, recessive by design */
 
   /* Semantic hues: one meaning each, never reused as decoration */
   --focus: #07b37c; /* brand, selection and keyboard focus */
   --running: #7cc4f0; /* a mission in progress */
-  --critical: #ff6b61; /* 6.4:1 */
-  --high: #f59e42; /* 8.4:1 */
-  --medium: #eed27a; /* 12.1:1 */
-  --low: #7d8da0; /* 5.3:1 */
-  --unassessed: #6b7280; /* 3.7:1: graphics only, always paired with a text label */
+  --critical: #ff6b61;
+  --high: #f59e42;
+  --medium: #eed27a;
+  --low: #7d8da0;
+  --unassessed: #6b7280; /* graphics only, always paired with a text label */
 
   /* shadcn chart slots follow priority order */
   --chart-1: var(--critical);
@@ -46,51 +49,39 @@
   --chart-4: var(--low);
   --chart-5: var(--unassessed);
 
-  /* Type scale (px): meta 11 · body 13 · lead 15 · kpi 28 */
+  /* Type scale (px): meta 11 · body 13 · lead 15 · kpi 30 */
   --size-meta: 11px;
   --size-body: 13px;
   --size-lead: 15px;
-  --size-kpi: 28px;
+  --size-kpi: 30px;
 }
 
-/* Spacing: 8px inside a group, 16px between cards, 24px between zones (1:2:3). */
+/* Layout at 1440×900: header, the pipeline strip (reports → incidents → units →
+   agents, the order the system works in), then queue · map · agents. */
 .faro-dashboard {
   display: grid;
   min-height: 100dvh;
   grid-template-rows: auto auto minmax(0, 1fr);
-  gap: 16px;
-  padding: 16px 24px;
-  background: var(--bg);
+  gap: 12px;
+  padding: 14px 20px 20px;
   color: var(--ink);
   font-size: var(--size-body);
+  background:
+    radial-gradient(50% 45% at 8% 0%, #07b37c1f, transparent 70%),
+    radial-gradient(45% 50% at 100% 100%, #7cc4f012, transparent 70%), var(--bg);
 }
-.dashboard-panorama,
-.dashboard-breakdown {
+.dashboard-pipeline {
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
 }
-.dashboard-panorama > * {
-  grid-column: span 4;
-}
-.dashboard-breakdown {
-  gap: 24px;
+.dashboard-main {
+  display: grid;
+  grid-template-columns: minmax(0, 340px) minmax(0, 1fr) minmax(0, 380px);
+  gap: 12px;
   min-height: 0;
-  padding-top: 8px;
 }
-.dashboard-queue {
-  grid-column: span 5;
-}
-.dashboard-map {
-  grid-column: span 4;
-}
-.dashboard-agents {
-  grid-column: span 3;
-}
-.dashboard-breakdown > * {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.dashboard-main > * {
   min-height: 0;
   min-width: 0;
 }
@@ -98,25 +89,56 @@
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
 }
+
+/* Glass module: translucent fill, hairline edge, a light catch on the top rim.
+   In the components layer so Tailwind utilities (radius, position) can override it. */
+@layer components {
+  .glass {
+    border: 1px solid var(--glass-edge);
+    border-radius: 16px;
+    background: linear-gradient(180deg, #f4f2ec0d, #f4f2ec05);
+    box-shadow:
+      inset 0 1px 0 #f4f2ec14,
+      0 12px 32px -12px #0008;
+    backdrop-filter: blur(20px) saturate(140%);
+  }
+  .glass-running {
+    border-color: #7cc4f066;
+    box-shadow:
+      inset 0 1px 0 #7cc4f033,
+      0 0 0 1px #7cc4f026,
+      0 12px 40px -12px #7cc4f040;
+  }
+  @supports not (backdrop-filter: blur(1px)) {
+    .glass {
+      background: var(--panel);
+    }
+  }
+}
+
 @media (min-width: 1000px) and (min-height: 650px) {
   .faro-dashboard {
     height: 100dvh;
     overflow: hidden;
   }
 }
-/* Narrow screens: one column in question order; the map keeps a readable height. */
+/* Narrow screens: one column in pipeline order; the map keeps a readable height. */
 @media (max-width: 999px), (max-height: 649px) {
   .faro-dashboard {
     grid-template-rows: none;
   }
-  .dashboard-panorama > *,
-  .dashboard-breakdown > * {
-    grid-column: 1 / -1;
+  .dashboard-pipeline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dashboard-main {
+    grid-template-columns: minmax(0, 1fr);
   }
   .dashboard-map {
-    height: 320px;
+    order: -1;
+    height: 360px;
   }
   .dashboard-scroll {
     max-height: 480px;
@@ -134,23 +156,61 @@
   }
 }
 
+/* Live indicator: the only ambient motion on screen. */
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--focus);
+  box-shadow: 0 0 0 0 #07b37c80;
+  animation: live-pulse 2.4s ease-out infinite;
+}
+.live-dot[data-state="down"] {
+  background: var(--muted);
+  animation: none;
+}
+@keyframes live-pulse {
+  70% {
+    box-shadow: 0 0 0 6px #07b37c00;
+  }
+  100% {
+    box-shadow: 0 0 0 0 #07b37c00;
+  }
+}
+
 /* Map: basemap recedes so incident pins carry the contrast. */
 .faro-dashboard .leaflet-container {
   background: var(--bg);
   color: var(--bg);
+  font-family: inherit;
 }
 /* Filter each tile, not the pane: a pane-wide filter exposes sub-pixel tile seams. */
 .faro-dashboard .leaflet-tile {
-  filter: invert(1) hue-rotate(180deg) saturate(0.2) brightness(0.7) contrast(0.85);
+  filter: invert(1) hue-rotate(180deg) saturate(0.25) brightness(0.62) contrast(0.9);
+}
+.faro-dashboard .leaflet-bar {
+  border: 1px solid var(--glass-edge) !important;
+  border-radius: 10px;
+  overflow: hidden;
 }
 .faro-dashboard .leaflet-bar a,
 .faro-dashboard .leaflet-control-attribution {
-  background: var(--panel);
+  background: #0e1218cc;
   color: var(--muted);
   border-color: var(--line);
+  backdrop-filter: blur(12px);
 }
 .faro-dashboard .leaflet-control-attribution a {
   color: var(--muted);
+}
+/* Soft vignette so floating glass reads against any basemap tile. */
+.map-vignette {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 450;
+  border-radius: inherit;
+  box-shadow: inset 0 0 80px 10px #0e1218;
 }
 .map-pin {
   stroke: var(--bg);
@@ -159,9 +219,11 @@
 }
 .map-pin-critical {
   fill: var(--critical);
+  filter: drop-shadow(0 0 6px #ff6b61aa);
 }
 .map-pin-high {
   fill: var(--high);
+  filter: drop-shadow(0 0 5px #f59e4288);
 }
 .map-pin-medium {
   fill: var(--medium);
@@ -177,12 +239,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  background: var(--panel);
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: #1b212be6;
   color: var(--ink);
-  border: 1px solid var(--line);
+  border: 1px solid var(--glass-edge);
+  box-shadow: 0 4px 12px #0008;
 }
 .unit-marker[data-selected="true"] {
   border: 2px solid var(--focus);
@@ -203,10 +266,9 @@
 .map-selection {
   position: absolute;
   z-index: 1100;
-  inset: auto 8px 8px 8px;
-  padding: 8px 32px 8px 12px;
-  border-radius: 8px;
-  background: var(--panel);
+  inset: 52px 12px auto auto;
+  width: min(320px, calc(100% - 24px));
+  padding: 10px 32px 10px 14px;
   color: var(--ink);
   line-height: 1.5;
   max-height: 35%;
@@ -219,4 +281,36 @@
   width: 24px;
   height: 24px;
   color: var(--muted);
+}
+
+/* Console tabs shared by /dashboard and /dashboard/drills. */
+.console-nav {
+  display: flex;
+  gap: 4px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.console-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 4px;
+  font-size: var(--size-meta);
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+}
+.console-nav a:hover {
+  color: var(--ink);
+}
+.console-nav a[aria-current="page"] {
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: inset 0 -2px var(--focus);
+}
+.console-nav a:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }

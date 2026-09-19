@@ -1,12 +1,12 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-// shadcn/ui card, flattened: no border or shadow; the panel tint alone marks the region.
+// shadcn/ui card as a glass module: translucent fill and hairline edge (see .glass).
 function Card({ className, ...props }: React.ComponentProps<"section">) {
   return (
     <section
       data-slot="card"
-      className={cn("flex min-w-0 flex-col gap-2 rounded-lg bg-panel p-4", className)}
+      className={cn("glass flex min-w-0 flex-col gap-2 p-4", className)}
       {...props}
     />
   );
