@@ -1,0 +1,43 @@
+﻿begin;
+do $$
+declare s jsonb; updated jsonb; r jsonb; op uuid:=gen_random_uuid(); run uuid; rev bigint; p jsonb; rejected boolean:=false;
+begin
+  select state into strict s from public.coordinator_runtime where singleton for update;
+  if exists(select 1 from public.coordinator_events where status='pending') then raise exception 'Use an idle local database'; end if;
+  if exists(select 1 from public.coordinator_runtime where lease_until>now()) then raise exception 'Stop coordinator before this manual exercise'; end if;
+  run:=(s->>'runId')::uuid; rev:=(s->>'revision')::bigint;
+  p:=jsonb_build_object('objective','Coordinate all simultaneous incidents','steps',jsonb_build_array('Maintain assigned resources','Review unmet needs for every active incident'));
+  r:=public.update_parent_plan(gen_random_uuid(),op,rev,p,'Synthetic update');
+  if r->>'code'<>'RUN_CONFLICT' then raise exception 'Run scope bypassed'; end if;
+  r:=public.update_parent_plan(run,op,rev+1,p,'Synthetic update');
+  if r->>'code'<>'STATE_CONFLICT' then raise exception 'Revision check bypassed'; end if;
+  raise notice 'PASS: run and revision conflicts reject the write';
+  update public.coordinator_runtime set lease_token=gen_random_uuid(),lease_until=now()+interval '30 seconds' where singleton;
+  r:=public.update_parent_plan(run,op,rev,p,'Synthetic update');
+  if r->>'code'<>'OK' or r->>'changed'<>'true' then raise exception 'Plan update failed'; end if;
+  select state into updated from public.coordinator_runtime where singleton;
+  if updated->'plan'<>p or (updated-'plan'-'revision'-'updatedAt'-'generatedAt')<>(s-'plan'-'revision'-'updatedAt'-'generatedAt') then raise exception 'Non-plan fields modified'; end if;
+  if exists(select 1 from public.coordinator_runtime where lease_token is not null) then raise exception 'Older model lease retained'; end if;
+  raise notice 'PASS: atomic plan update preserves resources and invalidates old model lease';
+  r:=public.update_parent_plan(run,op,rev,p,'Synthetic update');
+  if r->>'duplicate'<>'true' then raise exception 'Retry not idempotent'; end if;
+  r:=public.update_parent_plan(run,op,rev,p,'Different reason');
+  if r->>'code'<>'UPDATE_CONFLICT' then raise exception 'Operation key reused'; end if;
+  raise notice 'PASS: identical retry replays audit result, changed request conflicts';
+  rev:=(updated->>'revision')::bigint;
+  r:=public.update_parent_plan(run,gen_random_uuid(),rev,p,'No change');
+  if r->>'changed'<>'false' or (r->>'revision')::bigint<>rev then raise exception 'Unchanged plan increments revision'; end if;
+  raise notice 'PASS: unchanged plan retains revision';
+  begin
+    perform public.update_parent_plan(run,gen_random_uuid(),rev,p||jsonb_build_object('ambulances','[]'::jsonb),'Invalid resource mutation');
+  exception when others then rejected:=true; end;
+  if not rejected then raise exception 'Unexpected mutation field accepted'; end if;
+  raise notice 'PASS: tool cannot carry resource edits';
+  insert into public.coordinator_events(event_id,input) values(gen_random_uuid(),'{}');
+  r:=public.update_parent_plan(run,gen_random_uuid(),rev,p,'Pending input');
+  if r->>'code'<>'INPUT_PENDING' then raise exception 'Pending input ignored'; end if;
+  raise notice 'PASS: pending input requires fresh context';
+end;
+$$;
+rollback;
+select '6 parent plan scenarios passed; rolled back' as result;

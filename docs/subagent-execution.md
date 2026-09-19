@@ -46,7 +46,7 @@ module takes a shared inventory lock to verify reservations and never updates it
 
 ## Worker and tools
 
-Apply `supabase/migrations/202609190007_subagent_execution.sql` after coordinator
+Apply `supabase/migrations/202609190009_subagent_execution.sql` after coordinator
 migration 005; 006 is not required. The new migration is only verified locally and
 has not been applied to shared Supabase. Run Node 24:
 
@@ -163,3 +163,5 @@ writes per-case input, tool arguments, operation results and decisions to
 .data/subagent-tool-results.json. Provider errors are redacted. No private chain
 of thought is exported. A passing run is evidence for these scenarios, not a
 guarantee of future model behavior; runtime and database validation remain mandatory.
+
+Parent plan updates are available as a separate integration module: [updateGlobalPlan](parent-plan-tool.md).

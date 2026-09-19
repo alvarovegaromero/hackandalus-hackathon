@@ -100,3 +100,5 @@ awaiting integration, and external services awaiting configuration.
 - [Context7](context7.md): optional library documentation tooling.
 
 Frontend handoff: [input/output examples and integration](coordinator-frontend-integration.md).
+
+Parent integration: [persisted plan mutation tool](parent-plan-tool.md).
