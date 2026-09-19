@@ -4,7 +4,8 @@ Defined on 2026-09-19 for [P0–P5](poc.md). This is the initial implementation
 contract between packages. P2 filter request/result and P3 handoff schemas are
 implemented in `src/lib/contracts/filter.ts`, with fixtures in
 `tests/fixtures/filter-reports.ts`. P3 impact and planner input schemas are in
-`src/lib/contracts/triage.ts`. Pipeline wiring remains pending.
+`src/lib/contracts/triage.ts`; P4 planning output schemas are in
+`src/lib/contracts/agent.ts`. Pipeline wiring remains pending.
 See [Jev filter integration](jev-filter.md) and [P3 triage](triage.md).
 It supersedes the broader contracts draft for this POC only. Existing input and
 SSE wire contracts are reused, not replaced.
@@ -214,7 +215,21 @@ incidents, scarcity, reservations or coverage costs. No resource is dispatched h
 `AgentRequest` is implemented in `src/lib/contracts/triage.ts`. P3's
 `prepareAgentRequest` validates and assembles it. `plannerPriorityDecisionSchema`
 and `TRIAGE_PLANNER_INSTRUCTIONS` define the LLM decision boundary.
-P4 model invocation, planning and execution are a separate work package.
+P4's `src/lib/agents/plan-report.ts` implements `planReport(request, context)`
+using the configured AI SDK model. Its output schemas live in
+`src/lib/contracts/agent.ts`; see [P4 planning](agent-planning.md).
+The caller supplies an authorized ordered history and the next plan version.
+P4 returns the final priority/resource proposal, an immutable plan, audit
+messages and a separate `toolExecutions` simulation ledger. Vercel AI SDK's
+bounded `ToolLoopAgent` runs a mock response tool, then produces the final plan.
+The tool simulates resource assignments and HappyRobot communications; results
+are labeled `simulated` with `realActionsExecuted: false`. This ledger is not
+the live Action/ToolResult contract below and must not publish live success events.
+It rejects mismatched correlation IDs/revisions and
+requires verification needs for incomplete impact. It does not dispatch,
+persist, publish SSE or replace the legacy coordinator automatically. Model
+selection honors `AI_PROVIDER`; OpenCode configuration uses `OPENCODE_API_KEY`
+and `OPENCODE_MODEL`, separately from the optional AI Gateway configuration.
 
 ```ts
 type AgentRequest = Context & {

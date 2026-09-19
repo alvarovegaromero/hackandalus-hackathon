@@ -137,7 +137,9 @@ module-specific docs or use the sketch as the target architecture.
   unlimited availability. See `docs/triage.md`; intake/persistence wiring is pending.
 - `src/lib/ingest.ts`, `src/lib/ingest-server.ts`: batch event ingestion
   (validation, dedup, persistence, workflow start).
-- `src/lib/agents`: AI SDK coordinator (model configured through environment).
+- `src/lib/agents`: legacy AI SDK coordinator and P4 `planReport` for the P3
+  handoff (model configured through environment). See `docs/agent-planning.md`;
+  planning returns proposals and audit messages for P0 to persist, without dispatch.
 - `src/workflows`: durable Workflow started per ingested event, including scenario signals.
 - `src/lib/supabase`: server/browser clients and Realtime subscription helper.
 - `src/lib/integrations`: HappyRobot boundary, explicitly blocked until implemented.

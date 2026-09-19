@@ -27,6 +27,10 @@ JSON persistence. Outbound communications default to mock mode.
 structured factors from operator/scenario observations, and the planner handoff
 with Jev information and unlimited-resource POC assumptions.
 
+[P4 agent planning](agent-planning.md) documents the LLM boundary for final
+priority, finite resource proposals and versioned plans. Persistence, frontend
+delivery and HappyRobot execution remain separate integration work.
+
 [Jev filter integration](jev-filter.md) documents the implemented P2 module,
 P1 request, validated P3 handoff, backend logging and provisional configuration.
 Runtime wiring/persistence and frontend filtering notifications remain pending.
