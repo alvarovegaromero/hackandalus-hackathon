@@ -135,3 +135,323 @@
 .faro-dashboard .leaflet-control-attribution a {
   color: #a7f3d0;
 }
+
+/* Situation on the left; orchestration and delegated work on the right. */
+.faro-dashboard.shell {
+  max-width: none;
+  padding: 20px 24px;
+  gap: 16px;
+}
+.dashboard-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 12px 0 16px;
+  border-bottom: 1px solid var(--line);
+}
+.dashboard-overview {
+  min-width: 0;
+  max-height: 140px;
+  overflow: auto;
+}
+.dashboard-overview h2,
+.orchestrator-panel h2,
+.subagents-panel h2 {
+  font-size: 13px;
+  font-weight: 500;
+}
+.dashboard-overview p {
+  font-size: 13px;
+  line-height: 1.6;
+  margin-top: 8px;
+  max-width: 75ch;
+}
+.dashboard-summary .resource-cards {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.resource-summary {
+  position: relative;
+  min-width: 0;
+}
+.resource-summary > div:first-child {
+  display: block;
+}
+.resource-summary h2 {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.resource-summary h2 svg {
+  width: 16px;
+}
+.resource-summary dl {
+  gap: 12px;
+  margin-top: 8px;
+}
+.resource-summary dt {
+  font-family: inherit;
+  font-size: 10px;
+}
+.resource-summary dd {
+  font-size: 20px;
+}
+.resource-summary > p {
+  font-size: 11px;
+}
+.resource-units {
+  font-size: 11px;
+  margin-top: 8px;
+}
+.resource-units summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+.resource-units[open] > ul {
+  position: absolute;
+  top: 100%;
+  z-index: 1200;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 12px;
+  border-radius: 10px;
+  width: 260px;
+  max-height: 240px;
+  overflow: auto;
+  right: 0;
+}
+.dashboard-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  min-height: 0;
+  flex: 1;
+}
+.dashboard-situation {
+  display: grid;
+  grid-template-rows: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 16px;
+  min-height: 0;
+  min-width: 0;
+}
+.dashboard-map {
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 12px;
+}
+.dashboard-map > div {
+  height: 100%;
+}
+.dashboard-map [aria-hidden="true"].h-\[480px\] {
+  height: 100%;
+}
+.dashboard-map > .relative {
+  height: 100%;
+}
+.dashboard-events {
+  min-height: 0;
+  overflow: hidden;
+}
+.dashboard-events > section {
+  height: 100%;
+}
+.dashboard-events ol {
+  max-height: none;
+}
+.dashboard-agents {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  border-left: 1px solid var(--line);
+  padding-left: 24px;
+}
+.orchestrator-panel {
+  flex: 0 1 auto;
+  max-height: 38%;
+  overflow: auto;
+  padding-bottom: 16px;
+}
+.orchestrator-panel h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.agent-node {
+  width: 9px;
+  height: 9px;
+  background: var(--green);
+  border-radius: 3px;
+}
+.plan-objective {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 10px 0;
+}
+.orchestrator-panel ol {
+  padding-left: 20px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.orchestrator-panel li + li {
+  margin-top: 5px;
+}
+.subagents-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+.subagents-panel h2 > span {
+  font-family: inherit;
+  margin-left: 6px;
+}
+.mission-feed {
+  position: relative;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  overflow-anchor: none;
+  margin-top: 8px;
+  padding-right: 8px;
+}
+.mission-feed > li {
+  border-bottom: 1px solid var(--line-soft);
+}
+.mission-feed summary {
+  border-radius: 6px;
+  transition: background-color 140ms ease;
+}
+.mission-feed summary:hover {
+  background: #ffffff05;
+}
+.mission-feed summary:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 4px;
+}
+.mission-feed summary > div > span:first-child {
+  font-size: 13px;
+  line-height: 1.5;
+}
+.mission-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+  padding-top: 3px;
+}
+.mission-status > span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+[data-status="running"] .mission-status > span,
+[data-status="completed"] .mission-status > span {
+  background: var(--green);
+}
+[data-status="failed"] .mission-status > span,
+[data-status="blocked"] .mission-status > span {
+  background: var(--amber);
+}
+.faro-dashboard button {
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+@media (min-width: 1000px) and (min-height: 650px) {
+  .faro-dashboard.shell {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+@media (max-width: 999px), (max-height: 649px) {
+  .dashboard-summary {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .dashboard-overview {
+    max-height: none;
+  }
+  .dashboard-workspace {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-situation {
+    grid-template-rows: 340px 240px;
+  }
+  .dashboard-agents {
+    border-left: 0;
+    padding-left: 0;
+  }
+  .orchestrator-panel {
+    max-height: none;
+  }
+  .mission-feed {
+    max-height: 520px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .faro-dashboard button,
+  .mission-feed summary {
+    transition: none;
+  }
+}
+
+.mission-row > div > span:first-child {
+  font-size: 13px;
+  line-height: 1.5;
+}
+.map-selection {
+  position: absolute;
+  z-index: 1100;
+  left: 12px;
+  right: 12px;
+  bottom: 24px;
+  padding: 14px 38px 14px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.5;
+  max-height: 35%;
+  overflow: auto;
+}
+.map-selection > button {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  width: 28px;
+  height: 28px;
+  font-size: 20px;
+}
+
+.faro-dashboard .mission-status-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  line-height: 16px;
+  padding: 1px 7px;
+  border-color: var(--line);
+  color: var(--muted);
+  background: var(--panel);
+}
+.faro-dashboard [data-status="completed"] .mission-status-badge {
+  color: #a7f3d0;
+  background: var(--green-soft);
+  border-color: #237c60;
+}
+.faro-dashboard [data-status="running"] .mission-status-badge {
+  color: var(--blue);
+  background: var(--blue-soft);
+  border-color: #37556b;
+}
+.faro-dashboard :is([data-status="blocked"], [data-status="failed"]) .mission-status-badge {
+  color: var(--amber);
+  background: var(--amber-soft);
+  border-color: #816a40;
+}

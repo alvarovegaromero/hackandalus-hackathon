@@ -6,13 +6,12 @@ import { FaroIcon, FaroWordmark } from "@/components/landing/logo";
 
 import { MapSkeleton } from "@/components/Skeleton";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { CrisisZone } from "@/lib/types";
 import MissionsPanel from "@/components/MissionsPanel";
 import AmbulanceCard from "@/components/AmbulanceCard";
 import EventLog from "@/components/EventLog";
-import CoordinatorPanel, { useCoordinator } from "@/components/CoordinatorPanel";
+import CoordinatorPanel, { OverviewPanel, useCoordinator } from "@/components/CoordinatorPanel";
 import { useTelemetry } from "@/components/use-telemetry";
 
 // Leaflet touches `window`, so the map only renders in the browser.
@@ -50,7 +49,7 @@ export default function DashboardPage() {
       const response = await fetch("/api/demo/events", { method: "POST" });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? "Could not start demo events.");
-      setDemoMessage(`Started ${result.count} events, one every 3 seconds.`);
+      setDemoMessage(null);
     } catch (caught) {
       setDemoMessage(caught instanceof Error ? caught.message : "Could not start demo events.");
     } finally {
@@ -89,9 +88,6 @@ export default function DashboardPage() {
             <FaroWordmark className="h-5 w-auto" />
             <span className="sr-only">Far0</span>
           </h1>
-          <Link href="/" prefetch={false} className="text-sm underline underline-offset-4">
-            Back to home
-          </Link>
         </div>
         {process.env.NODE_ENV === "development" ? (
           <div className="flex flex-wrap items-center gap-3">
@@ -110,62 +106,66 @@ export default function DashboardPage() {
         ) : null}
       </div>
       {error ? <p role="alert">{error}</p> : null}
-      <CoordinatorPanel
-        key={coordinator.state?.stateId ?? "loading"}
-        state={coordinator.state}
-        error={coordinator.error}
-      />
-      <div className="resource-cards">
-        {(["ambulances", "police", "civilGuard"] as const).map((kind) => (
-          <AmbulanceCard
-            key={kind}
-            kind={kind}
-            state={coordinator.state}
-            records={telemetry.records}
-            selectedId={ambulanceFocus?.id}
-            stale={!!coordinator.error}
-            onSelect={selectAmbulance}
-          />
-        ))}
-      </div>
-      <div className="event-map-layout">
-        <div className="min-w-0">
-          <EventLog
-            records={telemetry.records}
-            status={telemetry.status}
-            priorities={coordinator.state?.events}
-          />
-        </div>
-        <div className="min-w-0">
-          {situation ? (
-            <LeafletMap
-              zones={situation.zones}
-              events={telemetry.records}
-              ambulances={
-                coordinator.state
-                  ? [
-                      ...coordinator.state.ambulances.units,
-                      ...coordinator.state.police.units,
-                      ...coordinator.state.civilGuard.units,
-                    ]
-                  : []
-              }
-              ambulanceFocus={ambulanceFocus}
-              onSelectAmbulance={selectAmbulance}
-              selectedZoneId={selectedZoneId}
-              onSelect={(zoneId) => setSelectedZoneId(zoneId === selectedZoneId ? null : zoneId)}
+      <div className="dashboard-summary">
+        <OverviewPanel state={coordinator.state} error={coordinator.error} />
+        <div className="resource-cards">
+          {(["ambulances", "police", "civilGuard"] as const).map((kind) => (
+            <AmbulanceCard
+              key={kind}
+              kind={kind}
+              state={coordinator.state}
+              records={telemetry.records}
+              selectedId={ambulanceFocus?.id}
+              stale={!!coordinator.error}
+              onSelect={selectAmbulance}
             />
-          ) : error ? (
-            <p role="status">Map could not be loaded.</p>
-          ) : (
-            <MapSkeleton />
-          )}
+          ))}
         </div>
       </div>
-      <MissionsPanel
-        runId={coordinator.state?.runId}
-        unavailable={!coordinator.state && !!coordinator.error}
-      />
+      <div className="dashboard-workspace">
+        <div className="dashboard-situation">
+          <div className="dashboard-map">
+            {situation ? (
+              <LeafletMap
+                key={coordinator.state?.runId ?? "loading"}
+                zones={situation.zones}
+                events={telemetry.records}
+                ambulances={
+                  coordinator.state
+                    ? [
+                        ...coordinator.state.ambulances.units,
+                        ...coordinator.state.police.units,
+                        ...coordinator.state.civilGuard.units,
+                      ]
+                    : []
+                }
+                ambulanceFocus={ambulanceFocus}
+                onSelectAmbulance={selectAmbulance}
+                selectedZoneId={selectedZoneId}
+                onSelect={(zoneId) => setSelectedZoneId(zoneId === selectedZoneId ? null : zoneId)}
+              />
+            ) : error ? (
+              <p role="status">Map could not be loaded.</p>
+            ) : (
+              <MapSkeleton />
+            )}
+          </div>
+          <div className="dashboard-events">
+            <EventLog
+              records={telemetry.records}
+              status={telemetry.status}
+              priorities={coordinator.state?.events}
+            />
+          </div>
+        </div>
+        <aside className="dashboard-agents">
+          <CoordinatorPanel state={coordinator.state} error={coordinator.error} />
+          <MissionsPanel
+            runId={coordinator.state?.runId}
+            unavailable={!coordinator.state && !!coordinator.error}
+          />
+        </aside>
+      </div>
     </main>
   );
 }

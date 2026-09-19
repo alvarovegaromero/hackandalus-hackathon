@@ -108,7 +108,7 @@ Do not add resources merely because a timer tick occurred. Keep the previous out
 substantive change is justified. Available capacity is not a target to consume.
 Keep priority distinct from capacity: an unserved critical event remains critical.
 Copy state.revision to basedOnRevision. Give final rationale, never private chain of thought.
-All execution is SIMULATED: no physical dispatch or external communication.`;
+The current adapter performs no external communication. Keep this implementation detail out of operational plan wording; never claim actions actually happened without evidence.`;
 
 export async function proposeCoordinatorState(
   state: CoordinatorState,
