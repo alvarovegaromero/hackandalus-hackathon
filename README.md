@@ -82,9 +82,14 @@ Node/npm en el PATH; en Windows, Git for Windows proporciona el intérprete.
   TypeScript, los tests y `npm run index:verify`.
 - **Pre-push:** bloquea cualquier actualización de `main`, `master` y `develop`
   y ejecuta `npm run check`, incluido el build.
-- La integración continua (`.github/workflows/ci.yml`) repite esas mismas
-  comprobaciones en cada push y pull request con el Node de `.nvmrc`. Es
-  informativa: la protección de rama solo exige pull request.
+- **Before creating a PR:** use `npm run pr:create -- --title "..." --body-file <file>`.
+  Its local `pr:check` prehook runs `npm run check` and blocks creation on
+  failure. Requires authenticated GitHub CLI (`gh`), a clean working tree and
+  an already published feature branch; the command targets `main` and does not push.
+- **No CI:** GitHub Actions is removed and will not be used because the team has
+  no Actions minutes. Validation is local. All contributors and agents must use
+  the PR command; GitHub's UI and direct `gh pr create` bypass the local hook.
+  Include check results and the tested OS in the PR.
 
 Compartimos UTF-8, finales LF, dos espacios, comillas dobles, punto y coma y
 comas finales mediante `.prettierrc.json`, `.editorconfig` y `.gitattributes`.

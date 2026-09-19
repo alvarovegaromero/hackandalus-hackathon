@@ -47,7 +47,25 @@ los archivos staged, y ejecuta tipos y tests. Revisa las modificaciones de
 formato. El pre-push ejecuta la comprobación completa con build. No saltes hooks
 para ocultar fallos. Las reglas de nomenclatura están en PROJECT.md.
 
-Publica tu rama y abre una PR **siempre hacia `main`**, usando la plantilla.
+After committing and publishing your feature branch, create a PR targeting
+`main` with the repository template and an authenticated GitHub CLI (`gh`):
+
+```sh
+npm run pr:create -- --title "chore: describe the change" --body-file pr-body.md
+```
+
+Use a body file outside the repository (or an ignored local file) to keep the
+working tree clean. `pr:create` explicitly runs `pr:check`, which blocks protected
+branches and runs the full `npm run check` before PR creation. A failed check
+stops the command. The command requires a clean working tree and uses the already
+published branch without pushing. Record results and the tested OS in the PR.
+Run it again after code changes. All contributors and agents must use this entry
+point: GitHub's UI and direct `gh pr create` bypass the local gate. The explicit
+command chain also runs validation when npm lifecycle hooks are disabled.
+
+We will not use GitHub Actions CI: the team has no Actions minutes. Checks stay
+local; adding CI is not deferred work.
+
 Los agentes necesitan permiso explícito para hacer push y pueden hacer merge
 cuando el usuario se lo indique, respetando checks y protección de ramas.
 Los pushes directos a `main` están
@@ -108,8 +126,8 @@ Rellena los valores localmente cuando necesites integrar servicios.
   chats de agentes ni capturas para transmitirlas.
 - **Vercel:** configura las variables en el proyecto, separadas por Development,
   Preview y Production. Evita usar claves de producción en desarrollo o previews.
-- **GitHub Actions Secrets:** resérvalos para workflows de Actions si se incorporan
-  más adelante; no son un mecanismo para repartir archivos `.env` al equipo.
+- **GitHub Actions Secrets:** unused because this project does not run Actions;
+  they are not a mechanism for sharing `.env` files with the team.
 - **Exposición accidental:** revoca o rota la clave en su proveedor inmediatamente;
   borrarla del último archivo o commit no elimina las copias ni el historial.
 

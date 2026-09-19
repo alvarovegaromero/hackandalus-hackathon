@@ -17,6 +17,8 @@
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "check": "npm run secrets:check && npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && npm run index:verify",
+    "pr:check": "node scripts/guard-protected-branches.mjs commit && npm run check",
+    "pr:create": "npm run pr:check && node scripts/create-pr.mjs",
     "lint:staged": "lint-staged --concurrent false",
     "secrets:check": "node scripts/check-secrets.mjs",
     "env:setup": "node scripts/setup-env.mjs",

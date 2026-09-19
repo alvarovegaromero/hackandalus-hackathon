@@ -24,6 +24,9 @@ probado llamadas a modelos ni comunicaciones reales.
 
 ## Preparación local del código
 
+- [x] Remove GitHub Actions CI: no Actions minutes are available and CI is not planned.
+- [x] Require local validation before PR creation via `npm run pr:create` and its
+      local `pr:check` prehook (`npm run check`); document the workflow for contributors and agents.
 - [x] Prettier compartido, EditorConfig y finales LF en Git para macOS, Windows y Linux.
 - [x] Husky instalado automáticamente al instalar dependencias de desarrollo.
 - [x] Pre-commit con Secretlint, Prettier y ESLint sobre archivos staged, más TypeScript y tests.

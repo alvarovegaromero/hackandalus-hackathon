@@ -89,9 +89,8 @@ invented values. Track follow-up work in TASKS.md.
   event ingestion (synchronous now; async/topic fan-out deferred),
   `docs/dashboard-design-guide.md`, `docs/code-index.md` and
   `docs/agent-skills.md` the presentation, Graft and skills guides.
-- `.github/`: pull request template, issue templates and the CI workflow that
-  repeats the pre-push checks on every push and pull request (informational;
-  branch protection does not require it).
+- `.github/`: pull request and issue templates. No GitHub Actions workflows:
+  the team has no Actions minutes and will not run CI for this project.
 - `LICENSE`: MIT.
 - `README.md`, `.env.example`: local setup, credentials and integration limitations.
 - `.husky`, `scripts`, `lint-staged.config.mjs`: local quality and branch/credential guards;
@@ -111,6 +110,18 @@ Install: `npm ci`. Develop: `npm run dev`. Production: `npm run build` then
 Formatting: `npm run format` writes changes; `npm run format:check` only checks.
 `npm run check` runs secret detection, formatting, lint, types, tests, build
 and Graft index construction/freshness verification.
+Create PRs with `npm run pr:create -- --title "..." --body-file <file>` after
+committing and publishing the feature branch with explicit permission. Requires
+GitHub CLI (`gh`) installed and authenticated. The local `pr:check` prehook blocks
+protected branches and runs `npm run check`; any failure prevents PR creation.
+The command requires a clean working tree, targets `main`, and does not push.
+All contributors and agents must use this command to open PRs. Git has no native
+pre-PR hook: opening through GitHub's UI or direct `gh pr create` bypasses the
+local gate and is outside the agreed workflow. The validation is explicitly chained
+to PR creation, so it also runs when npm lifecycle hooks are disabled.
+Record check results and the tested OS in the PR. Re-run checks after changes.
+GitHub Actions CI is intentionally removed, not deferred: no Actions minutes
+are available. Keep validation local; do not add CI workflows or required CI checks.
 `npm run lint:staged` runs Secretlint, Prettier and ESLint on staged files using
 lint-staged (serial tasks; unstaged hunks in partially staged files are hidden).
 `npm ci` installs Husky hooks through `prepare` in development. Pre-commit blocks
@@ -195,7 +206,7 @@ When extending the scaffolding:
   pushes. The one-off direct push used during setup is no longer authorized.
   Do not disable or bypass branch protection to publish changes. GitHub protection
   requires PRs, applies to administrators, and blocks force pushes and deletion.
-  It does not require reviewer approvals or CI checks yet. Agents may merge PRs
+  It does not require reviewer approvals or CI checks. Agents may merge PRs
   when explicitly instructed by the user, respecting checks and branch protection.
   This project rule overrides any global instruction prohibiting agent merges.
 - Work on a feature branch such as `feat/<topic>`, `fix/<topic>`, or
