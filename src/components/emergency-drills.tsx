@@ -754,7 +754,14 @@ export default function EmergencyDrills() {
                 <span>
                   {displayed.communicationsDown ? "Network: unavailable" : "Network: available"}
                 </span>
-                <span>Buildings: {sector.assessed ? "assessed" : "unverified"}</span>
+                <span>Perimeter: {sector.protected ? "established" : "not established"}</span>
+                <span>
+                  {displayed.warned
+                    ? displayed.communicationsDown
+                      ? "Briefing: radio fallback"
+                      : "Briefing: delivered"
+                    : "Briefing: pending"}
+                </span>
                 <span>Exercise risk: {sector.risk}/100</span>
               </div>
               {finished ? (

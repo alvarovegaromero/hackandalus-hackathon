@@ -43,9 +43,7 @@ export default function DrillScenarioFields({
           />
         </label>
       ))}
-      <p>
-        Fixed visual milestones: road closure T+5; network loss T+10; aftershock / wind shift T+15.
-      </p>
+      <p>Fixed visual milestones: road closure T+5; network loss T+10; wind shift T+15.</p>
       <label>
         Unbriefed capacity after network loss
         <input
