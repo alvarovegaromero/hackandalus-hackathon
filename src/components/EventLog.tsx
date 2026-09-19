@@ -78,11 +78,12 @@ export default function EventLog({
       <div className="flex items-center justify-between px-1">
         <h2 className="text-[13px] font-medium">Event</h2>
         <span role="status" className="text-[12px] text-blueprint-light">
-          {status} · {events.length} events
+          {status !== "Live" ? `${status} · ` : ""}
+          {events.length} events
         </span>
       </div>
       <ol
-        className="flex flex-col gap-1 flex-1 min-h-0 max-h-[480px] overflow-y-auto rounded-[16px] border border-line p-2 text-[12px] font-mono"
+        className="flex flex-col gap-1 flex-1 min-h-0 max-h-[480px] overflow-y-auto text-[12px] font-mono"
         aria-live="polite"
         aria-relevant="additions text"
       >
@@ -97,29 +98,43 @@ export default function EventLog({
             Waiting for events… run <code>npm run mock:events</code>
           </li>
         ) : null}
-        {events.map((event) => (
-          <li key={event.id} className={`rounded-md border p-2 ${event.tone}`}>
-            <div className="flex flex-wrap gap-x-2">
-              <time dateTime={event.at}>{new Date(event.at).toLocaleTimeString()}</time>
+        {events.map((event) => {
+          const assessment = priorities.find((item) => item.eventId === event.id);
+          const content = (
+            <>
+              <time className="shrink-0 tabular-nums opacity-70" dateTime={event.at}>
+                {new Date(event.at).toLocaleTimeString()}
+              </time>
+              <span className="min-w-0 flex-1 truncate" title={event.title}>
+                {event.title}
+              </span>
               <span className="sr-only">{event.label}</span>
-            </div>
-            <p className="break-words">{event.title}</p>
-            {priorities.find((item) => item.eventId === event.id)?.priority ? (
-              <p
-                className="mt-1 font-semibold"
-                title={priorities.find((item) => item.eventId === event.id)?.rationale ?? undefined}
-              >
-                Priority: {priorities.find((item) => item.eventId === event.id)?.priority}
-              </p>
-            ) : null}
-            {event.detail ? (
-              <details className="mt-1">
-                <summary className="cursor-pointer">Filter details</summary>
-                <p className="mt-1 break-words">{event.detail}</p>
-              </details>
-            ) : null}
-          </li>
-        ))}
+              {assessment?.priority && (
+                <span
+                  className="shrink-0 text-[10px] font-semibold"
+                  title={assessment.rationale ?? undefined}
+                >
+                  {assessment.priority}
+                </span>
+              )}
+            </>
+          );
+          return (
+            <li key={event.id} className={`relative rounded-md border px-2 py-1.5 ${event.tone}`}>
+              {event.detail ? (
+                <details>
+                  <summary className="flex cursor-pointer list-none items-center gap-2">
+                    {content}
+                  </summary>
+                  <p className="mt-2 break-words">{event.title}</p>
+                  <p className="mt-1 break-words opacity-80">{event.detail}</p>
+                </details>
+              ) : (
+                <div className="flex items-center gap-2">{content}</div>
+              )}
+            </li>
+          );
+        })}
       </ol>
     </section>
   );

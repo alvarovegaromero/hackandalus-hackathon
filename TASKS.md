@@ -349,3 +349,10 @@ Contract and limits: [docs/event-telemetry.md](docs/event-telemetry.md).
 - [x] Continue mission handoff after stale update/cancel conflicts and replan from fresh context.
 - [x] Distinct Policía/Guardia Civil icons in resource cards and map markers.
 - [x] Initial dashboard skeletons for overview, plan, resources, missions, events and map; empty states follow successful loads.
+
+- [x] Viewport-based dashboard: situation/map/events left, orchestrator and visible subagent feed right; compact resource disclosures.
+- [x] Newest-first missions with insertion-only 260 ms layout motion and reduced-motion support; no polling animation or initial-load cascade.
+
+- [x] Simplify subagents to result/status and resource counts; remove internal instruction/revision disclosures and resource dropdowns.
+- [x] Map selection uses an in-map detail panel without zoom or popup panning; user interaction pauses automatic framing.
+- [x] Keep simulation wording out of generated plans while preserving evidence-based action claims.

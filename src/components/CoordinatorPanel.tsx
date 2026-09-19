@@ -40,103 +40,52 @@ export function useCoordinator() {
   return { state, error };
 }
 
-export default function CoordinatorPanel({
-  state,
-  error,
-}: {
-  state: CoordinatorState | null;
-  error: string | null;
-}) {
-  const [overviewExpanded, setOverviewExpanded] = useState(false);
-  const [planExpanded, setPlanExpanded] = useState(false);
-  const plan = state?.plan;
-  const buttonClass =
-    "mt-3 text-xs font-medium text-blue-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2";
+type PanelProps = { state: CoordinatorState | null; error: string | null };
 
+export function OverviewPanel({ state, error }: PanelProps) {
   return (
-    <section aria-label="Situation and plan" className="flex flex-col gap-2">
-      <div className="flex justify-end text-xs text-neutral-500">
-        Simulation
-        {state
-          ? ` · Revision ${state.revision} · Updated ${new Date(state.updatedAt).toLocaleTimeString()}`
-          : ""}
-      </div>
-      {error ? (
-        <p role="alert" className="text-sm text-amber-800">
-          {error} {state ? "Showing the last available state." : ""}
+    <section className="dashboard-overview" aria-label="Overview">
+      <h2>Overview</h2>
+      {!state && !error ? (
+        <TextSkeleton />
+      ) : (
+        <p>
+          {state?.situationOverview ||
+            (error ? "Situation unavailable." : "Waiting for the first assessment.")}
         </p>
-      ) : null}
-      <div className="coordinator-cards">
-        <section
-          className="min-w-0 rounded-[16px] border border-line bg-white p-4 text-sm"
-          aria-labelledby="overview-heading"
-        >
-          <h2 id="overview-heading" className="font-medium">
-            Overview
-          </h2>
-          {!state && !error ? (
-            <TextSkeleton />
-          ) : (
-            <p
-              id="overview-content"
-              className={`mt-3 leading-relaxed ${overviewExpanded ? "" : "line-clamp-6"}`}
-            >
-              {state?.situationOverview ||
-                (error && !state
-                  ? "State could not be loaded."
-                  : "Waiting for the first assessment.")}
-            </p>
-          )}
-          {state?.situationOverview ? (
-            <button
-              type="button"
-              className={buttonClass}
-              aria-expanded={overviewExpanded}
-              aria-controls="overview-content"
-              onClick={() => setOverviewExpanded(!overviewExpanded)}
-            >
-              {overviewExpanded ? "Show less" : "Show more"}
-            </button>
-          ) : null}
-        </section>
-        <section
-          className="min-w-0 rounded-[16px] border border-line bg-white p-4 text-sm"
-          aria-labelledby="plan-heading"
-        >
-          <h2 id="plan-heading" className="font-medium">
-            Plan
-          </h2>
-          {!state && !error ? (
-            <TextSkeleton />
-          ) : plan ? (
-            <>
-              <p className="mt-3 font-medium leading-relaxed">{plan.objective}</p>
-              <ol id="plan-steps" className="mt-3 list-decimal space-y-2 pl-5 text-neutral-700">
-                {(planExpanded ? plan.steps : plan.steps.slice(0, 3)).map((step, index) => (
-                  <li key={index}>{step}</li>
-                ))}
-              </ol>
-              {plan.steps.length > 3 ? (
-                <button
-                  type="button"
-                  className={buttonClass}
-                  aria-expanded={planExpanded}
-                  aria-controls="plan-steps"
-                  onClick={() => setPlanExpanded(!planExpanded)}
-                >
-                  {planExpanded ? "Show less" : `Show more (${plan.steps.length - 3} more steps)`}
-                </button>
-              ) : null}
-            </>
-          ) : (
-            <p className="mt-3 text-neutral-500">
-              {error && !state
-                ? "Plan could not be loaded."
-                : "No plan yet. Waiting for report assessment."}
-            </p>
-          )}
-        </section>
-      </div>
+      )}
+      {error && (
+        <p role="alert" className="text-amber-800">
+          {error}
+        </p>
+      )}
+    </section>
+  );
+}
+
+export default function CoordinatorPanel({ state, error }: PanelProps) {
+  const plan = state?.plan;
+  return (
+    <section className="orchestrator-panel" aria-label="Orchestrator">
+      <h2>
+        <span className="agent-node" aria-hidden="true" /> Orchestrator
+      </h2>
+      {!state && !error ? (
+        <TextSkeleton />
+      ) : plan ? (
+        <>
+          <p className="plan-objective">{plan.objective}</p>
+          <ol>
+            {plan.steps.map((step, index) => (
+              <li key={index}>{step}</li>
+            ))}
+          </ol>
+        </>
+      ) : (
+        <p className="text-neutral-500">
+          {error ? "Plan unavailable." : "Waiting for report assessment."}
+        </p>
+      )}
     </section>
   );
 }

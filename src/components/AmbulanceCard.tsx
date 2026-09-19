@@ -32,10 +32,7 @@ export function assignedEventLocations(records: TelemetryRecord[]) {
 
 export default function AmbulanceCard({
   state,
-  records,
-  selectedId,
   stale,
-  onSelect,
   kind = "ambulances",
 }: {
   kind?: "ambulances" | "police" | "civilGuard";
@@ -45,13 +42,11 @@ export default function AmbulanceCard({
   stale: boolean;
   onSelect: (id: string) => void;
 }) {
-  const locations = assignedEventLocations(records);
   const inventory = state?.[kind];
   const label = { ambulances: "Ambulances", police: "Policía", civilGuard: "Guardia Civil" }[kind];
   const Icon = kind === "ambulances" ? Ambulance : kind === "police" ? Shield : ShieldCheck;
-  const assigned = inventory?.units.filter((unit) => unit.status === "assigned") ?? [];
   return (
-    <section className="rounded-[16px] border border-line bg-white p-4" aria-label={label}>
+    <section className="resource-summary" aria-label={label}>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h2 className="flex items-center gap-2 text-sm font-medium">
           <Icon size={20} aria-hidden="true" /> {label}
@@ -80,46 +75,7 @@ export default function AmbulanceCard({
         <div className="mt-3" role="status" aria-label="Loading resources">
           <Skeleton className="h-9 w-2/3" />
         </div>
-      ) : assigned.length ? (
-        <>
-          <ul className="mt-3 flex flex-wrap gap-2">
-            {assigned.map((unit) => {
-              const location = unit.eventId ? locations.get(unit.eventId) : undefined;
-              const title = state?.events
-                .find((event) => event.eventId === unit.eventId)
-                ?.summary.split("\n")[0];
-              return (
-                <li key={unit.id}>
-                  <button
-                    type="button"
-                    disabled={!location}
-                    onClick={() => onSelect(unit.id)}
-                    aria-pressed={selectedId === unit.id}
-                    title={
-                      location
-                        ? `Show ${unit.id}: ${title ?? location.title}`
-                        : "Assigned event has no coordinates available"
-                    }
-                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-not-allowed disabled:opacity-50 ${selectedId === unit.id ? "border-blue-600 bg-blue-100 text-blue-900" : "border-blue-200 bg-blue-50 text-blue-900 hover:bg-blue-100"}`}
-                  >
-                    <Icon size={18} aria-hidden="true" />
-                    <span className="font-medium">{unit.id}</span>
-                    {!location ? <span>Location unavailable</span> : null}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          <p className="mt-2 text-xs text-neutral-500">
-            Select an assigned unit to locate its report. Positions show assignments, not vehicle
-            GPS.
-          </p>
-        </>
-      ) : (
-        <p className="mt-2 text-xs text-neutral-500">
-          {state ? "No units assigned." : "Resources could not be loaded."}
-        </p>
-      )}
+      ) : null}
     </section>
   );
 }
