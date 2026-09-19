@@ -6,6 +6,11 @@ window closes on **20 September 2026 at 23:02 CEST (Madrid)**. UI, state, missio
 reads and telemetry returned 200; a new remote model execution remains unverified.
 See [release status and exact expiry](docs/vercel-deployment.md).
 
+Resource Dispatch: reserved missions can call HappyRobot and consume
+POST /api/dispatch/results to update state and replan. Apply migration 016 after
+015, configure approved contacts and publish the workflow callback.
+[Configuration, payload and demo steps](docs/resource-dispatch.md).
+
 Manual live subagent scenarios: npm run subagents:try (five calls, mock contacts and isolated persistence). See docs/subagent-execution.md.
 
 Coordinator and subagents run inside Next.js after intake and mission results;
@@ -17,10 +22,11 @@ in the [execution contract](docs/subagent-execution.md). Durable restart recover
 These are mandatory implementation references under [PROJECT.md](PROJECT.md).
 
 The backend implements [global coordinator state v2](docs/coordinator-state-contract.md):
-GET /api/state exposes the plan, priorities, ambulances and patrol inventories.
-Run npm run dev locally. Allocations persist in Supabase and the dashboard polls
-this state; release and reassignment are disabled. Integration reference:
-[input/output examples and handoff](docs/coordinator-frontend-integration.md).
+GET /api/state exposes the plan, priorities, ten ambulances, ten Policía patrols
+and ten Guardia Civil patrols. Run npm run dev. Allocations persist in Supabase;
+general release and reassignment remain disabled. Dispatch rejection/unavailability
+invalidates the affected commitment without returning the unit to free stock.
+Integration reference: [input/output examples and handoff](docs/coordinator-frontend-integration.md).
 
 > **SKETCH:** The dashboard is an exploratory prototype with demo scenario data
 > and partially connected controls. It is not an approved product design or an
@@ -36,10 +42,11 @@ open decisions) in [thoughts/](thoughts/README.md).
 **Status.** The application is unified under `src/`. Next.js serves
 `src/app/`, with sketch UI components in `src/components/` and the active
 command-center backend in `src/lib/`. The active dashboard reads coordinator state,
-resource assignments and missions from Supabase through the HTTP API. Next.js
+resource assignments, missions and dispatch results from Supabase through the HTTP API. Next.js
 processes persisted reports and runs agents after intake; telemetry streams stored
 receipts/filter results. Legacy scenario, action and digital-twin modules retain
 in-memory state and optional local JSON persistence.
+Authenticated HappyRobot inbound reports persist before interpretation.
 
 AI SDK and Supabase are integrated into the coordinator and subagent flow.
 The obsolete scaffold UI and duplicate route files have been removed. Remaining

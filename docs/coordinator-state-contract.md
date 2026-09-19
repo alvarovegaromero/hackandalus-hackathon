@@ -1,5 +1,9 @@
 # Global coordinator: state contract v2
 
+Latest additive contract: [Resource Dispatch](resource-dispatch.md), migration 016. Units can be unavailable; inventories add an optional unavailable counter.
+Authenticated outcomes update missions/resources and request the same coordinator
+with durable evidence. This supersedes older no-callback limitations below.
+
 Decision on 2026-09-19: use one coordinating LLM prompt for the active catastrophe,
 rebuilding its context as events arrive and on a five-second backend tick. The
 coordinator updates the situation overview, event priorities, a global plan and
