@@ -484,8 +484,9 @@ Graft remains the required tool for navigating this repository.
 
 The owner selected public demo access without login, code or cookies. Production
 `/dashboard` opens for one fixed 26-hour window from server-only
-`DEMO_PUBLIC_STARTED_AT` in canonical UTC ISO format, with `ACTION_EXECUTION_MODE=mock`.
-Dashboard reads and same-origin reset/fixture controls are public within that window;
+`DEMO_PUBLIC_STARTED_AT` in canonical UTC ISO format, with `ACTION_EXECUTION_MODE=mock`
+or `happyrobot`. Dashboard reads use the existing server-side APIs in both modes.
+Same-origin reset/fixture controls are public only in mock mode within that window;
 general intake and live-action APIs retain their credentials. Expiry is checked at
 runtime and cannot be extended by visiting or refreshing. Landing stays public and
 development remains open. See [deployment configuration](docs/vercel-deployment.md).
