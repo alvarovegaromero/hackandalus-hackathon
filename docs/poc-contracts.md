@@ -3,8 +3,9 @@
 Defined on 2026-09-19 for [P0–P5](poc.md). This is the initial implementation
 contract between packages. P2 filter request/result and P3 handoff schemas are
 implemented in `src/lib/contracts/filter.ts`, with fixtures in
-`tests/fixtures/filter-reports.ts`. Other runtime schemas and pipeline wiring
-remain pending. See [Jev filter integration](jev-filter.md).
+`tests/fixtures/filter-reports.ts`. P3 impact and planner input schemas are in
+`src/lib/contracts/triage.ts`. Pipeline wiring remains pending.
+See [Jev filter integration](jev-filter.md) and [P3 triage](triage.md).
 It supersedes the broader contracts draft for this POC only. Existing input and
 SSE wire contracts are reused, not replaced.
 
@@ -171,9 +172,11 @@ filtering telemetry events. No SSE or operator review queue is implemented by P2
 
 ## P2 → P3 → P4: assessed factors and calculated priority
 
-P3 owns factor assessment and the pure scoring function as separate operations.
-P2 does not invent severity or urgency to satisfy P3. P3 records evidence and
-method for extracted factors; trusted provenance supplies source reliability.
+Updated on 2026-09-19: use the source-of-truth multiplicative impact formula,
+not the earlier unimplemented additive severity/urgency/source score proposal.
+P3 receives structured factors from an operator or scenario report, with evidence.
+It does not infer them from P2's relevance probability or access simulator ground
+truth. Missing values remain null. See [P3 integration](triage.md).
 
 ```ts
 type PriorityRequest = Context & {
@@ -181,52 +184,46 @@ type PriorityRequest = Context & {
   filter: FilterResult; // Must be completed, relevant or uncertain, with matching context.
   sourceProfileId: string | null; // Trusted server metadata, not report text.
 };
-type PriorityFactor = {
-  value: number | null; // Finite [0, 1], or unknown.
-  evidence: EvidenceRef[];
-  method: string; // Versioned assessor or trusted source policy.
-};
-type PriorityFactors = {
-  severity: PriorityFactor;
-  urgency: PriorityFactor;
-  sourceReliability: PriorityFactor;
-};
-type PriorityResult = Context &
-  DecisionAudit & {
-    priorityDecisionId: string;
-    filterDecisionId: string;
-    formulaVersion: string;
-    weightsVersion: string;
-    factors: PriorityFactors;
-  } & (
-    | {
-        status: "scored";
-        score: number;
-        contributions: { severity: number; urgency: number; sourceReliability: number };
-        failure: null;
-      }
-    | { status: "needs_review"; score: null; contributions: null; failure: null }
-    | { status: "unavailable"; score: null; contributions: null; failure: Failure }
-  );
 ```
 
-Scores are finite in `[0, 100]`, higher first. Do not interpret score bands as
-approved operational thresholds. P3 must publish the formula, configuration and
-fixtures together, including severe anonymous reports and missing factors.
-`contributions` are the signed score components and sum to `score`; choose a
-compatible additive formula or explicitly revise this contract before using
-another decomposition. No calibrated weights are invented by this document.
-An unknown required factor produces `needs_review`, not an assumed zero.
-An unknown optional factor follows an explicit versioned formula rule.
-P4 receives only `scored` results; other results remain reviewable.
-Initial failure codes: `PRIORITY_ASSESSMENT_FAILED`, `PRIORITY_CONFIG_INVALID`.
+The executable contracts are in `src/lib/contracts/triage.ts`; import their types
+and Zod schemas rather than creating local copies:
+
+| Contract           | Required data and semantics                                                                                                                               |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ImpactAssessment` | Matching Context, assessedAt, and gravity/peopleExposed/vulnerabilityGroup/minutesToHarm factors; each has nullable value, evidence references and method |
+| `ImpactPolicy`     | timeScaleMinutes (15 by default), vulnerabilityMultipliers (general 1, school 1.5, nursing_home 2)                                                        |
+| `PriorityResult`   | Context, decision/filter IDs, formula and weights versions, actual policy, assessment/decision times, evidence, factors, summary and calculation          |
+| `calculation`      | scored: raw nonnegative score, multiplicative terms, empty missingFactors; incomplete: null score/terms and named missingFactors                          |
+
+`I = G * log10(1 + N) * V / (1 + t / 15)`. G is integer severity 1–5;
+N is known exposed people (nonnegative integer); t is nonnegative minutes until
+harm; V comes from the structured vulnerability group and configured multipliers.
+The result is raw impact, not a normalized 0–100 priority. Confidence and source
+reliability do not multiply it. Jev relevance is carried separately and does not
+stand in for confidence. Invalid factor ranges or context throw validation errors;
+unknown factors produce an incomplete result, not a fabricated score.
+
+Both scored and incomplete results continue to P4. The LLM determines final
+priority and proposed resource counts using impact, evidence and explicit unknowns.
+The first POC assumes unlimited resource availability; it does not assess asset
+incidents, scarcity, reservations or coverage costs. No resource is dispatched here.
 
 ## P3 → P4: agent request, messages and plans
+
+`AgentRequest` is implemented in `src/lib/contracts/triage.ts`. P3's
+`prepareAgentRequest` validates and assembles it. `plannerPriorityDecisionSchema`
+and `TRIAGE_PLANNER_INSTRUCTIONS` define the LLM decision boundary.
+P4 model invocation, planning and execution are a separate work package.
 
 ```ts
 type AgentRequest = Context & {
   report: NormalizedReport;
-  priority: PriorityResult; // Require scored and matching context.
+  filter: FilterResult; // Keep Jev's relevant/uncertain decision and probability.
+  priority: PriorityResult; // Matching context; calculation may be incomplete.
+  sourceProfileId: string | null; // Trusted provenance, not a formula term.
+  evidenceConfidence: null; // Not yet assessed; never copy Jev relevance here.
+  resources: { availability: "unlimited"; mode: "poc_assumption" };
   expectedRunRevision: number;
   activePlanId: string | null;
 };
@@ -317,20 +314,20 @@ replay preserves the original telemetry ID. Each new payload below includes
 `Context`; nested entities must have matching context. Existing input events
 are exempt from that new payload requirement for compatibility.
 
-| Type                  | Payload in addition to Context                                  | Producer     |
-| --------------------- | --------------------------------------------------------------- | ------------ |
-| `filtering.completed` | `{ result: FilterResult }` with completed status                | P2           |
-| `filtering.failed`    | `{ result: FilterResult }` with unavailable status              | P2           |
-| `triage.completed`    | `{ result: PriorityResult }` with scored or needs_review status | P3           |
-| `triage.failed`       | `{ result: PriorityResult }` with unavailable status            | P3           |
-| `agent.started`       | `{ priorityDecisionId: string }`                                | P4           |
-| `agent.message`       | `{ message: AgentMessage }`                                     | P4           |
-| `plan.created`        | `{ plan: Plan }`                                                | P4           |
-| `action.updated`      | `{ action: Action }` using safe display arguments               | P4           |
-| `tool.result`         | `{ result: ToolResult }`                                        | P4           |
-| `agent.completed`     | `{ planId: string, summary: string }`                           | P4           |
-| `agent.failed`        | `{ failure: Failure }`                                          | P4           |
-| `control.updated`     | `{ commandId: string, revision: number, state: "paused"         | "running" }` | P0  |
+| Type                  | Payload in addition to Context                                                   | Producer     |
+| --------------------- | -------------------------------------------------------------------------------- | ------------ |
+| `filtering.completed` | `{ result: FilterResult }` with completed status                                 | P2           |
+| `filtering.failed`    | `{ result: FilterResult }` with unavailable status                               | P2           |
+| `triage.completed`    | `{ result: PriorityResult }` with calculation.status scored or incomplete        | P3           |
+| `triage.failed`       | `{ failure: Failure }` for invalid factors/context; no fabricated PriorityResult | P0/P3        |
+| `agent.started`       | `{ priorityDecisionId: string }`                                                 | P4           |
+| `agent.message`       | `{ message: AgentMessage }`                                                      | P4           |
+| `plan.created`        | `{ plan: Plan }`                                                                 | P4           |
+| `action.updated`      | `{ action: Action }` using safe display arguments                                | P4           |
+| `tool.result`         | `{ result: ToolResult }`                                                         | P4           |
+| `agent.completed`     | `{ planId: string, summary: string }`                                            | P4           |
+| `agent.failed`        | `{ failure: Failure }`                                                           | P4           |
+| `control.updated`     | `{ commandId: string, revision: number, state: "paused"                          | "running" }` | P0  |
 
 `agent.completed` means the coordinator turn ended; it does not assert every
 external action succeeded. Late tool results can follow it. Domain events stay
@@ -378,14 +375,14 @@ The following are acceptance cases, not claims of passing tests:
 | Jev failure                      | Unavailable; stop attempt and log error; no automatic dispatch                                   |
 | Severe anonymous report          | High impact retained under the published priority policy                                         |
 | Forged police claim in text      | No trusted source profile elevation                                                              |
-| Missing required priority factor | needs_review; no fabricated score                                                                |
+| Missing required priority factor | Incomplete impact; forward to LLM with missingFactors and no fabricated score                    |
 | Road closure during execution    | New revision/plan; stale pending action blocked                                                  |
 | Provider timeout after send      | Unknown; reconcile before retrying external effect                                               |
 | SSE replay/reset                 | Original IDs deduplicated; reset clears stale feed and reloads durable read state when available |
 | Pause or stale approval          | No newly authorized dispatch from obsolete state                                                 |
 
-Open before executable freeze: source-profile mapping; factor extraction method,
-formula and weights; the one tool's concrete schema/provider contract; durable
+Open before full integration: trusted source-profile and structured-factor adapters;
+the one tool's concrete schema/provider contract; durable
 repository and scheduling recovery; authorized read-model route and consistent
 snapshot/cursor bootstrap. These do not require a new input or SSE contract.
 No database schema, endpoint implementation, live call or migration is introduced

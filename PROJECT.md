@@ -129,6 +129,10 @@ module-specific docs or use the sketch as the target architecture.
   server-only Jev relevance evaluation and P3 handoff. Backend logs only;
   served intake/Workflow wiring, persistence and frontend notifications remain
   pending. See `docs/jev-filter.md` for configuration and P1 integration.
+- `src/lib/contracts/triage.ts`, `src/lib/triage/impact.ts`: P3 structured factors,
+  source-of-truth impact formula and LLM handoff. Jev relevance is separate from
+  impact; P4 chooses final priority and resource proposals assuming
+  unlimited availability. See `docs/triage.md`; intake/persistence wiring is pending.
 - `src/lib/ingest.ts`, `src/lib/ingest-server.ts`: batch event ingestion
   (validation, dedup, persistence, workflow start).
 - `src/lib/agents`: AI SDK coordinator (model configured through environment).

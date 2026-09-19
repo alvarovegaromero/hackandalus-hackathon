@@ -37,8 +37,15 @@ All package owners are unassigned; no implementation completion is implied.
       the small live sample does not establish accuracy or operational readiness.
 - [ ] **P0/P5 — TBD filtering notifications:** after persistence, publish existing
       filtering telemetry to the frontend; P2 currently logs in the backend only.
-- [ ] **P3 — Triage:** agree factors/weights; implement the central versioned
-      deterministic priority function and auditable factor breakdown.
+- [x] **P3 — Triage module:** source-of-truth impact formula with initial
+      vulnerability/time parameters, structured-factor contracts, missing-data
+      handling and validated LLM handoff carrying Jev results and unlimited resources.
+      See [P3 integration](docs/triage.md).
+- [ ] **P0/P1/P3/P4 — Connect triage:** supply evidence-backed structured factors,
+      persist impact and invoke the LLM for final priority/resource proposals.
+- [x] **P3 — Manual formula/handoff scenarios:** `npm run triage:try`, 10/10
+      passed on Windows; numeric examples, stable IDs, unknown factors, Jev
+      uncertainty and invalid input/context. No provider calls or automated tests.
 - [ ] **P4 — Agent/execution:** one agent and one HappyRobot operation;
       persist messages, plans and outcomes; respect intervention and replan.
 - [ ] **P5 — Frontend:** reports, decision/activity history, agent messages,

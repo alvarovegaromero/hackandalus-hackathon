@@ -51,6 +51,10 @@ not connected to this flow. See [contract, authentication, replay and limits](do
 
 ## Local Startup
 
+To inspect P3 inputs and outputs without any credentials or network calls, run
+`npm run triage:try`: ten manual scenarios cover scored impact, unknown factors,
+uncertainty and rejected invalid input. See the [P3 diagram and results](docs/triage.md).
+
 To manually exercise Jev with 10 synthetic reports, run `npm run jev:try` after
 configuring `TYPESAFE_API_KEY`. Add `-- --limit 5` for fewer cases or `-- --dry-run`
 to inspect inputs without live calls. See [Jev filter](docs/jev-filter.md).
@@ -60,6 +64,11 @@ integration, with shared input/output validators and backend decision logs.
 Configure `TYPESAFE_API_KEY` and optional `JEV_*` policy settings in `.env.local`
 for real evaluation. Missing credentials return unavailable. The served intake
 does not yet invoke it; persistence and frontend filter notifications are pending.
+
+P3's [impact calculation](docs/triage.md) uses structured operator/scenario
+factors and the Source of Truth formula. Its validated handoff carries Jev's
+result, explicit unknowns and unlimited resource availability to the future
+P4 planner. Intake and persistence wiring remain pending.
 
 The agreed initial delivery is documented in [Initial POC](docs/poc.md), with
 P0–P5 work packages, dependencies and demo acceptance. Follow that scope before
