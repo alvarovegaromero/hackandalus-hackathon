@@ -64,8 +64,12 @@ ejecución robusta, aprendizaje y ensayo) están en el documento fuente.
 
 ## Fase 3 · Primera vertical conectada
 
-- [ ] Persistir eventos, planes, acciones y resultados en Supabase.
-- [ ] Deduplicar eventos y evitar acciones externas duplicadas durante reintentos.
+- [x] Ingesta por lotes con deduplicación de eventos (Hito A de
+      `docs/input-architecture.md`), guardado en Supabase si está configurado.
+- [x] Enviar los avisos del motor de escenarios al workflow del agente y mostrar
+      sus planes en el panel.
+- [ ] Persistir planes, acciones y resultados en Supabase.
+- [ ] Evitar acciones externas duplicadas durante reintentos.
 - [ ] Incorporar historial y disponibilidad real de recursos a las decisiones.
 - [ ] Añadir autenticación de operadores y políticas RLS por incidente.
 - [ ] Conectar el panel al backend y a Realtime.
@@ -74,9 +78,21 @@ ejecución robusta, aprendizaje y ensayo) están en el documento fuente.
 - [ ] Implementar llamadas reales a HappyRobot y procesar resultados autenticados.
 - [ ] Incorporar esperas, reintentos y recuperación de fallos al workflow.
 - [ ] Demostrar replanificación al cambiar la situación durante la ejecución.
+- [ ] Gemelo digital de la incidencia (ver Ideas): ejecutar el motor de
+      escenarios sobre una copia del estado actual, simular variantes (viento,
+      accesos cortados, pérdida de recursos), comparar alternativas por resultado
+      y mostrar en el panel la recomendada antes de actuar.
 - [ ] Probar restricciones de recursos, fallos y control humano.
 - [ ] Configurar y desplegar en Vercel cuando se autorice.
 - [ ] Validar una interacción real con destinatarios de demo aprobados.
+
+## Ideas
+
+- [ ] Gemelo digital de la incidencia: además del mapa base, representar la
+      incidencia en un gemelo digital que sirva como campo de pruebas. Permitiría
+      simular escenarios de forma proactiva (p. ej. cambios de viento, cortes de
+      acceso, pérdida de recursos) y comparar alternativas para proponer la mejor
+      antes de ejecutar acciones reales.
 
 ## Referencias
 
