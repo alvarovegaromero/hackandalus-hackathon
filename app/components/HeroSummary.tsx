@@ -61,8 +61,8 @@ export default function HeroSummary({
     <section className="hero" aria-label="Resumen de la situación">
       <article className={`hero-card hero-priority ${topZone?.status ?? "stable"}`}>
         <header className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.06em] text-[#5d5d5d]">
-            <Flame size={14} className="text-[#a11b12]" aria-hidden="true" />
+          <div className="flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.06em] text-blueprint-mid">
+            <Flame size={14} className="text-danger" aria-hidden="true" />
             <span>Prioridad ahora</span>
           </div>
           {topZone ? (
@@ -81,10 +81,10 @@ export default function HeroSummary({
         </header>
         {topZone && priority ? (
           <>
-            <h2 className="text-[18px] font-bold text-[#292929] tracking-[-0.15px] mt-1">
+            <h2 className="text-[18px] font-bold text-blueprint-dark tracking-[-0.15px] mt-1">
               {topZone.name}
             </h2>
-            <p className="hero-reason text-[13px] text-[#5d5d5d] tracking-[-0.15px]">
+            <p className="hero-reason text-[13px] text-blueprint-mid tracking-[-0.15px]">
               {priority.reason}
             </p>
             <div className="hero-foot flex flex-wrap items-center gap-2 mt-3">
@@ -104,7 +104,7 @@ export default function HeroSummary({
             </div>
           </>
         ) : (
-          <h2 className="text-[16px] font-bold text-[#292929]">Sin zonas activas</h2>
+          <h2 className="text-[16px] font-bold text-blueprint-dark">Sin zonas activas</h2>
         )}
       </article>
 

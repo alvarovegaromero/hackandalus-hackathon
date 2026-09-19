@@ -1,20 +1,31 @@
 "use client";
 
-import { useEffect } from "react";
+// Mapa táctico de Sierra Bermeja. El trazado de las carreteras y el foco del
+// incendio son ilustrativos (demo): lo que sí es real es que reaccionan al
+// mundo simulado (carretera cortada, viento) y a la selección de zona.
+
+import { useEffect, useMemo, useRef } from "react";
 import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMap } from "react-leaflet";
 import L from "leaflet";
-import type { CrisisZone, Plan } from "@/lib/types";
+import type { CrisisZone, Plan, WorldState, ZoneStatus } from "@/lib/types";
 import { zoneStatusLabels } from "./shared";
 
 interface Props {
   zones: CrisisZone[];
   plan: Plan;
+  world?: WorldState;
   selectedZoneId: string | null;
   onSelect: (zoneId: string) => void;
+  /** Se avisa una vez si el mapa base no carga ningún tile (sin red). */
+  onTilesUnavailable?: () => void;
 }
 
-// Carretera A-397 (Ronda - San Pedro / Costa del Sol)
+// Los trazados de Leaflet (SVG) necesitan colores literales: reflejan --red,
+// --amber y --blue de globals.css.
+const colors = { danger: "#a11b12", warn: "#96490f", info: "#17527f", fire: "#e05638" };
+
+// Carretera A-397 (Ronda - Costa del Sol). Trazado aproximado.
 const a397Coordinates: [number, number][] = [
   [36.742, -5.165],
   [36.671, -5.112],
@@ -23,7 +34,8 @@ const a397Coordinates: [number, number][] = [
   [36.488, -4.985],
 ];
 
-// Carretera alternativa MA-8301 (Jubrique - Peñas Blancas - Estepona)
+// Carretera alternativa MA-8301 (Jubrique - Peñas Blancas - Estepona). Trazado
+// ilustrativo: une los núcleos de la demo, no sigue la geometría real.
 const ma8301Coordinates: [number, number][] = [
   [36.565, -5.215],
   [36.544, -5.234],
@@ -31,201 +43,248 @@ const ma8301Coordinates: [number, number][] = [
   [36.427, -5.145],
 ];
 
+const defaultCenter: [number, number] = [36.525, -5.185];
+const fireOrigin: [number, number] = [36.52, -5.14];
+const tilesFailedThreshold = 6;
+
+// Con 22 km/h (viento inicial) el foco mide 2,2 km; cada km/h añade 40 m.
+function fireRadiusMeters(windSpeedKmh: number) {
+  return 1320 + 40 * windSpeedKmh;
+}
+
+function isRoadBlocked(world: WorldState | undefined, road: string) {
+  const wanted = road.toLowerCase();
+  return (world?.blockedRoads ?? []).some((blocked) => blocked.trim().toLowerCase() === wanted);
+}
+
+const statusClasses: Record<ZoneStatus, { badge: string; border: string }> = {
+  critical: { badge: "bg-danger", border: "border-danger" },
+  active: { badge: "bg-fire", border: "border-fire" },
+  watch: { badge: "bg-warn", border: "border-warn" },
+  stable: { badge: "bg-ok", border: "border-ok" },
+};
+
+// El marcador se construye con nodos DOM y textContent: el nombre de la zona
+// viene de la API y no debe interpretarse como HTML.
 function createTacticalIcon(
   name: string,
   score: number,
   rank: number | undefined,
-  status: string,
+  status: ZoneStatus,
   selected: boolean,
 ) {
-  const statusColor =
-    status === "critical"
-      ? "#a11b12"
-      : status === "active"
-        ? "#e05638"
-        : status === "watch"
-          ? "#96490f"
-          : "#14663f";
+  const { badge, border } = statusClasses[status];
+  const pill = document.createElement("div");
+  pill.className = [
+    "inline-flex items-center gap-1.5 rounded-full border-[1.5px] bg-ink px-2 py-0.5",
+    "text-[11px] text-white whitespace-nowrap shadow-lg cursor-pointer",
+    "-translate-x-1/2 -translate-y-1/2",
+    selected ? "border-white" : border,
+    status === "critical" || status === "active" ? "animate-pulse" : "",
+  ].join(" ");
 
-  const borderColor = selected ? "#ffffff" : statusColor;
-  const pulseClass = status === "critical" || status === "active" ? "animate-pulse" : "";
+  if (rank) {
+    const rankBadge = document.createElement("span");
+    rankBadge.className = `${badge} inline-flex h-[15px] w-[15px] items-center justify-center rounded-full text-[10px] font-bold text-white`;
+    rankBadge.textContent = String(rank);
+    pill.appendChild(rankBadge);
+  }
+  const label = document.createElement("span");
+  label.className = "font-semibold";
+  label.textContent = name;
+  const value = document.createElement("span");
+  value.className = "text-[10px] opacity-80";
+  value.textContent = String(score);
+  pill.append(label, value);
 
-  const html = `
-    <div style="
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 3px 8px;
-      background: #191c24;
-      border: 1.5px solid ${borderColor};
-      border-radius: 9999px;
-      color: #ffffff;
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
-      font-size: 11px;
-      letter-spacing: -0.15px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 10px ${statusColor}44;
-      white-space: nowrap;
-      cursor: pointer;
-      transform: translate(-50%, -50%);
-    " class="${pulseClass}">
-      ${
-        rank
-          ? `<span style="background:${statusColor}; color:white; border-radius:9999px; width:15px; height:15px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:700;">${rank}</span>`
-          : ""
-      }
-      <span style="font-weight:600;">${name}</span>
-      <span style="color:#d8d4c9; font-size:10px; opacity:0.85;">${score}</span>
-    </div>
-  `;
-
-  return L.divIcon({
-    html,
-    className: "tactical-zone-divicon",
-    iconSize: [0, 0],
-    iconAnchor: [0, 0],
-  });
+  return L.divIcon({ html: pill, className: "", iconSize: [0, 0], iconAnchor: [0, 0] });
 }
 
-function RecenterMap({ center }: { center: [number, number] }) {
+// Sólo se vuelve a centrar al elegir otra zona, no en cada sondeo del estado:
+// si dependiera del objeto zona, el mapa saltaría mientras la persona lo mueve.
+function FlyToSelected({ lat, lng }: { lat: number | undefined; lng: number | undefined }) {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, map.getZoom(), { animate: true });
-  }, [center, map]);
+    if (lat === undefined || lng === undefined) return;
+    map.flyTo([lat, lng], Math.max(map.getZoom(), 12), { duration: 0.6 });
+  }, [lat, lng, map]);
   return null;
 }
 
-export default function LeafletMap({ zones, plan, selectedZoneId, onSelect }: Props) {
+interface ZoneMarkerProps {
+  zone: CrisisZone;
+  score: number;
+  rank: number | undefined;
+  selected: boolean;
+  onSelect: (zoneId: string) => void;
+}
+
+function ZoneMarker({ zone, score, rank, selected, onSelect }: ZoneMarkerProps) {
+  const icon = useMemo(
+    () => createTacticalIcon(zone.name, score, rank, zone.status, selected),
+    [zone.name, score, rank, zone.status, selected],
+  );
+  const title = `${zone.name}. Estado ${zoneStatusLabels[zone.status]}. Puntuación ${score}${
+    rank ? `. Prioridad número ${rank}` : ""
+  }`;
+
+  return (
+    <Marker
+      position={[zone.coordinates.lat, zone.coordinates.lng]}
+      icon={icon}
+      title={title}
+      eventHandlers={{ click: () => onSelect(zone.id) }}
+    >
+      <Popup>
+        <div className="p-1 min-w-[170px] text-[12px] font-sans">
+          <div className="flex items-center justify-between gap-2 border-b border-neutral-200 pb-1 mb-1">
+            <b className="text-ink text-[13px]">{zone.name}</b>
+            <span className="text-[11px] font-semibold text-blueprint-mid">
+              {zoneStatusLabels[zone.status]}
+            </span>
+          </div>
+          <p className="text-neutral-600 mb-1">
+            Población expuesta: <b>{zone.populationAtRisk.toLocaleString("es-ES")}</b>
+          </p>
+          <p className="text-neutral-600 mb-1">
+            Puntuación de riesgo: <b>{score}</b>
+            {rank ? ` (Prioridad #${rank})` : ""}
+          </p>
+          <button
+            type="button"
+            className="mt-2 w-full bg-blueprint-dark text-white py-1 rounded-[6px] text-[11px] font-semibold hover:bg-blueprint-dark/90 transition-colors"
+            onClick={() => onSelect(zone.id)}
+          >
+            Ver detalle de la zona
+          </button>
+        </div>
+      </Popup>
+    </Marker>
+  );
+}
+
+export default function LeafletMap({
+  zones,
+  plan,
+  world,
+  selectedZoneId,
+  onSelect,
+  onTilesUnavailable,
+}: Props) {
+  const tiles = useRef({ loaded: 0, failed: 0, reported: false });
   const rankByZone = new Map(
     plan.priorities.map((priority, index) => [priority.zoneId, index + 1]),
   );
-
-  // Centro por defecto: Sierra Bermeja
-  const defaultCenter: [number, number] = [36.525, -5.185];
-
-  const selectedZone = zones.find((z) => z.id === selectedZoneId);
-  const activeCenter: [number, number] =
-    selectedZone?.coordinates.lat && selectedZone?.coordinates.lng
-      ? [selectedZone.coordinates.lat, selectedZone.coordinates.lng]
-      : defaultCenter;
+  const selectedZone = zones.find((zone) => zone.id === selectedZoneId);
+  const a397Blocked = isRoadBlocked(world, "A-397");
+  const ma8301Blocked = isRoadBlocked(world, "MA-8301");
 
   return (
-    <div className="relative w-full h-[480px] rounded-[16px] overflow-hidden border border-[#d8d4c9] shadow-xs">
-      <div className="absolute top-3 left-3 z-[1000] flex items-center gap-2 bg-[#131720]/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-neutral-700 text-white text-[12px] font-medium tracking-[-0.15px] pointer-events-none">
-        <span className="w-2 h-2 rounded-full bg-[#a11b12] animate-ping inline-block" />
-        <span>Sierra Bermeja · Radar Cartográfico 112</span>
+    <div className="relative w-full h-[480px] rounded-[16px] overflow-hidden border border-line shadow-xs">
+      <div className="absolute top-3 left-3 z-[1000] flex items-center gap-2 bg-ink/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-neutral-700 text-white text-[12px] font-medium pointer-events-none">
+        <span className="w-2 h-2 rounded-full bg-danger animate-ping inline-block" />
+        <span>Sierra Bermeja · mapa táctico</span>
+      </div>
+      <div className="absolute bottom-6 left-3 z-[1000] rounded-full bg-ink/80 px-2.5 py-1 text-[11px] text-neutral-200 pointer-events-none">
+        {world ? `Viento ${world.windDirection} · ${world.windSpeedKmh} km/h · ` : ""}
+        foco y trazados ilustrativos (demo)
       </div>
 
       <MapContainer
         center={defaultCenter}
         zoom={11}
         scrollWheelZoom={true}
-        style={{ height: "100%", width: "100%", background: "#111317" }}
+        style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           maxZoom={19}
+          eventHandlers={{
+            tileload: () => {
+              tiles.current.loaded += 1;
+            },
+            tileerror: () => {
+              const state = tiles.current;
+              state.failed += 1;
+              if (state.loaded === 0 && state.failed >= tilesFailedThreshold && !state.reported) {
+                state.reported = true;
+                onTilesUnavailable?.();
+              }
+            },
+          }}
         />
 
-        <RecenterMap center={activeCenter} />
+        <FlyToSelected lat={selectedZone?.coordinates.lat} lng={selectedZone?.coordinates.lng} />
 
-        {/* Foco térmico principal del incendio en Sierra Bermeja */}
+        {/* Foco del incendio: el radio crece con la velocidad del viento. */}
         <Circle
-          center={[36.52, -5.14]}
-          radius={2200}
+          center={fireOrigin}
+          radius={fireRadiusMeters(world?.windSpeedKmh ?? 22)}
           pathOptions={{
-            color: "#a11b12",
-            fillColor: "#e05638",
+            color: colors.danger,
+            fillColor: colors.fire,
             fillOpacity: 0.22,
             weight: 1.5,
             dashArray: "4, 6",
           }}
         />
 
-        {/* Trazado de la carretera A-397 (Crítica / Corte) */}
         <Polyline
           positions={a397Coordinates}
-          pathOptions={{
-            color: "#96490f",
-            weight: 3,
-            dashArray: "6, 8",
-            opacity: 0.9,
-          }}
+          pathOptions={
+            a397Blocked
+              ? { color: colors.danger, weight: 5, opacity: 0.95 }
+              : { color: colors.warn, weight: 3, dashArray: "6, 8", opacity: 0.9 }
+          }
         >
           <Popup>
             <div className="p-1 text-[12px] font-sans">
-              <b className="text-[#a11b12]">Carretera A-397 (Ronda - Costa)</b>
+              <b className="text-danger">Carretera A-397 (Ronda - Costa)</b>
               <p className="text-neutral-700 mt-1">
-                Eje de evacuación prioritario. Sujeto a corte por humo denso.
+                {a397Blocked
+                  ? "CORTADA. El plan no puede apoyarse en esta vía."
+                  : "Abierta. Eje de evacuación prioritario, vigilada por riesgo de humo."}
               </p>
+              <p className="text-neutral-500 mt-1">Trazado aproximado.</p>
             </div>
           </Popup>
         </Polyline>
 
-        {/* Trazado de ruta secundaria MA-8301 */}
         <Polyline
           positions={ma8301Coordinates}
-          pathOptions={{
-            color: "#17527f",
-            weight: 2,
-            opacity: 0.7,
-          }}
+          pathOptions={
+            ma8301Blocked
+              ? { color: colors.danger, weight: 4, opacity: 0.9 }
+              : { color: colors.info, weight: a397Blocked ? 4 : 2, opacity: a397Blocked ? 1 : 0.7 }
+          }
         >
           <Popup>
             <div className="p-1 text-[12px] font-sans">
-              <b className="text-[#17527f]">Carretera MA-8301</b>
+              <b className="text-info">Carretera MA-8301</b>
               <p className="text-neutral-700 mt-1">
-                Ruta alternativa por Jubrique y Peñas Blancas.
+                {ma8301Blocked
+                  ? "CORTADA."
+                  : a397Blocked
+                    ? "Ruta alternativa activa por Jubrique y Peñas Blancas."
+                    : "Ruta alternativa por Jubrique y Peñas Blancas."}
               </p>
+              <p className="text-neutral-500 mt-1">Trazado ilustrativo.</p>
             </div>
           </Popup>
         </Polyline>
 
-        {/* Marcadores de Zonas */}
         {zones.map((zone) => {
-          const lat = zone.coordinates.lat ?? 36.5 + (zone.coordinates.y - 50) * 0.005;
-          const lng = zone.coordinates.lng ?? -5.15 + (zone.coordinates.x - 50) * 0.005;
-          const priority = plan.priorities.find((c) => c.zoneId === zone.id);
-          const score = priority?.score ?? zone.riskScore;
-          const rank = rankByZone.get(zone.id);
-          const selected = selectedZoneId === zone.id;
-
-          const customIcon = createTacticalIcon(zone.name, score, rank, zone.status, selected);
-
+          const priority = plan.priorities.find((candidate) => candidate.zoneId === zone.id);
           return (
-            <Marker
+            <ZoneMarker
               key={zone.id}
-              position={[lat, lng]}
-              icon={customIcon}
-              eventHandlers={{
-                click: () => onSelect(zone.id),
-              }}
-            >
-              <Popup>
-                <div className="p-1 min-w-[170px] text-[12px] font-sans">
-                  <div className="flex items-center justify-between gap-2 border-b border-neutral-200 pb-1 mb-1">
-                    <b className="text-[#131720] text-[13px]">{zone.name}</b>
-                    <span className="text-[11px] font-semibold text-[#5d5d5d]">
-                      {zoneStatusLabels[zone.status]}
-                    </span>
-                  </div>
-                  <p className="text-neutral-600 mb-1">
-                    Población expuesta: <b>{zone.populationAtRisk.toLocaleString()}</b>
-                  </p>
-                  <p className="text-neutral-600 mb-1">
-                    Puntuación de riesgo: <b>{score}</b>
-                    {rank ? ` (Prioridad #${rank})` : ""}
-                  </p>
-                  <button
-                    type="button"
-                    className="mt-2 w-full bg-[#292929] text-white py-1 rounded-[6px] text-[11px] font-semibold hover:bg-black transition-colors"
-                    onClick={() => onSelect(zone.id)}
-                  >
-                    Ver detalle de la zona
-                  </button>
-                </div>
-              </Popup>
-            </Marker>
+              zone={zone}
+              score={priority?.score ?? zone.riskScore}
+              rank={rankByZone.get(zone.id)}
+              selected={selectedZoneId === zone.id}
+              onSelect={onSelect}
+            />
           );
         })}
       </MapContainer>

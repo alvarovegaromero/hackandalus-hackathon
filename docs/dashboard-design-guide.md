@@ -53,7 +53,7 @@ Es agnóstica del escenario: vale para incendio, inundación, apagón u otro, si
   Móvil no es objetivo; basta con que no se rompa.
 - Separación entre paneles de 16px; padding interno de panel de 16px; radio de panel y tarjetas de 16px (`rounded-2xl`), elementos de navegación en 8px y CTAs estilo pill (`rounded-full`).
 - **Sistema de diseño y blueprint visual:**
-  - **Tipografía:** SF Pro / sistema sans con regular y medium, con letter-spacing de `-0.15px` para máxima legibilidad táctica.
+  - **Tipografía:** fuente del sistema (SF Pro en Apple; Segoe UI o Roboto en el resto) con regular y medium, con letter-spacing de `-0.15px` para máxima legibilidad táctica.
   - **Escala de fuentes:** 12px (metadatos/badges), 13px (cuerpo compacto/botones), 14px (texto estándar/subtítulos) y 24px (números clave/KPIs).
   - **Jerarquía de neutros:** `#292929` (fondo de paneles secundarios y bordes oscuros), `#5D5D5D` (texto secundario/iconos neutros) y `#9E9E9E` (tinta atenuada y subtítulos).
   - **Iconos:** 14px para navegación y botones (`Button`), 20px para cabeceras de tarjeta (`CardHeader`).

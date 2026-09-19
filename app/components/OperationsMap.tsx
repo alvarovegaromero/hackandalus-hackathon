@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import dynamic from "next/dynamic";
-import type { CrisisZone, Plan } from "@/lib/types";
+import type { CrisisZone, Plan, WorldState } from "@/lib/types";
 import { zoneStatusLabels } from "./shared";
 import { Button } from "./ui/button";
 import { Layers, MapPin } from "lucide-react";
@@ -10,6 +10,7 @@ import { Layers, MapPin } from "lucide-react";
 interface Props {
   zones: CrisisZone[];
   plan: Plan;
+  world?: WorldState;
   selectedZoneId: string | null;
   onSelect: (zoneId: string) => void;
 }
@@ -17,17 +18,24 @@ interface Props {
 const LeafletMap = dynamic(() => import("./LeafletMap"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-[480px] rounded-[16px] border border-[#d8d4c9] bg-[#111317] flex flex-col items-center justify-center text-white tracking-[-0.15px] gap-2">
+    <div className="w-full h-[480px] rounded-[16px] border border-line bg-ink flex flex-col items-center justify-center text-white tracking-[-0.15px] gap-2">
       <div className="w-8 h-8 rounded-full border-2 border-t-transparent border-white animate-spin" />
       <span className="text-[13px] font-medium text-neutral-300">
-        Iniciando radar cartográfico Leaflet (Sierra Bermeja)...
+        Cargando el mapa de Sierra Bermeja…
       </span>
     </div>
   ),
 });
 
-export default function OperationsMap({ zones, plan, selectedZoneId, onSelect }: Props) {
+export default function OperationsMap({ zones, plan, world, selectedZoneId, onSelect }: Props) {
   const [viewMode, setViewMode] = useState<"tactical" | "regional">("tactical");
+  const [tilesDown, setTilesDown] = useState(false);
+
+  // Sin red el mapa base queda gris: se pasa al esquema, que no necesita tiles.
+  const handleTilesUnavailable = useCallback(() => {
+    setTilesDown(true);
+    setViewMode("regional");
+  }, []);
 
   const rankByZone = new Map(
     plan.priorities.map((priority, index) => [priority.zoneId, index + 1]),
@@ -36,36 +44,50 @@ export default function OperationsMap({ zones, plan, selectedZoneId, onSelect }:
   return (
     <div className="flex flex-col gap-2 w-full">
       <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-2">
-          <span className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#5d5d5d]">
-            Mapa Operativo
-          </span>
-          <span className="text-[12px] text-[#9e9e9e]">· 112 Andalucía</span>
-        </div>
-        <div className="flex items-center gap-1 bg-neutral-100 p-0.5 rounded-full border border-neutral-200">
+        <span className="text-[12px] text-blueprint-light">112 Andalucía</span>
+        <div
+          className="flex items-center gap-1 bg-neutral-100 p-0.5 rounded-full border border-neutral-200"
+          role="group"
+          aria-label="Vista del mapa"
+        >
           <Button
             size="sm"
             variant={viewMode === "tactical" ? "pill" : "ghost"}
-            className="h-6 text-[11px] px-2.5"
+            className="h-6 text-[11px] px-2.5 rounded-full"
+            aria-pressed={viewMode === "tactical"}
             onClick={() => setViewMode("tactical")}
           >
             <MapPin size={12} aria-hidden="true" />
-            Táctico Bermeja (Leaflet)
+            Táctico
           </Button>
           <Button
             size="sm"
             variant={viewMode === "regional" ? "pill" : "ghost"}
-            className="h-6 text-[11px] px-2.5"
+            className="h-6 text-[11px] px-2.5 rounded-full"
+            aria-pressed={viewMode === "regional"}
             onClick={() => setViewMode("regional")}
           >
             <Layers size={12} aria-hidden="true" />
-            Esquema Regional
+            Regional
           </Button>
         </div>
       </div>
 
+      {tilesDown ? (
+        <p className="px-1 text-[12px] text-warn" role="status">
+          No hay conexión con el mapa base: se muestra el esquema regional.
+        </p>
+      ) : null}
+
       {viewMode === "tactical" ? (
-        <LeafletMap zones={zones} plan={plan} selectedZoneId={selectedZoneId} onSelect={onSelect} />
+        <LeafletMap
+          zones={zones}
+          plan={plan}
+          world={world}
+          selectedZoneId={selectedZoneId}
+          onSelect={onSelect}
+          onTilesUnavailable={handleTilesUnavailable}
+        />
       ) : (
         <div className="map">
           <div className="map-label">Andalucía · cobertura de la demo regional</div>

@@ -42,11 +42,13 @@ export default function DigitalTwinPanel({ twin, nowMs }: Props) {
       <div className="panel-title flex items-center justify-between">
         <div className="flex items-center gap-2">
           <BrainCircuit size={16} aria-hidden="true" />
-          <h2 className="text-[14px] font-bold text-[#292929] tracking-[-0.15px]">
+          <h2 className="text-[14px] font-bold text-blueprint-dark tracking-[-0.15px]">
             Gemelo digital
           </h2>
         </div>
-        <span className="text-[12px] text-[#5d5d5d]">Percepción reconstruida desde señales</span>
+        <span className="text-[12px] text-blueprint-mid">
+          Percepción reconstruida desde señales
+        </span>
       </div>
 
       <div className="twin-summary">

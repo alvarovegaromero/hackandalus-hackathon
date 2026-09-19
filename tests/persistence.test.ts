@@ -140,7 +140,7 @@ function makeState(overrides: Partial<SituationState> = {}): SituationState {
         populationAtRisk: 1200,
         riskScore: 40,
         needs: ["evacuacion"],
-        coordinates: { x: 10, y: 20 },
+        coordinates: { x: 10, y: 20, lat: 37.4, lng: -5.9 },
         lastUpdatedAt: "2026-02-01T09:55:00.000Z",
       },
       {
@@ -150,7 +150,7 @@ function makeState(overrides: Partial<SituationState> = {}): SituationState {
         populationAtRisk: 4000,
         riskScore: 55,
         needs: [],
-        coordinates: { x: 30, y: 40 },
+        coordinates: { x: 30, y: 40, lat: 37.3, lng: -5.8 },
         lastUpdatedAt: "2026-02-01T09:55:00.000Z",
       },
     ],
@@ -325,6 +325,16 @@ describe("persistencia del estado", () => {
     );
     expect(loadState()).toBeNull();
     expect(validateState(sinPlan)).toBeNull();
+  });
+
+  it("descarta un estado guardado con zonas sin lat/lng, que dejaría el mapa sin posiciones", () => {
+    const antiguo = makeState();
+    const zonas = antiguo.zones.map((zona) => ({
+      ...zona,
+      coordinates: { x: zona.coordinates.x, y: zona.coordinates.y },
+    }));
+    expect(validateState({ ...antiguo, zones: zonas })).toBeNull();
+    expect(validateState(antiguo)).not.toBeNull();
   });
 
   it("descarta un estado con arrays que no son arrays", () => {
