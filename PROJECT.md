@@ -395,7 +395,8 @@ for setup, supported workflows and verified limits.
 
 ### Shared stack skills
 
-The repository vendors seven skills under `.agents/skills/`. Use the relevant
+The repository vendors seven skills and maintains the project-owned `faro-deploy`
+skill under `.agents/skills/`. Use the relevant
 skill by reading its `SKILL.md` before the corresponding task; load supporting
 references only as needed. These explicit paths also work with agents that do
 not automatically discover this directory:
@@ -414,6 +415,8 @@ not automatically discover this directory:
   [.agents/skills/ai-sdk/SKILL.md](.agents/skills/ai-sdk/SKILL.md).
 - Durable execution, retries and external-event waits:
   [.agents/skills/workflow/SKILL.md](.agents/skills/workflow/SKILL.md).
+- FARO release PRs and Vercel production verification:
+  [.agents/skills/faro-deploy/SKILL.md](.agents/skills/faro-deploy/SKILL.md).
 
 Skills supplement this file; project stack, permissions and challenge requirements
 take precedence. Apply examples to installed dependency versions; do not add
