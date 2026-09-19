@@ -1,5 +1,11 @@
 # Project Tasks
 
+## Person B: subagent execution
+
+- [x] Implement reserved-mission handoff, durable worker/leases, scoped mock communication tools, results/activity and read-only APIs. See docs/subagent-execution.md.
+- [x] Eight manual rollback scenarios passed on local PostgreSQL 18; no inventory mutation.
+- [ ] Person A: integrate spawn tool, durable handoff and parent result consumption. Shared migration deployment, live model execution and FE cards remain pending.
+
 ## Global coordinator contract v2
 
 - [x] Define one refreshed prompt, event/5-second triggers, global priorities/plan and per-ambulance state in docs/coordinator-state-contract.md.

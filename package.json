@@ -34,7 +34,8 @@
     "triage:try": "node scripts/try-triage.mjs",
     "llm:try": "node --conditions=react-server scripts/try-llm.mjs",
     "resources:try": "node scripts/try-resources.mjs",
-    "coordinator:try": "node --conditions=react-server scripts/coordinator-worker.mjs --try"
+    "coordinator:try": "node --conditions=react-server scripts/coordinator-worker.mjs --try",
+    "subagents:work": "node --conditions=react-server scripts/subagent-worker.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.71",

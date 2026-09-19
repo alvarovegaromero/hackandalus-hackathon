@@ -1,5 +1,7 @@
 # POC module contracts v1
 
+Additive Person B boundary: [subagent execution](subagent-execution.md). Parent creation/reservations remain Person A-owned; child communication tools are mock only.
+
 Current implementation: [global coordinator state v2](coordinator-state-contract.md) uses
 one refreshed prompt, a dedicated worker, event/five-second triggers and individual
 ambulance commitments. Apply the v2 migration and run npm run coordinator:work

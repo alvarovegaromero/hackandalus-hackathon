@@ -1,5 +1,7 @@
 # FARO
 
+Subagent worker and Person A handoff: [execution contract](docs/subagent-execution.md). Run npm run subagents:work after applying migration 007; parent integration remains pending.
+
 **Start POC work here:** [scope and P0–P5 work packages](docs/poc.md) →
 [module contracts v1](docs/poc-contracts.md) → [current tasks](TASKS.md).
 These are mandatory implementation references under [PROJECT.md](PROJECT.md).
