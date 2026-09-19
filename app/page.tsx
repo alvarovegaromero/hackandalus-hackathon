@@ -1,8 +1,7 @@
 "use client";
 
-// Pantalla única del centro de mando. Orquesta el sondeo del estado, guarda lo
-// que el operador tiene abierto entre refrescos y reparte el estado a los
-// paneles. Los textos del servidor se muestran tal cual llegan.
+// SKETCH: exploratory dashboard, not an approved production interface.
+// Polls demo state, preserves open panels across refreshes, and renders server text.
 
 import {
   AlertTriangle,
@@ -92,8 +91,7 @@ export default function Home() {
     at: 0,
   }));
 
-  // Control del refresco: la huella evita repintar cuando nada ha cambiado, y
-  // los mapas de "primera vez que lo vi" permiten resaltar lo recién llegado.
+  // Skip unchanged state and record first-seen times to highlight new arrivals.
   const fingerprintRef = useRef<string>("");
   const seenRef = useRef<Map<string, number>>(new Map());
   const bootstrappedRef = useRef(false);
@@ -137,8 +135,7 @@ export default function Home() {
     [refresh],
   );
 
-  // Sondeo del estado. GET /api/situation ya hace avanzar el guion y barrer las
-  // acciones atascadas en el servidor, así que no hace falta empujar nada más.
+  // Polling also advances the server scenario and sweeps stalled actions.
   useEffect(() => {
     let cancelled = false;
     const poll = async () => {
@@ -157,8 +154,7 @@ export default function Home() {
     };
   }, [refresh]);
 
-  // Reloj local a un segundo: mueve el cronómetro del escenario y caduca los
-  // resaltados de "esto acaba de cambiar" sin pedir nada al servidor.
+  // Update the scenario clock and expire highlights without a server request.
   useEffect(() => {
     const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
     return () => window.clearInterval(timer);
@@ -206,8 +202,7 @@ export default function Home() {
     [run],
   );
 
-  // Interruptor general de autonomía: es el mando más importante para poder
-  // intervenir, así que la interfaz lo ofrece aunque la ruta aún no exista.
+  // Sketch control: the autonomy endpoint is not implemented.
   const toggleAutonomy = useCallback(
     (paused: boolean) =>
       run("autonomy", async () => {
@@ -240,7 +235,7 @@ export default function Home() {
         if (primary.status !== 404 && primary.status !== 405) {
           throw new Error(`${primary.status} /api/actions/${actionId}/assign`);
         }
-        // Segunda convención posible: la ruta de estado con una operación.
+        // Try the status route as a fallback; reassignment remains unimplemented.
         const fallback = await fetch(`/api/actions/${actionId}/status`, {
           method: "POST",
           body: JSON.stringify({ operation: "assign", resourceId }),
@@ -308,7 +303,7 @@ export default function Home() {
           </p>
           <div className="flex items-center gap-2.5 mt-0.5">
             <h1 className="text-[24px] font-bold text-blueprint-dark tracking-[-0.15px] leading-tight flex items-center gap-2">
-              Live Response Plan v{situation.plan.version}
+              Demo Response Plan v{situation.plan.version}
             </h1>
             <Badge variant={situation.integration.mode === "happyrobot" ? "info" : "outline"}>
               {situation.integration.mode === "happyrobot"

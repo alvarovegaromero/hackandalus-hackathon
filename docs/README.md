@@ -6,6 +6,10 @@ implementation status; [CHALLENGE.md](../CHALLENGE.md) defines the requirements.
 
 ## Current application
 
+**Dashboard status: SKETCH.** The visible notice applies during loading, errors
+and normal operation. The interface is exploratory, with partially connected
+controls; it does not define the approved product or target architecture.
+
 Next.js serves `app/`; `lib/` implements the command center and `tests/` covers
 it. The dashboard polls the HTTP API. State lives in memory, with optional local
 JSON persistence. Outbound communications default to mock mode.
@@ -24,6 +28,13 @@ Endpoint candidates in `src/app/api/` are **not served** while root `app/` exist
 Their contracts must be reconciled before moving them into the active API;
 the two `/api/events` implementations accept different payloads.
 The obsolete platform dashboard, layout and styles have been removed.
+
+Root `lib/` remains necessary for the active API and sketch dashboard. Its
+unused `autonomy.ts` and `triage.ts` implementations and isolated tests were
+removed after checking imports. Calibrated triage and graduated autonomy remain
+future integration work; the active flow still uses deterministic zone scoring
+and human-approved actions. `lib/report.ts` remains the shared input envelope
+used by the platform scenario adapter.
 
 | Document                                      | Status                                                                                       |
 | --------------------------------------------- | -------------------------------------------------------------------------------------------- |

@@ -38,3 +38,7 @@ ingestion), whose routes are not served while the root `app/` exists. Keep the
 module-owner line (`// OWNER: …`) in `lib/**`, following PROJECT.md's English-language
 rule for its label, and keep the digital-twin
 docs and tests in sync. Unifying both trees is tracked in TASKS.md.
+
+The served dashboard is a **SKETCH**, not an approved product design. Preserve
+the visible prototype notice and do not infer the target architecture from its
+partially connected controls. See PROJECT.md and docs/README.md.

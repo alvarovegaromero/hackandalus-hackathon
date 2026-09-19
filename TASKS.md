@@ -110,6 +110,13 @@ are in the source document.
 
 ## Repository organization
 
+- [x] Mark the dashboard as SKETCH in its persistent notice, page metadata,
+      developer guidance and design documentation.
+- [x] Remove unused `lib/autonomy.ts`, `lib/triage.ts` and their isolated tests;
+      preserve the library modules used by the API, UI and report adapter.
+- [ ] Implement and connect calibrated triage and graduated autonomy in the
+      agreed backend; the removed prototype modules were never wired in.
+
 - [x] Remove the unserved scaffolding dashboard, layout and duplicate styles.
 - [x] Consolidate the data model proposal in `docs/data-model.md`, retaining
       the latest confirmed report intake decision.

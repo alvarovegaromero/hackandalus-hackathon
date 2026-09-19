@@ -1,5 +1,9 @@
 # FARO
 
+> **SKETCH:** The dashboard is an exploratory prototype with demo scenario data
+> and partially connected controls. It is not an approved product design or an
+> operational emergency response system.
+
 Agentic command center for a wildfire in Sierra Bermeja (Málaga):
 our submission for the HappyRobot crisis management challenge in HackSpain 2026. A single Next.js project deployable on Vercel; the npm package is named
 `butterfish`. The product vision, scenario, and demo script are in
@@ -136,10 +140,10 @@ model.
 | `lib/types.ts`                                            | Shared types; the contract between modules.                                    |
 | `lib/store.ts`                                            | Crisis state and lifecycle orchestration.                                      |
 | `lib/validation.ts`                                       | Body validation with Zod and uniform error formatting.                         |
-| `lib/priority.ts`, `lib/triage.ts`                        | Zone scoring, calibrated triage, and plan construction.                        |
+| `lib/priority.ts`                                         | Zone scoring and plan construction.                                            |
 | `lib/resources.ts`                                        | Resource selection, assignment, and release.                                   |
 | `lib/contacts.ts`, `lib/escalation.ts`                    | Contact notification, channel selection, and escalation chains.                |
-| `lib/autonomy.ts`, `lib/assumptions.ts`                   | Graduated autonomy and live plan assumptions.                                  |
+| `lib/assumptions.ts`                                      | Plan assumptions and world-state updates.                                      |
 | `lib/digitalTwin.ts`                                      | Digital twin: perceived world from signals vs simulated ground truth accuracy. |
 | `lib/happyrobot.ts`                                       | HappyRobot adapter; the single outbound communication point.                   |
 | `lib/scenario.ts`, `lib/seed.ts`                          | Scenario scripts driving crisis progression and initial state.                 |
@@ -275,7 +279,7 @@ authorized by the team.
 ## Tests
 
 `npm test` runs 16 test suites: `tests/` covers the command center (priority,
-resources, triage, autonomy, assumptions, persistence, digital twin, routes,
+resources, assumptions, persistence, digital twin, routes,
 and simulated adapter callbacks), `src/` covers ingestion and the scenario engine,
 and `scripts/hooks.test.ts` covers hook guards. Command center tests share the
 process and call `resetSituation()` in `beforeEach`.

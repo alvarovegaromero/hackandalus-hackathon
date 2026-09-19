@@ -19,8 +19,14 @@ sees is in English; proper geographic and agency names such as Sierra Bermeja
 and 112 Andalucía remain as proper nouns.
 The product vision, scenario, demo script and build phases live in
 `HackSpain 2026 · Project Source of Truth.md` at the repository root; `thoughts/`
-holds the data model proposal, the inventory of features built on the
-`feat/crisis-command-center` branch, and the open decisions.
+holds the inventory of features built on the
+`feat/crisis-command-center` branch and the open decisions. The canonical data
+model proposal is in `docs/data-model.md`.
+
+Dashboard status: **SKETCH**. The served UI is an exploratory prototype, not an
+approved product design or an operational emergency response system. Preserve
+the visible prototype notice when editing the interface. Some controls are not
+connected; the sketch must not be treated as the target architecture.
 
 Status: two trees live in one Next.js project. The served application is the
 command center at the repository root (`app/`, `lib/`, `tests/`): operator panel,
@@ -53,7 +59,7 @@ invented values. Track follow-up work in TASKS.md.
 - `CHALLENGE.md`: authoritative challenge requirements and scoring criteria.
 - `HackSpain 2026 · Project Source of Truth.md`: product vision, scenario,
   demo script, build phases and risks (in English).
-- `thoughts/`: design context: data model proposal, feature inventory to port,
+- `thoughts/`: design context: historical feature inventory to port,
   open and confirmed decisions.
 - `TASKS.md`: completed scaffolding checklist and deferred implementation tasks.
 - `PROJECT.md`: authoritative project context and shared development instructions.

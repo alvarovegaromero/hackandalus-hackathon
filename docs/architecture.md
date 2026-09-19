@@ -1,5 +1,9 @@
 # Architecture and Decisions
 
+> **SKETCH:** The dashboard is an exploratory prototype with demo scenario data
+> and partially connected controls. It is not an approved product design or an
+> operational emergency response system.
+
 This document explains **why** the system is built this way. The _what_ is in the
 README; here are the decisions and their trade-offs. This document describes
 the served command center (`app/` and `lib/`). The separate platform modules in

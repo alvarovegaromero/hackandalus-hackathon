@@ -1,5 +1,9 @@
 # Dashboard Design Guide
 
+> **SKETCH:** The dashboard is an exploratory prototype with demo scenario data
+> and partially connected controls. It is not an approved product design or an
+> operational emergency response system.
+
 Reference guide for building the human interface of the crisis management system.
 Addresses the requirements in `CHALLENGE.md`: see in two seconds what is happening and what has changed, understand what the system is doing, and intervene.
 Scenario-agnostic: applies to wildfire, flood, blackout, or others, as long as there are locations to render on a map.
