@@ -10,12 +10,13 @@ separate TODO for dispatching to filtering, followed by triage and the LLM.
 
 With Node 24.x, run `npm ci`, then `npm run dev`. Open
 <http://localhost:3000/>. In another terminal run `npm run mock:events`.
-The script sends three timed HTTP requests, prints their IDs and fails on HTTP
-errors. The backend terminal logs each accepted ID without logging its payload.
+The script sends 20 timed HTTP requests (one every 3 s, about a minute; override
+with `EVENT_INTERVAL_MS`) with map coordinates, prints their IDs and fails on HTTP
+errors. Each event appears in the log and as a pin on the map. The backend terminal logs each accepted ID without logging its payload.
 The viewer shows `event.accepted` and `filtering.pending` for each event.
 
-`EVENT_API_URL` overrides the script's base URL. Both routes are unauthenticated,
-like the rest of the command-center API. No external communications or model
+`EVENT_API_URL` overrides the script's base URL. Both routes are unauthenticated
+(POC decision: no token, no bearer header). No external communications or model
 calls are triggered by this pipeline.
 
 ## Input and acknowledgement
@@ -29,6 +30,7 @@ calls are triggered by this pipeline.
   "title": "Smoke detected",
   "description": "Simulated signal sent over HTTP",
   "zoneId": "zone-south",
+  "location": { "latitude": 36.53, "longitude": -5.13, "reference": "incident" },
   "category": "wildfire",
   "severity": "high",
   "confidence": "high",
@@ -36,7 +38,10 @@ calls are triggered by this pipeline.
 }
 ```
 
-The strict schema is `incomingEventSchema` in `src/lib/validation.ts`. The UUID `id`
+The strict schema is `incomingEventSchema` in `src/lib/validation.ts`. `location`
+is optional and reuses `reportLocationSchema` (`src/lib/report.ts`, see
+`input-contract.md`); the map plots `event.accepted` records that carry coordinates
+and never invents a position for those without. The UUID `id`
 is optional; the backend generates one if omitted. Reuse it when retrying:
 identical validated content returns 200 without publishing or projecting again;
 changed content with the same ID returns 409. A new ID returns 202:
@@ -70,9 +75,9 @@ unconnected filtering module.
 Without a cursor, the server replays the latest 100 retained records. With
 `Last-Event-ID` (preferred) or `?after=...`, it replays subsequent records in
 pages of 100, then streams new ones. Backend stream reads occur once per second
-and include heartbeat comments. The browser uses streaming fetch to support
-bearer headers, reconnects after 1.5 seconds, sends its in-memory cursor, and
-deduplicates displayed IDs. It retains at most 500 visible rows. A reload
+and include heartbeat comments. The browser (`useTelemetry`) uses one shared
+`EventSource` for the log and the map; it reconnects after 1.5 seconds, resends
+`Last-Event-ID`, and deduplicates IDs. It retains at most 200 records. A reload
 replays recent history; no cursor is persisted without its associated history.
 
 An expired cursor or server restart emits a named `reset` frame, clears the

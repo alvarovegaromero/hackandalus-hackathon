@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import type { SituationState } from "@/lib/types";
 import EventLog from "@/components/EventLog";
 import { maybe } from "@/components/shared";
+import { useTelemetry } from "@/components/use-telemetry";
 
 const POLL_MS = 4000;
 
@@ -21,6 +22,7 @@ export default function Home() {
   const [situation, setSituation] = useState<SituationState | null>(null);
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const telemetry = useTelemetry();
 
   // GET /api/situation also advances the scenario script.
   useEffect(() => {
@@ -55,6 +57,7 @@ export default function Home() {
           zones={situation.zones}
           plan={situation.plan}
           world={maybe(situation, "world")}
+          events={telemetry.records}
           selectedZoneId={selectedZoneId}
           onSelect={(zoneId) => setSelectedZoneId(zoneId === selectedZoneId ? null : zoneId)}
         />
@@ -63,7 +66,7 @@ export default function Home() {
           <Loader2 className="spin" size={16} aria-hidden="true" /> Loading map…
         </p>
       )}
-      <EventLog />
+      <EventLog records={telemetry.records} status={telemetry.status} />
     </main>
   );
 }
