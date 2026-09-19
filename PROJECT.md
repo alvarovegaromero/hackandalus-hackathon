@@ -161,6 +161,13 @@ When extending the scaffolding:
   types, kebab-case for application filenames, and UPPER_SNAKE_CASE for environment
   variables. Preserve framework filenames such as `page.tsx`, `route.ts`, and
   `AGENTS.md`. Prettier handles formatting, not identifier naming or commit language.
+- Write documentation in English by default: technical/process docs and product
+  docs alike (`PROJECT.md`, `AGENTS.md`, `CLAUDE.md`, `README.md`, `TASKS.md`,
+  everything under `docs/`, and product-doc prose). This keeps docs usable across
+  the different coding agents the team runs. Exceptions:
+  `HackSpain 2026 · Source of Truth del proyecto.md` stays in Spanish, and the
+  operator-facing product/UI (FARO / 112 Andalucía) stays Spanish because it is
+  the product itself, not documentation.
 - This is a hackathon project: prioritize a working end-to-end demo over
   polish. Don't build abstractions for hypothetical future requirements.
 - The challenge requires the system to actually _act_ (calls, messages,
