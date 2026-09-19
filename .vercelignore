@@ -1,0 +1,3 @@
+# Workflow routes are regenerated under src/app during the Vercel build.
+# Do not upload stale root routes: Next.js would prefer root app/ to src/app/.
+app/.well-known/workflow/
