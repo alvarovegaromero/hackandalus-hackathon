@@ -1,5 +1,10 @@
 # FARO · Data Model Proposal
 
+> Runtime update: Vercel Workflow and its unused execution scaffold have been
+> removed. Workflow-based execution below is an earlier proposal, not an installed
+> dependency or an agreed requirement. Background scheduling is TBD. HappyRobot
+> workflows are separate and remain in scope.
+
 > **Confirmed intake decision (2026-09-19):**
 > [input-contract.md](input-contract.md) is authoritative for report intake and
 > normalization: text, optional geographic location, trusted metadata, synchronous

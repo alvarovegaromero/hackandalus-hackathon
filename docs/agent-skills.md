@@ -61,7 +61,7 @@ network access is needed for current API guidance. Adding its skill does not
 select Jev as a production model or install its SDK.
 
 Use the installed SDK documentation before copying examples. Workflow's snapshot
-includes v5 examples, but this project uses v4. Do not adopt v5-only APIs, upgrade
+is optional reference; Workflow is not currently installed. Do not adopt its APIs, upgrade
 packages or select a model just because an upstream example recommends it.
 Zod and HappyRobot still require their official docs and our integration contracts.
 [Graft](code-index.md) provides the local code index alongside these skills.

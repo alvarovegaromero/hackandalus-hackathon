@@ -1,9 +1,10 @@
 // OWNER: API hardening and input validation agent.
 // Signal ingestion into the command center.
 
-import { acceptIncomingEvent, EventConflict } from "@/lib/event-pipeline";
+import { after } from "next/server";
+import { filterIncomingEvent } from "@/lib/filtering/filter-incoming-event";
+import { acceptIncomingEvent, demoRunId, EventConflict } from "@/lib/event-pipeline";
 import { authorizePipeline } from "@/lib/pipeline-auth";
-import { addEvent } from "@/lib/store";
 import type { IncomingEventPayload } from "@/lib/types";
 import {
   apiError,
@@ -16,6 +17,7 @@ import {
 } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function POST(request: Request) {
   const denied = authorizePipeline(request);
@@ -31,16 +33,9 @@ export async function POST(request: Request) {
   try {
     const { id, ...payload } = parsed.data;
     const accepted = acceptIncomingEvent(payload as IncomingEventPayload, id);
-    // Preserve the existing command-center projection; it is not the future
-    // filtering/triage/LLM pipeline and has its own semantic signal merging.
     if (!accepted.duplicate) {
-      try {
-        addEvent(payload as IncomingEventPayload);
-      } catch {
-        console.warn(
-          JSON.stringify({ type: "command_center.projection_failed", eventId: accepted.eventId }),
-        );
-      }
+      const runId = demoRunId();
+      after(() => filterIncomingEvent(accepted.eventId, payload, runId));
     }
     return apiOk(accepted, accepted.duplicate ? 200 : 202);
   } catch (error) {

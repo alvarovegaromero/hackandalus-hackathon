@@ -41,6 +41,6 @@ command center lives in `src/app/`, `src/components/`, `src/lib/`, .
 Keep the module-owner line (`// OWNER: …`) in `src/lib/**`, following PROJECT.md's
 English-language rule for its label, and keep the digital-twin docs and tests in sync.
 
-The served dashboard is a **SKETCH**, not an approved product design. Preserve
-the visible prototype notice and do not infer the target architecture from its
+The served dashboard is a **SKETCH**, not an approved product design. Do not restore
+the removed prototype banner or infer the target architecture from its
 partially connected controls. See PROJECT.md and docs/README.md.

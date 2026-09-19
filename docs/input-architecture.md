@@ -15,7 +15,7 @@ to extend with filter, triage and agent payloads.
 ```text
 report / channel adapter
   -> validate context and payload
-  -> deduplicate delivery, persist original, start durable Workflow
+  -> deduplicate delivery, persist original, schedule durable processing
   -> acknowledge receipt
   -> normalize and extract claims
   -> triage
@@ -31,7 +31,7 @@ A claimed or inferred fact is not confirmed evidence.
 The HTTP request waits for persistence and confirmed scheduling, not model
 interpretation or triage. Batches have bounded concurrency and per-item outcomes.
 The reused SSE transport delivers later state changes to the dashboard;
-it does not replace durable Workflow execution. No separate broker or worker is
+it does not replace durable background execution. No separate broker or worker is
 part of the confirmed stack.
 
 ## Implemented today
@@ -43,8 +43,7 @@ were retired; backend module consolidation does not imply integration.
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `src/app/api/events/route.ts` | Active single-event endpoint using `src/lib/validation.ts`; synchronous `addEvent`, 201 for new events and 200 for duplicates.      |
 | `src/lib/store.ts`            | In-memory state, optional JSON persistence, five-minute duplicate lookup and synchronous replanning.                                |
-| `src/lib/ingest.ts`           | Reusable batch validation, event-ID deduplication and bounded workflow starts; not called by the active route.                      |
-| `src/lib/ingest-server.ts`    | Reusable Supabase or process-local persistence and optional workflow-result waiting; not called by the active route.                |
+| `src/lib/ingest.ts`           | Reusable batch validation, event-ID deduplication and bounded processing starts; not called by the active route.                    |
 | `src/lib/signals/to-event.ts` | `signalToReport` emits the shared envelope and preserves scenario evidence; legacy `signalToEvent` remains available for migration. |
 
 Luis's batch implementation is reusable orchestration, but is not the served
@@ -70,7 +69,7 @@ implementation. A stored report alone is not proof of scheduled work.
 1. **Contract and normalization:** the decision is fixed in
    [input-contract.md](input-contract.md); the envelope schema and scenario
    adapter exist, the public validator and other adapters are next.
-2. **Durable ingestion:** reconcile the target data model, migrate the workflow
+2. **Durable ingestion:** reconcile the target data model, connect the processing
    input and expose the route under `src/app/`. Preserve existing callers until
    migrated. Do not describe in-memory acceptance as durable.
 3. **Dashboard updates:** reuse input-owned SSE, add domain activity and connect

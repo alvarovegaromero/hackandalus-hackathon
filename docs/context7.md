@@ -51,7 +51,7 @@ using its returned ID; IDs are not hardcoded or invented for missing libraries.
 | React         | React                   | Components and hooks, React 19                                                                |
 | TypeScript    | TypeScript              | Type checking and configuration, TypeScript 6                                                 |
 | AI SDK        | Vercel AI SDK           | `ai` 7; tools, agents, structured output                                                      |
-| Workflow      | Vercel Workflow DevKit  | `workflow` 4; durable steps and hooks; avoid v5-only APIs                                     |
+| Workflow      | Vercel Workflow DevKit  | Not installed; optional reference if durable execution is reintroduced                        |
 | Supabase      | Supabase JavaScript     | `@supabase/supabase-js` 2; clients, auth, Realtime                                            |
 | PostgreSQL    | PostgreSQL / Supabase   | Match the actual database server version; follow the database skill                           |
 | Zod           | Zod                     | Validation and schemas, Zod 4                                                                 |

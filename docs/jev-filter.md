@@ -24,7 +24,7 @@ Implemented as a server-only callable module. P1 supplies the existing
 reports, preserving the original decision and probability for the agent path.
 It does not invoke an agent or fabricate the priority required by `AgentRequest`.
 
-The served intake and Workflow do not yet call this module. P1's legacy event
+The served intake does not yet call this module. P1's legacy event
 adapter and P0's durable processing/persistence remain integration work. This
 change does not port the other input branch or add a competing HTTP endpoint.
 
@@ -59,7 +59,7 @@ P1 retains the original even when P2 returns irrelevant. Missing location is val
 This provides retry identity, not a persistence or exactly-once guarantee. P0 must
 reuse stored completed decisions on delivery retries and atomically commit results;
 calling Jev again can return another probability. Explicit reassessment uses a new
-execution ID. Workflow retry/backoff is owned by P0; P2 makes one bounded request.
+execution ID. Processing retry/backoff is owned by P0; P2 makes one bounded request.
 
 ## Evaluation and routing
 

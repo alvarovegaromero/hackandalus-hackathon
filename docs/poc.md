@@ -23,8 +23,7 @@ create a plan, execute an action, and show the result. A later report must chang
 the next action. Persist plans now; defer the full plan browser/editor.
 
 The operator can inspect reports, agent messages and activity, see the current
-objective/action/result, and intervene through approval or pause. Preserve the
-SKETCH notice. Mock actions must be visibly simulated; a verified real interaction
+objective/action/result, and intervene through approval or pause. Mock actions must be visibly simulated; a verified real interaction
 with an approved demo recipient is required to demonstrate the challenge's real
 interaction requirement.
 
@@ -113,7 +112,7 @@ instead of creating competing enums or editing shared contracts independently.
 | ID  | Package / ownership            | First deliverable                                                                                                               | Acceptance                                                                                                                                         |
 | --- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | P0  | Contracts and integration      | Shared Zod contracts and fixtures for filter, priority, agent execution, activity and UI; preserve the existing report contract | All packages consume identical examples; IDs, unknown values, state transitions and retry behavior are explicit                                    |
-| P1  | Input and scenarios            | Report intake, stable delivery identity, persistence, recoverable Workflow start; scenario fixtures                             | Text-only report accepted; duplicate delivery produces one effective processing run; storage/start failure recovers; independent witnesses survive |
+| P1  | Input and scenarios            | Report intake, stable delivery identity, persistence, recoverable processing start; scenario fixtures                           | Text-only report accepted; duplicate delivery produces one effective processing run; storage/start failure recovers; independent witnesses survive |
 | P2  | Jev relevance filter           | Typed decision with evidence references, brief justification and unavailable/error state                                        | Greeting stops; clear incident continues; ambiguous report or Jev failure remains reviewable                                                       |
 | P3  | Deterministic triage           | Single pure priority function, versioned configuration and factor breakdown                                                     | Repeatable score; authenticated source affects configured policy; severe anonymous report retains high impact; unknowns remain explicit            |
 | P4  | Agent and HappyRobot execution | Persist messages and plan versions; one validated tool; persist dispatch/outcome; handle a later report                         | Initial action and changed next action visible; retries do not duplicate dispatch; simulation, acceptance and confirmed result are distinct        |

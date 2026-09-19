@@ -1,5 +1,4 @@
 import type { NextConfig } from "next";
-import { withWorkflow } from "workflow/next";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
@@ -9,4 +8,4 @@ const nextConfig: NextConfig = {
   //   NEXT_DIST_DIR=.next-dev npm run dev -- -p 3001
   distDir: process.env.NEXT_DIST_DIR || ".next",
 };
-export default withWorkflow(nextConfig);
+export default nextConfig;
