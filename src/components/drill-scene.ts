@@ -1,48 +1,20 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { drillMinute, type DrillRun, type SectorId } from "@/lib/emergency-drills";
+import {
+  alongPath,
+  damageLevel,
+  districts,
+  evacuationPath,
+  fireFront,
+  missionPath,
+  noise,
+  pathHeading,
+  point,
+} from "./drill-scene-layout";
+import { createWorld } from "./drill-scene-world";
 
-const districts = [
-  { id: "residential", x: -31, z: -25, color: 0xe9c78c },
-  { id: "care", x: 29, z: -25, color: 0x91c4d0 },
-  { id: "central", x: -14, z: 25, color: 0xc8b4e5 },
-] as const;
 export type CameraView = "overview" | "street" | "top";
-
-function noise(seed: number): number {
-  const value = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
-  return value - Math.floor(value);
-}
-
-function evacuationPath(id: SectorId, alternative: boolean): THREE.Vector3[] {
-  const district = districts.find((site) => site.id === id)!;
-  return alternative
-    ? [
-        new THREE.Vector3(district.x, 0.8, district.z),
-        new THREE.Vector3(district.x < 0 ? -58 : 58, 0.8, district.z),
-        new THREE.Vector3(district.x < 0 ? -58 : 58, 0.8, 48),
-        new THREE.Vector3(39, 0.8, 48),
-        new THREE.Vector3(39, 0.8, 28),
-      ]
-    : [
-        new THREE.Vector3(district.x, 0.8, district.z),
-        new THREE.Vector3(district.x, 0.8, 0),
-        new THREE.Vector3(39, 0.8, 0),
-        new THREE.Vector3(39, 0.8, 28),
-      ];
-}
-
-function alongPath(points: THREE.Vector3[], progress: number): THREE.Vector3 {
-  const lengths = points.slice(1).map((point, index) => point.distanceTo(points[index]));
-  let distance =
-    lengths.reduce((sum, length) => sum + length, 0) * THREE.MathUtils.clamp(progress, 0, 1);
-  for (let index = 0; index < lengths.length; index++) {
-    if (distance <= lengths[index])
-      return points[index].clone().lerp(points[index + 1], distance / lengths[index]);
-    distance -= lengths[index];
-  }
-  return points[points.length - 1].clone();
-}
 
 export function createDrillScene(
   host: HTMLDivElement,
@@ -55,344 +27,200 @@ export function createDrillScene(
     alpha: false,
     powerPreference: "high-performance",
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = host.clientWidth >= 600;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.autoUpdate = false;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.25;
+  renderer.toneMappingExposure = 1.15;
+  renderer.domElement.setAttribute("role", "img");
   renderer.domElement.setAttribute(
     "aria-label",
-    "Interactive 3D training city. Drag to orbit; use the sector buttons for keyboard selection.",
+    "Synthetic training city. Select sectors with the buttons below. Drag to orbit; use camera and zoom buttons for keyboard control.",
   );
-  renderer.domElement.setAttribute("role", "img");
   host.appendChild(renderer.domElement);
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x152936);
-  scene.fog = new THREE.FogExp2(0x152936, 0.0022);
-  const camera = new THREE.PerspectiveCamera(39, 1, 0.1, 700);
-  camera.position.set(110, 100, 125);
+  scene.background = new THREE.Color(0x193440);
+  const world = createWorld(initial.config);
+  scene.add(world.root);
+  const { materials, geometries, textures } = world;
+  const camera = new THREE.PerspectiveCamera(39, 1, 0.5, 800);
   const controls = new OrbitControls(camera, renderer.domElement);
-  controls.target.set(0, 0, 0);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.08;
-  controls.minDistance = 45;
-  controls.maxDistance = 450;
-  controls.maxPolarAngle = Math.PI * 0.47;
-  controls.minPolarAngle = 0.08;
+  controls.enableDamping = false;
   controls.enablePan = false;
-  scene.add(new THREE.HemisphereLight(0xd4ebff, 0x586258, 2.7));
-  const sun = new THREE.DirectionalLight(0xffe4bf, 4);
-  sun.position.set(-45, 95, 55);
+  controls.minDistance = 28;
+  controls.maxDistance = 560;
+  controls.maxPolarAngle = Math.PI * 0.46;
+  controls.minPolarAngle = 0.01;
+  scene.add(new THREE.HemisphereLight(0xe1f0ff, 0x536850, 2.6));
+  const sun = new THREE.DirectionalLight(0xffead0, 3);
+  sun.position.set(-50, 90, 70);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
-  sun.shadow.camera.left = -100;
-  sun.shadow.camera.right = 100;
-  sun.shadow.camera.top = 100;
-  sun.shadow.camera.bottom = -100;
-  sun.shadow.camera.far = 230;
-  sun.shadow.normalBias = 0.08;
+  sun.shadow.mapSize.set(1024, 1024);
+  Object.assign(sun.shadow.camera, { left: -110, right: 110, top: 95, bottom: -95, far: 240 });
+  sun.shadow.normalBias = 0.15;
   scene.add(sun);
-  const city = new THREE.Group();
-  scene.add(city);
-  const materials = new Set<THREE.Material>();
-  const textures = new Set<THREE.Texture>();
-  function label(text: string, x: number, z: number) {
-    const canvas = document.createElement("canvas");
-    canvas.width = 256;
-    canvas.height = 80;
-    const context = canvas.getContext("2d");
-    if (!context) return;
-    context.fillStyle = "#183c4b";
-    context.fillRect(0, 0, 256, 80);
-    context.strokeStyle = "#a9d2de";
-    context.lineWidth = 4;
-    context.strokeRect(2, 2, 252, 76);
-    context.fillStyle = "#e6f4f6";
-    context.font = "500 30px sans-serif";
-    context.textAlign = "center";
-    context.fillText(text, 128, 51);
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    textures.add(texture);
-    const mat = new THREE.SpriteMaterial({ map: texture, depthTest: false });
-    materials.add(mat);
-    const sprite = new THREE.Sprite(mat);
-    sprite.position.set(x, 15, z);
-    sprite.scale.set(15, 4.7, 1);
-    sprite.renderOrder = 3;
-    city.add(sprite);
-  }
-  function material(color: number, options: THREE.MeshStandardMaterialParameters = {}) {
-    const result = new THREE.MeshStandardMaterial({ color, roughness: 0.85, ...options });
-    materials.add(result);
-    return result;
-  }
-  const asphalt = material(0x384752);
-  const concrete = material(0xa1a59b);
-  const grass = material(0x68745c);
-  const ivory = material(0xe1d6ba);
-  const roof = material(0xa76248);
-  const glass = material(0x375966, { metalness: 0.25, roughness: 0.35 });
-  const white = material(0xe4e7df);
-  const teal = material(0x73e4cb, { emissive: 0x277b69, emissiveIntensity: 0.4 });
-  function box<M extends THREE.Material>(
-    parent: THREE.Object3D,
-    width: number,
-    height: number,
-    depth: number,
-    mat: M,
-    x: number,
-    y: number,
-    z: number,
-  ) {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), mat);
-    mesh.position.set(x, y, z);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    parent.add(mesh);
-    return mesh;
-  }
-  box(city, 144, 3, 120, material(0x414d49), 0, -2.2, 0);
-  box(city, 142, 0.5, 118, grass, 0, -0.45, 0);
-  box(city, 128, 0.2, 8, asphalt, 0, 0, 0);
-  box(city, 7, 0.2, 105, asphalt, 0, 0, 0);
-  box(city, 7, 0.22, 105, asphalt, -58, 0, 0);
-  box(city, 7, 0.22, 105, asphalt, 58, 0, 0);
-  box(city, 120, 0.22, 6, asphalt, 0, 0, 48);
-  box(city, 120, 0.22, 6, asphalt, 0, 0, -48);
-  box(city, 5, 0.22, 30, asphalt, 39, 0, 15);
-  for (let i = -14; i <= 14; i++) {
-    box(city, 2, 0.05, 0.15, white, i * 4, 0.15, 0);
-    if (Math.abs(i) < 12) box(city, 0.15, 0.05, 2, white, 0, 0.15, i * 4);
-  }
-  for (let i = 0; i < 6; i++) {
-    box(city, 0.65, 0.06, 6, white, 7 + i * 1.4, 0.15, 0);
-  }
-  const pads = new Map<SectorId, THREE.Mesh<THREE.BoxGeometry, THREE.MeshStandardMaterial>>();
-  const perimeters = new Map<SectorId, THREE.LineLoop>();
-  const buildings: {
-    mesh: THREE.Group;
-    id: SectorId;
-    height: number;
-    seed: number;
-    x: number;
-    z: number;
-  }[] = [];
   const dummy = new THREE.Object3D();
-  const coordinateSeed = Math.round(
-    initial.config.latitude * 1000 + initial.config.longitude * 1000,
-  );
-  for (const [sectorIndex, site] of districts.entries()) {
-    label(["A · Residential", "B · Care", "C · Centre"][sectorIndex], site.x, site.z);
-    const pad = box(city, 42, 0.45, 33, material(site.color), site.x, 0, site.z);
-    pad.material.transparent = true;
-    pad.material.opacity = 0.28;
-    pads.set(site.id, pad);
-    const corners = [
-      [-21, -17],
-      [21, -17],
-      [21, 17],
-      [-21, 17],
-    ].map(([x, z]) => new THREE.Vector3(site.x + x, 0.8, site.z + z));
-    const boundaryMaterial = new THREE.LineBasicMaterial({ color: 0x83edd0 });
-    materials.add(boundaryMaterial);
-    const boundary = new THREE.LineLoop(
-      new THREE.BufferGeometry().setFromPoints(corners),
-      boundaryMaterial,
-    );
-    city.add(boundary);
-    perimeters.set(site.id, boundary);
-    for (let row = 0; row < 3; row++) {
-      for (let col = 0; col < 4; col++) {
-        const seed = coordinateSeed + sectorIndex * 40 + row * 4 + col;
-        const height = 3 + Math.floor(noise(seed) * 4) * 2.3;
-        const x = site.x - 15 + col * 10;
-        const z = site.z - 11 + row * 10.5;
-        const group = new THREE.Group();
-        group.position.set(x, 0.4, z);
-        city.add(group);
-        const facade = material(
-          [0xd8cdb6, 0xc2c4b6, 0xe8d9bd, 0xb9c5c2][Math.floor(noise(seed + 1) * 4)],
-        );
-        box(group, 7, height, 6.8, facade, 0, height / 2, 0);
-        box(group, 7.5, 0.65, 7.3, site.id === "care" ? white : roof, 0, height, 0);
-        box(group, 1.7, 0.8, 1.7, concrete, 1.2, height + 0.6, -1);
-        const windows: THREE.Matrix4[] = [];
-        for (let level = 1.6; level < height; level += 2.3) {
-          for (let column = -2.2; column <= 2.2; column += 2.2) {
-            for (const side of [-1, 1]) {
-              dummy.position.set(column, level, side * 3.42);
-              dummy.scale.set(1.15, 1.25, 0.08);
-              dummy.rotation.set(0, 0, 0);
-              dummy.updateMatrix();
-              windows.push(dummy.matrix.clone());
-            }
-          }
-        }
-        const panes = new THREE.InstancedMesh(
-          new THREE.BoxGeometry(1, 1, 1),
-          glass,
-          windows.length,
-        );
-        windows.forEach((matrix, index) => panes.setMatrixAt(index, matrix));
-        group.add(panes);
-        if (site.id === "care" && row === 1 && col === 1) {
-          box(group, 3.6, 0.15, 0.9, material(0xbc473d), 0, height + 0.5, 0);
-          box(group, 0.9, 0.15, 3.6, material(0xbc473d), 0, height + 0.5, 0);
-        }
-        buildings.push({ mesh: group, id: site.id, height, seed, x, z });
-      }
-    }
-  }
-  const treeCount = 160;
-  const trunks = new THREE.InstancedMesh(
-    new THREE.CylinderGeometry(0.22, 0.35, 2, 5),
-    material(0x675746),
-    treeCount,
-  );
-  const leaves = new THREE.InstancedMesh(
-    new THREE.ConeGeometry(2, 6, 7),
-    material(0x3f6757),
-    treeCount,
-  );
-  for (let i = 0; i < treeCount; i++) {
-    const forest = i < 115;
-    const x = forest ? -83 + noise(i + 2) * 22 : -65 + noise(i + 22) * 130;
-    const z = forest ? -53 + noise(i + 5) * 106 : i % 2 ? -55 : 55;
-    dummy.rotation.set(0, noise(i) * 3, 0);
-    dummy.scale.setScalar(0.7 + noise(i + 1) * 0.5);
-    dummy.position.set(x, 1, z);
-    dummy.updateMatrix();
-    trunks.setMatrixAt(i, dummy.matrix);
-    dummy.position.y = 4;
-    dummy.updateMatrix();
-    leaves.setMatrixAt(i, dummy.matrix);
-  }
-  trunks.castShadow = true;
-  leaves.castShadow = true;
-  city.add(trunks, leaves);
-  for (let i = 0; i < 7; i++) {
-    const mountain = new THREE.Mesh(
-      new THREE.ConeGeometry(22 + noise(i) * 18, 10 + noise(i + 1) * 25, 6),
-      material(0x445c58),
-    );
-    mountain.position.set(-100 + i * 35, -1, -87 - noise(i + 3) * 10);
-    mountain.rotation.y = i;
-    city.add(mountain);
-  }
-  box(city, 23, 0.25, 25, material(0x66837a), 39, 0.1, 30);
-  for (let i = 0; i < 3; i++) {
-    const tent = new THREE.Mesh(new THREE.ConeGeometry(3.7, 3.5, 4), ivory);
-    tent.rotation.y = Math.PI / 4;
-    tent.position.set(33 + i * 6, 2, 37);
-    tent.castShadow = true;
-    city.add(tent);
-  }
-  box(city, 5, 0.12, 0.9, teal, 39, 0.35, 25);
-  box(city, 0.9, 0.12, 5, teal, 39, 0.35, 25);
-  label("Assembly point", 39, 29);
-  const routes = new THREE.Group();
-  city.add(routes);
-  for (const site of districts) {
-    for (const alternative of [false, true]) {
-      const geometry = new THREE.BufferGeometry().setFromPoints(
-        evacuationPath(site.id, alternative),
-      );
-      const mat = new THREE.LineDashedMaterial({
-        color: alternative ? 0x7de9c7 : 0x71c7ff,
-        dashSize: 1.4,
-        gapSize: 0.8,
-      });
-      materials.add(mat);
-      const line = new THREE.Line(geometry, mat);
-      line.name = `${site.id}-${alternative ? "alternative" : "main"}`;
-      line.computeLineDistances();
-      routes.add(line);
-    }
-  }
-  const barricade = new THREE.Group();
-  for (let i = 0; i < 5; i++)
-    box(barricade, 1.1, 1.2, 0.65, material(i % 2 ? 0xe47c48 : 0xf8ddb0), i * 1.3 - 2.6, 0.6, 0);
-  barricade.position.set(10, 0, 0);
-  barricade.rotation.y = Math.PI / 2;
-  city.add(barricade);
-  const rubble = new THREE.InstancedMesh(
-    new THREE.DodecahedronGeometry(0.7, 0),
-    material(0x958c7c),
-    130,
-  );
-  city.add(rubble);
-  for (let i = 0; i < 130; i++) {
-    const b = buildings[i % buildings.length];
-    dummy.position.set(b.x + 4 + noise(i) * 3, 0.6, b.z - 4 + noise(i + 4) * 8);
-    dummy.rotation.set(noise(i) * 4, noise(i + 1) * 4, 0);
-    dummy.scale.setScalar(0.3 + noise(i + 2));
-    dummy.updateMatrix();
-    rubble.setMatrixAt(i, dummy.matrix);
-  }
-  const flameMaterial = material(0xff7626, {
-    emissive: 0xff6310,
-    emissiveIntensity: 3,
-    transparent: true,
-    opacity: 0.9,
-  });
-  const flames = new THREE.InstancedMesh(new THREE.ConeGeometry(1.2, 5, 5), flameMaterial, 80);
-  const smokeMaterial = material(0x727a79, { transparent: true, opacity: 0.28, depthWrite: false });
-  const smoke = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(2, 1), smokeMaterial, 90);
-  flames.frustumCulled = false;
-  smoke.frustumCulled = false;
-  city.add(flames, smoke);
-  const fireLight = new THREE.PointLight(0xff7025, 150, 90, 1.8);
-  fireLight.position.set(-55, 10, 0);
-  city.add(fireLight);
-  const waves = [0, 1, 2].map(() => {
+
+  function basic(color: number, opacity = 1) {
     const mat = new THREE.MeshBasicMaterial({
-      color: 0xf2bb7a,
-      transparent: true,
-      opacity: 0.6,
+      color,
+      transparent: opacity < 1,
+      opacity,
+      depthWrite: opacity === 1,
       side: THREE.DoubleSide,
-      depthWrite: false,
     });
     materials.add(mat);
-    const wave = new THREE.Mesh(new THREE.RingGeometry(1, 1.025, 80), mat);
-    wave.rotation.x = -Math.PI / 2;
-    wave.position.set(-30, 0.8, -20);
-    city.add(wave);
-    return wave;
+    return mat;
+  }
+  function standard(color: number) {
+    const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.9 });
+    materials.add(mat);
+    return mat;
+  }
+  function instances(geometry: THREE.BufferGeometry, mat: THREE.Material, count: number) {
+    geometries.add(geometry);
+    const mesh = new THREE.InstancedMesh(geometry, mat, count);
+    mesh.frustumCulled = false;
+    world.root.add(mesh);
+    return mesh;
+  }
+  function setInstance(
+    mesh: THREE.InstancedMesh,
+    index: number,
+    position: THREE.Vector3,
+    scale = 1,
+    angle = 0,
+    height = scale,
+  ) {
+    dummy.position.copy(position);
+    dummy.rotation.set(0, angle, 0);
+    dummy.scale.set(scale, height, scale);
+    dummy.updateMatrix();
+    mesh.setMatrixAt(index, dummy.matrix);
+  }
+  function line(points: THREE.Vector3[], color: number, closed = false) {
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const mat = new THREE.LineBasicMaterial({ color });
+    materials.add(mat);
+    geometries.add(geometry);
+    const result = closed ? new THREE.LineLoop(geometry, mat) : new THREE.Line(geometry, mat);
+    world.root.add(result);
+    return result;
+  }
+  const pads = new Map<SectorId, THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>>();
+  const perimeters = new Map<SectorId, THREE.Line>();
+  for (const site of districts) {
+    const geometry = new THREE.PlaneGeometry(site.id === "central" ? 61 : 48, 38);
+    geometries.add(geometry);
+    const pad = new THREE.Mesh(geometry, basic(site.color, 0.12));
+    pad.rotation.x = -Math.PI / 2;
+    pad.position.set(site.x, 0.31, site.z);
+    world.root.add(pad);
+    pads.set(site.id, pad);
+    perimeters.set(
+      site.id,
+      line(
+        [
+          point(site.x - 23, site.z - 19),
+          point(site.x + 23, site.z - 19),
+          point(site.x + 23, site.z + 19),
+          point(site.x - 23, site.z + 19),
+        ],
+        0x73e4cb,
+        true,
+      ),
+    );
+  }
+  const routeMaterial = basic(0x79d5ff);
+  const routeSegments = instances(new THREE.BoxGeometry(0.7, 0.06, 1), routeMaterial, 180);
+  const arrowGeometry = new THREE.ConeGeometry(0.9, 2.1, 3);
+  arrowGeometry.rotateX(Math.PI / 2);
+  const routeArrows = instances(arrowGeometry, routeMaterial, 28);
+  const barricade = instances(new THREE.BoxGeometry(0.8, 1.1, 1.1), standard(0xffffff), 7);
+  for (let i = 0; i < 7; i++) {
+    setInstance(barricade, i, point(10, -3 + i, 0.75));
+    barricade.setColorAt(i, new THREE.Color(i % 2 ? 0xffae66 : 0x625349));
+  }
+  const closureLabel = world.label("Main road closed", 10, 2);
+  const rubble = instances(new THREE.DodecahedronGeometry(0.7, 0), standard(0x877c68), 210);
+  const cracks = instances(
+    new THREE.BoxGeometry(0.1, 1, 0.1),
+    basic(0x50463f),
+    world.buildings.length * 2,
+  );
+  const flames = instances(new THREE.ConeGeometry(0.9, 4, 5), basic(0xff822d), 120);
+  const cores = instances(new THREE.ConeGeometry(0.5, 2.4, 5), basic(0xffd471), 120);
+  const smoke = instances(new THREE.IcosahedronGeometry(1, 1), basic(0x929d9c, 0.24), 90);
+  const burn = instances(new THREE.PlaneGeometry(1, 1), basic(0x433f30, 0.65), 32);
+  const front = line(
+    Array.from({ length: 33 }, () => point(0, 0)),
+    0xffbb55,
+  );
+  const wind = new THREE.ArrowHelper(
+    point(1, 0, 0).normalize(),
+    point(-73, 53, 9),
+    16,
+    0xcce8e9,
+    4,
+    2,
+  );
+  world.root.add(wind);
+  for (const object of [wind.line, wind.cone])
+    for (const mat of Array.isArray(object.material) ? object.material : [object.material])
+      materials.add(mat);
+  const windLabel = world.label("Wind", -72, 56);
+  const waves = [0, 1, 2].map(() => {
+    const geometry = new THREE.RingGeometry(1, 1.035, 64);
+    geometries.add(geometry);
+    const mesh = new THREE.Mesh(geometry, basic(0xf7c78d, 0.45));
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.set(-32, 0.8, -25);
+    world.root.add(mesh);
+    return mesh;
   });
-  const personGeometry = new THREE.CapsuleGeometry(0.25, 0.65, 2, 4);
-  const people = new THREE.InstancedMesh(personGeometry, material(0xf2d899), 400);
-  const teams = new THREE.InstancedMesh(new THREE.BoxGeometry(1.7, 1.1, 3), material(0x80cdeb), 24);
-  people.castShadow = true;
-  teams.castShadow = true;
-  people.frustumCulled = false;
-  teams.frustumCulled = false;
-  city.add(people, teams);
-  const positions = new Map<string, number>();
+  const people = instances(new THREE.CapsuleGeometry(0.3, 0.7, 2, 4), standard(0xffffff), 600);
+  const heads = instances(new THREE.SphereGeometry(0.28, 5, 4), standard(0xfce9b8), 600);
+  const vehicles = instances(new THREE.BoxGeometry(1.5, 1, 2.7), standard(0x63bce1), 120);
+  const cabs = instances(new THREE.BoxGeometry(1.2, 0.65, 1.1), standard(0xe7f2ed), 120);
+  const vehicleWindows = instances(new THREE.BoxGeometry(1, 0.4, 0.08), basic(0x294654), 120);
+
   let run = initial;
   let selected: SectorId = "care";
-  let moving = false;
   let reducedMotion = false;
   let orbit = false;
   let disposed = false;
+  let failed = false;
   let frame = 0;
-  let updateTime = performance.now();
+  let dirty = true;
   let lastRender = 0;
+  let lastDamage = "";
+  let lastShadowPhase = "";
   let cameraView: CameraView = "overview";
+  let statsStart = 0;
+  let statsFrames = 0;
+  let statsDuration = 0;
+
   function positionCamera(mode: CameraView) {
     cameraView = mode;
-    camera.position.set(
-      ...((mode === "street" ? [82, 31, 90] : mode === "top" ? [0, 170, 0.1] : [110, 100, 125]) as [
-        number,
-        number,
-        number,
-      ]),
-    );
-    camera.position.multiplyScalar(Math.max(1, 1.15 / camera.aspect));
-    controls.target.set(0, 0, 0);
+    camera.up.set(0, 1, 0);
+    const site = districts.find((district) => district.id === selected)!;
+    const target = mode === "street" ? point(site.x, site.z, 2) : point(-7, 0, 0);
+    const offset =
+      mode === "street"
+        ? new THREE.Vector3(28, 25, 40)
+        : mode === "top"
+          ? new THREE.Vector3(0, 185, 0.1)
+          : new THREE.Vector3(112, 125, 142);
+    offset.multiplyScalar(Math.max(1, 1.5 / camera.aspect));
+    controls.target.copy(target);
+    camera.position.copy(target).add(offset);
     controls.update();
+    dirty = true;
   }
+  controls.addEventListener("change", () => {
+    dirty = true;
+  });
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
   let down = { x: 0, y: 0 };
@@ -411,13 +239,14 @@ export function createDrillScene(
     const site = [...pads].find(([, pad]) => pad === hit?.object);
     if (site) onSelect(site[0]);
   };
-  renderer.domElement.addEventListener("pointerdown", onDown);
-  renderer.domElement.addEventListener("pointerup", onUp);
   const onLost = (event: Event) => {
     event.preventDefault();
+    failed = true;
     cancelAnimationFrame(frame);
     onFailure();
   };
+  renderer.domElement.addEventListener("pointerdown", onDown);
+  renderer.domElement.addEventListener("pointerup", onUp);
   renderer.domElement.addEventListener("webglcontextlost", onLost);
   const resize = new ResizeObserver(() => {
     const width = host.clientWidth;
@@ -425,195 +254,349 @@ export function createDrillScene(
     if (!width || !height) return;
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
-    positionCamera(cameraView);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, width < 600 ? 1 : 1.5));
+    renderer.shadowMap.enabled = width >= 600;
+    renderer.shadowMap.needsUpdate = true;
     renderer.setSize(width, height);
+    positionCamera(cameraView);
   });
   resize.observe(host);
-  const setInstance = (
-    mesh: THREE.InstancedMesh,
-    index: number,
-    position: THREE.Vector3,
-    scale = 1,
-    angle = 0,
-  ) => {
-    dummy.position.copy(position);
-    dummy.scale.setScalar(scale);
-    dummy.rotation.set(0, angle, 0);
-    dummy.updateMatrix();
-    mesh.setMatrixAt(index, dummy.matrix);
-  };
-  function render(now: number) {
-    if (disposed) return;
-    frame = requestAnimationFrame(render);
-    if (document.hidden || now - lastRender < 32) return;
-    lastRender = now;
-    const clock = drillMinute(run);
-    const time = clock + (moving && !reducedMotion ? Math.min(0.24, (now - updateTime) / 4000) : 0);
-    const visual = reducedMotion ? clock : time;
+
+  function updateRoutes() {
+    const mission = run.missions.find(
+      (item) => item.sectorId === selected && item.arrivedAt === null,
+    );
+    const alternative = mission ? mission.route === "alternative" : run.phase >= 1 && run.routeOpen;
+    const path = mission ? missionPath(mission) : evacuationPath(selected, alternative);
+    let count = 0;
+    let arrowCount = 0;
+    for (let i = 1; i < path.length; i++) {
+      const a = path[i - 1],
+        b = path[i];
+      const length = a.distanceTo(b);
+      const angle = Math.atan2(b.x - a.x, b.z - a.z);
+      const pieces = Math.ceil(length / 2.5);
+      for (let j = 0; j < pieces; j++) {
+        if (count >= 180) break;
+        const position = a.clone().lerp(b, (j + 0.5) / pieces);
+        setInstance(routeSegments, count++, position, 1, angle, 1);
+        dummy.scale.set(1, 1, (length / pieces) * (alternative ? 0.7 : 0.95));
+        dummy.updateMatrix();
+        routeSegments.setMatrixAt(count - 1, dummy.matrix);
+      }
+      if (length > 3 && arrowCount < 28)
+        setInstance(routeArrows, arrowCount++, a.clone().lerp(b, 0.5), 1, angle);
+    }
+    routeSegments.count = count;
+    routeArrows.count = arrowCount;
+    routeSegments.instanceMatrix.needsUpdate = true;
+    routeArrows.instanceMatrix.needsUpdate = true;
+    routeMaterial.color.set(!run.routeOpen ? 0xffaf69 : alternative ? 0x73e4cb : 0x79d5ff);
+  }
+
+  function updateHazards(clock: number) {
     const quake = run.config.hazard === "earthquake";
-    const impulse = Math.max(0, 1 - (visual >= 15 ? visual - 15 : visual) / 1.3);
-    city.position.x = quake && moving && !reducedMotion ? Math.sin(now * 0.035) * impulse * 0.3 : 0;
-    barricade.visible = !run.routeOpen;
-    rubble.visible = quake;
-    flames.visible = !quake;
-    smoke.visible = !quake || clock >= 15;
-    fireLight.visible = !quake;
-    for (const [id, pad] of pads) {
-      pad.material.opacity = id === selected ? 0.55 : 0.2;
-      const sector = run.sectors.find((item) => item.id === id)!;
-      perimeters.get(id)!.visible = sector.protected;
+    const aftershock = clock >= 15;
+    const impulse = Math.max(0, 1 - (aftershock ? clock - 15 : clock) / (aftershock ? 1 : 1.5));
+    const shake = quake && !reducedMotion ? Math.sin(clock * 28) * impulse * 0.004 : 0;
+    const damageKey = `${quake}-${run.config.severity}-${aftershock}-${shake}`;
+    const shadowPhase = `${quake}-${run.config.severity}-${aftershock}`;
+    if (damageKey !== lastDamage) {
+      world.updateDamage(run.config.severity, quake, aftershock, shake);
+      if (shadowPhase !== lastShadowPhase) renderer.shadowMap.needsUpdate = true;
+      lastDamage = damageKey;
+      lastShadowPhase = shadowPhase;
     }
-    for (const b of buildings) {
-      const damage =
-        (run.config.severity === "extreme" ? 0.5 : run.config.severity === "severe" ? 0.35 : 0.23) +
-        (run.phase >= 3 ? 0.2 : 0);
-      const damaged = quake && noise(b.seed) < damage;
-      b.mesh.rotation.z = damaged ? (noise(b.seed + 6) - 0.5) * 0.12 * (1 + run.phase / 4) : 0;
-      b.mesh.position.y = damaged ? -b.height * (run.phase >= 3 ? 0.14 : 0.06) : 0.4;
-    }
-    for (const [index, wave] of waves.entries()) {
-      wave.visible = quake && impulse > 0;
-      const radius = 6 + ((visual * 40 + index * 18) % 60);
-      wave.scale.setScalar(radius);
-      wave.material.opacity = 0.6 * (1 - radius / 70);
-    }
-    for (let i = 0; i < 80; i++) {
-      const district = districts[i % districts.length];
-      const sector = run.sectors.find((item) => item.id === district.id)!;
-      const reach =
-        -70 +
-        visual * (run.config.severity === "extreme" ? 2.8 : 2.1) +
-        Math.max(0, visual - 15) * 1.1;
-      const x = reach - noise(i + 3) * 16;
-      const z = -47 + noise(i) * 94;
-      const protectedArea = run.sectors.some((item) => {
-        const site = districts.find((value) => value.id === item.id)!;
-        return item.protected && Math.abs(x - site.x) < 23 && Math.abs(z - site.z) < 19;
-      });
-      const scale = protectedArea ? 0.05 : 0.8 + noise(i) * 0.7;
-      dummy.position.set(x, 2 * scale, z);
-      dummy.rotation.set(0, noise(i) * 6, Math.sin(visual * 12 + i) * 0.15);
-      dummy.scale.set(scale, scale * (1.1 + Math.sin(visual * 18 + i) * 0.3), scale);
-      dummy.updateMatrix();
-      flames.setMatrixAt(i, dummy.matrix);
-      const puff = (visual * 3 + i * 0.27) % 12;
-      const smokeX = quake ? district.x + noise(i) * 10 : x + puff * (clock >= 15 ? 2.5 : 0.8);
-      setInstance(
-        smoke,
-        i,
-        new THREE.Vector3(smokeX, puff * 1.5 + 2, z + puff * (clock >= 15 ? -1.6 : 0.8)),
-        (1 + puff * 0.13) * (quake ? sector.risk / 130 : 1),
-      );
-    }
-    smoke.count = 80;
-    flames.instanceMatrix.needsUpdate = true;
-    smoke.instanceMatrix.needsUpdate = true;
-    let personCount = 0;
-    let teamCount = 0;
-    for (const site of districts) {
-      const sector = run.sectors.find((item) => item.id === site.id)!;
-      const enRoute = run.missions
-        .filter((mission) => mission.sectorId === site.id && mission.arrivedAt === null)
-        .reduce((sum, mission) => sum + mission.people, 0);
-      const waiting = Math.ceil(
-        ((sector.population - sector.evacuated - enRoute) / run.config.population) * 120,
-      );
-      for (let i = 0; i < waiting; i++) {
-        const x = site.x - 18 + noise(i + 52) * 36;
-        const z = site.z + 15 + noise(i + 14) * 1.8;
-        setInstance(people, personCount++, new THREE.Vector3(x, 1, z), 1.15);
-      }
-      const safe = Math.ceil((sector.evacuated / run.config.population) * 120);
-      for (let i = 0; i < safe; i++) {
+    let debrisCount = 0,
+      crackCount = 0;
+    for (const b of world.buildings) {
+      const level = quake ? damageLevel(b.seed, run.config.severity, aftershock) : 0;
+      if (!level) continue;
+      for (let j = 0; j < level * 3; j++)
         setInstance(
-          people,
-          personCount++,
-          new THREE.Vector3(31 + noise(i + site.x) * 16, 1, 18 + noise(i + site.z) * 13),
-          1.15,
+          rubble,
+          debrisCount++,
+          point(b.x + (noise(b.seed + j) - 0.5) * 9, b.z + 4 + noise(b.seed + j + 10) * 2, 0.6),
+          0.5 + noise(b.seed + j + 20),
+          j,
         );
+      for (let j = 0; j < 2; j++)
+        setInstance(
+          cracks,
+          crackCount++,
+          point(b.x + j * 1.5, b.z + b.depth / 2 + 0.12, b.height * 0.4),
+          1,
+          j * 0.7,
+          b.height * 0.45,
+        );
+    }
+    if (quake && clock >= 5)
+      for (let i = 0; i < 12; i++)
+        setInstance(
+          rubble,
+          debrisCount++,
+          point(9 + noise(i) * 2, -3 + noise(i + 8) * 6, 0.6),
+          0.8,
+          i,
+        );
+    rubble.count = debrisCount;
+    cracks.count = crackCount;
+    rubble.instanceMatrix.needsUpdate = true;
+    cracks.instanceMatrix.needsUpdate = true;
+    barricade.visible = clock >= 5;
+    if (closureLabel) closureLabel.visible = clock >= 5 && cameraView !== "street";
+    for (const [i, wave] of waves.entries()) {
+      wave.visible = quake && impulse > 0;
+      wave.material.color.set(aftershock ? 0xf7a176 : 0xf7c78d);
+      const radius = 7 + (((reducedMotion ? 0 : clock * 28) + i * 16) % 58);
+      wave.scale.setScalar(radius);
+      wave.material.opacity = impulse * 0.35 * (1 - radius / 75);
+    }
+    flames.visible = !quake;
+    cores.visible = !quake;
+    burn.visible = !quake;
+    front.visible = !quake;
+    wind.visible = !quake;
+    if (windLabel) windLabel.visible = !quake && cameraView !== "street";
+    wind.setDirection(point(aftershock ? 0.7 : 1, aftershock ? -0.7 : 0.25, 0).normalize());
+    const positions = front.geometry.getAttribute("position");
+    let flameCount = 0,
+      smokeCount = 0;
+    for (let i = 0; i < 33; i++) {
+      const z = -57 + i * 3.5;
+      const x = fireFront(z, clock, run.config.severity);
+      positions.setXYZ(i, x, 0.8, z);
+      if (i < 32) {
+        const start = -95;
+        dummy.position.set((x + start) / 2, 0.29, z + 1.75);
+        dummy.rotation.set(-Math.PI / 2, 0, 0);
+        dummy.scale.set(Math.max(0, x - start), 3.6, 1);
+        dummy.updateMatrix();
+        burn.setMatrixAt(i, dummy.matrix);
       }
+      if (quake) continue;
+      for (let j = 0; j < 3; j++) {
+        const px = x - j * 2.1,
+          pz = z + noise(i * 11 + j) * 2;
+        const scale = 0.7 + noise(i * 5 + j) * 0.6;
+        const height = scale * (1 + Math.sin(clock * 13 + i + j) * (reducedMotion ? 0 : 0.15));
+        setInstance(
+          flames,
+          flameCount,
+          point(px, pz, height * 2),
+          scale,
+          (reducedMotion ? 0 : clock) + i,
+          height,
+        );
+        setInstance(cores, flameCount++, point(px + 0.25, pz, height), scale, 0, height);
+      }
+      if (i % 2 === 0)
+        for (let j = 0; j < 4; j++) {
+          const rise = 2 + j * 3 + noise(i) * 2;
+          const driftX = rise * (aftershock ? 0.7 : 1);
+          const driftZ = rise * (aftershock ? -0.7 : 0.25);
+          setInstance(
+            smoke,
+            smokeCount++,
+            point(x + driftX, z + driftZ, rise + 2),
+            1.8 + rise * 0.18,
+            i,
+            2 + rise * 0.16,
+          );
+        }
+    }
+    if (!quake && clock >= 5)
+      for (let i = 0; i < 7; i++) {
+        setInstance(flames, flameCount, point(10, -3 + i, 1.8), 0.9);
+        setInstance(cores, flameCount++, point(10.2, -3 + i, 1), 0.7);
+      }
+    if (quake && impulse > 0)
+      world.buildings.forEach((b) => {
+        if (damageLevel(b.seed, run.config.severity, aftershock) && smokeCount < 90)
+          setInstance(
+            smoke,
+            smokeCount++,
+            point(b.x, b.z, 2 + (1 - impulse) * 4),
+            2 + (1 - impulse) * 2,
+          );
+      });
+    smoke.visible = smokeCount > 0;
+    smoke.count = smokeCount;
+    flames.count = flameCount;
+    cores.count = flameCount;
+    for (const mesh of [smoke, flames, cores, burn]) mesh.instanceMatrix.needsUpdate = true;
+    positions.needsUpdate = true;
+    front.geometry.computeBoundingSphere();
+    const green = new THREE.Color(0x3f7255),
+      charred = new THREE.Color(0x51493a);
+    world.trees.forEach((tree, index) => {
+      const scorched = !quake && tree.x < fireFront(tree.z, clock, run.config.severity) - 2;
+      world.leaves.setColorAt(index, scorched ? charred : green);
+    });
+    if (world.leaves.instanceColor) world.leaves.instanceColor.needsUpdate = true;
+  }
+
+  function updatePeople() {
+    let count = 0,
+      teamCount = 0,
+      cohortStart = 0;
+    const peopleScale = run.config.population / 110;
+    const person = (position: THREE.Vector3, angle: number, safe: boolean) => {
+      if (count >= 600) return;
+      position.y = 1.05;
+      setInstance(people, count, position, 1, angle);
+      people.setColorAt(count, new THREE.Color(safe ? 0x83f0c8 : 0xffdc8b));
+      const head = position.clone();
+      head.y += 0.65;
+      setInstance(heads, count++, head, 1, angle);
+    };
+    const team = (position: THREE.Vector3, angle: number) => {
+      if (teamCount >= 120) return;
+      position.y = 0.85;
+      setInstance(vehicles, teamCount, position, 1, angle);
+      const cab = position.clone();
+      cab.y = 1.65;
+      setInstance(cabs, teamCount, cab, 1, angle);
+      cab.x += Math.sin(angle) * 0.57;
+      cab.z += Math.cos(angle) * 0.57;
+      setInstance(vehicleWindows, teamCount++, cab, 1, angle);
+    };
+    for (const [siteIndex, site] of districts.entries()) {
+      const sector = run.sectors.find((s) => s.id === site.id)!;
+      const inTransit = run.missions
+        .filter((m) => m.sectorId === site.id && m.arrivedAt === null)
+        .reduce((total, m) => total + m.people, 0);
+      const waiting = Math.ceil((sector.population - sector.evacuated - inTransit) / peopleScale);
+      for (let i = 0; i < waiting; i++)
+        person(
+          point(site.x + ((i % 5) - 2) * 0.8, site.z - 3 + Math.floor(i / 5) * 0.6),
+          Math.PI,
+          false,
+        );
+      if (run.modelVersion === 1)
+        for (let i = 0; i < Math.ceil(sector.evacuated / peopleScale); i++)
+          person(point(28 + (i % 9), 28 + siteIndex * 3 + Math.floor(i / 9)), 0, true);
     }
     for (const mission of run.missions) {
-      if (mission.arrivedAt !== null) continue;
-      const positionKey = `${mission.id}-${mission.route}`;
-      const old = positions.get(positionKey) ?? mission.progress;
-      const progress =
-        moving && !reducedMotion
-          ? THREE.MathUtils.lerp(old, mission.progress, 0.24)
-          : mission.progress;
-      positions.set(positionKey, progress);
-      const path = evacuationPath(mission.sectorId, mission.route === "alternative");
-      if (mission.reroutedFrom !== undefined) {
-        const origin = alongPath(evacuationPath(mission.sectorId, false), mission.reroutedFrom);
-        path[0] = origin;
-        path[1].z = origin.z;
-      }
-      const count = Math.max(3, Math.ceil((mission.people / run.config.population) * 120));
-      for (let i = 0; i < count; i++) {
-        const point = alongPath(path, Math.max(0, progress - i * 0.004));
-        point.x += ((i % 3) - 1) * 0.75;
-        point.y =
-          1 + (moving && !reducedMotion && run.routeOpen ? Math.sin(now * 0.012 + i) * 0.08 : 0);
-        setInstance(people, personCount++, point, 1.15);
-      }
-      const teamPoint = alongPath(path, Math.min(1, progress + 0.02));
-      const next = alongPath(path, Math.min(1, progress + 0.03));
-      if (teamCount < 24)
-        setInstance(
-          teams,
-          teamCount++,
-          teamPoint,
-          1,
-          Math.atan2(next.x - teamPoint.x, next.z - teamPoint.z),
+      const path = missionPath(mission);
+      const center = alongPath(path, mission.progress);
+      const angle = pathHeading(path, mission.progress);
+      const members = Math.max(1, Math.ceil(mission.people / peopleScale));
+      const originProgress = mission.reroutedFrom ?? 0;
+      const journeyProgress = originProgress + (1 - originProgress) * mission.progress;
+      const gather = Math.max(0, (journeyProgress - 0.88) / 0.12);
+      for (let i = 0; i < members; i++) {
+        const index = cohortStart + i;
+        const position = center.clone();
+        position.x += THREE.MathUtils.lerp(((i % 3) - 1) * 0.8, ((index % 15) - 7) * 0.8, gather);
+        position.z += THREE.MathUtils.lerp(
+          (Math.floor(i / 3) - 1) * 0.6,
+          Math.floor(index / 15) * 0.8,
+          gather,
         );
+        person(position, angle, mission.arrivedAt !== null);
+      }
+      cohortStart += members;
+      if (mission.arrivedAt === null) team(center.clone().add(point(1.5, 0, 0)), angle);
     }
-    const deployments = run.log.filter(
-      (entry) =>
-        entry.kind === "decision" &&
-        (entry.action === "assess" || entry.action === "protect" || entry.action === "reroute") &&
-        entry.minute >= run.phase * 5,
-    );
-    for (const entry of deployments) {
-      if (teamCount >= 24) break;
-      const site = districts.find((item) => item.id === entry.sectorId)!;
-      const progress = Math.min(1, (time - entry.minute) / 1.5);
-      const path = evacuationPath(site.id, false).toReversed();
-      setInstance(teams, teamCount++, alongPath(path, progress));
+    for (const entry of run.log) {
+      if (
+        entry.kind !== "decision" ||
+        !entry.sectorId ||
+        entry.action === "evacuate" ||
+        entry.minute < run.phase * 5
+      )
+        continue;
+      const site = districts.find((s) => s.id === entry.sectorId)!;
+      if (entry.action === "assess" || entry.action === "protect")
+        team(point(site.x + 3, site.z - 3), 0);
     }
-    people.count = personCount;
-    teams.count = teamCount;
-    people.instanceMatrix.needsUpdate = true;
-    teams.instanceMatrix.needsUpdate = true;
-    for (const route of routes.children)
-      route.visible =
-        route.name === `${selected}-${run.phase >= 1 && run.routeOpen ? "alternative" : "main"}`;
+    people.count = count;
+    heads.count = count;
+    vehicles.count = teamCount;
+    cabs.count = teamCount;
+    vehicleWindows.count = teamCount;
+    for (const mesh of [people, heads, vehicles, cabs, vehicleWindows])
+      mesh.instanceMatrix.needsUpdate = true;
+    if (people.instanceColor) people.instanceColor.needsUpdate = true;
+  }
+
+  function render(now: number) {
+    if (disposed || failed) return;
+    frame = requestAnimationFrame(render);
+    if (document.hidden || now - lastRender < 32) return;
+    if (!dirty && !(orbit && !reducedMotion)) return;
+    lastRender = now;
+    const started = performance.now();
+    if (dirty) {
+      const clock = drillMinute(run);
+      updateRoutes();
+      updateHazards(clock);
+      updatePeople();
+      for (const [id, pad] of pads) {
+        pad.material.opacity = id === selected ? 0.2 : 0.05;
+        perimeters.get(id)!.visible = run.sectors.find((sector) => sector.id === id)!.protected;
+      }
+      world.labels.forEach((label, index) => {
+        if (label) label.visible = cameraView !== "street" || districts[index]?.id === selected;
+      });
+      host.dataset.drillMinute = String(clock);
+      host.dataset.drillMissions = JSON.stringify(
+        run.missions.map((mission) => ({
+          progress: mission.progress,
+          route: mission.route,
+          arrivedAt: mission.arrivedAt,
+          position: alongPath(missionPath(mission), mission.progress).toArray(),
+        })),
+      );
+    }
     controls.autoRotate = orbit && !reducedMotion;
     controls.autoRotateSpeed = 0.4;
     controls.update();
     renderer.render(scene, camera);
+    dirty = false;
+    if (!statsStart) statsStart = now;
+    statsFrames++;
+    statsDuration += performance.now() - started;
+    host.dataset.drillRenderer = JSON.stringify({
+      calls: renderer.info.render.calls,
+      triangles: renderer.info.render.triangles,
+      geometries: renderer.info.memory.geometries,
+      textures: renderer.info.memory.textures,
+      pixelRatio: renderer.getPixelRatio(),
+      shadows: renderer.shadowMap.enabled,
+      frames: statsFrames,
+      elapsedMs: Math.round(now - statsStart),
+      averageCpuMs: Math.round((statsDuration / statsFrames) * 100) / 100,
+    });
   }
   frame = requestAnimationFrame(render);
   return {
     update(next: DrillRun, sector: SectorId, animate: boolean, reduce: boolean) {
-      if (next.id !== run.id || drillMinute(next) < drillMinute(run)) positions.clear();
+      const changedSector = selected !== sector;
       run = next;
       selected = sector;
-      moving = animate;
+      host.dataset.drillPlaying = String(animate);
       reducedMotion = reduce;
-      updateTime = performance.now();
+      dirty = true;
+      if (changedSector && cameraView === "street") positionCamera("street");
     },
     view(mode: CameraView) {
       positionCamera(mode);
     },
     setOrbit(value: boolean) {
       orbit = value;
+      dirty = true;
     },
     zoom(direction: number) {
-      camera.position
-        .sub(controls.target)
-        .multiplyScalar(direction > 0 ? 0.85 : 1.15)
-        .add(controls.target);
+      const offset = camera.position.clone().sub(controls.target);
+      offset.multiplyScalar(direction > 0 ? 0.85 : 1.15);
+      offset.setLength(
+        THREE.MathUtils.clamp(offset.length(), controls.minDistance, controls.maxDistance),
+      );
+      camera.position.copy(controls.target).add(offset);
       controls.update();
+      dirty = true;
     },
     dispose() {
       disposed = true;
@@ -623,7 +606,6 @@ export function createDrillScene(
       renderer.domElement.removeEventListener("pointerdown", onDown);
       renderer.domElement.removeEventListener("pointerup", onUp);
       renderer.domElement.removeEventListener("webglcontextlost", onLost);
-      const geometries = new Set<THREE.BufferGeometry>();
       scene.traverse((object) => {
         if (object instanceof THREE.Mesh || object instanceof THREE.Line)
           geometries.add(object.geometry);
@@ -635,6 +617,10 @@ export function createDrillScene(
       sun.shadow.dispose();
       renderer.dispose();
       renderer.domElement.remove();
+      delete host.dataset.drillRenderer;
+      delete host.dataset.drillMissions;
+      delete host.dataset.drillMinute;
+      delete host.dataset.drillPlaying;
     },
   };
 }

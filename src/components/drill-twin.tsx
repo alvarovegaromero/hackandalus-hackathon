@@ -10,6 +10,7 @@ import {
   type SectorId,
 } from "@/lib/emergency-drills";
 import type { CameraView, DrillScene } from "./drill-scene";
+import styles from "./drill-scene.module.css";
 
 interface TwinProps {
   run: DrillRun;
@@ -28,18 +29,38 @@ export default function DrillTwin({
 }: TwinProps) {
   const host = useRef<HTMLDivElement>(null);
   const scene = useRef<DrillScene | null>(null);
-  const state = useRef({ run, selected, playing, onSelect, reduced: false });
+  const state = useRef({
+    run,
+    selected,
+    playing,
+    onSelect,
+    reduced: false,
+    view: "overview" as CameraView,
+    orbit: false,
+  });
   const [status, setStatus] = useState<"loading" | "ready" | "unavailable">("loading");
   const [view, setView] = useState<CameraView>("overview");
   const [orbit, setOrbit] = useState(false);
   const [reduced, setReduced] = useState(false);
   const [table, setTable] = useState(false);
   const metrics = drillMetrics(run);
+  const minute = drillMinute(run);
+  const cityKey = `${run.config.locality}|${run.config.latitude}|${run.config.longitude}`;
+  const hazardStage =
+    run.config.hazard === "earthquake"
+      ? minute >= 15
+        ? "Aftershock · additional damage"
+        : minute < 1.5
+          ? "Initial impact"
+          : "Damage persists"
+      : minute >= 15
+        ? "Wind shift · northeast"
+        : "Fire advancing · wind east";
 
   useEffect(() => {
-    state.current = { run, selected, playing, onSelect, reduced };
+    state.current = { run, selected, playing, onSelect, reduced, view, orbit };
     scene.current?.update(run, selected, playing, reduced);
-  }, [run, selected, playing, onSelect, reduced]);
+  }, [run, selected, playing, onSelect, reduced, view, orbit]);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -60,6 +81,8 @@ export default function DrillTwin({
         scene.current = instance;
         const current = state.current;
         instance.update(current.run, current.selected, current.playing, current.reduced);
+        instance.view(current.view);
+        instance.setOrbit(current.orbit);
         setStatus("ready");
       })
       .catch(() => {
@@ -71,7 +94,7 @@ export default function DrillTwin({
       instance?.dispose();
       scene.current = null;
     };
-  }, []);
+  }, [cityKey]);
 
   function camera(mode: CameraView) {
     setView(mode);
@@ -95,36 +118,44 @@ export default function DrillTwin({
           {replay ? "Recorded replay" : playing ? "Simulation running" : "Simulation paused"}
         </span>
       </div>
-      <div className="drill-cinema">
-        <div ref={host} className="drill-webgl-canvas" />
-        {status !== "ready" ? (
-          <div className="drill-render-message" role="status">
-            <Box size={38} />
-            <strong>
-              {status === "loading"
-                ? "Building your training city…"
-                : "3D rendering is unavailable"}
-            </strong>
-            <p>
-              {status === "loading"
-                ? "Preparing terrain, buildings and response routes."
-                : "Enable WebGL and reload for the 3D view. The simulation, controls and sector table remain available below."}
-            </p>
-          </div>
-        ) : null}
+      <div className={`drill-cinema ${styles.cinema}`}>
+        <div className={styles.stage}>
+          <div ref={host} className="drill-webgl-canvas" />
+          {status !== "ready" ? (
+            <div className="drill-render-message" role="status">
+              <Box size={38} />
+              <strong>
+                {status === "loading"
+                  ? "Building your training city…"
+                  : "3D rendering is unavailable"}
+              </strong>
+              <p>
+                {status === "loading"
+                  ? "Preparing terrain, buildings and response routes."
+                  : "Enable WebGL and reload for the 3D view. The simulation, controls and sector table remain available below."}
+              </p>
+            </div>
+          ) : null}
+        </div>
         <div className="drill-cinema-hud">
           <span>
             {run.config.hazard === "earthquake" ? "Earthquake response" : "Wildfire response"}
           </span>
           <strong>
-            {formatDrillTime(drillMinute(run))}
+            {formatDrillTime(minute)}
             <small> / 20:00</small>
           </strong>
-          <p>{run.config.severity} intensity</p>
+          <p>
+            {run.config.severity} intensity · {hazardStage}
+          </p>
         </div>
         <div className="drill-cinema-status">
           <span className={run.routeOpen ? "" : "is-blocked"}>
-            {run.routeOpen ? "Route available" : "Route blocked"}
+            {run.routeOpen
+              ? run.phase >= 1
+                ? "Diversion available"
+                : "Main route available"
+              : "Route blocked · groups stopped"}
           </span>
           <span>{metrics.inTransit} people in transit</span>
           <span>{metrics.evacuated} at assembly point</span>
@@ -174,7 +205,7 @@ export default function DrillTwin({
             type="button"
             disabled={status !== "ready" || reduced}
             aria-label="Orbit camera automatically"
-            aria-pressed={orbit}
+            aria-pressed={orbit && !reduced}
             onClick={() => {
               setOrbit(!orbit);
               scene.current?.setOrbit(!orbit);
@@ -193,6 +224,12 @@ export default function DrillTwin({
           <span>
             <i className="drill-key-safe" /> Assembly point
           </span>
+          <span>
+            <i className={styles.perimeter} /> Secured perimeter
+          </span>
+          <span>
+            <i className={styles.route} /> Route · dashed = diversion
+          </span>
           <span className="drill-drag-hint">Drag to orbit · Scroll to zoom</span>
         </div>
       </div>
@@ -209,6 +246,8 @@ export default function DrillTwin({
               {sector.name}
               <small>
                 {sector.population - sector.evacuated} outside assembly · Risk {sector.risk}/100
+                {" · "}
+                {sector.protected ? "Secured" : "Exposed"}
               </small>
             </span>
           </button>
@@ -218,6 +257,7 @@ export default function DrillTwin({
         <p>
           Procedural geography. People markers represent groups; their paths follow the simulation
           state. No surveyed terrain or physical hazard prediction.
+          {reduced ? " Reduced motion: no shake, wave expansion or automatic orbit." : ""}
         </p>
         <button
           type="button"
