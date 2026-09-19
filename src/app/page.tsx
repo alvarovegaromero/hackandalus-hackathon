@@ -1,157 +1,113 @@
 "use client";
 
+// Operator screen: tactical map plus the live event log.
+
+import { Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
-import type { CrisisZone, Plan } from "@/lib/types";
-import { coordinatorStateSchema, type CoordinatorState } from "@/lib/contracts/coordinator";
+import type { SituationState } from "@/lib/types";
 import EventLog from "@/components/EventLog";
+import { maybe } from "@/components/shared";
 import { useTelemetry } from "@/components/use-telemetry";
 
+const POLL_MS = 4000;
+
+// Leaflet touches `window`, so the map only renders in the browser.
 const LeafletMap = dynamic(() => import("@/components/LeafletMap"), {
   ssr: false,
-  loading: () => <p>Loading map?</p>,
+  loading: () => <p>Loading Sierra Bermeja map…</p>,
 });
-const mapPlan: Plan = {
-  id: "map-context",
-  version: 0,
-  previousVersion: null,
-  generatedAt: "",
-  summary: "Illustrative geography",
-  priorities: [],
-  proposedActionIds: [],
-  invalidatedActionIds: [],
-  changes: [],
-  trigger: "static-map",
-};
 
 export default function Home() {
-  const [state, setState] = useState<CoordinatorState | null>(null);
-  const [zones, setZones] = useState<CrisisZone[]>([]);
+  const [situation, setSituation] = useState<SituationState | null>(null);
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const telemetry = useTelemetry();
-  useEffect(() => {
-    const controller = new AbortController();
-    void fetch("/api/map", { signal: controller.signal })
-      .then((r) => {
-        if (!r.ok) throw new Error("Map unavailable");
-        return r.json();
-      })
-      .then((data) => setZones(data.zones))
-      .catch(() => undefined);
-    return () => controller.abort();
-  }, []);
+  const [startingDemo, setStartingDemo] = useState(false);
+  const [demoMessage, setDemoMessage] = useState<string | null>(null);
+
+  const restartEvents = async () => {
+    if (startingDemo) return;
+    setStartingDemo(true);
+    setDemoMessage(null);
+    try {
+      const response = await fetch("/api/demo/events", { method: "POST" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "Could not start demo events.");
+      setDemoMessage(`Started ${result.count} events, one every 3 seconds.`);
+    } catch (caught) {
+      setDemoMessage(caught instanceof Error ? caught.message : "Could not start demo events.");
+    } finally {
+      setStartingDemo(false);
+    }
+  };
+
+  // GET /api/situation also advances the scenario script.
   useEffect(() => {
     let stopped = false;
-    let busy = false;
-    let controller: AbortController | undefined;
-    let timer: ReturnType<typeof setTimeout>;
     const refresh = async () => {
-      if (stopped || busy) return;
-      clearTimeout(timer);
-      if (document.hidden) {
-        timer = setTimeout(refresh, 3000);
-        return;
-      }
-      busy = true;
-      controller = new AbortController();
-      const timeout = setTimeout(() => controller?.abort(), 8000);
       try {
-        const response = await fetch("/api/state", {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-        if (!response.ok)
-          throw new Error("Coordinator state unavailable; displayed data may be stale.");
-        const next = coordinatorStateSchema.parse(await response.json());
+        const response = await fetch("/api/situation");
+        if (!response.ok) throw new Error(`HTTP ${response.status} on /api/situation`);
+        const next = (await response.json()) as SituationState;
         if (!stopped) {
-          setState((previous) =>
-            previous?.stateId === next.stateId && previous.revision > next.revision
-              ? previous
-              : next,
-          );
+          setSituation(next);
           setError(null);
         }
-      } catch {
-        if (!stopped) setError("Coordinator state unavailable; displayed data may be stale.");
-      } finally {
-        clearTimeout(timeout);
-        busy = false;
-        if (!stopped) timer = setTimeout(refresh, 3000);
+      } catch (caught) {
+        if (!stopped) setError(caught instanceof Error ? caught.message : "Unexpected error");
       }
     };
-    const visible = () => {
-      if (!document.hidden) void refresh();
-    };
-    document.addEventListener("visibilitychange", visible);
     void refresh();
+    const timer = setInterval(refresh, POLL_MS);
     return () => {
       stopped = true;
-      clearTimeout(timer);
-      controller?.abort();
-      document.removeEventListener("visibilitychange", visible);
+      clearInterval(timer);
     };
   }, []);
+
   return (
     <main className="shell flex flex-col gap-4">
-      <h1 className="text-[16px] font-medium">FARO ? Sierra Bermeja</h1>
-      <p>
-        Simulated coordination. Assigned ambulances remain committed; resource release is not
-        enabled.
-      </p>
-      {error && <p role="alert">{error}</p>}
-      {state ? (
-        <section className="flex flex-col gap-3" aria-label="Current coordination state">
-          <p>
-            <strong>
-              Available ambulances: {state.ambulances.available}/{state.ambulances.total}
-            </strong>{" "}
-            ? Assigned: {state.ambulances.allocated} ? Revision {state.revision}
-          </p>
-          <p>{state.situationOverview || "Awaiting the first coordinated situation update."}</p>
-          {state.plan && (
-            <div>
-              <h2>{state.plan.objective}</h2>
-              <ol className="list-decimal pl-5">
-                {state.plan.steps.map((step, index) => (
-                  <li key={index}>{step}</li>
-                ))}
-              </ol>
-            </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-[16px] font-medium">Faro</h1>
+        {process.env.NODE_ENV === "development" ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <span role="status" className="text-xs text-blueprint-light">
+              {demoMessage}
+            </span>
+            <button
+              type="button"
+              onClick={restartEvents}
+              disabled={startingDemo}
+              className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
+            >
+              {startingDemo ? "Starting…" : "Reset & run events"}
+            </button>
+          </div>
+        ) : null}
+      </div>
+      {error ? <p role="alert">{error}</p> : null}
+      <div className="event-map-layout">
+        <div className="min-w-0">
+          <EventLog records={telemetry.records} status={telemetry.status} />
+        </div>
+        <div className="min-w-0">
+          {situation ? (
+            <LeafletMap
+              zones={situation.zones}
+              plan={situation.plan}
+              world={maybe(situation, "world")}
+              events={telemetry.records}
+              selectedZoneId={selectedZoneId}
+              onSelect={(zoneId) => setSelectedZoneId(zoneId === selectedZoneId ? null : zoneId)}
+            />
+          ) : (
+            <p className="flex items-center gap-2">
+              <Loader2 className="spin" size={16} aria-hidden="true" /> Loading map…
+            </p>
           )}
-          <ul>
-            {state.events.map((event) => (
-              <li key={event.eventId}>
-                <strong>{event.priority ?? "Pending priority"}</strong>: {event.summary}
-                <p>{event.rationale}</p>
-              </li>
-            ))}
-          </ul>
-          <details>
-            <summary>Ambulance assignments</summary>
-            <ul>
-              {state.ambulances.units.map((unit) => (
-                <li key={unit.id}>
-                  {unit.id}: {unit.status}
-                  {unit.eventId ? " ? " + unit.eventId : ""}
-                </li>
-              ))}
-            </ul>
-          </details>
-        </section>
-      ) : (
-        <p>Loading coordinator state?</p>
-      )}
-      {zones.length > 0 && (
-        <LeafletMap
-          zones={zones}
-          plan={mapPlan}
-          events={telemetry.records}
-          selectedZoneId={selectedZoneId}
-          onSelect={(id) => setSelectedZoneId(id === selectedZoneId ? null : id)}
-        />
-      )}
-      <EventLog records={telemetry.records} status={telemetry.status} />
+        </div>
+      </div>
     </main>
   );
 }

@@ -5,12 +5,10 @@ one refreshed prompt, a dedicated worker, event/five-second triggers and individ
 ambulance commitments. Apply the v2 migration and run npm run coordinator:work
 alongside the app. Release is disabled; the v1 sections below are historical.
 
-Resource implementation update: GET /api/state, POST /api/agent/plan and
-POST /api/state/release now use persisted Supabase inventory (10 ambulances).
-P4 persisted execution replaces the legacy P3 unlimited fixture with finite state;
-only ambulance proposals are accepted. Plans and allocation audit commit together.
-See [resource state contract](resource-state-contract.md). Earlier unlimited examples below describe
-the historical standalone harness. FE/intake integration remains pending.
+The v1 resource sections below are historical. Current GET /api/state returns v2;
+POST /api/agent/plan is retired (410), and POST /api/state/release is disabled (501).
+HTTP intake queues durable coordinator input. Frontend integration is assigned to
+its engineer; see [the handoff](coordinator-frontend-integration.md).
 
 Scope agreed on 2026-09-19. This is the team's initial delivery plan, not a claim
 of implemented behavior. TASKS.md tracks completion. The broader product vision
@@ -45,8 +43,7 @@ create a plan, execute an action, and show the result. A later report must chang
 the next action. Persist plans now; defer the full plan browser/editor.
 
 The operator can inspect reports, agent messages and activity, see the current
-objective/action/result, and intervene through approval or pause. Preserve the
-SKETCH notice. Mock actions must be visibly simulated; a verified real interaction
+objective/action/result, and intervene through approval or pause. Mock actions must be visibly simulated; a verified real interaction
 with an approved demo recipient is required to demonstrate the challenge's real
 interaction requirement.
 
@@ -137,7 +134,7 @@ instead of creating competing enums or editing shared contracts independently.
 | ID  | Package / ownership            | First deliverable                                                                                                               | Acceptance                                                                                                                                         |
 | --- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | P0  | Contracts and integration      | Shared Zod contracts and fixtures for filter, priority, agent execution, activity and UI; preserve the existing report contract | All packages consume identical examples; IDs, unknown values, state transitions and retry behavior are explicit                                    |
-| P1  | Input and scenarios            | Report intake, stable delivery identity, persistence, recoverable Workflow start; scenario fixtures                             | Text-only report accepted; duplicate delivery produces one effective processing run; storage/start failure recovers; independent witnesses survive |
+| P1  | Input and scenarios            | Report intake, stable delivery identity, persistence, recoverable processing start; scenario fixtures                           | Text-only report accepted; duplicate delivery produces one effective processing run; storage/start failure recovers; independent witnesses survive |
 | P2  | Jev relevance filter           | Typed decision with evidence references, brief justification and unavailable/error state                                        | Greeting stops; relevant and uncertain reports continue; Jev failure stops with a backend error log                                                |
 | P3  | Deterministic impact           | Source-of-truth formula, versioned configuration and structured factor breakdown                                                | Repeatable raw impact; source and relevance remain separate; unknown factors continue to P4 explicitly                                             |
 | P4  | Agent and HappyRobot execution | Persist messages and plan versions; one validated tool; persist dispatch/outcome; handle a later report                         | Initial action and changed next action visible; retries do not duplicate dispatch; simulation, acceptance and confirmed result are distinct        |

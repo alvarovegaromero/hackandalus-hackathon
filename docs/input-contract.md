@@ -137,9 +137,9 @@ The broader target would accept a report, an array, or
 
 1. Validate request context and each report; deduplicate transport retries.
 2. Persist the original report and server metadata.
-3. Confirm a durable Workflow start for each new report.
+3. Confirm a durable processing start for each new report.
 4. Return `202` with IDs, without waiting for interpretation or triage.
-5. In the Workflow, normalize/enrich, triage, correlate incidents and replan.
+5. During background processing, normalize/enrich, triage, correlate incidents and replan.
 
 Response arrays are `accepted`, `merged`, `rejected`, and `errors`, each keyed by
 input `index`. Accepted and merged entries include the signal `id`; merged
@@ -169,7 +169,7 @@ implementation decisions to resolve before exposing this endpoint.
 ## Compatibility with Luis's work
 
 Luis Sánchez Travesí's `da1cc21` introduced batch ingestion and the scenario-to-agent
-bridge. Preserve the scenario engine, bounded workflow starts, per-item results,
+bridge. Preserve the scenario engine, bounded processing starts, per-item results,
 retry identity and existing tests while migrating the contracts.
 
 - `src/lib/signals/schema.ts` remains the simulator's producer contract. Its
@@ -187,10 +187,10 @@ retry identity and existing tests while migrating the contracts.
   a wall-clock timestamp without the scenario clock origin.
 - Replace the hard-coded `medium` severity with triage assessment when migrating
   the consumer. Preserve structured readings, channel and source provenance.
-- Port batch orchestration from `src/lib/ingest.ts` and `ingest-server.ts` while
+- Port batch orchestration from `src/lib/ingest.ts` while
   adapting their old `CrisisEvent` input and persistence model. Their current
   event-ID deduplication is not yet the target deduplication contract.
-- Migrate the workflow consumer and scenario bridge together. Keep the current
+- Connect the processing consumer and scenario bridge together. Keep the current
   `/api/events` contract until its callers have migrated; do not silently change
   its meaning or route public reports through the development-only demo bridge.
 
@@ -208,7 +208,7 @@ remain. Integrate them into the served API after reconciling the report contract
 - [x] Test scenario retry identity, structured readings and no ground-truth leak.
 - [x] Add durable HappyRobot Signal persistence and expose the route under
       `src/app/`; synchronous recovery is implemented for this first slice.
-- [ ] Migrate the broader batch contract to durable Workflow scheduling.
+- [ ] Migrate the broader batch contract to durable background scheduling.
 - [ ] Test mixed batches, duplicate deliveries, scheduling failure and recovery.
 - [ ] Add the reporting form: text, optional device location or incident pin,
       textual place alternative, and a receipt distinct from triage results.

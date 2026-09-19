@@ -3,9 +3,15 @@
 ## Global coordinator contract v2
 
 - [x] Define one refreshed prompt, event/5-second triggers, global priorities/plan and per-ambulance state in docs/coordinator-state-contract.md.
-- [x] Implement per-vehicle persistence, global coordinator execution and serialized scheduling; migrate state endpoint and FE together. Release disabled.
+- [x] Implement per-vehicle persistence, global coordinator execution and serialized scheduling; migrate state endpoint. Frontend integration is assigned to its engineer; release disabled.
 - [x] Add on-demand v2 scenarios: three live model cases and eight transactional SQL checks passed locally. Completion/resource-release inputs and real tools remain deferred.
 - [x] Apply v2 migration to Supabase; eight live SQL checks passed with rollback. HTTP state v2/auth/retired routes and worker IDLE verified.
+
+## Runtime cleanup
+
+- [x] Remove Vercel Workflow, the Next.js plugin, unused execution scaffold and
+      dependency overrides. Keep the legacy generated-route cleanup for existing
+      checkouts. AI SDK and HappyRobot remain; the global coordinator uses a dedicated worker.
 
 ## 24-hour hackathon workflow
 
@@ -18,7 +24,7 @@
 - [x] Supabase inventory, state endpoint, atomic plan/allocation commit, explicit idempotent release and manual scarcity/SQL scripts implemented.
 - [x] Apply resource migration to Supabase through SQL Editor; verify server REST access returns 200 with 10 available ambulances, zero allocations and revision 0.
 - [x] Rerun three live P4 scarcity cases and eight transactional SQL cases in Supabase; all passed. Rollback preserved 10/10 availability and revision 0. Model and database exercised separately, not HTTP E2E.
-- [x] Superseded by v2: FE polls global state; legacy situation route returns 410; intake queues durable coordinator input.
+- [x] Superseded by v2: intake queues durable coordinator input; state v2 is ready for frontend integration.
 
 ## Initial POC · active delivery scope
 
@@ -101,7 +107,7 @@ alternatives, not a requirement to implement both transports.
 - [x] npm, lockfile, and commands for dev, build, lint, typecheck, and tests.
 - [x] Shared event and plan schemas with Zod.
 - [x] Coordinator prepared with Vercel AI SDK and configurable model.
-- [x] Example workflow with persistent steps and token-protected API.
+- [x] Initial durable execution scaffold (subsequently removed; scheduler TBD).
 - [x] Zero-credential command center with event intake and action review;
       obsolete standalone scaffolding dashboard retired.
 - [x] Supabase server and browser clients; Realtime subscription helper.
@@ -111,11 +117,10 @@ alternatives, not a requirement to implement both transports.
 - [x] `.env.example`, README, and agent instructions updated.
 - [x] Initial scaffold validated locally; current checks cover command-center,
       platform and hook suites via `npm run check`.
-- [x] Tested local workflow to completion in simulation, validating 401/400 errors.
+- [x] Historical simulation validation of the now-removed execution scaffold.
 - [x] Reviewed dependencies: clean vulnerability audit after adjustments.
 
-The served dashboard uses the in-memory command-center backend, separate from
-the platform Workflow. Local JSON persistence is optional.
+The served dashboard uses the in-memory command-center backend, without an integrated background agent scheduler. Local JSON persistence is optional.
 The migration is written but unapplied; Supabase clients and the Realtime helper
 are prepared but not connected to the dashboard. Live model calls and real external
 communications have not been tested.
@@ -166,6 +171,16 @@ communications have not been tested.
 - [x] First inbound HappyRobot slice: authenticated `/api/signals`, durable raw
       `normalized_report`, transport idempotency, FARO-owned Event interpretation,
       and reuse of the active planning/Digital Twin/dashboard flow.
+- [x] Reconcile the deployed development `public.signals` table (created earlier
+      from the `docs/data-model.md` proposal, missing the durable receipt columns)
+      with `src/lib/signals/repository.ts` via
+      `supabase/migrations/202609190002_reconcile_signals_schema.sql`, preserving
+      existing rows. Verified against the real development database:
+      `POST /api/signals` persists and processes a report, the resulting Event
+      reaches the Digital Twin/plan/actions/audit trail in `/api/situation`, its
+      `event.accepted` record appears on `/api/telemetry`, and a duplicate
+      delivery of the same report is idempotent end to end (single DB row,
+      single Event, single action, single audit entry).
 - [ ] Agree on demo recipients and test resources for external validations.
 
 Open decisions do not block the foundational scaffolding and must not be resolved with invented values.
@@ -176,8 +191,7 @@ are in the source document.
 ## Phase 3 · First Connected Vertical
 
 - [x] Batch ingestion with event deduplication (Milestone A in `docs/input-architecture.md`), optional persistence in Supabase.
-- [x] Implement scenario-to-workflow bridge in the platform base; exposing it
-      in the served application remains part of consolidation.
+- [ ] Connect the scenario report adapter to the future agent processor.
 - [ ] Persist plans, actions, and outcomes in Supabase.
 - [x] Prevent duplicate external actions during retries: `src/lib/happyrobot.ts` adapter sends idempotency key per dispatch/attempt and webhook caches processed deliveries.
 - [ ] Integrate history and live resource availability into decisioning.
@@ -193,7 +207,7 @@ are in the source document.
 - [ ] Poll `GET /runs/{run_id}` as a fallback when no callback arrives; today a live action stays `running` until the webhook fires.
 - [ ] Decide the SMS provider for Public Alert and Inbound SMS (Telnyx number is not toll-free; no Twilio credentials).
 - [ ] Run one live dispatch against an approved demo recipient and record the result.
-- [ ] Add waits, retries, and failure recovery to workflow.
+- [ ] Select and implement background execution, waits, retries and recovery.
 - [x] Demonstrate replanning when situation changes mid-execution:
       self-advancing scripts, chaos fault injection, and plan version diffs in command center.
 - [x] Digital twin, initial release: `src/lib/digitalTwin.ts` reconstructs perceived world from signals and measures accuracy against simulated ground truth; displayed in `src/components/DigitalTwinPanel.tsx`.
@@ -223,8 +237,8 @@ Contract and limits: [docs/event-telemetry.md](docs/event-telemetry.md).
 
 ## Repository organization
 
-- [x] Mark the dashboard as SKETCH in its persistent notice, page metadata,
-      developer guidance and design documentation.
+- [x] Document the dashboard prototype status in developer guidance.
+- [x] Remove the visible prototype banner and SKETCH page title at the team's request.
 - [x] Remove unused `src/lib/autonomy.ts`, `src/lib/triage.ts` and their isolated tests;
       preserve the library modules used by the API, UI and report adapter.
 - [ ] Implement and connect calibrated triage and graduated autonomy in the
@@ -256,7 +270,7 @@ Contract and limits: [docs/event-telemetry.md](docs/event-telemetry.md).
 - [x] Envelope schema (`src/lib/report.ts`) and scenario adapter (`signalToReport`),
       preserving scenario evidence and retry IDs.
 - [ ] Public report validator and remaining channel adapters.
-- [ ] Reconcile persistence and scheduling recovery, migrate the workflow consumer,
+- [ ] Reconcile persistence and scheduling recovery, connect the processing consumer,
       and expose report intake in `src/app/`.
 - [ ] Add a reporting form with optional GPS, incident pin or textual location.
 

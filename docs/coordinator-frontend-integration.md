@@ -30,7 +30,16 @@ units whose status is `assigned`. There is no resource release operation yet.
 Event SSE at `/api/telemetry` remains a separate intake receipt stream, not a stream
 of global plans. Coordinator-state polling is authoritative for allocations and
 priorities. `/api/map` supplies illustrative geography without advancing a scenario.
-The old `/api/situation` and per-report `/api/agent/plan` return 410.
+The per-report /api/agent/plan returns 410. /api/situation remains temporarily
+available for the unchanged legacy dashboard; do not use it for coordinator state.
+Frontend components are intentionally unchanged: this document is the handoff.
+The existing demo button runs the standalone legacy Jev flow, not the coordinator.
+Submit through the report endpoint below for the new pipeline.
+
+SSE completion from the separate coordinator worker is not bridged to the web
+process yet. /api/events emits intake receipts; /api/coordinator/events returns
+a durable HTTP receipt only. Do not wait for a filtering.completed SSE record to
+fetch coordinator state. Filtered/error reports remain in backend storage/logs.
 
 Authorization follows the existing pipeline policy: local development without a
 configured token is open; otherwise the backend requires Bearer authentication.

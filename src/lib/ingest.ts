@@ -7,7 +7,7 @@ export const MAX_CONCURRENT_STARTS = 10;
 
 // Stores the events and returns the ids that were new; the rest were already ingested.
 export type PersistEvents = (events: CrisisEvent[]) => Promise<Set<string>>;
-// Starts the durable workflow for one event and returns its run id.
+// Starts processing for one event and returns its run id.
 export type StartRun = (event: CrisisEvent) => Promise<string>;
 
 export type IngestResult = {

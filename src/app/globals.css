@@ -2123,3 +2123,11 @@ button.active {
 .lessons-box .section-head {
   margin-top: 0;
 }
+
+/* Keep the live events and map side by side without the legacy .grid rules. */
+.event-map-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  align-items: start;
+  gap: 1rem;
+}

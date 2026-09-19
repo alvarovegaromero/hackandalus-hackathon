@@ -5,12 +5,10 @@ one refreshed prompt, a dedicated worker, event/five-second triggers and individ
 ambulance commitments. Apply the v2 migration and run npm run coordinator:work
 alongside the app. Release is disabled; the v1 sections below are historical.
 
-Resource implementation update: GET /api/state, POST /api/agent/plan and
-POST /api/state/release now use persisted Supabase inventory (10 ambulances).
-P4 persisted execution replaces the legacy P3 unlimited fixture with finite state;
-only ambulance proposals are accepted. Plans and allocation audit commit together.
-See [resource state contract](resource-state-contract.md). Earlier unlimited examples below describe
-the historical standalone harness. FE/intake integration remains pending.
+The v1 resource sections below are historical. Current GET /api/state returns v2;
+POST /api/agent/plan is retired (410), and POST /api/state/release is disabled (501).
+HTTP intake queues durable coordinator input. Frontend integration is assigned to
+its engineer; see [the handoff](coordinator-frontend-integration.md).
 
 Defined on 2026-09-19 for [P0–P5](poc.md). This is the initial implementation
 contract between packages. P2 filter request/result and P3 handoff schemas are
@@ -117,7 +115,7 @@ In the definitions below, application IDs are UUIDs and timestamps are ISO UTC.
 `eventId` is the canonical ingress/report ID. `runId` is the scenario/crisis
 session; `executionId` identifies one logical processing execution for a report.
 Transport retries preserve execution identity; an explicit reassessment creates
-a new execution. Provider attempt IDs and Workflow runtime IDs are separate.
+a new execution. Provider attempt IDs and scheduler runtime IDs are separate.
 
 ```ts
 type Context = {

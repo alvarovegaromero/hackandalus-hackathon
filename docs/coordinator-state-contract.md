@@ -151,9 +151,13 @@ revision invalidate an in-flight proposal. The worker retries from fresh state.
   as error and do not proceed. Automatic retry of failed filtering is deferred.
 - POST /api/agent/plan returns 410: per-report mutation is retired.
 - POST /api/state/release returns 501. The v2 RPC has no release operation.
-- GET /api/situation returns 410. GET /api/map serves illustrative geography without
-  advancing the old scenario. FE polls /api/state, displays the plan/priorities and
-  individual ambulance assignments, preserves stale data on error and keeps SKETCH.
+- GET /api/situation remains the legacy scaffold endpoint until the frontend engineer
+  migrates the dashboard. It is separate from durable coordination and is not its
+  source of truth. GET /api/map supplies read-only illustrative geography.
+- Frontend integration is deliberately excluded from this change. The frontend
+  engineer should poll /api/state every three seconds and render its plan, priorities
+  and assignments. The existing demo button still runs the standalone legacy filter;
+  use POST /api/coordinator/events or POST /api/events to exercise the coordinator.
 
 Supabase stores coordinator_runtime (snapshot and lease), coordinator_events
 (immutable inputs and Jev/P3 evidence), and coordinator_audit (revision, state,
@@ -194,8 +198,9 @@ V2 migration applied to Supabase through SQL Editor in an explicit transaction.
 All eight SQL smoke cases also passed against Supabase and rolled back, preserving
 10 available vehicles, no active alerts, and revision 0. The bounded real worker
 returned IDLE without invoking a model. A temporary production HTTP server verified
-state v2 (200), map (200), retired situation/planner routes (410), disabled release
-(501), and missing-token rejection (401). npm run check passed; existing scaffold
+state v2 (200), map (200), retired planner route (410), disabled release
+(501), and missing-token rejection (401). The situation tombstone checked during development was reverted to preserve the
+frontend engineer's existing scaffold. npm run check passed; existing scaffold
 filesystem-tracing build warnings remain. Temporary servers were stopped.
 
 The continuous worker is not left running by validation. Start coordinator:work

@@ -1,5 +1,10 @@
 # FARO · Data Model Proposal
 
+> Runtime update: Vercel Workflow and its unused execution scaffold have been
+> removed. Workflow-based execution below is an earlier proposal, not an installed
+> dependency or an agreed requirement. Background scheduling is TBD. HappyRobot
+> workflows are separate and remain in scope.
+
 > **Confirmed intake decision (2026-09-19):**
 > [input-contract.md](input-contract.md) is authoritative for report intake and
 > normalization: text, optional geographic location, trusted metadata, synchronous
@@ -417,25 +422,25 @@ name now reserved for domain logging.
 ```sql
 create table public.signals (
   id                    uuid primary key default gen_random_uuid(),
-  run_id                uuid not null references public.runs(id),
+  run_id                uuid references public.runs(id),
   area_id               uuid references public.areas(id),
   incident_id           uuid,
   source                text not null
                         check (source in ('operator', 'sensor', 'happyrobot', 'public', 'scenario', 'webhook')),
   channel               text
-                        check (channel in ('call', 'sms', 'whatsapp', 'email', 'web', 'api', 'sensor')),
+                        check (channel in ('voice', 'call', 'sms', 'whatsapp', 'email', 'web', 'api', 'sensor')),
   external_ref          text,
-  title                 text not null check (length(title) <= 300),
-  body                  text not null check (length(body) <= 4000),
-  category              text not null,
-  severity              text not null
+  title                 text check (length(title) <= 300),
+  body                  text check (length(body) <= 4000),
+  category              text,
+  severity              text
                         check (severity in ('low', 'medium', 'high', 'critical')),
   reported_confidence   text
                         check (reported_confidence in ('low', 'medium', 'high')),
   location              jsonb,
   occurred_at           timestamptz not null default now(),
   received_at           timestamptz not null default now(),
-  dedupe_key            text not null,
+  dedupe_key            text,
   occurrences           integer not null default 1 check (occurrences >= 1),
   merged_into_id        uuid references public.signals(id),
 
@@ -462,7 +467,20 @@ create table public.signals (
 
   raw                   jsonb,
   created_at            timestamptz not null default now(),
-  updated_at            timestamptz not null default now()
+  updated_at            timestamptz not null default now(),
+
+  -- durable HappyRobot receipt (see src/lib/signals/repository.ts and
+  -- supabase/migrations/202609190001_happyrobot_signals.sql /
+  -- 202609190002_reconcile_signals_schema.sql for the applied migration history)
+  external_identity     text not null unique,
+  raw_payload           jsonb not null,
+  processing_status     text not null default 'received'
+                        check (processing_status in ('received', 'processing', 'processed', 'failed')),
+  event_id              text,
+  processed_at          timestamptz,
+  processing_error      text,
+  check ((processing_status = 'processed') = (event_id is not null)),
+  check (processing_status <> 'failed' or processing_error is not null)
 );
 create index signals_run_received_idx on public.signals (run_id, received_at desc);
 create index signals_dedupe_idx       on public.signals (run_id, dedupe_key, received_at desc);
@@ -471,9 +489,20 @@ create index signals_untriaged_idx    on public.signals (run_id, received_at)
   where triage_decision is null;
 create index signals_live_idx         on public.signals (run_id, area_id)
   where triage_decision = 'act' and verification_status <> 'refuted';
+create index signals_status_created_idx on public.signals (processing_status, created_at);
 create trigger signals_updated before update on public.signals
   for each row execute function public.set_updated_at();
 ```
+
+The triage-oriented columns above (`run_id` through `updated_at`) predate the durable HappyRobot
+receipt columns and were deployed to the development project directly from this proposal before
+`src/lib/signals/repository.ts` existed. The reconcile migration
+(`202609190002_reconcile_signals_schema.sql`) is what actually brought the deployed table in line
+with both halves shown here: it added the receipt columns, relaxed `not null` on the
+triage-only columns (a raw HappyRobot receipt has no run/title/category/severity/dedupe key until
+it is interpreted into an Event), and extended the `channel` check with HappyRobot's `voice`
+value. Existing rows were preserved and backfilled with a synthetic `external_identity` and a
+`raw_payload` derived from their prior columns.
 
 | Field                                                        | Purpose                                                                                                                                                                                    |
 | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

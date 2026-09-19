@@ -8,8 +8,7 @@ implementation status; [CHALLENGE.md](../CHALLENGE.md) defines the requirements.
 
 ## Current application
 
-**Dashboard status: SKETCH.** The visible notice applies during loading, errors
-and normal operation. The interface is exploratory, with partially connected
+**Dashboard status: SKETCH.** The visible prototype banner has been removed. The interface is exploratory, with partially connected
 controls; it does not define the approved product or target architecture.
 
 Next.js serves `src/app/`; `src/lib/` implements the command center and `tests/` covers
@@ -22,6 +21,7 @@ JSON persistence. Outbound communications default to mock mode.
 | [Security](security.md)                       | Credentials, operator approval and demo recipients.                          |
 | [HappyRobot contract](happyDocumentation.md)  | Verified public API contract, FARO workflow payloads, callbacks and mocking. |
 | [Dashboard design](dashboard-design-guide.md) | Visual and interaction guidance.                                             |
+| [Demo runbook](demo-runbook.md)               | Live-demo startup sequence, tunnel caveats and pre-demo checklist.           |
 
 ## Contracts and integration work
 
@@ -61,7 +61,7 @@ acceptance fixtures. Both are drafts awaiting validation, not approved APIs.
 
 The application now uses one `src/` tree. The active `/api/events` endpoint
 accepts a single command-center event. Reusable batch ingestion, scenario and
-Workflow modules remain in `src/lib/` and `src/workflows/`, but their old
+AI SDK modules remain in `src/lib/`, but their old
 scaffold routes have been retired. They still need integration with the
 confirmed report contract.
 

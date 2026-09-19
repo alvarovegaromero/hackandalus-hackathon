@@ -11,7 +11,7 @@ in-memory state and browser-driven ticking are not the confirmed target design.
 
 This document explains **why** the system is built this way. The _what_ is in the
 README; here are the decisions and their trade-offs. This document describes
-the served command center (`src/app/` and `src/lib/`). The reusable Workflow and batch ingestion modules are not connected to
+the served command center (`src/app/` and `src/lib/`). The reusable AI SDK coordinator and batch ingestion helpers are not connected to
 that runtime; see [input-architecture.md](input-architecture.md)
 and the [documentation index](README.md) before designing the combined architecture.
 
