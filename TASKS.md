@@ -1,16 +1,30 @@
 # Project Tasks
 
+## Global coordinator contract v2
+
+- [x] Define one refreshed prompt, event/5-second triggers, global priorities/plan and per-ambulance state in docs/coordinator-state-contract.md.
+- [x] Implement per-vehicle persistence, global coordinator execution and serialized scheduling; migrate state endpoint. Frontend integration is assigned to its engineer; release disabled.
+- [x] Add on-demand v2 scenarios: three live model cases and eight transactional SQL checks passed locally. Completion/resource-release inputs and real tools remain deferred.
+- [x] Apply v2 migration to Supabase; eight live SQL checks passed with rollback. HTTP state v2/auth/retired routes and worker IDLE verified.
+
 ## Runtime cleanup
 
 - [x] Remove Vercel Workflow, the Next.js plugin, unused execution scaffold and
       dependency overrides. Keep the legacy generated-route cleanup for existing
-      checkouts. AI SDK and HappyRobot remain; background scheduling is TBD.
+      checkouts. AI SDK and HappyRobot remain; the global coordinator uses a dedicated worker.
 
 ## 24-hour hackathon workflow
 
 - [x] Disable pre-commit and remove tests from automatic check/push/PR validation.
       Existing tests remain available manually. Do not add or run more by default.
       Historical hook/test milestones below describe the earlier setup.
+
+## Finite resource backend (v1 history; release now disabled)
+
+- [x] Supabase inventory, state endpoint, atomic plan/allocation commit, explicit idempotent release and manual scarcity/SQL scripts implemented.
+- [x] Apply resource migration to Supabase through SQL Editor; verify server REST access returns 200 with 10 available ambulances, zero allocations and revision 0.
+- [x] Rerun three live P4 scarcity cases and eight transactional SQL cases in Supabase; all passed. Rollback preserved 10/10 availability and revision 0. Model and database exercised separately, not HTTP E2E.
+- [x] Superseded by v2: intake queues durable coordinator input; state v2 is ready for frontend integration.
 
 ## Initial POC · active delivery scope
 
@@ -20,6 +34,15 @@ historical status and broader backlog; they are not extra POC prerequisites.
 All package owners are unassigned; no implementation completion is implied.
 
 - [x] Agree POC scope and document P0–P5 ownership boundaries and dependencies.
+- [x] **P0/P5 — Finite resource contract:** [GET /api/state](docs/resource-state-contract.md),
+      3-second polling, typed counters/allocations, 10 backend-owned ambulances
+      and complete response fixture. Supersedes unlimited availability as target scope.
+- [ ] **P5 — Connect resource state:** FE counters and polling; migrate map data
+      and remove `/api/situation`. Backend inventory/read endpoint implemented.
+- [x] **P3/P4 — Finite allocation:** persisted execution supplies finite inventory;
+      typed ambulances, atomic allocation/idempotent explicit release implemented.
+      Three live LLM scarcity scenarios and eight local SQL cases passed; two
+      concurrent local reservations cannot oversubscribe. No live dispatch.
 - [x] Define [POC package interfaces](docs/poc-contracts.md), identify existing
       input/SSE contracts at `e2579a9`, and specify adapter/extension boundaries.
 - [ ] **P0 — Contracts/integration:** assign owners; freeze shared schemas and
@@ -64,6 +87,10 @@ All package owners are unassigned; no implementation completion is implied.
       zero service errors; all execution remained simulated. No hooks or automatic tests.
 - [ ] **P4 — Agent/execution:** one agent and one HappyRobot operation;
       persist messages, plans and outcomes; respect intervention and replan.
+- [x] **P2/P3/P4 — Manual backend integration:** `npm run llm:try -- --with-jev`,
+      9/9 expected routes and output contracts with live Jev/OpenCode and mock
+      actions on Windows. [Scope and gaps](docs/poc-backend-smoke.md): HTTP intake,
+      durable processing and frontend integration are not covered by this run.
 - [ ] **P5 — Frontend:** reports, decision/activity history, agent messages,
       current objective/action/result and approval or pause; recover on reconnect.
 - [ ] Demonstrate the complete acceptance sequence in docs/poc.md, including

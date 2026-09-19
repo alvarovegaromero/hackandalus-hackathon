@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "stateId": "10000000-0000-4000-8000-000000000001",
+  "runId": "10000000-0000-4000-8000-000000000002",
+  "revision": 1,
+  "generatedAt": "2026-09-19T12:00:03Z",
+  "updatedAt": "2026-09-19T12:00:00Z",
+  "storage": "supabase",
+  "executionMode": "simulation",
+  "pollAfterMs": 3000,
+  "resources": [
+    {
+      "resourceType": "ambulance",
+      "label": "Ambulances",
+      "unit": "vehicle",
+      "total": 10,
+      "available": 7,
+      "allocated": 3
+    }
+  ],
+  "allocations": [
+    {
+      "allocationId": "10000000-0000-4000-8000-000000000003",
+      "eventId": "10000000-0000-4000-8000-000000000004",
+      "executionId": "10000000-0000-4000-8000-000000000005",
+      "planId": "10000000-0000-4000-8000-000000000006",
+      "resources": [
+        {
+          "resourceType": "ambulance",
+          "quantity": 3
+        }
+      ],
+      "allocatedAt": "2026-09-19T12:00:00Z",
+      "expectedReleaseAt": null
+    }
+  ]
+}

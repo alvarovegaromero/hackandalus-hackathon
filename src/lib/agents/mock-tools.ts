@@ -8,9 +8,10 @@ import {
 } from "../contracts/agent";
 import { processingContextSchema } from "../contracts/filter";
 import type { AgentRequest } from "../contracts/triage";
+import type { ResourceState } from "../contracts/resource-state";
 
 /** A fresh, isolated simulation ledger per planning call. Never imports a live adapter. */
-export function createMockPlanningTools(request: AgentRequest) {
+export function createMockPlanningTools(request: AgentRequest, state?: ResourceState) {
   const context = processingContextSchema.parse({
     schemaVersion: request.schemaVersion,
     runId: request.runId,
@@ -23,12 +24,15 @@ export function createMockPlanningTools(request: AgentRequest) {
     tools: {
       simulateResponse: tool({
         description:
-          "Simulate finite resource assignments under unlimited availability and hypothetical HappyRobot communications. No resource is dispatched and no message is sent. Call once with the proposed resources and communications, then use this simulated result in your final plan.",
+          "Propose ambulance assignments within the supplied inventory and hypothetical HappyRobot communications. Use an empty resource list when none are available or needed. No physical dispatch or message is sent. Call once, then copy these resources into the final plan.",
         inputSchema: simulatedResponseInputSchema,
         execute: async (input) => {
           if (executions.length > 0)
             throw new Error("Only one simulation is allowed per planner turn.");
           const args = simulatedResponseInputSchema.parse(input);
+          const quantity = args.resources.reduce((sum, item) => sum + item.quantity, 0);
+          if (state && quantity > state.resources[0].available)
+            throw new Error("The proposal exceeds available ambulances.");
           const execution = simulatedToolExecutionSchema.parse({
             ...context,
             toolCallId: randomUUID(),
@@ -38,7 +42,7 @@ export function createMockPlanningTools(request: AgentRequest) {
             realActionsExecuted: false,
             arguments: args,
             result: {
-              resourceAvailability: "unlimited",
+              resourceAvailability: state ? "finite" : "unlimited",
               simulatedResources: args.resources,
               communications: args.communications.map(({ channel, audience }) => ({
                 channel,

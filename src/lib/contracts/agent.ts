@@ -85,7 +85,7 @@ export const simulatedToolExecutionSchema = processingContextSchema.extend({
   realActionsExecuted: z.literal(false),
   arguments: simulatedResponseInputSchema,
   result: z.strictObject({
-    resourceAvailability: z.literal("unlimited"),
+    resourceAvailability: z.enum(["unlimited", "finite"]),
     simulatedResources: plannerPriorityDecisionSchema.shape.proposedResources.max(20),
     communications: z
       .array(

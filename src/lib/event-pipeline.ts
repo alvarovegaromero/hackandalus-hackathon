@@ -92,10 +92,10 @@ export function acceptIncomingEvent(payload: IncomingEventPayload, id: string = 
   }
 
   const current = state();
-  // The legacy demo route schedules Jev after the receipt; P3/P4 wiring is separate.
+  // Processing belongs to the producer: durable worker or standalone legacy demo.
   publish(current, id, "filtering.pending", {
     status: "awaiting_filtering",
-    reason: "Waiting for Jev relevance filtering",
+    reason: "Awaiting backend filtering",
   });
   console.info(
     JSON.stringify({

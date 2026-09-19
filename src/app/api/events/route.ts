@@ -1,10 +1,9 @@
 // OWNER: API hardening and input validation agent.
 // Signal ingestion into the command center.
 
-import { after } from "next/server";
-import { filterIncomingEvent } from "@/lib/filtering/filter-incoming-event";
-import { acceptIncomingEvent, demoRunId, EventConflict } from "@/lib/event-pipeline";
+import { acceptIncomingEvent, EventConflict } from "@/lib/event-pipeline";
 import { authorizePipeline } from "@/lib/pipeline-auth";
+import { enqueueLegacyEvent, CoordinatorConflict } from "@/lib/coordinator/runtime";
 import type { IncomingEventPayload } from "@/lib/types";
 import {
   apiError,
@@ -32,14 +31,13 @@ export async function POST(request: Request) {
 
   try {
     const { id, ...payload } = parsed.data;
-    const accepted = acceptIncomingEvent(payload as IncomingEventPayload, id);
-    if (!accepted.duplicate) {
-      const runId = demoRunId();
-      after(() => filterIncomingEvent(accepted.eventId, payload, runId));
-    }
-    return apiOk(accepted, accepted.duplicate ? 200 : 202);
+    const durable = await enqueueLegacyEvent(payload as IncomingEventPayload, id);
+    const accepted = acceptIncomingEvent(payload as IncomingEventPayload, durable.eventId);
+    // The durable coordinator owns processing; telemetry remains a receipt projection.
+    return apiOk({ ...accepted, ...durable }, durable.duplicate ? 200 : 202);
   } catch (error) {
     if (error instanceof EventConflict) return apiError("conflicto", error.message, 409);
+    if (error instanceof CoordinatorConflict) return apiError("conflicto", error.message, 409);
     return apiErrorFromThrown(error, "Could not register signal");
   }
 }

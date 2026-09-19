@@ -1,9 +1,25 @@
 # Initial POC · scope and work packages
 
+Current implementation: [global coordinator state v2](coordinator-state-contract.md) uses
+one refreshed prompt, a dedicated worker, event/five-second triggers and individual
+ambulance commitments. Apply the v2 migration and run npm run coordinator:work
+alongside the app. Release is disabled; the v1 sections below are historical.
+
+The v1 resource sections below are historical. Current GET /api/state returns v2;
+POST /api/agent/plan is retired (410), and POST /api/state/release is disabled (501).
+HTTP intake queues durable coordinator input. Frontend integration is assigned to
+its engineer; see [the handoff](coordinator-frontend-integration.md).
+
 Scope agreed on 2026-09-19. This is the team's initial delivery plan, not a claim
 of implemented behavior. TASKS.md tracks completion. The broader product vision
 remains the long-term direction; this document takes precedence for the initial
 POC scope over the broader architecture and contract drafts.
+
+Resource scope update: a finite inventory of 10 ambulances replaces the earlier
+unlimited assumption. Other resource types are deferred.
+The [resource state contract](resource-state-contract.md) defines `GET /api/state`
+and FE polling every three seconds, backend capacity constants and allocation
+semantics. The backend is implemented; FE/intake integration remains pending.
 
 P2 delivery update: the [Jev filter module](jev-filter.md) implements shared
 request/result/P3 handoff schemas and backend logs. Initial frontend filtering
@@ -77,8 +93,10 @@ P3 calculates potential impact using the [source-of-truth formula](triage.md),
 Structured factors come from operator/scenario observations, not another Jev call
 or simulator ground truth. Unknown factors remain explicit and continue to the
 LLM. Jev relevance, confidence and trusted source identity remain separate from
-impact. The LLM decides final priority and finite proposed resource quantities,
-assuming unlimited availability for this POC. It does not dispatch resources here.
+impact. The LLM decides final priority and finite proposed resource quantities.
+The target is now finite shared availability under the resource state contract;
+the existing unlimited runtime will be migrated in the next implementation step.
+P3 impact itself remains independent of scarcity. No real resources dispatch here.
 Do not adopt the sketch's zone scoring or the superseded additive contract draft.
 
 ## Audit and frontend delivery

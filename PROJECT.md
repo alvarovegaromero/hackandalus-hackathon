@@ -1,5 +1,15 @@
 # PROJECT.md
 
+Current implementation: [global coordinator state v2](docs/coordinator-state-contract.md) uses
+one refreshed prompt, a dedicated worker, event/five-second triggers and individual
+ambulance commitments. Apply the v2 migration and run npm run coordinator:work
+alongside the app. Release is disabled; the v1 sections below are historical.
+
+The v1 resource sections below are historical. Current GET /api/state returns v2;
+POST /api/agent/plan is retired (410), and POST /api/state/release is disabled (501).
+HTTP intake queues durable coordinator input. Frontend integration is assigned to
+its engineer; see [the handoff](docs/coordinator-frontend-integration.md).
+
 Single source of truth for project context and shared development conventions.
 All coding agents must read this file. AGENTS.md and tool-specific files point
 here; update project information and shared rules here instead of duplicating them.
@@ -50,6 +60,10 @@ See `docs/event-telemetry.md` for contracts, auth and single-process limits.
 ## Start here
 
 ### Mandatory POC reading and change discipline
+
+Finite-resource work must also follow [the resource state contract](docs/resource-state-contract.md).
+It defines the implemented `GET /api/state` read model and finite allocation/release.
+Replacement of the scaffold `/api/situation` polling remains FE integration work.
 
 Before planning, implementing or reviewing any POC work, every contributor and
 coding agent must read these documents in order:

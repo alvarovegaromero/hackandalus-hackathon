@@ -4,6 +4,12 @@
 [module contracts v1](docs/poc-contracts.md) → [current tasks](TASKS.md).
 These are mandatory implementation references under [PROJECT.md](PROJECT.md).
 
+The backend implements [global coordinator state v2](docs/coordinator-state-contract.md):
+GET /api/state exposes the plan, priorities and ten individual ambulances. Run
+npm run coordinator:work alongside the app. Allocations persist in Supabase;
+release and reassignment are disabled. Frontend integration is assigned separately:
+[input/output examples and handoff](docs/coordinator-frontend-integration.md).
+
 > **SKETCH:** The dashboard is an exploratory prototype with demo scenario data
 > and partially connected controls. It is not an approved product design or an
 > operational emergency response system.
@@ -50,6 +56,12 @@ Storage is in memory, with a TODO for Supabase; filtering, triage and the LLM ar
 not connected to this flow. See [contract, authentication, replay and limits](docs/event-telemetry.md).
 
 ## Local Startup
+
+To exercise Jev -> triage -> the agent together, run
+`npm run llm:try -- --with-jev` (nine synthetic scenarios, real provider calls,
+mock execution). Add `--dry-run` to validate inputs without calls. This is a
+backend module exercise; HTTP intake and frontend wiring remain pending.
+See [scope and application E2E gaps](docs/poc-backend-smoke.md).
 
 To inspect P3 inputs and outputs without any credentials or network calls, run
 `npm run triage:try`: ten manual scenarios cover scored impact, unknown factors,
@@ -369,3 +381,12 @@ orchestration are retained through adapter migration.
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## Global coordinator v2
+
+Apply supabase/migrations/202609190005_global_coordinator.sql after the inventory migration.
+Run npm run dev and npm run coordinator:work in separate terminals (Node 24).
+The worker consumes persisted events and updates the global plan every five seconds
+when active. GET /api/state is read-only; release is disabled.
+See [the v2 contract](docs/coordinator-state-contract.md).
+Manual scenarios: npm run coordinator:try.

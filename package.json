@@ -32,7 +32,10 @@
     "jev:try": "node --conditions=react-server scripts/try-jev.mjs",
     "mock:events": "node --env-file-if-exists=.env.local scripts/mock-events.mjs",
     "triage:try": "node scripts/try-triage.mjs",
-    "llm:try": "node --conditions=react-server scripts/try-llm.mjs"
+    "llm:try": "node --conditions=react-server scripts/try-llm.mjs",
+    "resources:try": "node scripts/try-resources.mjs",
+    "coordinator:work": "node --conditions=react-server scripts/coordinator-worker.mjs",
+    "coordinator:try": "node --conditions=react-server scripts/coordinator-worker.mjs --try"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.71",

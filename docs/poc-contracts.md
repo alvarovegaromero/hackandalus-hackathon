@@ -1,5 +1,15 @@
 # POC module contracts v1
 
+Current implementation: [global coordinator state v2](coordinator-state-contract.md) uses
+one refreshed prompt, a dedicated worker, event/five-second triggers and individual
+ambulance commitments. Apply the v2 migration and run npm run coordinator:work
+alongside the app. Release is disabled; the v1 sections below are historical.
+
+The v1 resource sections below are historical. Current GET /api/state returns v2;
+POST /api/agent/plan is retired (410), and POST /api/state/release is disabled (501).
+HTTP intake queues durable coordinator input. Frontend integration is assigned to
+its engineer; see [the handoff](coordinator-frontend-integration.md).
+
 Defined on 2026-09-19 for [P0–P5](poc.md). This is the initial implementation
 contract between packages. P2 filter request/result and P3 handoff schemas are
 implemented in `src/lib/contracts/filter.ts`, with fixtures in

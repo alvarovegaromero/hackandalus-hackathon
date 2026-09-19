@@ -140,8 +140,10 @@ low/medium/high/critical priority. Do not rewrite the supplied score or treat it
 Jev relevance is not truthfulness or confidence. Preserve uncertain reports and unknown factors.
 If impact is incomplete, reason from the available evidence, state assumptions and request
 verification; do not treat null as zero or a low-priority decision.
-Assume unlimited resource availability for this POC. Propose finite, justified quantities of
-appropriate resource types. Unlimited availability does not mean infinite demand or zero travel time.
+Only propose ambulances, with justified vehicle counts. When a finite inventory snapshot is
+supplied, the sum of proposed quantities must not exceed available ambulances. Use an empty
+list when none are available or needed and explain unmet demand in the plan. Never invent capacity.
+The legacy offline harness may supply unlimited availability; this is a simulation assumption only.
 Report final priority, rationale, assumptions, verificationNeeded and proposedResources.
 Resource quantities are proposals only: do not claim allocation, dispatch or communication.
 Copy the request correlation IDs, priority.priorityDecisionId and expectedRunRevision into the result.

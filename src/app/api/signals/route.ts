@@ -13,6 +13,8 @@ import {
 } from "@/lib/signals/happyrobot";
 import { processSignal } from "@/lib/signals/process";
 import { createSignalRepository, type SignalRepository } from "@/lib/signals/repository";
+import { enqueueLegacyEvent } from "@/lib/coordinator/runtime";
+import { publishAcceptedEvent } from "@/lib/event-pipeline";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -90,9 +92,16 @@ export async function handleSignalPost(
     }
 
     try {
-      const result = (dependencies.process ?? processSignal)(claimed);
-      await repository.markProcessed(signalId, result.event.id);
-      return response(signalId, result.event.id, !stored.inserted, "processed", 201);
+      const payload = {
+        source: "happyrobot" as const,
+        title: "Inbound HappyRobot report",
+        description: claimed.rawPayload.report_summary.slice(0, 2000),
+        category: "field-report",
+      };
+      const queued = await enqueueLegacyEvent(payload, claimed.id);
+      publishAcceptedEvent(payload, queued.eventId);
+      await repository.markProcessed(signalId, queued.eventId);
+      return response(signalId, queued.eventId, !stored.inserted, "processed", 201);
     } catch (error) {
       const safeError = error instanceof Error ? error.message : String(error);
       await repository.markFailed(signalId, safeError);
