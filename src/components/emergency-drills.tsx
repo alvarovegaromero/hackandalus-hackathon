@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -28,6 +28,9 @@ import {
   drillConfigSchema,
   drillLessons,
   drillMetrics,
+  formatDrillTime,
+  replayDrill,
+  tickDrill,
   drillReport,
   LOCALITIES,
   PHASE_NAMES,
@@ -61,12 +64,17 @@ export default function EmergencyDrills() {
   const [selected, setSelected] = useState<SectorId>("care");
   const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [speed, setSpeed] = useState(1);
+  const [replayMinute, setReplayMinute] = useState<number | null>(null);
+  const [replayPlaying, setReplayPlaying] = useState(false);
+  const [showBaseline, setShowBaseline] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [storageWarning, setStorageWarning] = useState<string | null>(null);
   const [storageBlocked, setStorageBlocked] = useState(false);
   const [showSetup, setShowSetup] = useState(true);
   const [replayIndex, setReplayIndex] = useState<number | null>(null);
   const [replaceActive, setReplaceActive] = useState(false);
+  const replayRunning = replayPlaying && (replayMinute ?? 0) < 20;
   const notebookRef = useRef(notebook);
   const runRef = useRef(run);
   const storageBlockedRef = useRef(false);
@@ -100,6 +108,7 @@ export default function EmergencyDrills() {
       storageBlockedRef.current = true;
       setStorageBlocked(true);
       setPlaying(false);
+      setReplayPlaying(false);
       setStorageWarning(
         "Another tab changed the exercise notebook. Saving is paused to prevent overwriting it. Export your current report, then reload to use the latest notebook.",
       );
@@ -134,10 +143,10 @@ export default function EmergencyDrills() {
         setPlaying(false);
         return;
       }
-      const next = advanceDrill(current, new Date().toISOString());
+      const next = tickDrill(current, 0.125 * speed, new Date().toISOString());
       persist(next);
       if (next.status === "completed") setPlaying(false);
-    }, 12000);
+    }, 500);
     const pauseWhenHidden = () => {
       if (document.hidden) setPlaying(false);
     };
@@ -146,24 +155,65 @@ export default function EmergencyDrills() {
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", pauseWhenHidden);
     };
-  }, [playing]);
+  }, [playing, speed]);
+
+  useEffect(() => {
+    if (!replayRunning) return;
+    const timer = window.setInterval(() => {
+      setReplayMinute((minute) => Math.min(20, (minute ?? 0) + 0.125 * speed));
+    }, 500);
+    const pauseWhenHidden = () => {
+      if (document.hidden) setReplayPlaying(false);
+    };
+    document.addEventListener("visibilitychange", pauseWhenHidden);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", pauseWhenHidden);
+    };
+  }, [replayRunning, speed]);
 
   const preview = createDrill(
     DEFAULT_DRILL,
     "00000000-0000-4000-8000-000000000000",
     "2026-01-01T00:00:00.000Z",
   );
-  const displayed = run ?? preview;
-  const metrics = drillMetrics(displayed);
-  const previous = comparableDrills(run?.config ?? config, notebook.history).find(
-    (item) => !run || item.startedAt < run.startedAt,
+  const replayState = useMemo(
+    () =>
+      run && replayMinute !== null
+        ? replayDrill(run, replayMinute, !showBaseline, replayIndex ?? Infinity)
+        : null,
+    [run, replayMinute, replayIndex, showBaseline],
   );
-  const priorLessons = previous ? drillLessons(previous) : [];
+  const baseline = useMemo(
+    () =>
+      run?.status === "completed" && run.modelVersion === 2 ? replayDrill(run, 20, false) : null,
+    [run],
+  );
+  const displayed = replayState ?? run ?? preview;
+  const metrics = drillMetrics(displayed);
+  const outcome = drillMetrics(run ?? preview);
+  const previous = comparableDrills(
+    run?.config ?? config,
+    notebook.history,
+    run?.modelVersion ?? 2,
+  ).find((item) => !run || item.startedAt < run.startedAt);
+  const priorLessons = useMemo(() => (previous ? drillLessons(previous) : []), [previous]);
   const sector = displayed.sectors.find((item) => item.id === selected)!;
   const finished = run?.status === "completed";
-  const lessons = finished ? drillLessons(run) : [];
+  const lessons = useMemo(() => (run?.status === "completed" ? drillLessons(run) : []), [run]);
   const lastEvent = displayed.log.filter((entry) => entry.kind === "event").at(-1);
   const historyEntry = replayIndex === null ? null : run?.log[replayIndex];
+  const beforeDecision = useMemo(
+    () =>
+      run && replayIndex !== null && run.log[replayIndex]?.kind === "decision"
+        ? replayDrill(run, run.log[replayIndex].minute, true, replayIndex - 1)
+        : null,
+    [run, replayIndex],
+  );
+  const beforeMetrics = beforeDecision ? drillMetrics(beforeDecision) : null;
+  const reviewedRisk = beforeDecision?.sectors.find(
+    (item) => item.id === historyEntry?.sectorId,
+  )?.risk;
 
   function startDrill(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -179,7 +229,10 @@ export default function EmergencyDrills() {
       return;
     }
     setError(null);
-    setPlaying(false);
+    setPlaying(true);
+    setReplayPlaying(false);
+    setReplayMinute(null);
+    setShowBaseline(false);
     setReplaceActive(false);
     setReplayIndex(null);
     setSelected("care");
@@ -195,6 +248,9 @@ export default function EmergencyDrills() {
     runRef.current = previousRun;
     setShowSetup(false);
     setReplayIndex(null);
+    setReplayMinute(null);
+    setReplayPlaying(false);
+    setShowBaseline(false);
   }
 
   function step() {
@@ -204,6 +260,16 @@ export default function EmergencyDrills() {
     const next = advanceDrill(current, new Date().toISOString());
     persist(next);
     if (next.status === "completed") setPlaying(false);
+  }
+
+  function inspectDecision(index: number) {
+    if (!run || run.status !== "completed") return;
+    setReplayPlaying(false);
+    setReplayIndex(index);
+    setReplayMinute(run.log[index].minute);
+    const sectorId = run.log[index].sectorId;
+    if (sectorId) setSelected(sectorId);
+    setShowBaseline(false);
   }
 
   return (
@@ -220,13 +286,14 @@ export default function EmergencyDrills() {
       <div className="drills-heading">
         <div>
           <h1>Emergency drills</h1>
-          <p>Rehearse decisions. Understand the outcome. Carry the lesson forward.</p>
+          <p>Run the crisis. See the consequences. Replay what changed.</p>
         </div>
         <button
           type="button"
           onClick={() => {
             setShowSetup(!showSetup);
             setPlaying(false);
+            setReplayPlaying(false);
             setError(null);
           }}
         >
@@ -391,8 +458,8 @@ export default function EmergencyDrills() {
                 </label>
               </div>
               <p className="drills-help">
-                Four phases, 20 simulated minutes. Teams return at each phase boundary. No real
-                calls or alerts.
+                20 simulated minutes in 80 seconds at 1×. Pause to plan; teams return every five
+                simulated minutes. People need time and an open route to reach safety.
               </p>
               {notebook.active ? (
                 <label className="drills-confirm">
@@ -406,7 +473,7 @@ export default function EmergencyDrills() {
               ) : null}
               <button type="submit" className="drills-primary" disabled={!ready}>
                 <Play size={16} />
-                {notebook.active ? "Start replacement drill" : "Generate drill"}
+                {notebook.active ? "Replace & run simulation" : "Generate & run simulation"}
               </button>
             </form>
             <div className="drills-briefing">
@@ -432,7 +499,7 @@ export default function EmergencyDrills() {
               </h2>
               <p role="status">
                 {run
-                  ? `${PHASE_NAMES[run.phase]} · ${finished ? "Completed" : playing ? "Running at 5 simulated minutes / 12 seconds" : "Paused — advance when ready"}`
+                  ? `${PHASE_NAMES[displayed.phase]} · ${finished ? (replayMinute === null ? "Completed — explore the debrief" : "Replaying recorded state") : playing ? `Running at ${speed}× speed` : "Paused — decide or resume"}`
                   : "Example scene. Generate a drill to begin."}
               </p>
             </div>
@@ -443,8 +510,16 @@ export default function EmergencyDrills() {
                 onClick={() => setPlaying(!playing)}
               >
                 {playing ? <Pause size={16} /> : <Play size={16} />}
-                {playing ? "Pause" : "Auto advance"}
+                {playing ? "Pause" : "Run simulation"}
               </button>
+              <label className="drills-speed">
+                Speed
+                <select value={speed} onChange={(event) => setSpeed(Number(event.target.value))}>
+                  <option value={1}>1×</option>
+                  <option value={2}>2×</option>
+                  <option value={4}>4×</option>
+                </select>
+              </label>
               <button type="button" disabled={!run || finished} onClick={step}>
                 <StepForward size={16} />
                 {run?.phase === 3 ? "Finish & debrief" : "Next phase"}
@@ -470,8 +545,11 @@ export default function EmergencyDrills() {
               </strong>
             </div>
             <div>
-              <span>Awaiting assistance</span>
-              <strong>{run ? metrics.remaining : "—"}</strong>
+              <span>On evacuation routes</span>
+              <strong>
+                {run ? metrics.inTransit : "—"}
+                <small> / {metrics.remaining} outside assembly</small>
+              </strong>
             </div>
             <div>
               <span>Teams available</span>
@@ -485,11 +563,133 @@ export default function EmergencyDrills() {
               <strong>{run ? metrics.decisions : "—"}</strong>
             </div>
           </div>
-          <DrillTwin run={displayed} selected={selected} onSelect={setSelected} />
+          <DrillTwin
+            key={(run ?? preview).id}
+            run={displayed}
+            selected={selected}
+            onSelect={setSelected}
+            playing={playing || (replayPlaying && (replayMinute ?? 0) < 20)}
+            replay={replayMinute !== null}
+          />
+          {finished ? (
+            <section className="drills-playback" aria-label="3D replay">
+              <div className="drills-playback-heading">
+                <div>
+                  <h2>Replay the decisions</h2>
+                  <p>The 3D scene, routes and counters follow the recorded simulation.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReplayIndex(null);
+                    if (replayMinute === null || replayMinute >= 20) setReplayMinute(0);
+                    setReplayPlaying(!(replayPlaying && (replayMinute ?? 0) < 20));
+                  }}
+                >
+                  {replayPlaying && (replayMinute ?? 0) < 20 ? (
+                    <Pause size={16} />
+                  ) : (
+                    <Play size={16} />
+                  )}
+                  {replayPlaying && (replayMinute ?? 0) < 20 ? "Pause replay" : "Play 3D replay"}
+                </button>
+              </div>
+              <label className="drills-scrubber">
+                <span>
+                  Simulation time <strong>{formatDrillTime(replayMinute ?? 20)}</strong>
+                </span>
+                <input
+                  type="range"
+                  min={0}
+                  max={20}
+                  step={0.125}
+                  value={replayMinute ?? 20}
+                  onChange={(event) => {
+                    setReplayPlaying(false);
+                    setReplayIndex(null);
+                    setReplayMinute(Number(event.target.value));
+                  }}
+                />
+              </label>
+              <div className="drills-phase-marks">
+                <span>00:00 Impact</span>
+                <span>05:00 Road closure</span>
+                <span>10:00 Network loss</span>
+                <span>15:00 Escalation</span>
+                <span>20:00 Debrief</span>
+              </div>
+              <div className="drills-playback-options">
+                {baseline ? (
+                  <button
+                    type="button"
+                    aria-pressed={showBaseline}
+                    onClick={() => {
+                      setShowBaseline(!showBaseline);
+                      setReplayIndex(null);
+                      setReplayMinute(replayMinute ?? 20);
+                    }}
+                  >
+                    {showBaseline ? "Show my decisions" : "Compare without intervention"}
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReplayMinute(null);
+                    setReplayPlaying(false);
+                    setReplayIndex(null);
+                    setShowBaseline(false);
+                  }}
+                >
+                  Return to final result
+                </button>
+                <span role="status">
+                  {showBaseline
+                    ? "Counterfactual model: no operator decisions"
+                    : historyEntry
+                      ? historyEntry.text
+                      : "Recorded decisions applied in chronological order"}
+                </span>
+              </div>
+              {beforeDecision && beforeMetrics && historyEntry ? (
+                <div className="drills-decision-evidence">
+                  <strong>Immediate effect of this decision</strong>
+                  <span>
+                    Teams available: {beforeDecision.teamsAvailable} → {displayed.teamsAvailable}
+                  </span>
+                  <span>
+                    People traveling: {beforeMetrics.inTransit} → {metrics.inTransit}
+                  </span>
+                  <span>
+                    Access: {beforeDecision.routeOpen ? "open" : "blocked"} →{" "}
+                    {displayed.routeOpen ? "open" : "blocked"}
+                  </span>
+                  <span>
+                    Sector risk: {reviewedRisk} →{" "}
+                    {displayed.sectors.find((item) => item.id === historyEntry.sectorId)?.risk}
+                  </span>
+                  <span>
+                    Community briefed: {beforeDecision.warned ? "yes" : "no"} →{" "}
+                    {displayed.warned ? "yes" : "no"}
+                  </span>
+                  <p>
+                    Play forward to see arrivals and later hazards. Evacuation orders count as
+                    completed only when people reach the assembly point.
+                  </p>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
           <div className="drills-response-grid">
             <section className="drills-response">
               <div className="drills-section-title">
-                <h2>{finished ? "Exercise outcome" : "Response desk"}</h2>
+                <h2>
+                  {finished
+                    ? replayMinute === null
+                      ? "Exercise outcome"
+                      : "State at replay time"
+                    : "Response desk"}
+                </h2>
                 <span>{sector.name}</span>
               </div>
               <p className="drills-event" role="status">
@@ -564,10 +764,20 @@ export default function EmergencyDrills() {
                       key={entry.id}
                       className={`${entry.kind}${replayIndex === index ? " is-reviewed" : ""}`}
                     >
-                      <span>T+{String(entry.minute).padStart(2, "0")}</span>
+                      <span>T+{formatDrillTime(entry.minute)}</span>
                       <p>{entry.text}</p>
                       {entry.kind === "decision" ? (
                         <small>{entry.teams} teams assigned</small>
+                      ) : null}
+                      {finished ? (
+                        <button
+                          className="drills-inspect-decision"
+                          type="button"
+                          onClick={() => inspectDecision(index)}
+                          aria-label={`View in 3D: ${entry.text}`}
+                        >
+                          View in 3D <ArrowRight size={12} />
+                        </button>
                       ) : null}
                     </li>
                   ))}
@@ -577,25 +787,6 @@ export default function EmergencyDrills() {
                   Every event, decision and simulated result will appear here.
                 </p>
               )}
-              {finished ? (
-                <div className="drills-replay">
-                  <label>
-                    Review recorded interaction
-                    <input
-                      type="range"
-                      min={0}
-                      max={run.log.length - 1}
-                      value={replayIndex ?? run.log.length - 1}
-                      onChange={(event) => setReplayIndex(Number(event.target.value))}
-                    />
-                  </label>
-                  <p role="status">
-                    {historyEntry
-                      ? `T+${historyEntry.minute}: ${historyEntry.text}`
-                      : "Move the slider to inspect the decision record. The 3D view shows the final state."}
-                  </p>
-                </div>
-              ) : null}
             </section>
           </div>
           <section className="drills-learning">
@@ -608,13 +799,46 @@ export default function EmergencyDrills() {
             </div>
             {finished ? (
               <>
+                {baseline ? (
+                  <div className="drills-impact-review">
+                    <div>
+                      <span>Reached safety</span>
+                      <strong>
+                        {outcome.evacuated}
+                        <small> people</small>
+                      </strong>
+                      <p>{outcome.inTransit} still on a route at the end</p>
+                    </div>
+                    <div>
+                      <span>Modeled exposure reduced</span>
+                      <strong>
+                        {Math.max(
+                          0,
+                          Math.round((1 - run.exposure / Math.max(1, baseline.exposure)) * 100),
+                        )}
+                        <small>%</small>
+                      </strong>
+                      <p>Against the same scenario without intervention</p>
+                    </div>
+                    <div>
+                      <span>Decisions to review</span>
+                      <strong>{outcome.decisions}</strong>
+                      <p>Select a timeline entry to inspect its 3D state</p>
+                    </div>
+                    <p className="drills-impact-caveat">
+                      Exposure sums people waiting in sectors × exercise risk × time. This
+                      comparison explains the training rules; it does not predict casualties or
+                      prove real-world effectiveness.
+                    </p>
+                  </div>
+                ) : null}
                 {previous ? (
                   <p className="drills-comparison">
                     Compared with the preceding drill with the same location, hazard, severity,
                     population and teams:{" "}
                     <strong>
-                      {metrics.coverage - drillMetrics(previous).coverage >= 0 ? "+" : ""}
-                      {metrics.coverage - drillMetrics(previous).coverage} percentage points
+                      {outcome.coverage - drillMetrics(previous).coverage >= 0 ? "+" : ""}
+                      {outcome.coverage - drillMetrics(previous).coverage} percentage points
                     </strong>{" "}
                     in assembly-point coverage. Previous run:{" "}
                     {new Date(previous.startedAt).toLocaleString("en-GB")}.
@@ -654,6 +878,7 @@ export default function EmergencyDrills() {
                     setConfig(run.config);
                     setShowSetup(true);
                     setPlaying(false);
+                    setReplayPlaying(false);
                     window.scrollTo({ top: 0, behavior: "instant" });
                   }}
                 >
@@ -737,9 +962,10 @@ export default function EmergencyDrills() {
         )}
       </section>
       <footer className="drills-footer">
-        Synthetic training model v1. No terrain, structural engineering or fire-spread model.
-        Lessons support facilitated practice and do not update the operational coordinator. Export
-        reports to keep them beyond this browser.
+        Synthetic training model v{run?.modelVersion ?? 2}. Visual effects illustrate the exercise;
+        no surveyed terrain, structural engineering or fire-spread physics. Lessons support
+        facilitated practice and do not update the operational coordinator. Export reports to keep
+        them beyond this browser.
       </footer>
     </main>
   );

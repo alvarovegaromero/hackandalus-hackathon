@@ -4,7 +4,8 @@ import "./drills.css";
 
 export const metadata: Metadata = {
   title: "Emergency drills | Far0",
-  description: "Rehearse earthquake and wildfire response in a schematic 3D training twin.",
+  description:
+    "Run, replay and learn from earthquake and wildfire drills in an animated 3D training city.",
 };
 
 export default function DrillsPage() {
