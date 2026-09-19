@@ -51,10 +51,28 @@ Postgres/Supabase, accessibility, and visual design. To index code after
 `npm run index:map`; its use for code navigation is required
 ([Graft guide](docs/code-index.md)).
 
+## Home and dashboard
+
+The Far0 landing is served at `/`. Its three **Open dashboard** links navigate
+to `/dashboard` in the same tab; the operator header links back home. `/landing`
+permanently redirects to `/`. API and SSE endpoints keep their `/api/*` URLs.
+
+The `(marketing)` and `(console)` route groups have separate root layouts and
+stylesheets. Crossing between them performs a full document navigation, keeping
+the dashboard's global styles separate from the landing. The landing does not
+mount the map, poll operator APIs or subscribe to telemetry. Dashboard links
+disable prefetching.
+
+No `DASHBOARD_URL` is needed in this integrated app. Optional build-time
+`NEXT_PUBLIC_SITE_URL` sets the landing's canonical/social origin (falling back
+to `VERCEL_PROJECT_PRODUCTION_URL`, then localhost); `REPOSITORY_URL` enables the
+footer source link. See [landing integration](docs/landing-integration.md) for
+provenance, maintenance and review guidance.
+
 ## HTTP events and SSE telemetry
 
 Run `npm run mock:events` against `npm run dev` and watch each event at
-the event log at <http://localhost:3000/> and in the backend log. `POST /api/events`
+the event log at <http://localhost:3000/dashboard> and in the backend log. `POST /api/events`
 returns 202; `GET /api/telemetry` emits `event.accepted` and `filtering.pending`.
 Storage is in memory, with a TODO for Supabase; filtering, triage and the LLM are
 not connected to this flow. See [contract, authentication, replay and limits](docs/event-telemetry.md).
@@ -109,7 +127,8 @@ npm ci
 npm run dev
 ```
 
-Open <http://localhost:3000>. No credentials are required: without configuration,
+Open <http://localhost:3000> for the landing or
+<http://localhost:3000/dashboard> for the operator panel. No credentials are required: without configuration,
 the system starts in `mock` mode and nothing is sent externally. State
 attaches to `globalThis` to survive hot reloads and resets when the server
 restarts; `POST /api/demo/reset` returns to initial state. For a second
@@ -204,7 +223,8 @@ model.
 | `src/lib/signals/happyrobot.ts`, `process.ts`, `repository.ts`        | Exact inbound contract, FARO interpretation, and durable Signal storage.       |
 | `src/lib/scenario.ts`, `src/lib/seed.ts`                              | Scenario scripts driving crisis progression and initial state.                 |
 | `src/lib/history.ts`, `src/lib/learning.ts`, `src/lib/persistence.ts` | History and plan diffs, learned statistics, optional JSON storage.             |
-| `src/app/page.tsx`, `src/components/`                                 | Operator dashboard.                                                            |
+| `src/app/(marketing)/`, `src/components/landing/`, `public/`          | Public landing, branding and lighthouse media.                                 |
+| `src/app/(console)/dashboard/page.tsx`, `src/components/`             | Operator dashboard.                                                            |
 | `src/app/api/`                                                        | HTTP API surface.                                                              |
 
 The rationale behind these decisions is detailed in [docs/architecture.md](docs/architecture.md).

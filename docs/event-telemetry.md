@@ -1,7 +1,7 @@
 # Event ingestion and SSE telemetry
 
 The served vertical slice is `scripts/mock-events.mjs` → `POST /api/events` →
-`src/lib/event-pipeline.ts` → `GET /api/telemetry` → event log on `/`.
+`src/lib/event-pipeline.ts` → `GET /api/telemetry` → event log on `/dashboard`.
 Intake now queues durable Supabase coordinator reports. The separate coordinator
 worker runs Jev, triage and global planning. SSE bridges stored receipts and filter
 results; the frontend polls `/api/state` for plans and allocations. See
@@ -10,7 +10,7 @@ results; the frontend polls `/api/state` for plans and allocations. See
 ## Try it
 
 With Node 24.x, run `npm ci`, then `npm run dev`. Open
-<http://localhost:3000/>. In another terminal run `npm run mock:events`.
+<http://localhost:3000/dashboard>. In another terminal run `npm run mock:events`.
 The script sends 32 timed HTTP requests (one every 3 s, about 93 seconds; override
 with `EVENT_INTERVAL_MS`) and prints their IDs, failing on HTTP errors.
 It shares `src/lib/demo/mock-events.json` with the local **Reset & run events** button:

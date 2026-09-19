@@ -7,5 +7,8 @@ const nextConfig: NextConfig = {
   // Lets a second instance run without fighting over the build directory:
   //   NEXT_DIST_DIR=.next-dev npm run dev -- -p 3001
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  async redirects() {
+    return [{ source: "/landing", destination: "/", permanent: true }];
+  },
 };
 export default nextConfig;

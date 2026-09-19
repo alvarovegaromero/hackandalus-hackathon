@@ -37,6 +37,11 @@ Dashboard status: **SKETCH**. The served UI is an exploratory prototype, not an
 approved product design or an operational emergency response system. The visible prototype banner was removed at the team's request. Some controls are not
 connected; the sketch must not be treated as the target architecture.
 
+The public landing is `/`; the operator panel is `/dashboard`. Separate root
+layouts in `src/app/(marketing)/` and `src/app/(console)/` isolate their global
+styles. Navigation between them reloads the document. `/landing` redirects to
+`/`; API routes remain under `src/app/api/`. See [landing integration](docs/landing-integration.md).
+
 Status: the codebase is unified under the standard Next.js `src/` directory
 (`src/app/`, `src/components/`, and `src/lib/`): operator panel,
 HTTP API, self-advancing scenario scripts, action queue with human approval,
@@ -51,7 +56,7 @@ credentials and live integrations remain open; do not resolve them with
 invented values. Track follow-up work in TASKS.md.
 
 The served ingestion slice also includes `src/lib/event-pipeline.ts`,
-`POST /api/events`, `GET /api/telemetry`, the event log on `/` and `npm run mock:events`.
+`POST /api/events`, `GET /api/telemetry`, the event log on `/dashboard` and `npm run mock:events`.
 It accepts events in bounded process memory, logs acceptance, and streams
 `event.accepted` / `filtering.pending`. Supabase saving is a TODO, as are
 filtering/triage/LLM dispatch; no database adapter is implemented for this slice.

@@ -1,7 +1,7 @@
 import { existsSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 // "@/x" resolves to ./src/x, mirroring "paths" in tsconfig.json.
 const root = fileURLToPath(new URL(".", import.meta.url));
@@ -19,7 +19,7 @@ function resolveAlias(source: string): string | null {
 }
 
 export default defineConfig({
-  test: { environment: "node" },
+  test: { environment: "node", exclude: [...configDefaults.exclude, ".claude/worktrees/**"] },
   plugins: [
     {
       name: "root-then-src-alias",

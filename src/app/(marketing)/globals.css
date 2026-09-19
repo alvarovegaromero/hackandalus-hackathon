@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto,
+    sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #131720;
+  color: #f4f2ec;
+  font-family: var(--font-sans);
+  letter-spacing: -0.15px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

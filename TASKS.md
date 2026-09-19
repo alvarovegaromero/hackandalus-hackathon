@@ -8,6 +8,14 @@
 - [x] Eight manual rollback scenarios passed on local PostgreSQL 18; no inventory mutation.
 - [ ] Person A: integrate spawn tool, durable handoff and parent result consumption. Shared migration deployment, live model execution and FE cards remain pending.
 
+## Integrated landing
+
+- [x] Import the approved Far0 landing at `/`, with original branding and media.
+- [x] Move the operator panel to `/dashboard`, isolate root layouts/styles and
+      connect same-tab navigation in both directions. Redirect `/landing` to `/`.
+- [x] Keep API/SSE routes unchanged and document provenance and maintenance in
+      [landing integration](docs/landing-integration.md).
+
 ## Global coordinator contract v2
 
 - [x] Define one refreshed prompt, event/5-second triggers, global priorities/plan and per-ambulance state in docs/coordinator-state-contract.md.
@@ -227,7 +235,7 @@ are in the source document.
 
 - [x] `npm run mock:events` script that sends events to `POST /api/events`.
 - [x] In-memory acceptance, idempotency UUID and correlated telemetry.
-- [x] `GET /api/telemetry` and the event log on `/`, with replay, reconnection and limits.
+- [x] `GET /api/telemetry` and the event log on `/dashboard`, with replay, reconnection and limits.
 - [ ] TODO: save in Supabase; no adapter or migration in this vertical.
 - [ ] Consume the pending handoff in filtering → triage → LLM, independent of the viewer.
 - [ ] Port the old producers (scenario, demo and callbacks) to the common intake.
