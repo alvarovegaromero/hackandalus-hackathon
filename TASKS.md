@@ -48,6 +48,10 @@ probado llamadas a modelos ni comunicaciones reales.
 
 ## Skills de desarrollo compartidas
 
+- [x] Add the official TypeSafe/Jev, AI SDK and Workflow skills with pinned
+      revisions, file hashes and shared usage guidance.
+- [x] Document optional Context7, Playwright and Supabase MCP recommendations.
+
 - [x] Fijar Graft como dependencia de desarrollo y documentar el índice local y sus consultas.
 - [x] Exigir Graft en las instrucciones de agentes y el checklist de PR; generar y verificar el índice en los hooks de commit y push.
 
