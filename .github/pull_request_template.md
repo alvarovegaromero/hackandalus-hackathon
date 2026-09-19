@@ -12,7 +12,7 @@
 
 ## Checklist
 
-- [ ] Targets `main` from a feature branch.
+- [ ] Targets `main` from a feature branch, or promotes `main` to `production` as a release PR.
 - [ ] Follows `PROJECT.md`; commit messages are in English.
 - [ ] Read `docs/poc.md`, `docs/poc-contracts.md` and `TASKS.md`; identified the
       affected P0–P5 package or explained why this change is outside the POC.

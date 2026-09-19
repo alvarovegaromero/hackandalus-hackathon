@@ -143,7 +143,7 @@ communications have not been tested.
 
 ## Local Code Quality Setup
 
-- [x] Remove GitHub Actions CI: no Actions minutes are available and CI is not planned.
+- [x] Remove GitHub Actions CI: no Actions minutes are available. Vercel-native production delivery was subsequently authorized.
 - [x] Require local validation before PR creation via `npm run pr:create` and its
       local `pr:check` prehook (`npm run check`); document the workflow for contributors and agents.
 - [x] Shared Prettier, EditorConfig, and LF endings in Git across macOS, Windows, and Linux.
@@ -229,7 +229,14 @@ are in the source document.
 - [x] Digital twin, initial release: `src/lib/digitalTwin.ts` reconstructs perceived world from signals and measures accuracy against simulated ground truth; displayed in `src/components/DigitalTwinPanel.tsx`.
 - [ ] Digital twin, second release: simulate variants (wind, road cuts, resource loss) on state clones, compare alternative outcomes, and present recommendations before acting.
 - [ ] Test resource constraints, failures, and human oversight.
-- [ ] Configure and deploy to Vercel upon authorization.
+- [x] Publish the UI manually to Vercel: https://faro-lovat-iota.vercel.app/dashboard (2026-09-19). Landing, dashboard and map HTTP checks passed; `/api/state` remains 503.
+- [ ] Configure remote application credentials, database access and agent execution before claiming a working hosted agent demo.
+- [x] Prepare Vercel build settings and document environment prerequisites and agent hosting limits in `docs/vercel-deployment.md`.
+- [x] Prepare `production`-only Git deployments, local branch protection and the `main` to `production` release PR command.
+- [x] Add the project-owned `faro-deploy` skill for release PRs and Vercel verification.
+- [ ] Publish the delivery configuration into `main`, bootstrap/protect remote `production`, connect Vercel Git and set Production branch tracking. Verify the first merged release deploys automatically.
+- [ ] Add durable remote scheduling for coordinator recovery and subagent execution; web deployment alone does not run the subagent worker.
+- [ ] Connect dashboard session authentication to `/api/state` before the remote demo; the current browser request lacks the token required in production.
 
 ## Vertical HTTP → backend → SSE
 

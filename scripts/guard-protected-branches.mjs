@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
-const protectedBranches = new Set(["main", "master", "develop"]);
+const protectedBranches = new Set(["main", "master", "develop", "production"]);
 const mode = process.argv[2];
 
 if (mode === "commit") {

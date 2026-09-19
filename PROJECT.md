@@ -176,7 +176,7 @@ module-specific docs or use the sketch as the target architecture.
   `docs/dashboard-design-guide.md`, `docs/code-index.md` and
   `docs/agent-skills.md` the presentation, Graft and skills guides.
 - `.github/`: pull request and issue templates. No GitHub Actions workflows:
-  the team has no Actions minutes and will not run CI for this project.
+  the team has no Actions minutes. Production delivery uses Vercel's Git integration.
 - `LICENSE`: MIT.
 - `README.md`, `.env.example`: local setup, credentials and integration limitations.
 - `.husky`, `scripts`, `lint-staged.config.mjs`: local quality and branch/credential guards;
@@ -219,18 +219,24 @@ committing and publishing the feature branch with explicit permission. Requires
 GitHub CLI (`gh`) installed and authenticated. The local `pr:check` prehook blocks
 protected branches and runs `npm run check`; any failure prevents PR creation.
 The command requires a clean working tree, targets `main`, and does not push.
+For release PRs, add `--release`: it targets `production` with head `main` and
+requires a clean feature checkout at the exact current remote `main` commit.
+See [the release procedure](docs/vercel-deployment.md).
 All contributors and agents must use this command to open PRs. Git has no native
 pre-PR hook: opening through GitHub's UI or direct `gh pr create` bypasses the
 local gate and is outside the agreed workflow. The validation is explicitly chained
 to PR creation, so it also runs when npm lifecycle hooks are disabled.
 Record check results and the tested OS in the PR. Re-run checks after changes.
-GitHub Actions CI is intentionally removed, not deferred: no Actions minutes
-are available. Keep validation local; do not add CI workflows or required CI checks.
+GitHub Actions remains disabled because no Actions minutes are available.
+The owner authorized Vercel's native Git delivery on 2026-09-19: after a human
+merges a release PR from `main` into `production`, Vercel builds and publishes it.
+This supersedes the former blanket NO CI rule. Local `npm run check` remains the
+PR gate; no GitHub Actions workflows or new required remote CI checks are added.
 `npm run lint:staged` runs Secretlint, Prettier and ESLint on staged files using
 lint-staged (serial tasks; unstaged hunks in partially staged files are hidden).
 `npm ci` installs Husky hooks through `prepare` in development. Pre-commit is an
 intentional no-op for the hackathon. Pre-push blocks updates to `main`, `master`,
-and `develop` (including refspecs and deletions), then runs `check` including build
+`develop`, and `production` (including refspecs and deletions), then runs `check` including build
 but excluding tests. PR creation retains the protected-branch guard.
 Secretlint masks matched secrets in its output. Never disable detection to
 commit a credential; use empty or harmless placeholders in `.env.example`.
@@ -245,6 +251,9 @@ invoke live communications without authorization for the specific action.
 Commit only empty/harmless templates. Share actual development credentials through
 a team password manager or expiring private link, never GitHub files/issues/PRs.
 Deployment secrets belong in Vercel environment settings, separated by environment.
+Deployment settings live in `vercel.json`; only `production` allows Git auto-deployments.
+Follow [the deployment guide](docs/vercel-deployment.md) for release steps and the
+current coordinator/subagent hosting limits.
 GitHub Actions Secrets are only for Actions jobs, not a team credential download.
 Never put secret values in `NEXT_PUBLIC_*` variables. Revoke/rotate exposed keys;
 removing them from the latest file alone does not undo disclosure.
@@ -312,7 +321,9 @@ When extending the scaffolding:
   application/package name is `butterfish`; use the GitHub repository name
   explicitly in `gh --repo` commands when needed.
 - `main` is the canonical integration branch for all work. Create new feature
-  branches from the latest `origin/main` and target every PR at `main`.
+  branches from the latest `origin/main` and target feature PRs at `main`.
+  Release PRs are the exception: head `main`, base `production`. `production`
+  is the publishing branch, not a development branch. Never commit fixes there.
   Existing feature branches may continue with their unmerged work.
 - `main` must only change through pull requests. Never commit or push directly
   to `main`, including `git push origin HEAD:main`, API file writes, or force
@@ -323,7 +334,11 @@ When extending the scaffolding:
   when explicitly instructed by the user, respecting checks and branch protection.
   This project rule overrides any global instruction prohibiting agent merges.
 - Work on a feature branch such as `feat/<topic>`, `fix/<topic>`, or
-  `chore/<topic>`. Never commit directly to `main`, `master`, or `develop`.
+  `chore/<topic>`. Never commit directly to `main`, `master`, `develop`, or `production`.
+- Bootstrap remote `production` once from a reviewed `main` commit with explicit
+  permission, before enabling the Vercel Git connection. Protect it against direct
+  pushes, deletion and force pushes; require PRs. Subsequent updates use release
+  PRs only. The local push hook intentionally blocks direct `production` pushes.
 - Local commits are permitted. Never push without explicit user permission
   for the current action. User instructions to merge authorize that merge.
 - Confirm before destructive Git/database operations, deletes, publishing,
@@ -380,7 +395,8 @@ for setup, supported workflows and verified limits.
 
 ### Shared stack skills
 
-The repository vendors seven skills under `.agents/skills/`. Use the relevant
+The repository vendors seven skills and maintains the project-owned `faro-deploy`
+skill under `.agents/skills/`. Use the relevant
 skill by reading its `SKILL.md` before the corresponding task; load supporting
 references only as needed. These explicit paths also work with agents that do
 not automatically discover this directory:
@@ -399,6 +415,8 @@ not automatically discover this directory:
   [.agents/skills/ai-sdk/SKILL.md](.agents/skills/ai-sdk/SKILL.md).
 - Durable execution, retries and external-event waits:
   [.agents/skills/workflow/SKILL.md](.agents/skills/workflow/SKILL.md).
+- FARO release PRs and Vercel production verification:
+  [.agents/skills/faro-deploy/SKILL.md](.agents/skills/faro-deploy/SKILL.md).
 
 Skills supplement this file; project stack, permissions and challenge requirements
 take precedence. Apply examples to installed dependency versions; do not add

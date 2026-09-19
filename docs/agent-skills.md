@@ -4,6 +4,11 @@ The repository includes seven upstream skill snapshots in `.agents/skills/`.
 They cover our frontend, database, AI SDK, durable workflows and TypeSafe/Jev.
 They are development guidance, not application dependencies.
 
+The project-owned [faro-deploy](../.agents/skills/faro-deploy/SKILL.md) skill
+prepares `main` to `production` release PRs and verifies Vercel delivery. Invoke
+it with `$faro-deploy` or read its path explicitly. It is maintained locally,
+not an upstream snapshot, so it is not listed in `skills-sources.json`.
+
 ## Using the skills
 
 Clone or pull the branch containing the skills. There is no additional install,
