@@ -8,6 +8,10 @@ triage, and one agent/tool; full Twin/resource integration remains deferred.
 
 Review draft, 2026-09-19. **Not yet approved for implementation.** This document
 separates confirmed product decisions, observed code, and proposed integration.
+The public HappyRobot API is now documented in [HappyRobot notes](happyDocumentation.md).
+References below to an unverified contract concern adapter compatibility,
+workflow-specific payloads, idempotency and live validation; base URL/auth/run
+endpoints should be reused from those notes.
 The dashboard remains **SKETCH**; its controls do not define the target design.
 
 Read this with [the contract draft](contracts-v0.md). The

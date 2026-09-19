@@ -5,6 +5,11 @@ contract between packages; runtime schemas, fixtures and wiring are still pendin
 It supersedes the broader contracts draft for this POC only. Existing input and
 SSE wire contracts are reused, not replaced.
 
+HappyRobot's public URL, authentication and run endpoints are now documented in
+[HappyRobot notes](happyDocumentation.md). Reuse that verified contract; open
+provider details below refer to our selected workflow's arguments, outcome
+mapping, idempotency guarantees and live validation, not rediscovery of the base API.
+
 ## Existing contracts and provenance
 
 The input/SSE implementation inspected is commit

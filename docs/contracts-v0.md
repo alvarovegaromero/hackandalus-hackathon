@@ -8,6 +8,10 @@ response-policy outcomes are distinct from the POC relevance filter's three
 classifications; full Twin/allocation contracts are deferred. For the POC,
 persisted activity and SSE replay replace the Realtime refresh-hint proposal.
 
+Use [HappyRobot notes](happyDocumentation.md) for the verified public API.
+Provider details still open below are workflow-specific payloads, outcome mapping,
+idempotency guarantees and live validation, not the base URL/auth/run endpoints.
+
 **Proposed, not frozen or implemented.** Only the report semantics linked below
 are already confirmed. This document defines boundaries to review before
 parallel implementation; it is not a new API specification silently replacing

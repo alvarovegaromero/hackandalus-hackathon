@@ -162,6 +162,10 @@ scheduling recovery and durable SSE replay/snapshot/hosting behavior. The curren
 memory cursor and reset contract already exist in the input branch. These details
 remain open without reopening the agreed POC scope.
 
+Use the verified public API facts in [HappyRobot notes](happyDocumentation.md)
+when selecting the first operation. Workflow-specific fields and live execution
+remain to be validated; do not repeat the old adapter's invented defaults.
+
 Existing reusable modules and current limitations are documented in
 [PROJECT.md](../PROJECT.md) and [the documentation map](README.md). The broader
 [architecture review](architecture-review.md) and [contracts draft](contracts-v0.md)
