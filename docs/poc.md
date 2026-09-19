@@ -12,7 +12,7 @@ P1/P0 still own invoking and persisting the filter during asynchronous processin
 
 Use [POC module contracts v1](poc-contracts.md) for package interfaces. Reuse the
 input and SSE implementation from `origin/event-pipeline-backend-frontend`
-(`e2579a9`); its port into this checkout remains pending. P0 extends domain
+(`e2579a9`); the legacy slice now lives under `src/`, while P2 wiring remains pending. P0 extends domain
 payloads behind that transport rather than designing another input/SSE contract.
 
 ## Goal and boundaries

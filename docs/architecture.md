@@ -221,8 +221,10 @@ is in charge.
 
 ## Decision 5 — Browser polling, not WebSockets
 
-`src/app/page.tsx` polls `GET /api/situation` periodically and re-renders. There is no
-real-time push channel.
+`src/app/page.tsx` polls `GET /api/situation` periodically and re-renders. The
+event log on `/` consumes `GET /api/telemetry` over read-only SSE; see
+[event-telemetry.md](event-telemetry.md). It does not replace command-center polling
+or share its side effects.
 
 **Why.** State is small, the server is local, and a demo cannot tell the
 difference between one-second polling and push. A WebSocket would add connection

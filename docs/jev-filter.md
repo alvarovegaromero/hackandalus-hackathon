@@ -125,8 +125,8 @@ model call. An explicitly requested manual live exercise is recorded below.
 
 Run `npm run jev:try` for 10 synthetic cases against the real P2 module and Jev.
 Use `npm run jev:try -- --limit 5` for five cases, or `--dry-run` to inspect inputs
-without sending requests. Node 22.21+ and installed development dependencies are
-required. The script loads this checkout's `.env.local`; shell variables win.
+without sending requests. Use the project's Node 24.x runtime and installed development dependencies.
+The script loads this checkout's `.env.local`; shell variables win.
 It does not print credentials or change environment files.
 
 The console shows expected routing, decision, probability, actual routing, output

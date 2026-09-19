@@ -17,7 +17,8 @@ mapping, idempotency guarantees and live validation, not rediscovery of the base
 
 The input/SSE implementation inspected is commit
 `e2579a9062e1dcc636249f6db970e8a71898f680`, locally available as
-`origin/event-pipeline-backend-frontend`. It is not integrated into this checkout.
+`origin/event-pipeline-backend-frontend`. The legacy input/SSE slice has since
+landed in `main` under `src/`; the adapter to P2 remains pending.
 Source references at that revision:
 
 - `docs/event-telemetry.md`: input acknowledgement, replay and reset behavior.
@@ -25,8 +26,8 @@ Source references at that revision:
 - `lib/validation.ts`: `incomingEventSchema`.
 - `app/api/telemetry/route.ts`: streaming route and cursor validation.
 
-P1/P0 port these modules into the current `src/` layout, preserving behavior and
-tests. No branch merge or port is implied by this document. Graft identified the
+P1/P0 preserve the ported wire behavior while connecting P2 and durable storage.
+Graft identified the
 current report boundary; scoped Git reads were needed because the input/SSE work
 exists only on the other branch, outside this checkout's index.
 

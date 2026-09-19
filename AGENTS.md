@@ -37,7 +37,7 @@ Graft is required for code navigation: follow
 changing code, and report any fallback caused by failures or missing coverage.
 
 The repository uses the standard Next.js `src/` directory layout: the served
-command center lives in `src/app/`, `src/components/`, `src/lib/`, and `tests/`.
+command center lives in `src/app/`, `src/components/`, `src/lib/`, .
 Keep the module-owner line (`// OWNER: …`) in `src/lib/**`, following PROJECT.md's
 English-language rule for its label, and keep the digital-twin docs and tests in sync.
 
