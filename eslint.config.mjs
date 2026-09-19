@@ -11,6 +11,7 @@ export default defineConfig([
     ".next.broken-*/**",
     ".vercel/**",
     ".workflow-data/**",
+    ".claude/worktrees/**",
     "src/app/.well-known/workflow/**",
     "app/.well-known/workflow/**",
     "next-env.d.ts",

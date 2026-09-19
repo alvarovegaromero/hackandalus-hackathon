@@ -5,6 +5,7 @@ node_modules/
 out/
 .vercel/
 .workflow-data/
+.claude/worktrees/
 .swc/
 coverage/
 .data/
