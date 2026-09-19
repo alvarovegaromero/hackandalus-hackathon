@@ -359,3 +359,5 @@ Contract and limits: [docs/event-telemetry.md](docs/event-telemetry.md).
 - [x] Simplify subagents to result/status and resource counts; remove internal instruction/revision disclosures and resource dropdowns.
 - [x] Map selection uses an in-map detail panel without zoom or popup panning; user interaction pauses automatic framing.
 - [x] Keep simulation wording out of generated plans while preserving evidence-based action claims.
+
+- [x] Restore the dashboard server/client boundary after the panorama redesign; preserve the public demo expiry gate, reload timer and hosted demo controls.
