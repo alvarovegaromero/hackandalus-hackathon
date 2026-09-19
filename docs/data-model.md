@@ -1,6 +1,14 @@
 # FARO · Data Model Proposal
 
-Status: proposal for team discussion. Base: `chore-scaffold-typescript-vercel` branch
+> **Confirmed intake decision (2026-09-19):**
+> [input-contract.md](input-contract.md) is authoritative for report intake and
+> normalization: text, optional geographic location, trusted metadata, synchronous
+> durable receipt and asynchronous interpretation. The SQL below is a proposal;
+> reconcile it for unassessed reports with unknown category and severity before
+> implementing it. Public GPS uses WGS84 latitude/longitude, not panel-map x/y.
+> The only implemented database schema is in `supabase/migrations/`.
+
+Status: proposal for team discussion. Base: the platform modules under `src/`
 (Next 16, Supabase Postgres + Realtime, Zod, Vercel Workflow, AI SDK).
 
 This document proposes the complete data model for the command center. It is
@@ -1145,23 +1153,9 @@ export const actionStatus = z.enum([
 
 ```ts
 // src/lib/domain/signal.ts
-export const incomingSignalSchema = z
-  .object({
-    runId: z.uuid(),
-    areaSlug: z.string().min(1).optional(),
-    source: signalSource,
-    channel: channel.optional(),
-    externalRef: z.string().max(200).optional(),
-    title: z.string().trim().min(1).max(300),
-    body: z.string().trim().min(1).max(4000),
-    category: z.string().regex(/^[a-z0-9-]+$/),
-    severity,
-    reportedConfidence: confidenceLabel.optional(),
-    location: z.object({ x: z.number(), y: z.number() }).optional(),
-    occurredAt: isoDate.optional(),
-    raw: z.unknown().optional(),
-  })
-  .strict();
+// Report intake and the normalized triage envelope are specified in
+// docs/input-contract.md. The former incomingSignalSchema is superseded.
+// incomingReportSchema below refers to the planned text/location validator.
 
 export const signalAssessmentSchema = z
   .object({
@@ -1292,10 +1286,7 @@ export const actionResultSchema = z
     summary: z.string().max(2000).optional(),
     transcript: z.string().max(20000).optional(),
     structured: z.record(z.string(), z.unknown()).optional(),
-    newInformation: z
-      .array(incomingSignalSchema.omit({ runId: true }))
-      .max(10)
-      .optional(),
+    newInformation: z.array(incomingReportSchema).max(10).optional(),
   })
   .strict();
 ```

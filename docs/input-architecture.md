@@ -71,7 +71,7 @@ implementation. A stored report alone is not proof of scheduled work.
 3. **Dashboard updates:** connect Supabase Realtime with operator authentication
    and appropriate read policies. This does not change the producer payload.
 
-The [data-model proposal](../thoughts/data-model.md) still needs reconciliation
+The [data-model proposal](data-model.md) still needs reconciliation
 for unassessed reports. Its former public `incomingSignalSchema` has been
 superseded by the simple report contract; no database migration is implied here.
 Other open decisions include HappyRobot's actual callback contract, the triage

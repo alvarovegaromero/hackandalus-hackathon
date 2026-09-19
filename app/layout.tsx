@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Crisis Command Center",
+  title: "FARO · Crisis Command Center",
   description:
     "Agentic command center for crisis management. HappyRobot challenge for HackSpain 2026.",
 };

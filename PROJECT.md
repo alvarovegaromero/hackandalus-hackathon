@@ -51,8 +51,8 @@ invented values. Track follow-up work in TASKS.md.
 ## Repository map
 
 - `CHALLENGE.md`: authoritative challenge requirements and scoring criteria.
-- `HackSpain 2026 · Source of Truth del proyecto.md`: product vision, scenario,
-  demo script, build phases and risks (in Spanish).
+- `HackSpain 2026 · Project Source of Truth.md`: product vision, scenario,
+  demo script, build phases and risks (in English).
 - `thoughts/`: design context: data model proposal, feature inventory to port,
   open and confirmed decisions.
 - `TASKS.md`: completed scaffolding checklist and deferred implementation tasks.
@@ -74,8 +74,9 @@ invented values. Track follow-up work in TASKS.md.
   tactical React Leaflet map (`app/components/LeafletMap.tsx`) with OpenStreetMap;
   each `lib/` module states its owner in a `// OWNER:` line; `tests/` is its
   Vitest suite.
-- `src/app`, `src/components`: platform-base endpoints and dashboard (not served
-  while the root `app/` exists; covered by tests).
+- `src/app/api`: platform endpoint candidates, not served while root `app/`
+  exists. Their supporting modules remain covered by tests. The obsolete
+  platform dashboard, layout and styles have been removed.
 - `src/lib/domain.ts`: shared Zod schemas and domain types.
 - `src/lib/scenario`, `src/lib/signals`: scenario engine, signal model and the
   scenario adapter to the shared triage envelope (plus the legacy
@@ -89,6 +90,8 @@ invented values. Track follow-up work in TASKS.md.
 - `src/lib/supabase`: server/browser clients and Realtime subscription helper.
 - `src/lib/integrations`: HappyRobot boundary, explicitly blocked until implemented.
 - `supabase/migrations`: initial PostgreSQL schema with deny-by-default RLS.
+- `docs/README.md`: documentation index, distinguishing implemented behavior
+  from proposals and historical context.
 - `docs/`: design and implementation guides. `docs/architecture.md` explains the
   command-center decisions, `docs/security.md` its credential and demo-recipient
   rules, `docs/happyDocumentation.md` the unverified HappyRobot contract,

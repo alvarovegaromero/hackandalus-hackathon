@@ -153,7 +153,7 @@ The rationale behind these decisions is detailed in [docs/architecture.md](docs/
 
 | Route                                     | Responsibility                                                         |
 | ----------------------------------------- | ---------------------------------------------------------------------- |
-| `src/app`, `src/components`               | Scaffolding dashboard and endpoints (not served while `app/` exists)   |
+| `src/app/api`                             | Platform endpoint candidates (not served while `app/` exists)          |
 | `src/lib/domain.ts`                       | Zod-validated events and plans                                         |
 | `src/lib/ingest.ts`, `ingest-server.ts`   | Batch event ingestion with deduplication and optional Supabase storage |
 | `src/lib/scenario`, `src/lib/signals`     | Sierra Bermeja scenario engine and signal schemas                      |
@@ -164,7 +164,10 @@ The rationale behind these decisions is detailed in [docs/architecture.md](docs/
 The `@/` alias resolves first against the root and second against `src/`, in both
 TypeScript and Vitest. Ingestion design is in
 [docs/input-architecture.md](docs/input-architecture.md) and the proposed data
-model in [docs/data-model.md](docs/data-model.md).
+model in [docs/data-model.md](docs/data-model.md). The obsolete platform
+dashboard has been removed; its scenario engine, ingestion modules and Workflow
+remain available for integration. See the [documentation index](docs/README.md)
+for the distinction between current behavior and proposals.
 
 ## The Demo
 
