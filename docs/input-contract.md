@@ -120,9 +120,19 @@ Triage evaluates relevance, urgency, confidence and the required response.
 It does not require a severity invented by the intake adapter. Downstream
 incident correlation groups distinct reports of the same real-world problem.
 
-## Synchronous receipt, asynchronous interpretation
+## Implemented HappyRobot first slice
 
-Target endpoint: `POST /api/signals`, accepting a report, an array, or
+`POST /api/signals` now accepts one exact HappyRobot `normalized_report`, stores
+it in `public.signals`, and synchronously calls `processSignal` after durable
+persistence. Authentication uses `x-happyrobot-secret`. The compact response
+contains `signalId`, `eventId`, `duplicate`, and `status`. HappyRobot cannot set
+severity, confidence, zone, priority, or actions; FARO derives the active
+`CrisisEvent` and passes it to `addCrisisEvent`. See
+[input-architecture.md](input-architecture.md) for the current retry contract.
+
+## Future multi-source asynchronous contract
+
+The broader target would accept a report, an array, or
 `{ "signals": [...] }`, up to 50 reports. The reporting UI normally sends one.
 
 1. Validate request context and each report; deduplicate transport retries.
@@ -188,15 +198,17 @@ The running application now serves `src/app/`. The old batch endpoint and
 scenario bridge routes were retired during consolidation; their reusable modules
 remain. Integrate them into the served API after reconciling the report contract.
 
-## First implementation slice
+## Broader contract progress
 
 - [x] Add the envelope schema (`src/lib/report.ts`) and the scenario adapter.
-- [ ] Add the public report validator and the remaining channel adapters.
+- [x] Add the exact HappyRobot `normalized_report` validator and inbound adapter.
+- [ ] Add public form and remaining non-HappyRobot channel adapters.
 - [ ] Test text-only reports, textual/GPS locations, coordinate pairing/ranges,
       reporter vs incident semantics, unknown fields and missing extraction.
 - [x] Test scenario retry identity, structured readings and no ground-truth leak.
-- [ ] Resolve durable persistence and scheduling recovery; migrate the workflow
-      input and expose the new route under `src/app/`.
+- [x] Add durable HappyRobot Signal persistence and expose the route under
+      `src/app/`; synchronous recovery is implemented for this first slice.
+- [ ] Migrate the broader batch contract to durable Workflow scheduling.
 - [ ] Test mixed batches, duplicate deliveries, scheduling failure and recovery.
 - [ ] Add the reporting form: text, optional device location or incident pin,
       textual place alternative, and a receipt distinct from triage results.

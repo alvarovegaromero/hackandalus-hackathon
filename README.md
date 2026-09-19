@@ -18,8 +18,9 @@ open decisions) in [thoughts/](thoughts/README.md).
 **Status.** The application is unified under `src/`. Next.js serves
 `src/app/`, with sketch UI components in `src/components/` and the active
 command-center backend in `src/lib/`. It includes the HTTP API, scripted
-scenarios, human-approved actions and the digital twin. State lives in server
-memory with optional local JSON persistence.
+scenarios, human-approved actions and the digital twin. Operational state lives
+in server memory with optional local JSON persistence. Authenticated HappyRobot
+inbound reports are durably stored in Supabase before synchronous interpretation.
 
 Reusable Workflow, AI SDK, Supabase, batch ingestion and Sierra Bermeja
 scenario modules also live under `src/`, but are not connected to the served
@@ -141,9 +142,9 @@ are permitted. No scanner detects every secret.
 ```
       signals                    decision                    execution
   ┌───────────────┐        ┌───────────────────┐        ┌────────────────┐
-  │ POST /events  │        │ priority.ts       │        │ happyrobot.ts  │
-  │ webhook       │ ─────► │ resources.ts      │ ─────► │  (single exit  │
-  │ demo/inject   │        │ contacts.ts       │        │     point)     │
+  │ POST /signals │        │ priority.ts       │        │ happyrobot.ts  │
+  │ POST /events  │        │ resources.ts      │        │  (single exit  │
+  │ webhook/demo  │ ─────► │ contacts.ts       │ ─────► │     point)     │
   │ scenario.ts   │        │ escalation.ts     │        └───────┬────────┘
   └───────────────┘        └─────────┬─────────┘                │
                                      │                          │ callback
@@ -176,6 +177,7 @@ model.
 | `src/lib/assumptions.ts`                                              | Plan assumptions and world-state updates.                                      |
 | `src/lib/digitalTwin.ts`                                              | Digital twin: perceived world from signals vs simulated ground truth accuracy. |
 | `src/lib/happyrobot.ts`                                               | HappyRobot adapter; the single outbound communication point.                   |
+| `src/lib/signals/happyrobot.ts`, `process.ts`, `repository.ts`        | Exact inbound contract, FARO interpretation, and durable Signal storage.       |
 | `src/lib/scenario.ts`, `src/lib/seed.ts`                              | Scenario scripts driving crisis progression and initial state.                 |
 | `src/lib/history.ts`, `src/lib/learning.ts`, `src/lib/persistence.ts` | History and plan diffs, learned statistics, optional JSON storage.             |
 | `src/app/page.tsx`, `src/components/`                                 | Operator dashboard.                                                            |
@@ -226,12 +228,14 @@ updating this to Sierra Bermeja is tracked in [TASKS.md](TASKS.md).
 JSON responses without caching. Errors always follow the format
 `{ "error", "code", "detalles": [{ "campo", "mensaje" }] }` with stable
 codes (`cuerpo_invalido`, `referencia_desconocida`, `no_encontrado`,
-`conflicto`, `no_autorizado`, `metodo_no_permitido`, `error_interno`).
+`conflicto`, `no_autorizado`, `persistencia_no_disponible`,
+`metodo_no_permitido`, `error_interno`).
 Unsupported methods return `405` with the `Allow` header.
 
 | Endpoint                          | Body                                                                                             | Description                                                                |
 | --------------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
-| `GET /api/situation`              | —                                                                                                | Complete state: signals, zones, resources, plan, history                   |
+| `GET /api/situation`              | —                                                                                                | Complete operational state: events, zones, resources, plan, history        |
+| `POST /api/signals`               | HappyRobot `normalized_report`                                                                   | Durably stores a Signal, interprets an Event, and replans                  |
 | `POST /api/events`                | `{ id?, source?, title?, description?, zoneId?, category?, severity?, confidence?, confirmed? }` | 202: accepts in memory, publishes telemetry and updates the command center |
 | `GET /api/telemetry`              | —                                                                                                | Read-only SSE; recent history and cursor reconnection                      |
 | `POST /api/events/:id/mark`       | `{ confirmed }`                                                                                  | Confirms or discards a signal                                              |
@@ -263,7 +267,7 @@ repository; see [CONTRIBUTING.md](CONTRIBUTING.md) for sharing guidance.
 | `HAPPYROBOT_API_KEY`, `HAPPYROBOT_BASE_URL`, `HAPPYROBOT_AGENT_ID`, `HAPPYROBOT_WORKFLOW_ID`                                           | Credentials for live execution.                                                                                                            |
 | `HAPPYROBOT_ACTION_PATH`, `_AUTH_HEADER`, `_AUTH_SCHEME`, `_IDEMPOTENCY_HEADER`, `_PAYLOAD_SHAPE`, `_RESPONSE_ID_PATH`, `_CHANNEL_MAP` | Configurable contract, unverified against live API ([docs/happyDocumentation.md](docs/happyDocumentation.md)).                             |
 | `HAPPYROBOT_TIMEOUT_MS`, `HAPPYROBOT_MAX_ATTEMPTS`, `HAPPYROBOT_RETRY_BASE_MS`                                                         | Per-attempt timeout, retry attempts (5xx, network, and timeout only), and backoff.                                                         |
-| `HAPPYROBOT_WEBHOOK_SECRET`                                                                                                            | Shared secret for callback webhook.                                                                                                        |
+| `HAPPYROBOT_WEBHOOK_SECRET`                                                                                                            | Shared `x-happyrobot-secret` for inbound Signal intake and callback webhook.                                                               |
 | `DEMO_API_TOKEN`                                                                                                                       | Protects `/api/demo/*`.                                                                                                                    |
 | `CRISIS_PERSISTENCE`                                                                                                                   | `on` persists state as JSON under `.data/`. Disabled by default.                                                                           |
 | `CRISIS_API_TOKEN`, `AI_GATEWAY_API_KEY`, `AI_MODEL`, `NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SECRET_KEY`, `SCENARIO_AGENT_ENABLED`        | Platform base (`src/`): workflows API, AI Gateway, Supabase, and scenario→agent bridge. Only active in tests until trees are unified.      |

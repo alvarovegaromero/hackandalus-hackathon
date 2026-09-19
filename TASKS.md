@@ -126,6 +126,9 @@ communications have not been tested.
 - [ ] Select AI provider/model and configure AI Gateway credentials.
 - [ ] Set up Supabase project and apply migration in development.
 - [ ] Finalize HappyRobot operations, authentication, and callbacks.
+- [x] First inbound HappyRobot slice: authenticated `/api/signals`, durable raw
+      `normalized_report`, transport idempotency, FARO-owned Event interpretation,
+      and reuse of the active planning/Digital Twin/dashboard flow.
 - [ ] Agree on demo recipients and test resources for external validations.
 
 Open decisions do not block the foundational scaffolding and must not be resolved with invented values.
