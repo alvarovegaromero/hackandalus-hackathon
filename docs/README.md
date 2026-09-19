@@ -19,6 +19,7 @@ JSON persistence. Outbound communications default to mock mode.
 | [Security](security.md)                       | Credentials, operator approval and demo recipients.                          |
 | [HappyRobot contract](happyDocumentation.md)  | Verified public API contract, FARO workflow payloads, callbacks and mocking. |
 | [Dashboard design](dashboard-design-guide.md) | Visual and interaction guidance.                                             |
+| [Demo runbook](demo-runbook.md)               | Live-demo startup sequence, tunnel caveats and pre-demo checklist.           |
 
 ## Contracts and integration work
 
