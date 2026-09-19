@@ -307,3 +307,5 @@ Contract and limits: [docs/event-telemetry.md](docs/event-telemetry.md).
 
 - [x] Move POC processing into Next.js after intake, with independent filtering and
       two-second coordinator batching; preserve concurrent arrivals via migration 008.
+
+- [x] Parent plan mutation tool prepared with revision checks, audit and preserved inventory. Six local SQL rollback cases passed. Shared deployment and Person A wiring remain pending; see docs/parent-plan-tool.md.
