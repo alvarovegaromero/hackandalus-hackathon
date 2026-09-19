@@ -63,8 +63,8 @@ export default function DrillLearningExports({ run }: { run: DrillRun }) {
       if (kind === "evaluation") {
         const { evaluateDrillPolicies } = await import("@/lib/drill-evaluation");
         downloadDrillArtifact(
-          "faro-policy-evaluation.json",
-          JSON.stringify(evaluateDrillPolicies(), null, 2),
+          `faro-${run.config.hazard}-policy-evaluation.json`,
+          JSON.stringify(evaluateDrillPolicies(run.config.hazard), null, 2),
           "application/json",
         );
       }
@@ -101,7 +101,7 @@ export default function DrillLearningExports({ run }: { run: DrillRun }) {
           Reviewed context JSON
         </button>
         <button type="button" disabled={busy} onClick={() => void exportArtifact("evaluation")}>
-          Reserved policy evaluation
+          Reserved wildfire evaluation
         </button>
       </div>
       {error ? <p role="alert">{error}</p> : null}

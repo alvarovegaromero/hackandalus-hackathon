@@ -758,6 +758,11 @@
   margin: 14px 0;
   font-size: 13px;
   line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.drills-checklist small {
+  display: block;
 }
 
 .drills-checklist strong {

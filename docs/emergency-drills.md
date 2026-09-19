@@ -1,27 +1,26 @@
-# Emergency drills
+# Wildfire drills
 
-Open **Emergency drills** in the dashboard header, or visit `/dashboard/drills`.
-This standalone training workspace rehearses earthquake and wildfire decisions
+Open **Wildfire drills** in the dashboard header, or visit `/dashboard/drills`.
+This standalone training workspace rehearses wildfire decisions
 without contacting operational APIs or triggering HappyRobot, calls or alerts.
 No credentials or backend worker are required for drills.
 
 ## Rehearsal
 
-1. Choose an earthquake or wildfire, a locality preset (Granada, Lorca or
-   Estepona), or a custom name and coordinates. Set severity, simulated
+1. Choose a locality preset (Estepona by default), or a custom name and coordinates. Set severity, simulated
    population and response-team count.
-2. **Generate & run simulation** starts the clock and animated 3D city. Select a
-   sector in the scene or its keyboard-accessible buttons, then inspect
-   buildings, establish a perimeter, assist evacuation, restore access or brief
-   the community. Pause whenever you need time to plan.
+2. **Prepare wildfire** creates a paused exercise. Review the approved checklist
+   before pressing **Run simulation**. Select a sector in the scene or its
+   keyboard-accessible buttons, then establish a perimeter, assist evacuation,
+   restore access or brief the community. Wildfire evacuation needs no building
+   assessment. Pause whenever you need time to plan.
 3. Twenty simulated minutes take 80 seconds at 1× speed; 2× and 4× are available.
    **Next phase** processes the intervening simulation immediately. Running
    and replay both pause when the tab becomes hidden. The training allocation
    model keeps teams occupied until service completion or evacuation arrival.
    Keep capacity available for reopening access; blocked missions keep their teams.
 4. Conditions change: access closes at T+5, communications fail at T+10, and an
-   aftershock or wind shift occurs at T+15. Earthquake evacuation requires an
-   assessment, which becomes invalid after the aftershock. The drill ends at
+   wind shift occurs at T+15. The drill ends at
    T+20 with an outcome, recorded decisions and lessons.
 5. **Play 3D replay** reconstructs the recorded state over time. Scrub to any
    point, or use **View in 3D** on a timeline entry to see the state immediately
@@ -33,9 +32,16 @@ No credentials or backend worker are required for drills.
    identifies people who never arrived, and supplies evidence-based lessons.
    Add facilitator observations and export JSON, Markdown or decision JSONL.
    Review individual lessons before exporting offline context.
-7. Rehearse again. A matching completed exercise supplies its evidence-based
-   checklist and facilitator observations. The debrief compares assembly-point
-   coverage with the preceding matching exercise.
+7. Approve or reject each generated lesson, then **Rehearse this scenario again**.
+   The configuration panel shows audited, facilitator-approved lessons with
+   source run IDs; those lessons accompany the new exercise. Unreviewed/rejected
+   lessons, synthetic demo approvals and free-form notes do not enter the checklist.
+   Matching requires the same configuration, seed and model. The running exercise
+   excludes itself and later exercises from its briefing.
+8. Compare arrivals, unfinished journeys, waiting exposure and occupied
+   team-minutes with the preceding matching exercise. A difference is evidence
+   about these recorded decisions under the simulator, not a causal estimate of
+   the checklist's benefit.
 
 Overview, street and plan cameras, zoom, automatic orbit and sector selection
 have keyboard-operable buttons. Pointer dragging also orbits the camera.
@@ -49,8 +55,7 @@ still run and the state updates discretely.
 
 The scene lazy-loads Three.js/WebGL and uses procedural buildings, roads, trees,
 terrain, shelters, shadows and labeled districts. Wildfire effects advance
-across the town, with smoke direction changing after escalation. Earthquakes
-show shock waves, shaking, damaged buildings, rubble and aftershock dust.
+across the town, with smoke direction changing after escalation.
 Coordinates seed synthetic building heights; they do not load a surveyed city,
 terrain or actual road network. Visual hazard effects illustrate the clock,
 severity and protection decisions, not a physical hazard calculation.
@@ -79,8 +84,8 @@ no-intervention comparison explains deterministic model behavior, not
 real-world causal effectiveness. The simulation does not predict casualties.
 
 Lessons are rules evaluated over the recorded decisions and final state:
-alternative access, radio fallback, assembly-point coverage, and earthquake
-reassessment or wildfire perimeters. Every lesson includes supporting evidence
+alternative access, radio fallback, assembly-point coverage and wildfire
+perimeters. Every lesson includes supporting evidence
 and a suggested rehearsal action. No model training takes place. Matching
 requires the same hazard, locality (case-insensitive), coordinates, severity,
 population, team count, model version and (for v3) the complete scenario/seed, so comparisons do not mix
@@ -101,6 +106,18 @@ The versioned `faro.emergency-drills.v1` local-storage notebook contains one
 unfinished exercise and at most 20 completed exercises, newest first.
 An unfinished exercise resumes paused after a reload. Replacing it requires
 explicit confirmation; export it first to keep its record.
+
+The workspace only creates and displays wildfires. Historical non-wildfire runs
+remain in the shared notebook and retain their engine semantics; they are not
+shown or reused as wildfire knowledge. A non-wildfire unfinished run is not
+automatically opened. Its export and replacement confirmation remain available
+before a new wildfire replaces the active slot. The 20-run retention limit
+still applies to the shared notebook.
+
+If all teams are trapped on a blocked route and no service completion can
+release a team, the action controls explain that the exercise cannot recover
+access. Finish it and rehearse a different allocation; waiting alone does not
+release those teams.
 
 Completed exercises preserve configuration, timestamps, decisions, events,
 missions, modeled exposure, outcomes and facilitator notes. The clock and

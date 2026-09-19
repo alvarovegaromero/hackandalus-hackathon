@@ -13,12 +13,12 @@ import {
   Radio,
   ShieldCheck,
   StepForward,
-  Waves,
 } from "lucide-react";
 import DrillTwin from "./drill-twin";
 import DrillScenarioFields from "./drill-scenario-fields";
 import DrillLearningExports from "./drill-learning-exports";
 import { drillLearningReport } from "@/lib/drill-learning";
+import { reviewedDrillBriefing } from "@/lib/drill-agent-context";
 import {
   ACTIONS,
   actionIds,
@@ -27,7 +27,7 @@ import {
   applyDrillAction,
   comparableDrills,
   createDrill,
-  DEFAULT_DRILL,
+  DEFAULT_WILDFIRE_DRILL,
   drillConfigSchema,
   drillLessons,
   drillMetrics,
@@ -60,7 +60,7 @@ function exportReport(run: DrillRun) {
 }
 
 export default function EmergencyDrills() {
-  const [config, setConfig] = useState<DrillConfig>(DEFAULT_DRILL);
+  const [config, setConfig] = useState<DrillConfig>(DEFAULT_WILDFIRE_DRILL);
   const [notebook, setNotebook] = useState<DrillNotebook>(EMPTY_NOTEBOOK);
   const [run, setRun] = useState<DrillRun | null>(null);
   const [selected, setSelected] = useState<SectorId>("care");
@@ -87,12 +87,13 @@ export default function EmergencyDrills() {
     const load = () => {
       try {
         const saved = readDrillNotebook(localStorage.getItem(DRILL_STORAGE_KEY));
+        const active = saved.active?.config.hazard === "wildfire" ? saved.active : null;
         notebookRef.current = saved;
-        runRef.current = saved.active;
+        runRef.current = active;
         setNotebook(saved);
-        setRun(saved.active);
-        if (saved.active) {
-          setConfig(saved.active.config);
+        setRun(active);
+        if (active) {
+          setConfig(active.config);
           setShowSetup(false);
         }
       } catch {
@@ -174,11 +175,16 @@ export default function EmergencyDrills() {
     };
   }, [replayRunning, speed]);
 
-  const preview = createDrill(
-    DEFAULT_DRILL,
-    "00000000-0000-4000-8000-000000000000",
-    "2026-01-01T00:00:00.000Z",
+  const preview = useMemo(
+    () =>
+      createDrill(
+        drillConfigSchema.safeParse(config).success ? config : DEFAULT_WILDFIRE_DRILL,
+        "00000000-0000-4000-8000-000000000000",
+        "2026-01-01T00:00:00.000Z",
+      ),
+    [config],
   );
+  const wildfireHistory = notebook.history.filter((item) => item.config.hazard === "wildfire");
   const replayState = useMemo(
     () =>
       run && replayMinute !== null
@@ -199,7 +205,27 @@ export default function EmergencyDrills() {
     notebook.history,
     run?.modelVersion ?? 3,
   ).find((item) => !run || item.startedAt < run.startedAt);
-  const priorLessons = useMemo(() => (previous ? drillLessons(previous) : []), [previous]);
+  const previousMetrics = previous ? drillMetrics(previous) : null;
+  const preparation = useMemo(
+    () => reviewedDrillBriefing(config, notebook.history),
+    [config, notebook.history],
+  );
+  const briefingConfig = run?.config ?? config;
+  const briefingRunId = run?.id;
+  const briefingStartedAt = run?.startedAt;
+  const briefingModel = run?.modelVersion;
+  const priorBriefing = useMemo(
+    () =>
+      reviewedDrillBriefing(
+        briefingConfig,
+        notebook.history,
+        briefingRunId && briefingStartedAt && briefingModel
+          ? { id: briefingRunId, startedAt: briefingStartedAt, modelVersion: briefingModel }
+          : undefined,
+      ),
+    [briefingConfig, briefingRunId, briefingStartedAt, briefingModel, notebook.history],
+  );
+  const priorLessons = priorBriefing.records;
   const sector = displayed.sectors.find((item) => item.id === selected)!;
   const finished = run?.status === "completed";
   const lessons = useMemo(() => (run?.status === "completed" ? drillLessons(run) : []), [run]);
@@ -219,7 +245,7 @@ export default function EmergencyDrills() {
 
   function startDrill(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const result = drillConfigSchema.safeParse(config);
+    const result = drillConfigSchema.safeParse({ ...config, hazard: "wildfire" });
     if (!result.success) {
       setError(
         result.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join(" "),
@@ -231,7 +257,7 @@ export default function EmergencyDrills() {
       return;
     }
     setError(null);
-    setPlaying(true);
+    setPlaying(false);
     setReplayPlaying(false);
     setReplayMinute(null);
     setShowBaseline(false);
@@ -287,8 +313,10 @@ export default function EmergencyDrills() {
       </header>
       <div className="drills-heading">
         <div>
-          <h1>Emergency drills</h1>
-          <p>Run the crisis. See the consequences. Replay what changed.</p>
+          <h1>Wildfire drills</h1>
+          <p>
+            Rehearse the fire response. Review decisions. Bring approved lessons into the next run.
+          </p>
         </div>
         <button
           type="button"
@@ -325,27 +353,10 @@ export default function EmergencyDrills() {
               Choose a place and the constraints your team will practice.
             </p>
             <form onSubmit={startDrill}>
-              <fieldset className="drills-hazard-options">
-                <legend>Emergency</legend>
-                <label>
-                  <input
-                    type="radio"
-                    name="hazard"
-                    checked={config.hazard === "earthquake"}
-                    onChange={() => setConfig({ ...config, hazard: "earthquake" })}
-                  />
-                  <Waves size={18} /> Earthquake
-                </label>
-                <label>
-                  <input
-                    type="radio"
-                    name="hazard"
-                    checked={config.hazard === "wildfire"}
-                    onChange={() => setConfig({ ...config, hazard: "wildfire" })}
-                  />
-                  <Flame size={18} /> Wildfire
-                </label>
-              </fieldset>
+              <p className="drills-help">
+                <Flame size={18} aria-hidden="true" /> Wildfire · evacuation, access and radio
+                fallback
+              </p>
               <label>
                 Locality preset
                 <select
@@ -464,34 +475,69 @@ export default function EmergencyDrills() {
                 onChange={(scenario) => setConfig({ ...config, scenario })}
               />
               <p className="drills-help">
-                20 simulated minutes in 80 seconds at 1×. Pause to plan. Teams return after service
-                completion or evacuation arrival. Keep capacity available to reopen blocked access.
+                Starts paused so you can plan. 20 simulated minutes in 80 seconds at 1×. Teams
+                return after service completion or evacuation arrival. Keep capacity available to
+                reopen blocked access.
               </p>
               {notebook.active ? (
-                <label className="drills-confirm">
-                  <input
-                    type="checkbox"
-                    checked={replaceActive}
-                    onChange={(event) => setReplaceActive(event.target.checked)}
-                  />
-                  Replace the unfinished exercise. Export it first if needed.
-                </label>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => notebook.active && exportReport(notebook.active)}
+                  >
+                    Export unfinished exercise
+                  </button>
+                  <label className="drills-confirm">
+                    <input
+                      type="checkbox"
+                      checked={replaceActive}
+                      onChange={(event) => setReplaceActive(event.target.checked)}
+                    />
+                    Replace the unfinished exercise. Export it first if needed.
+                  </label>
+                </>
               ) : null}
               <button type="submit" className="drills-primary" disabled={!ready}>
                 <Play size={16} />
-                {notebook.active ? "Replace & run simulation" : "Generate & run simulation"}
+                {notebook.active ? "Replace & prepare wildfire" : "Prepare wildfire"}
               </button>
             </form>
             <div className="drills-briefing">
-              <h3>Learning from previous drills</h3>
-              {comparableDrills(config, notebook.history)[0] ? (
-                <p>
-                  {comparableDrills(config, notebook.history).length} comparable exercise(s) found.
-                  Their evidence-based checklist appears when you start.
-                </p>
+              <h3>Approved lessons for this wildfire</h3>
+              <p>
+                Same configuration, seed and model. Reviewed reference data; you choose the actions.
+              </p>
+              {preparation.records.length ? (
+                <ul className="drills-checklist">
+                  {preparation.records.map((lesson) => (
+                    <li key={lesson.lessonId}>
+                      <strong>{lesson.proposal}</strong>
+                      <span>{lesson.fact}</span>
+                      <small>Source exercise: {lesson.sourceRunId}</small>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const source = notebook.history.find(
+                            (item) => item.id === lesson.sourceRunId,
+                          );
+                          if (source) review(source);
+                        }}
+                      >
+                        Review source exercise
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               ) : (
-                <p>No matching exercises yet. Complete this drill to build a reusable checklist.</p>
+                <p>
+                  No approved lessons for this configuration yet. Complete a wildfire and review its
+                  evidence, then choose “Rehearse this scenario again”. Unreviewed and rejected
+                  lessons are excluded.
+                </p>
               )}
+              {preparation.skippedRunIds.length ? (
+                <p role="status">Some saved exercises failed the replay audit and were excluded.</p>
+              ) : null}
             </div>
           </aside>
         ) : null}
@@ -499,9 +545,7 @@ export default function EmergencyDrills() {
           <section className="drills-run-bar" aria-label="Exercise controls">
             <div>
               <h2 ref={runHeadingRef} tabIndex={-1}>
-                {run
-                  ? `${run.config.locality} / ${run.config.hazard === "earthquake" ? "Earthquake" : "Wildfire"}`
-                  : "Your rehearsal starts here"}
+                {run ? `${run.config.locality} / Wildfire` : "Your rehearsal starts here"}
               </h2>
               <p role="status">
                 {run
@@ -725,43 +769,42 @@ export default function EmergencyDrills() {
                 </div>
               ) : (
                 <div className="drills-actions">
-                  {actionIds.map((action) => {
-                    const unavailable = run
-                      ? actionUnavailable(run, action, selected)
-                      : "Generate a drill first.";
-                    return (
-                      <div key={action}>
-                        <button
-                          type="button"
-                          disabled={!!unavailable}
-                          aria-describedby={`action-help-${action}`}
-                          onClick={() => {
-                            const current = runRef.current;
-                            if (!current) return;
-                            try {
-                              persist(applyDrillAction(current, action, selected));
-                              setError(null);
-                            } catch (caught) {
-                              setError(
-                                caught instanceof Error ? caught.message : "Action unavailable.",
-                              );
-                            }
-                          }}
-                        >
-                          <span>{ACTIONS[action].label}</span>
-                          <small>
-                            {ACTIONS[action].teams ? `${ACTIONS[action].teams} teams` : "Comms"}
-                          </small>
-                        </button>
-                        <p id={`action-help-${action}`}>
-                          {unavailable ??
-                            (action === "assess" && displayed.config.hazard === "wildfire"
-                              ? "Inspect this sector. Wildfire evacuation can begin without a building assessment."
-                              : ACTIONS[action].description)}
-                        </p>
-                      </div>
-                    );
-                  })}
+                  {actionIds
+                    .filter((action) => action !== "assess")
+                    .map((action) => {
+                      const unavailable = run
+                        ? actionUnavailable(run, action, selected)
+                        : "Generate a drill first.";
+                      return (
+                        <div key={action}>
+                          <button
+                            type="button"
+                            disabled={!!unavailable}
+                            aria-describedby={`action-help-${action}`}
+                            onClick={() => {
+                              const current = runRef.current;
+                              if (!current) return;
+                              try {
+                                persist(applyDrillAction(current, action, selected));
+                                setError(null);
+                              } catch (caught) {
+                                setError(
+                                  caught instanceof Error ? caught.message : "Action unavailable.",
+                                );
+                              }
+                            }}
+                          >
+                            <span>{ACTIONS[action].label}</span>
+                            <small>
+                              {ACTIONS[action].teams ? `${ACTIONS[action].teams} teams` : "Comms"}
+                            </small>
+                          </button>
+                          <p id={`action-help-${action}`}>
+                            {unavailable ?? ACTIONS[action].description}
+                          </p>
+                        </div>
+                      );
+                    })}
                 </div>
               )}
             </section>
@@ -846,16 +889,56 @@ export default function EmergencyDrills() {
                     </p>
                   </div>
                 ) : null}
-                {previous ? (
-                  <p className="drills-comparison">
-                    Compared with the preceding drill with the same configuration, seed and model:{" "}
-                    <strong>
-                      {outcome.coverage - drillMetrics(previous).coverage >= 0 ? "+" : ""}
-                      {outcome.coverage - drillMetrics(previous).coverage} percentage points
-                    </strong>{" "}
-                    in assembly-point coverage. Previous run:{" "}
-                    {new Date(previous.startedAt).toLocaleString("en-GB")}.
-                  </p>
+                {previous && previousMetrics ? (
+                  <>
+                    <p className="drills-comparison">
+                      Compared with the preceding drill with the same configuration, seed and model:{" "}
+                      <strong>
+                        {outcome.coverage - previousMetrics.coverage >= 0 ? "+" : ""}
+                        {outcome.coverage - previousMetrics.coverage} percentage points
+                      </strong>{" "}
+                      in assembly-point coverage. Previous run:{" "}
+                      {new Date(previous.startedAt).toLocaleString("en-GB")}.
+                    </p>
+                    <div className="drill-table-wrap">
+                      <table>
+                        <caption>Previous exercise versus this rehearsal</caption>
+                        <thead>
+                          <tr>
+                            <th scope="col">Metric</th>
+                            <th scope="col">Previous</th>
+                            <th scope="col">This run</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <th scope="row">People at assembly point</th>
+                            <td>{previousMetrics.evacuated}</td>
+                            <td>{outcome.evacuated}</td>
+                          </tr>
+                          <tr>
+                            <th scope="row">People still in transit</th>
+                            <td>{previousMetrics.inTransit}</td>
+                            <td>{outcome.inTransit}</td>
+                          </tr>
+                          <tr>
+                            <th scope="row">Waiting exposure</th>
+                            <td>{previousMetrics.exposure}</td>
+                            <td>{outcome.exposure}</td>
+                          </tr>
+                          <tr>
+                            <th scope="row">Occupied team-minutes</th>
+                            <td>{previous.teamBusyMinutes?.toFixed(2) ?? "Not recorded"}</td>
+                            <td>{run.teamBusyMinutes?.toFixed(2) ?? "Not recorded"}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="drills-help">
+                      Compare all outcomes together. Different decisions and repeated practice can
+                      affect the result; this does not isolate the effect of the checklist.
+                    </p>
+                  </>
                 ) : (
                   <p className="drills-help">
                     This is the baseline for the next matching exercise. Findings come from the
@@ -873,7 +956,7 @@ export default function EmergencyDrills() {
                       </div>
                       {run.modelVersion === 3 ? (
                         <label>
-                          Review for offline context
+                          Review for future drills and offline context
                           <select
                             aria-label={`Review: ${lesson.title}`}
                             value={
@@ -938,40 +1021,37 @@ export default function EmergencyDrills() {
             ) : priorLessons.length ? (
               <>
                 <p className="drills-help">
-                  Checklist from the matching exercise on{" "}
-                  {previous ? new Date(previous.startedAt).toLocaleString("en-GB") : ""}.
-                  Recommendations do not execute actions.
+                  Approved lessons from earlier matching wildfires. Recommendations do not execute
+                  actions.
                 </p>
                 <ul className="drills-checklist">
                   {priorLessons.map((lesson) => (
-                    <li key={lesson.id}>
-                      <strong>{lesson.recommendation}</strong>
-                      <span>{lesson.evidence}</span>
+                    <li key={lesson.lessonId}>
+                      <strong>{lesson.proposal}</strong>
+                      <span>{lesson.fact}</span>
+                      <small>Source exercise: {lesson.sourceRunId}</small>
                     </li>
                   ))}
                 </ul>
-                {previous?.notes ? (
-                  <p className="drills-facilitator">
-                    <strong>Facilitator observation:</strong> {previous.notes}
-                  </p>
-                ) : null}
               </>
             ) : (
               <p className="drills-empty">
-                Complete your first exercise to build lessons from decisions, blocked routes,
-                communication failures and team capacity. Matching future drills will bring those
-                lessons into the response desk.
+                Complete and review a wildfire to build this checklist. Only approved lessons from
+                earlier exercises with the same configuration, seed and model appear here.
               </p>
             )}
+            {priorBriefing.skippedRunIds.length ? (
+              <p role="status">Some saved exercises failed the replay audit and were excluded.</p>
+            ) : null}
           </section>
         </div>
       </div>
       <section className="drills-history">
         <div className="drills-section-title">
-          <h2>Exercise notebook</h2>
-          <span>Last 20 completed drills · saved in this browser</span>
+          <h2>Wildfire notebook</h2>
+          <span>Recent completed wildfires · saved in this browser</span>
         </div>
-        {notebook.active && run?.id !== notebook.active.id ? (
+        {notebook.active?.config.hazard === "wildfire" && run?.id !== notebook.active.id ? (
           <button
             type="button"
             onClick={() => {
@@ -981,9 +1061,9 @@ export default function EmergencyDrills() {
             Resume unfinished drill in {notebook.active.config.locality}
           </button>
         ) : null}
-        {notebook.history.length ? (
+        {wildfireHistory.length ? (
           <div className="drills-history-list">
-            {notebook.history.map((item) => (
+            {wildfireHistory.map((item) => (
               <button
                 key={item.id}
                 type="button"
@@ -992,10 +1072,7 @@ export default function EmergencyDrills() {
               >
                 <span>
                   <strong>{item.config.locality}</strong>
-                  <small>
-                    {item.config.hazard === "earthquake" ? "Earthquake" : "Wildfire"} /{" "}
-                    {item.config.severity}
-                  </small>
+                  <small>Wildfire / {item.config.severity}</small>
                 </span>
                 <span>
                   {drillMetrics(item).coverage}% coverage
@@ -1013,9 +1090,8 @@ export default function EmergencyDrills() {
       </section>
       <footer className="drills-footer">
         Synthetic training model v{run?.modelVersion ?? 3}. Visual effects illustrate the exercise;
-        no surveyed terrain, structural engineering or fire-spread physics. Lessons support
-        facilitated practice and do not update the operational coordinator. Export reports to keep
-        them beyond this browser.
+        no surveyed terrain or fire-spread physics. Lessons support facilitated practice and do not
+        update the operational coordinator. Export reports to keep them beyond this browser.
       </footer>
     </main>
   );

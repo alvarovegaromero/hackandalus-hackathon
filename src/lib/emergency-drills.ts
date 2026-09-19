@@ -37,6 +37,14 @@ export const DEFAULT_DRILL: DrillConfig = {
   teams: 6,
 };
 
+export const DEFAULT_WILDFIRE_DRILL: DrillConfig = {
+  ...DEFAULT_DRILL,
+  hazard: "wildfire",
+  locality: "Estepona",
+  latitude: 36.4276,
+  longitude: -5.1459,
+};
+
 export const ACTIONS: Record<DrillAction, { label: string; teams: number; description: string }> = {
   assess: {
     label: "Assess buildings",
@@ -336,10 +344,18 @@ export function actionUnavailable(
   if (run.status !== "running") return "This exercise has ended.";
   const sector = run.sectors.find((item) => item.id === sectorId);
   if (!sector) return "Select a sector.";
-  if (run.teamsAvailable < ACTIONS[action].teams)
+  if (run.teamsAvailable < ACTIONS[action].teams) {
+    if (
+      run.modelVersion === 3 &&
+      !run.routeOpen &&
+      run.teamsAvailable === 0 &&
+      run.reservations?.length === 0
+    )
+      return "All teams are held on the blocked route. Finish this drill, then rehearse with a team reserved for access.";
     return run.modelVersion === 3
       ? "Teams are occupied. Wait for an arrival or service completion."
       : "Not enough available teams in this phase.";
+  }
   const repeated = run.log.some(
     (entry) =>
       entry.kind === "decision" &&

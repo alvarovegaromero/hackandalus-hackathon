@@ -276,7 +276,7 @@ export default function DrillTwin({
                 <th scope="col">Sector</th>
                 <th scope="col">At assembly point</th>
                 <th scope="col">Risk / 100</th>
-                <th scope="col">Assessment</th>
+                {run.config.hazard === "earthquake" ? <th scope="col">Assessment</th> : null}
                 <th scope="col">Perimeter</th>
               </tr>
             </thead>
@@ -288,7 +288,9 @@ export default function DrillTwin({
                     {sector.evacuated} / {sector.population}
                   </td>
                   <td>{sector.risk}</td>
-                  <td>{sector.assessed ? "Assessed" : "Unverified"}</td>
+                  {run.config.hazard === "earthquake" ? (
+                    <td>{sector.assessed ? "Assessed" : "Unverified"}</td>
+                  ) : null}
                   <td>{sector.protected ? "Secured" : "Not secured"}</td>
                 </tr>
               ))}

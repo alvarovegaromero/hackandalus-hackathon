@@ -91,7 +91,7 @@ export default function DashboardPage() {
             className="inline-flex items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium"
           >
             <Box size={16} aria-hidden="true" />
-            Emergency drills
+            Wildfire drills
           </Link>
         </div>
         {process.env.NODE_ENV === "development" ? (

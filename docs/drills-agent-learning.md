@@ -17,13 +17,35 @@ npm run drills:try -- --demo-review --out .data/drills-learning-reviewed
 npm run dev
 ```
 
-Visit `/dashboard/drills`. Choose either hazard and an existing locality or a
+Visit `/dashboard/drills`. Configure a wildfire and an existing locality or a
 custom name/coordinates. Open **Ad hoc conditions & objectives**, configure the
-case, then run/pause/step, make decisions and complete the exercise. Replay
+case, then prepare the paused exercise, run/pause/step, make decisions and complete the exercise. Replay
 individual timeline entries and compare against no intervention. Download the
 JSON report from the controls or Markdown, decision traces and candidate examples
 from **Auditable learning outputs**. Review individual generated lessons using
 their selectors before downloading **Reviewed context JSON**.
+
+The browser now completes the rehearsal memory loop: approving a lesson makes
+its audited fact, proposal and source run available when preparing the same
+wildfire again, and during the subsequent run. Only local-facilitator approvals
+from matching model-3 exercises qualify. Rejected, unreviewed, tampered,
+nonmatching and synthetic-demo records are excluded. Notes are not promoted to
+rules. Invalid audited runs produce a visible exclusion notice.
+
+The browser's **Reserved wildfire evaluation** exports only the frozen wildfire
+cases, retaining their original seeds, IDs, policies and results. The complete
+offline benchmark is preserved for reproducibility; selecting the wildfire
+scope does not change or retrain a policy. In the current two reserved wildfire
+cases both policies reach 75% coverage. Non-regression is not proof of a gain.
+
+This demonstrates reviewed memory and reuse in human-led rehearsal. Production
+retrieval remains unconnected; do not claim the operational agent has already
+improved. To establish that claim, compare the same versioned agent with and
+without the reviewed context on fresh reserved scenarios, using arrival
+coverage, unfinished journeys, exposure and resource cost together. Freeze the
+memory and decision policy before evaluation, and inspect regressions before
+any promotion. Fine-tuning is a separate optional step, not required for
+retrieval-based learning.
 
 `drills:try` is an explicitly invoked verification/demo command, not a CI suite.
 It writes synthetic examples, schemas, evaluation and verification results under
@@ -72,10 +94,10 @@ three sectors, phases, mission fields and props.
 | `objectives.minimumCoverage`          | Integer 0–100; evaluated against rounded arrival coverage                                                                          |
 | `objectives.maximumExposurePerPerson` | 0–20; evaluated against raw waiting exposure / initial population                                                                  |
 
-Hazard, severity, population (50–10000), team count (2–20), locality and coordinates
-remain configurable. Coordinates/locality label the synthetic scene; they do not
-load real terrain. Assessment is required for earthquake evacuation and is
-invalidated at the aftershock. Protection remains effective. Briefing increases
+Severity, population (50–10000), team count (2–20), locality and coordinates
+remain configurable for wildfire. Coordinates/locality label the synthetic scene; they do not
+load real terrain. Legacy earthquake engine semantics remain available for old
+records and the frozen offline benchmark. Protection remains effective. Briefing increases
 dispatch capacity and must be repeated after the observed network outage.
 
 All time advances on a 0.125-minute grid; fractional requests are floored to that

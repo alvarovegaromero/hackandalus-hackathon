@@ -11,6 +11,7 @@ import {
   type DrillConfig,
   type DrillObservation,
   type DrillRun,
+  type Hazard,
   type SectorId,
 } from "./emergency-drills";
 import { DEFAULT_SCENARIO } from "./drill-scenario";
@@ -103,9 +104,11 @@ export function evaluationScenarios() {
   );
 }
 
-export function evaluateDrillPolicies() {
-  const scenarios = evaluationScenarios();
-  const results = scenarios.map((scenario, index) => {
+export function evaluateDrillPolicies(hazard?: Hazard) {
+  const scenarios = evaluationScenarios()
+    .map((scenario, index) => ({ scenario, index }))
+    .filter(({ scenario }) => !hazard || scenario.config.hazard === hazard);
+  const results = scenarios.map(({ scenario, index }) => {
     const runId = (offset: number) =>
       `00000000-0000-4000-8000-${String(index * 2 + offset).padStart(12, "0")}`;
     const baseline = simulateDrillPolicy(scenario.config, "baseline", runId(1));
@@ -141,13 +144,15 @@ export function evaluateDrillPolicies() {
   return {
     schemaVersion: 1,
     synthetic: true,
+    hazardScope: hazard ?? "all-supported-hazards",
     engineVersion: 3,
     evaluationVersion: "family-split-v1",
     policies: POLICY_VERSIONS,
     policyChange:
       "Reserve one response team for access contingencies. Fixed code, no fitted weights or LLM training.",
-    splitProtocol:
-      "Families, scenario IDs and seeds are disjoint. Candidate rules frozen before held-out scoring. Both hazards occur in each split; this tests new condition families, not unseen hazards.",
+    splitProtocol: `Families, scenario IDs and seeds are disjoint. Candidate rules frozen before held-out scoring. ${
+      hazard ? `Only ${hazard} cases are included` : "Both hazards occur in each split"
+    }; this tests new condition families, not unseen hazards.`,
     metrics: {
       coverage: "Rounded percent arrivals at T+20; higher is better.",
       waitingExposure:

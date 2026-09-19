@@ -1,7 +1,7 @@
 // OWNER: emergency drill sandbox; no runtime or operational imports.
 import { z } from "zod";
 import { coordinatorStateSchema, type CoordinatorState } from "./contracts/coordinator";
-import { type DrillRun, type Hazard } from "./emergency-drills";
+import { comparableDrills, type DrillConfig, type DrillRun, type Hazard } from "./emergency-drills";
 import { learningLessons, validateAuditedDrill } from "./drill-learning";
 
 export const reviewedContextSchema = z.strictObject({
@@ -61,6 +61,32 @@ export function reviewedDrillContext(rawRun: DrillRun): ReviewedDrillContext[] {
       }),
     ];
   });
+}
+
+export function reviewedDrillBriefing(
+  config: DrillConfig,
+  history: DrillRun[],
+  current?: Pick<DrillRun, "id" | "startedAt" | "modelVersion">,
+) {
+  const records: ReviewedDrillContext[] = [];
+  const skippedRunIds: string[] = [];
+  if (current && current.modelVersion !== 3) return { records, skippedRunIds };
+  const seen = new Set<string>();
+  const matches = comparableDrills(config, history)
+    .filter((run) => !current || (run.id !== current.id && run.startedAt < current.startedAt))
+    .sort((left, right) => right.startedAt.localeCompare(left.startedAt));
+  for (const run of matches) {
+    try {
+      for (const record of reviewedDrillContext(run)) {
+        if (record.reviewer !== "local-facilitator" || seen.has(record.lessonId)) continue;
+        seen.add(record.lessonId);
+        records.push(record);
+      }
+    } catch {
+      skippedRunIds.push(run.id);
+    }
+  }
+  return { records: records.slice(0, 6), skippedRunIds };
 }
 
 export function retrieveDrillContext(

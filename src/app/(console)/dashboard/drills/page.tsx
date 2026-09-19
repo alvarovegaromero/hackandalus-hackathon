@@ -3,9 +3,9 @@ import EmergencyDrills from "@/components/emergency-drills";
 import "./drills.css";
 
 export const metadata: Metadata = {
-  title: "Emergency drills | Far0",
+  title: "Wildfire drills | Far0",
   description:
-    "Run, replay and learn from earthquake and wildfire drills in an animated 3D training city.",
+    "Rehearse wildfire response in 3D, review decisions and reuse approved lessons in the next drill.",
 };
 
 export default function DrillsPage() {
