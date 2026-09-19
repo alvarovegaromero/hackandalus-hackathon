@@ -40,14 +40,18 @@ Postgres/Supabase, accessibility, and visual design. To index code after
 `npm run index:map`; its use for code navigation is required
 ([Graft guide](docs/code-index.md)).
 
+## HTTP events and SSE telemetry
+
+Run `npm run mock:events` against `npm run dev` and watch each event at
+the event log at <http://localhost:3000/> and in the backend log. `POST /api/events`
+returns 202; `GET /api/telemetry` emits `event.accepted` and `filtering.pending`.
+Storage is in memory, with a TODO for Supabase; filtering, triage and the LLM are
+not connected to this flow. See [contract, authentication, replay and limits](docs/event-telemetry.md).
+
 ## Local Startup
 
-The agreed initial delivery is documented in [Initial POC](docs/poc.md), with
-P0–P5 work packages, dependencies and demo acceptance. Follow that scope before
-the broader architecture proposals; progress is tracked in [TASKS.md](TASKS.md).
-
-Prerequisites: Node.js **22.21+ (22.x)** with its bundled npm (**10.9+**);
-`.nvmrc` pins `22.21.0`. `package.json` pins `npm@11.6.1` in `packageManager`
+Prerequisites: Node.js **26+** with its bundled npm;
+`.nvmrc` pins `26`. `package.json` pins `npm@11.6.1` in `packageManager`
 for Corepack users (`corepack enable`); it is optional. We use npm and
 `package-lock.json`.
 
@@ -204,20 +208,21 @@ codes (`cuerpo_invalido`, `referencia_desconocida`, `no_encontrado`,
 `conflicto`, `no_autorizado`, `metodo_no_permitido`, `error_interno`).
 Unsupported methods return `405` with the `Allow` header.
 
-| Endpoint                          | Body                                                                                        | Description                                                              |
-| --------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `GET /api/situation`              | —                                                                                           | Complete state: signals, zones, resources, plan, history                 |
-| `POST /api/events`                | `{ source?, title?, description?, zoneId?, category?, severity?, confidence?, confirmed? }` | Ingests a signal and replans                                             |
-| `POST /api/events/:id/mark`       | `{ confirmed }`                                                                             | Confirms or discards a signal                                            |
-| `POST /api/actions`               | `{ channel, target, objective, reason, zoneId, resourceId?, contactId? }`                   | Creates a pending action awaiting approval                               |
-| `POST /api/actions/:id/approve`   | —                                                                                           | Human approval; only then does execution occur                           |
-| `POST /api/actions/:id/status`    | `{ operation?: "cancel" \| "retry", status?, externalActionId?, error? }`                   | Cancels, retries, or updates action status                               |
-| `POST /api/webhooks/happyrobot`   | callback                                                                                    | Requires `x-happyrobot-secret`; `503` if unconfigured, `401` on mismatch |
-| `POST /api/scenario/start`        | `{ scriptId?, speed?, restart? }`                                                           | Starts or resumes scenario script (`speed` between 0.25 and 10)          |
-| `POST /api/scenario/stop`         | —                                                                                           | Pauses scenario preserving elapsed time                                  |
-| `POST` / `GET /api/scenario/tick` | —                                                                                           | Manual scenario advancement / read-only status poll                      |
-| `POST /api/demo/inject`           | `{ kind?: "incident" \| "resource-down" \| "route-blocked" \| "integration-failure" }`      | Injects a simulated fault                                                |
-| `POST /api/demo/reset`            | —                                                                                           | Resets to initial baseline state                                         |
+| Endpoint                          | Body                                                                                             | Description                                                                |
+| --------------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| `GET /api/situation`              | —                                                                                                | Complete state: signals, zones, resources, plan, history                   |
+| `POST /api/events`                | `{ id?, source?, title?, description?, zoneId?, category?, severity?, confidence?, confirmed? }` | 202: accepts in memory, publishes telemetry and updates the command center |
+| `GET /api/telemetry`              | —                                                                                                | Read-only SSE; recent history and cursor reconnection                      |
+| `POST /api/events/:id/mark`       | `{ confirmed }`                                                                                  | Confirms or discards a signal                                              |
+| `POST /api/actions`               | `{ channel, target, objective, reason, zoneId, resourceId?, contactId? }`                        | Creates a pending action awaiting approval                                 |
+| `POST /api/actions/:id/approve`   | —                                                                                                | Human approval; only then does execution occur                             |
+| `POST /api/actions/:id/status`    | `{ operation?: "cancel" \| "retry", status?, externalActionId?, error? }`                        | Cancels, retries, or updates action status                                 |
+| `POST /api/webhooks/happyrobot`   | callback                                                                                         | Requires `x-happyrobot-secret`; `503` if unconfigured, `401` on mismatch   |
+| `POST /api/scenario/start`        | `{ scriptId?, speed?, restart? }`                                                                | Starts or resumes scenario script (`speed` between 0.25 and 10)            |
+| `POST /api/scenario/stop`         | —                                                                                                | Pauses scenario preserving elapsed time                                    |
+| `POST` / `GET /api/scenario/tick` | —                                                                                                | Manual scenario advancement / read-only status poll                        |
+| `POST /api/demo/inject`           | `{ kind?: "incident" \| "resource-down" \| "route-blocked" \| "integration-failure" }`           | Injects a simulated fault                                                  |
+| `POST /api/demo/reset`            | —                                                                                                | Resets to initial baseline state                                           |
 
 Channels: `call`, `sms`, `email`, `ticket`, `webhook`, `whatsapp`, `slack`.
 Action statuses: `pending`, `approved`, `running`, `succeeded`, `failed`,
@@ -277,7 +282,7 @@ the dashboard, operator authentication and per-incident policies are needed.
 The full model is documented in [docs/data-model.md](docs/data-model.md).
 
 To deploy, import the repository into Vercel as a Next.js project with
-Node.js 22.x and `npm ci` / `npm run build`; `withWorkflow` is configured in
+Node.js 26 and `npm ci` / `npm run build`; `withWorkflow` is configured in
 `next.config.ts`. Add required environment variables in Vercel and deploy when
 authorized by the team.
 
