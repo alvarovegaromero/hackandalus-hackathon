@@ -288,3 +288,11 @@ Contract and limits: [docs/event-telemetry.md](docs/event-telemetry.md).
   backend integration limitations, and migration milestones.
 - [docs/input-contract.md](docs/input-contract.md): confirmed report payload and
   normalization contract; envelope and scenario adapter implemented.
+
+## Coordinator dashboard integration
+
+- [x] Poll persistent coordinator state; show overview, plan, ambulances and priorities.
+- [x] Bridge durable Jev decisions into SSE with full current-run replay.
+- [x] Route demo reports to the coordinator and add an atomic development reset RPC.
+- [x] Apply migration 006; verify reset invariants in a rolled-back transaction.
+- [ ] Verify the full live worker/UI flow.

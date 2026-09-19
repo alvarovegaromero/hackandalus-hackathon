@@ -28,7 +28,9 @@ const result = spawnSync(
     "-f",
     process.argv.includes("--smoke")
       ? "scripts/try-resource-inventory.sql"
-      : "supabase/migrations/202609190004_resource_inventory.sql",
+      : process.argv.includes("--reset")
+        ? "supabase/migrations/202609190006_coordinator_reset.sql"
+        : "supabase/migrations/202609190004_resource_inventory.sql",
   ],
   {
     env: {

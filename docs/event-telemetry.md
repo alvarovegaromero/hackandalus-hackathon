@@ -2,22 +2,29 @@
 
 The served vertical slice is `scripts/mock-events.mjs` → `POST /api/events` →
 `src/lib/event-pipeline.ts` → `GET /api/telemetry` → event log on `/`.
-No database adapter, migration, filtering worker or LLM call is implemented in
-this slice. The ingestion boundary contains `TODO: save in Supabase` and a
-separate TODO for dispatching to filtering, followed by triage and the LLM.
+Intake now queues durable Supabase coordinator reports. The separate coordinator
+worker runs Jev, triage and global planning. SSE bridges stored receipts and filter
+results; the frontend polls `/api/state` for plans and allocations. See
+[frontend integration](coordinator-frontend-integration.md) for reset and auth setup.
 
 ## Try it
 
 With Node 24.x, run `npm ci`, then `npm run dev`. Open
 <http://localhost:3000/>. In another terminal run `npm run mock:events`.
-The script sends 20 timed HTTP requests (one every 3 s, about a minute; override
-with `EVENT_INTERVAL_MS`) with map coordinates, prints their IDs and fails on HTTP
-errors. Each event appears in the log and as a pin on the map. The backend terminal logs each accepted ID without logging its payload.
-The viewer shows `event.accepted` and `filtering.pending` for each event.
+The script sends 32 timed HTTP requests (one every 3 s, about 93 seconds; override
+with `EVENT_INTERVAL_MS`) and prints their IDs, failing on HTTP errors.
+It shares `src/lib/demo/mock-events.json` with the local **Reset & run events** button:
+20 reports about one fictional Sierra Bermeja wildfire, interleaved with 12 irrelevant
+messages for Jev filtering. Reports progress from smoke detection through a wind shift,
+blocked access, requests for assistance and evacuation updates. People, sensors and
+responders report within roughly 2 km of the same fire origin; irrelevant messages
+have no map coordinates. Source labels and sensor measurements are simulated fixtures,
+not real integrations or trusted provenance. Each report remains a separate event ID;
+this does not implement incident correlation or agent execution.
 
-`EVENT_API_URL` overrides the script's base URL. Both routes are unauthenticated
-(POC decision: no token, no bearer header). No external communications or model
-calls are triggered by this pipeline.
+`EVENT_API_URL` overrides the script's base URL. The CLI sends CRISIS_API_TOKEN
+when configured. Start `npm run coordinator:work` separately to process the queue;
+model calls and simulated allocations happen in that worker.
 
 ## Input and acknowledgement
 

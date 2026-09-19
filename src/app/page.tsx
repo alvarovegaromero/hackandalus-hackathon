@@ -5,12 +5,10 @@
 import { Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
-import type { SituationState } from "@/lib/types";
+import type { CrisisZone } from "@/lib/types";
 import EventLog from "@/components/EventLog";
-import { maybe } from "@/components/shared";
+import CoordinatorPanel, { useCoordinator } from "@/components/CoordinatorPanel";
 import { useTelemetry } from "@/components/use-telemetry";
-
-const POLL_MS = 4000;
 
 // Leaflet touches `window`, so the map only renders in the browser.
 const LeafletMap = dynamic(() => import("@/components/LeafletMap"), {
@@ -19,10 +17,11 @@ const LeafletMap = dynamic(() => import("@/components/LeafletMap"), {
 });
 
 export default function Home() {
-  const [situation, setSituation] = useState<SituationState | null>(null);
+  const [situation, setSituation] = useState<{ zones: CrisisZone[] } | null>(null);
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const telemetry = useTelemetry();
+  const coordinator = useCoordinator();
   const [startingDemo, setStartingDemo] = useState(false);
   const [demoMessage, setDemoMessage] = useState<string | null>(null);
 
@@ -31,6 +30,11 @@ export default function Home() {
     setStartingDemo(true);
     setDemoMessage(null);
     try {
+      const reset = await fetch("/api/demo/reset", { method: "POST" });
+      if (!reset.ok) {
+        const result = await reset.json();
+        throw new Error(result.error ?? "Could not reset the coordinator.");
+      }
       const response = await fetch("/api/demo/events", { method: "POST" });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? "Could not start demo events.");
@@ -42,14 +46,14 @@ export default function Home() {
     }
   };
 
-  // GET /api/situation also advances the scenario script.
+  // Map geography is read-only; viewing the dashboard never advances a scenario.
   useEffect(() => {
     let stopped = false;
     const refresh = async () => {
       try {
-        const response = await fetch("/api/situation");
-        if (!response.ok) throw new Error(`HTTP ${response.status} on /api/situation`);
-        const next = (await response.json()) as SituationState;
+        const response = await fetch("/api/map");
+        if (!response.ok) throw new Error(`HTTP ${response.status} on /api/map`);
+        const next = (await response.json()) as { zones: CrisisZone[] };
         if (!stopped) {
           setSituation(next);
           setError(null);
@@ -59,10 +63,8 @@ export default function Home() {
       }
     };
     void refresh();
-    const timer = setInterval(refresh, POLL_MS);
     return () => {
       stopped = true;
-      clearInterval(timer);
     };
   }, []);
 
@@ -89,14 +91,16 @@ export default function Home() {
       {error ? <p role="alert">{error}</p> : null}
       <div className="event-map-layout">
         <div className="min-w-0">
-          <EventLog records={telemetry.records} status={telemetry.status} />
+          <EventLog
+            records={telemetry.records}
+            status={telemetry.status}
+            priorities={coordinator.state?.events}
+          />
         </div>
         <div className="min-w-0">
           {situation ? (
             <LeafletMap
               zones={situation.zones}
-              plan={situation.plan}
-              world={maybe(situation, "world")}
               events={telemetry.records}
               selectedZoneId={selectedZoneId}
               onSelect={(zoneId) => setSelectedZoneId(zoneId === selectedZoneId ? null : zoneId)}
@@ -106,6 +110,7 @@ export default function Home() {
               <Loader2 className="spin" size={16} aria-hidden="true" /> Loading map…
             </p>
           )}
+          <CoordinatorPanel state={coordinator.state} error={coordinator.error} />
         </div>
       </div>
     </main>

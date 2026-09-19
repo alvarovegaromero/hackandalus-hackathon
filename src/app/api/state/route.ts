@@ -1,10 +1,10 @@
-import { authorizePipeline } from "@/lib/pipeline-auth";
+import { authorizeDashboardRead } from "@/lib/pipeline-auth";
 import { readCoordinatorState } from "@/lib/coordinator/runtime";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const denied = authorizePipeline(request);
+  const denied = authorizeDashboardRead(request);
   if (denied)
     return Response.json(
       {

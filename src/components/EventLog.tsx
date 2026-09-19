@@ -3,6 +3,8 @@
 import { filterResultSchema } from "@/lib/contracts/filter";
 import type { TelemetryRecord } from "@/lib/event-pipeline";
 
+import type { CoordinatorState } from "@/lib/contracts/coordinator";
+
 type EventRow = {
   id: string;
   at: string;
@@ -17,9 +19,11 @@ type EventRow = {
 export default function EventLog({
   records,
   status,
+  priorities = [],
 }: {
   records: TelemetryRecord[];
   status: string;
+  priorities?: CoordinatorState["events"];
 }) {
   const rows = new Map<string, EventRow>();
   for (const record of records) {
@@ -93,6 +97,14 @@ export default function EventLog({
               <span className="sr-only">{event.label}</span>
             </div>
             <p className="break-words">{event.title}</p>
+            {priorities.find((item) => item.eventId === event.id)?.priority ? (
+              <p
+                className="mt-1 font-semibold"
+                title={priorities.find((item) => item.eventId === event.id)?.rationale ?? undefined}
+              >
+                Priority: {priorities.find((item) => item.eventId === event.id)?.priority}
+              </p>
+            ) : null}
             {event.detail ? (
               <details className="mt-1">
                 <summary className="cursor-pointer">Filter details</summary>

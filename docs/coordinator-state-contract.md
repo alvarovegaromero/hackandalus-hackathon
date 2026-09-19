@@ -213,3 +213,13 @@ Frontend handoff: [input/output examples and integration](coordinator-frontend-i
 Migration filenames were renumbered to 202609190004/202609190005 when integrating
 main to avoid colliding with the signals reconciliation migration. Their SQL was
 already applied manually to the shared development database; do not reapply it.
+
+## Live intake scheduling update (migration 007)
+
+The worker filters up to eight reports concurrently per cycle and plans without
+waiting for an empty queue. Enqueue-only revision changes do not invalidate a plan:
+the exclusive worker lease prevents another worker from changing active events or
+assignments during generation. Commit still requires full active-event coverage and
+preserves assignments; reset revokes the lease. This supersedes the earlier rule
+that every arrival invalidates an in-flight proposal. New pending reports are
+assessed in the next cycle, after the current model call completes.

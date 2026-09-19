@@ -27,25 +27,33 @@ units whose status is `assigned`. There is no resource release operation yet.
 | Vehicle detail    | ambulances.units[].id, status, eventId                     |
 | Freshness         | revision and updatedAt; generatedAt only identifies a read |
 
-Event SSE at `/api/telemetry` remains a separate intake receipt stream, not a stream
-of global plans. Coordinator-state polling is authoritative for allocations and
-priorities. `/api/map` supplies illustrative geography without advancing a scenario.
-The per-report /api/agent/plan returns 410. /api/situation remains temporarily
-available for the unchanged legacy dashboard; do not use it for coordinator state.
-Frontend components are intentionally unchanged: this document is the handoff.
-The existing demo button runs the standalone legacy Jev flow, not the coordinator.
-Submit through the report endpoint below for the new pipeline.
+The dashboard now reads `/api/map` once, polls `/api/state` without overlapping
+requests, and displays the overview, ordered plan, all ambulances and event priorities.
+Errors retain the last state with a stale warning. GET requests never run the model.
 
-SSE completion from the separate coordinator worker is not bridged to the web
-process yet. /api/events emits intake receipts; /api/coordinator/events returns
-a durable HTTP receipt only. Do not wait for a filtering.completed SSE record to
-fetch coordinator state. Filtered/error reports remain in backend storage/logs.
+`/api/telemetry` reads durable coordinator receipts and Jev results every second.
+It replays the current run on connection/reconnection, sends `reset` before replay,
+and publishes `filtering.completed` / `filtering.failed` using the original eventId.
+The log folds these into one green/red/amber row. Reconnect uses full bounded replay
+(up to 100 events), not the old in-memory cursor history. Database failures emit an
+`unavailable` notification; the browser retains its last records while retrying.
 
-Authorization follows the existing pipeline policy: local development without a
-configured token is open; otherwise the backend requires Bearer authentication.
-Never embed CRISIS_API_TOKEN in browser code or NEXT_PUBLIC variables. Production
-FE requires an operator-authenticated server request path; that auth integration
-is not implemented by this POC. A 401/503 is not an empty inventory.
+The development **Reset & run events** button calls POST `/api/demo/reset` then
+POST `/api/demo/events`. Reset requires migration `202609190006_coordinator_reset.sql`;
+it clears coordinator reports, resets the plan and ten units, rotates stateId/runId,
+and revokes the worker lease atomically. Audit history is retained. This affects the
+shared database, not just one browser. Routes require development mode and same-origin
+POSTs. The previous legacy `/api/demo/reset` situation-reset behavior is replaced.
+Old demo sequences stop on runId mismatch. The worker must run separately.
+
+To install only the reset function (no reset is performed during installation), run
+`node scripts/apply-resource-migration.mjs --apply --reset` with psql available and
+SUPABASE_DIRECT_DB_URL or SUPABASE_POOLER_DB_URL configured locally. Add `--pooler
+--session` when needed. Other existing migrations must already be installed.
+
+State and telemetry reads accept same-origin browser requests in development;
+otherwise existing pipeline Bearer authentication applies. Never put backend tokens
+in browser code. Production operator authentication remains pending.
 
 ## Input: submit a report
 
@@ -95,7 +103,7 @@ Three independent scenarios from `npm run coordinator:try`:
 
 The LLM returns a complete proposal. Only the backend validates and commits vehicle
 assignments, counts, timestamps and revision. Invalid IDs, duplicate vehicle use,
-release/transfer attempts or a stale input revision cannot partially modify state.
+release/transfer attempts or an invalidated worker lease cannot partially modify state.
 
 ```text
 INPUT                         PROCESS                         OUTPUT TO FE
@@ -107,13 +115,17 @@ Report POST -> 202             Durable queue                   Existing state wh
                                                               complete ambulance inventory
 
 5-second backend tick         Reconsider active events         Updated state only if changed
-New event during LLM call     Reject obsolete proposal         Preserve prior valid assignments
+New event during LLM call     Queue for next assessment        Commit plan for processed events
 Future resource-release input Not implemented                  Assigned vehicles stay assigned
 ```
 
 Five seconds is the scheduling interval, not a response-time guarantee. One model
-call runs at a time. Calls may exceed five seconds; pending inputs are coalesced
-and a stale response is discarded before committing. The worker must be running;
+call runs at a time. Calls may exceed five seconds. Up to eight reports are filtered concurrently per
+cycle, then the coordinator plans from the processed events even if more reports
+are pending. Migration 007 allows intake-only revision advances during the LLM
+call; reset still revokes the lease, and commit still validates full active-event
+coverage and preserves assignments. Jev in the next batch waits for the current
+model call to finish. Restart the worker after changing its code. The worker must be running;
 opening the FE alone does not start it.
 
 ## Verification and limits

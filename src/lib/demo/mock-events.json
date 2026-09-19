@@ -1,287 +1,405 @@
 [
   {
-    "title": "Hello, good morning!",
-    "description": "Just saying hello. Have a nice day!"
-  },
-  {
-    "title": "Special offer: buy shoes today",
-    "description": "Visit our shop for a discount on sneakers."
-  },
-  {
-    "title": "Smoke column reported",
-    "category": "fire",
+    "title": "Resident: smoke above the forest track",
+    "description": "I can see a thin smoke column uphill from the Sierra Bermeja forest track. I cannot see flames yet.",
+    "source": "public",
+    "category": "smoke",
     "severity": "medium",
-    "confidence": "low",
+    "confidence": "medium",
+    "confirmed": false,
     "zoneId": "zone-east",
     "location": {
-      "latitude": 36.52,
-      "longitude": -5.16,
+      "latitude": 36.517,
+      "longitude": -5.146,
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "reporter"
     }
   },
   {
-    "title": "Pizza recipe request",
-    "description": "Can you share a recipe for homemade pizza dough?"
+    "title": "Hello, good morning!",
+    "description": "Just saying hello. Have a nice day!",
+    "source": "public",
+    "confidence": "low",
+    "confirmed": false
   },
   {
-    "title": "Fire ignition confirmed",
-    "category": "fire",
-    "severity": "high",
+    "title": "Sensor SB-01: smoke threshold exceeded",
+    "description": "Simulated smoke detector SB-01 reports PM2.5 at 180 micrograms/m3 near the forest track.",
+    "source": "sensor",
+    "category": "smoke",
+    "severity": "medium",
+    "confidence": "high",
+    "confirmed": true,
     "zoneId": "zone-east",
     "location": {
       "latitude": 36.52,
-      "longitude": -5.14,
-      "description": "Ridge above Genalguacil track",
+      "longitude": -5.141,
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "incident"
     }
   },
   {
-    "title": "Fire crew dispatched",
-    "category": "operations",
-    "severity": "low",
+    "title": "Special offer: buy shoes today",
+    "description": "Visit our shop for a discount on sneakers.",
+    "source": "public",
+    "confidence": "low",
+    "confirmed": false
+  },
+  {
+    "title": "Hiker: flames under the pine trees",
+    "description": "From the bend I can see flames beneath the pines near the same smoke column. Two of us are returning down the track.",
+    "source": "public",
+    "category": "fire",
+    "severity": "high",
+    "confidence": "medium",
+    "confirmed": false,
     "zoneId": "zone-east",
     "location": {
-      "latitude": 36.53,
-      "longitude": -5.12,
-      "description": "Forest station staging point",
+      "latitude": 36.521,
+      "longitude": -5.143,
+      "description": "Sierra Bermeja fictional wildfire exercise",
+      "reference": "reporter"
+    }
+  },
+  {
+    "title": "Patrol: wildfire confirmed",
+    "description": "Simulated patrol report: vegetation is burning beside the forest track. This confirms the earlier smoke reports.",
+    "source": "operator",
+    "category": "fire",
+    "severity": "high",
+    "confidence": "high",
+    "confirmed": true,
+    "zoneId": "zone-east",
+    "location": {
+      "latitude": 36.52,
+      "longitude": -5.14,
+      "description": "Sierra Bermeja fictional wildfire exercise",
+      "reference": "incident"
+    }
+  },
+  {
+    "title": "Pizza recipe request",
+    "description": "Can you share a recipe for homemade pizza dough?",
+    "source": "public",
+    "confidence": "low",
+    "confirmed": false
+  },
+  {
+    "title": "Fire crew: arriving at the access point",
+    "description": "The responding crew reports arrival at the southern access point for this fire and is assessing access.",
+    "source": "operator",
+    "category": "operations",
+    "severity": "medium",
+    "confidence": "high",
+    "confirmed": true,
+    "zoneId": "zone-east",
+    "location": {
+      "latitude": 36.515,
+      "longitude": -5.143,
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "incident"
     }
   },
   {
     "title": "Weekend playlist",
-    "description": "Recommend some jazz songs for my weekend playlist."
+    "description": "Recommend some jazz songs for my weekend playlist.",
+    "source": "public",
+    "confidence": "low",
+    "confirmed": false
   },
   {
-    "title": "Wind shift to west",
-    "category": "wind",
+    "title": "Sensor SB-02: smoke spreading east",
+    "description": "Simulated detector SB-02 reports PM2.5 rising to 260 micrograms/m3 east of the confirmed ignition.",
+    "source": "sensor",
+    "category": "smoke",
     "severity": "high",
-    "zoneId": "zone-central",
+    "confidence": "high",
+    "confirmed": true,
+    "zoneId": "zone-east",
     "location": {
-      "latitude": 36.5,
-      "longitude": -5.1,
-      "reference": "unknown"
-    }
-  },
-  {
-    "title": "Spot fire ahead of the front",
-    "category": "fire",
-    "severity": "high",
-    "zoneId": "zone-central",
-    "location": {
-      "latitude": 36.548,
-      "longitude": -5.2,
-      "description": "Pine plantation near Jubrique",
+      "latitude": 36.52,
+      "longitude": -5.134,
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "incident"
     }
   },
   {
-    "title": "What is your favorite movie?",
-    "description": "I want to watch a comedy tonight."
-  },
-  {
-    "title": "Heavy smoke on A-397",
+    "title": "Resident: smoke entering nearby homes",
+    "description": "Smoke from the forest fire is entering our small group of houses east of the track. We have closed the windows.",
+    "source": "public",
     "category": "smoke",
-    "severity": "medium",
+    "severity": "high",
     "confidence": "medium",
-    "zoneId": "zone-north",
+    "confirmed": false,
+    "zoneId": "zone-east",
     "location": {
-      "latitude": 36.601,
-      "longitude": -5.087,
+      "latitude": 36.517,
+      "longitude": -5.132,
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "reporter"
     }
   },
   {
-    "title": "Win a free smartphone",
-    "description": "Enter our giveaway and subscribe to our promotional newsletter."
+    "title": "What is your favorite movie?",
+    "description": "I want to watch a comedy tonight.",
+    "source": "public",
+    "confidence": "low",
+    "confirmed": false
   },
   {
-    "title": "Campsite evacuation started",
-    "category": "evacuation",
+    "title": "Weather station: wind turning eastward",
+    "description": "Simulated station SB-W1 reports wind now blowing from west to east at 30 km/h, toward the houses.",
+    "source": "sensor",
+    "category": "wind",
     "severity": "high",
-    "zoneId": "zone-north",
+    "confidence": "high",
+    "confirmed": true,
+    "zoneId": "zone-east",
     "location": {
-      "latitude": 36.567,
-      "longitude": -5.21,
-      "description": "Campsite north entrance",
+      "latitude": 36.522,
+      "longitude": -5.139,
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "incident"
     }
   },
   {
-    "title": "A-397 closed by fire",
-    "category": "road-blocked",
+    "title": "Win a free smartphone",
+    "description": "Enter our giveaway and subscribe to our promotional newsletter.",
+    "source": "public",
+    "confidence": "low",
+    "confirmed": false
+  },
+  {
+    "title": "Fire crew: eastern flank accelerating",
+    "description": "The crew reports that the same fire is spreading faster on its eastern flank after the wind shift.",
+    "source": "operator",
+    "category": "fire",
     "severity": "critical",
-    "zoneId": "zone-north",
+    "confidence": "high",
+    "confirmed": true,
+    "zoneId": "zone-east",
     "location": {
-      "latitude": 36.535,
-      "longitude": -5.032,
-      "description": "A-397 near the Benahavís junction",
+      "latitude": 36.521,
+      "longitude": -5.136,
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "incident"
+    }
+  },
+  {
+    "title": "Resident: two people need transport",
+    "description": "At our house near the eastern track, two adults cannot leave without help. One uses a wheelchair. Smoke is getting thicker.",
+    "source": "public",
+    "category": "medical",
+    "severity": "high",
+    "confidence": "medium",
+    "confirmed": false,
+    "zoneId": "zone-east",
+    "location": {
+      "latitude": 36.5175,
+      "longitude": -5.131,
+      "description": "Sierra Bermeja fictional wildfire exercise",
+      "reference": "reporter"
     }
   },
   {
     "title": "Football chat",
-    "description": "Who is your favorite football player of all time?"
+    "description": "Who is your favorite football player of all time?",
+    "source": "public",
+    "confidence": "low",
+    "confirmed": false
   },
   {
-    "title": "Alternate route MA-8301 open",
-    "category": "road-open",
-    "severity": "low",
-    "zoneId": "zone-central",
+    "title": "Patrol: eastern track blocked by fire",
+    "description": "Patrol reports flames across the eastern access track. Responders should reassess access to the nearby houses.",
+    "source": "operator",
+    "category": "road-blocked",
+    "severity": "critical",
+    "confidence": "high",
+    "confirmed": true,
+    "zoneId": "zone-east",
     "location": {
-      "latitude": 36.544,
-      "longitude": -5.234,
-      "description": "MA-8301 at Peñas Blancas",
+      "latitude": 36.518,
+      "longitude": -5.135,
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "incident"
     }
   },
   {
-    "title": "Elderly residents need transport",
-    "category": "medical",
+    "title": "Hiker: group waiting at a clearing",
+    "description": "Four of us are at the clearing north of the fire. Smoke has cut off the path we used. We need instructions.",
+    "source": "public",
+    "category": "evacuation",
     "severity": "high",
     "confidence": "medium",
-    "zoneId": "zone-central",
+    "confirmed": false,
+    "zoneId": "zone-east",
     "location": {
-      "latitude": 36.55,
-      "longitude": -5.225,
-      "description": "Care home, Jubrique",
-      "reference": "incident"
+      "latitude": 36.524,
+      "longitude": -5.135,
+      "description": "Sierra Bermeja fictional wildfire exercise",
+      "reference": "reporter"
     }
   },
   {
     "title": "Tell me a joke",
-    "description": "Tell me a funny joke about a cat and a keyboard."
+    "description": "Tell me a funny joke about a cat and a keyboard.",
+    "source": "public",
+    "confidence": "low",
+    "confirmed": false
   },
   {
-    "title": "Power line down",
-    "category": "power-outage",
-    "severity": "high",
+    "title": "Weather station: gusts reach 45 km/h",
+    "description": "Simulated station SB-W1 now reports gusts of 45 km/h from the west. The eastward wind direction persists.",
+    "source": "sensor",
+    "category": "wind",
+    "severity": "critical",
+    "confidence": "high",
+    "confirmed": true,
     "zoneId": "zone-east",
     "location": {
-      "latitude": 36.512,
-      "longitude": -5.187,
-      "description": "Lines along the east slope",
+      "latitude": 36.522,
+      "longitude": -5.139,
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "incident"
     }
   },
   {
-    "title": "Fire front crossing the ridge",
+    "title": "Fire crew: spot fire beside the houses",
+    "description": "The crew reports embers from the main fire have ignited dry vegetation west of the same group of houses.",
+    "source": "operator",
     "category": "fire",
     "severity": "critical",
+    "confidence": "high",
+    "confirmed": true,
     "zoneId": "zone-east",
     "location": {
-      "latitude": 36.505,
-      "longitude": -5.165,
-      "description": "Main ridge, east side",
+      "latitude": 36.519,
+      "longitude": -5.132,
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "incident"
     }
   },
   {
     "title": "Discount subscription",
-    "description": "Subscribe today for 50% off our movie streaming service."
+    "description": "Subscribe today for 50% off our movie streaming service.",
+    "source": "public",
+    "confidence": "low",
+    "confirmed": false
   },
   {
-    "title": "Water tanker running low",
-    "category": "resources",
-    "severity": "medium",
+    "title": "Resident: breathing difficulty",
+    "description": "Update from the house with two adults awaiting transport: one is now having difficulty breathing in the smoke. Both are still here.",
+    "source": "public",
+    "category": "medical",
+    "severity": "critical",
+    "confidence": "medium",
+    "confirmed": false,
     "zoneId": "zone-east",
     "location": {
-      "latitude": 36.528,
-      "longitude": -5.13,
+      "latitude": 36.5175,
+      "longitude": -5.131,
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "reporter"
     }
   },
   {
-    "title": "Random typing",
-    "description": "asdf qwerty zxcv blablabla"
-  },
-  {
-    "title": "Houses threatened",
-    "category": "evacuation",
-    "severity": "critical",
-    "zoneId": "zone-south",
+    "title": "Patrol: southern access remains clear",
+    "description": "Patrol has checked the southern track. It remains clear and reaches the houses without crossing the blocked eastern section.",
+    "source": "operator",
+    "category": "road-open",
+    "severity": "high",
+    "confidence": "high",
+    "confirmed": true,
+    "zoneId": "zone-east",
     "location": {
-      "latitude": 36.46,
-      "longitude": -5.15,
-      "description": "Hillside houses above the coast",
+      "latitude": 36.514,
+      "longitude": -5.137,
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "incident"
     }
   },
   {
-    "title": "Ember spotting over the coast road",
-    "category": "fire",
+    "title": "Random typing",
+    "description": "asdf qwerty zxcv blablabla",
+    "source": "public",
+    "confidence": "low",
+    "confirmed": false
+  },
+  {
+    "title": "Responders: assisted evacuation underway",
+    "description": "Simulated responder update: the two adults from the house are being assisted out via the southern track. Medical assessment is pending.",
+    "source": "operator",
+    "category": "evacuation",
     "severity": "high",
-    "confidence": "medium",
-    "zoneId": "zone-south",
+    "confidence": "high",
+    "confirmed": true,
+    "zoneId": "zone-east",
     "location": {
-      "latitude": 36.427,
-      "longitude": -5.145,
-      "reference": "unknown"
+      "latitude": 36.516,
+      "longitude": -5.132,
+      "description": "Sierra Bermeja fictional wildfire exercise",
+      "reference": "incident"
     }
   },
   {
-    "title": "Shelter capacity 80% full",
-    "category": "shelter",
+    "title": "Patrol: hikers reached the assembly point",
+    "description": "Patrol confirms all four hikers from the northern clearing have reached the southern assembly point.",
+    "source": "operator",
+    "category": "evacuation",
     "severity": "medium",
-    "zoneId": "zone-south",
+    "confidence": "high",
+    "confirmed": true,
+    "zoneId": "zone-east",
     "location": {
-      "latitude": 36.44,
-      "longitude": -5.12,
-      "description": "Sports hall shelter",
+      "latitude": 36.514,
+      "longitude": -5.142,
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "incident"
     }
   },
   {
     "title": "Birthday wishes",
-    "description": "Happy birthday, Alex! Hope you enjoy your cake."
+    "description": "Happy birthday, Alex! Hope you enjoy your cake.",
+    "source": "public",
+    "confidence": "low",
+    "confirmed": false
   },
   {
-    "title": "Helicopter drop requested",
+    "title": "Fire crew: houses protected, fire still active",
+    "description": "The spot fire beside the houses is contained. The main forest fire remains active and crews are monitoring the eastern flank.",
+    "source": "operator",
     "category": "operations",
-    "severity": "high",
-    "zoneId": "zone-islands",
+    "severity": "medium",
+    "confidence": "high",
+    "confirmed": true,
+    "zoneId": "zone-east",
     "location": {
-      "latitude": 36.444,
-      "longitude": -5.273,
-      "description": "Reservoir pickup point",
+      "latitude": 36.519,
+      "longitude": -5.132,
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "incident"
     }
   },
   {
-    "title": "Wind gusting to 45 km/h",
-    "category": "wind",
-    "severity": "critical",
-    "zoneId": "zone-islands",
-    "location": {
-      "latitude": 36.45,
-      "longitude": -5.26,
-      "reference": "unknown"
-    }
-  },
-  {
     "title": "Translate a sentence",
-    "description": "How do you say good afternoon in Italian?"
-  },
-  {
-    "title": "Second smoke column south",
-    "category": "fire",
-    "severity": "high",
+    "description": "How do you say good afternoon in Italian?",
+    "source": "public",
     "confidence": "low",
-    "zoneId": "zone-south",
-    "location": {
-      "latitude": 36.43,
-      "longitude": -5.2,
-      "reference": "reporter"
-    }
+    "confirmed": false
   },
   {
-    "title": "MA-8301 closed by debris",
-    "category": "road-blocked",
-    "severity": "high",
-    "zoneId": "zone-central",
+    "title": "Sensor SB-02: smoke levels falling",
+    "description": "Simulated detector SB-02 reports PM2.5 falling from 260 to 120 micrograms/m3. This reading alone does not confirm the fire is extinguished.",
+    "source": "sensor",
+    "category": "smoke",
+    "severity": "medium",
+    "confidence": "high",
+    "confirmed": true,
+    "zoneId": "zone-east",
     "location": {
-      "latitude": 36.512,
-      "longitude": -5.187,
-      "description": "MA-8301 rockfall",
+      "latitude": 36.52,
+      "longitude": -5.134,
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "incident"
     }
   }

@@ -3,7 +3,8 @@ import { randomUUID } from "node:crypto";
 import { setTimeout } from "node:timers/promises";
 
 const base = process.env.EVENT_API_URL || "http://localhost:3000";
-// Mixed incidents and irrelevant messages, one every 3 s. Override with EVENT_INTERVAL_MS.
+// One evolving wildfire with interleaved irrelevant messages, every 3 s.
+// Override timing with EVENT_INTERVAL_MS.
 const intervalMs = Number(process.env.EVENT_INTERVAL_MS) || 3000;
 
 // Shared with the dashboard demo button.
@@ -20,10 +21,6 @@ for (const [index, fixture] of fixtures.entries()) {
     },
     body: JSON.stringify({
       id,
-      source: "demo",
-      confidence: "high",
-      confirmed: true,
-      description: fixture.title,
       ...fixture,
     }),
   });

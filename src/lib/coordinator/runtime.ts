@@ -47,8 +47,13 @@ export async function enqueueCoordinatorEvent(input: CoordinatorInput) {
     status: "awaiting_filtering" as const,
   };
 }
-export async function enqueueLegacyEvent(payload: IncomingEventPayload, id: string = randomUUID()) {
+export async function enqueueLegacyEvent(
+  payload: IncomingEventPayload,
+  id: string = randomUUID(),
+  expectedRunId?: string,
+) {
   const state = await readCoordinatorState();
+  if (expectedRunId && state.runId !== expectedRunId) throw new CoordinatorConflict("RUN_CONFLICT");
   const text = [payload.title, payload.description, payload.category, payload.zoneId]
     .filter(Boolean)
     .join("\n");
@@ -109,66 +114,62 @@ export async function runCoordinatorCycle() {
   let trigger = "timer.tick";
   try {
     const db = createServerSupabase();
-    // One input per cycle bounds Jev time within the 120-second database lease.
+    // Filter a bounded batch concurrently; one slow report must not hold up the rest.
     const pending = await db
       .from("coordinator_events")
       .select("input")
       .eq("status", "pending")
       .order("created_at")
-      .limit(1);
+      .limit(8);
     if (pending.error) throw new Error("Cannot read pending events.");
     if (pending.data?.length) {
       trigger = "event.received";
-      const input = coordinatorInputSchema.parse(pending.data[0].input);
-      const context = {
-        schemaVersion: 1 as const,
-        runId: input.report.runId,
-        eventId: input.report.id,
-        executionId: token,
-      };
-      const filtered = await filterForTriage({
-        ...context,
-        report: input.report,
-        evidence: [{ id: input.report.id }],
-      });
-      const factors =
-        input.factors ??
-        impactFactorsSchema.parse(
-          Object.fromEntries(
-            ["gravity", "peopleExposed", "vulnerabilityGroup", "minutesToHarm"].map((key) => [
-              key,
-              { value: null, evidence: [], method: "Not supplied by input" },
-            ]),
-          ),
-        );
-      const impact = filtered.priorityRequest
-        ? calculateImpact(filtered.priorityRequest, {
+      const preparedBatch = await Promise.allSettled(
+        pending.data.map(async (row) => {
+          const input = coordinatorInputSchema.parse(row.input);
+          const context = {
+            schemaVersion: 1 as const,
+            runId: input.report.runId,
+            eventId: input.report.id,
+            executionId: token,
+          };
+          const filtered = await filterForTriage({
             ...context,
-            assessedAt: input.report.receivedAt,
-            factors,
-          })
-        : null;
-      const prepared = await rpc("prepared", token, {
-        eventId: input.report.id,
-        status: filtered.priorityRequest
-          ? "accepted"
-          : filtered.result.status === "unavailable"
-            ? "error"
-            : "filtered",
-        summary: input.report.text,
-        evidence: { report: input.report, filter: filtered.result, impact },
-      });
-      if (prepared.code !== "OK") throw new Error("Event preparation lost its lease.");
-    }
-    const remaining = await db
-      .from("coordinator_events")
-      .select("event_id")
-      .eq("status", "pending")
-      .limit(1);
-    if (remaining.error) throw new Error("Cannot read pending events.");
-    if (remaining.data?.length) {
-      await rpc("finish", token);
-      return { outcome: "INPUT_PENDING" };
+            report: input.report,
+            evidence: [{ id: input.report.id }],
+          });
+          const factors =
+            input.factors ??
+            impactFactorsSchema.parse(
+              Object.fromEntries(
+                ["gravity", "peopleExposed", "vulnerabilityGroup", "minutesToHarm"].map((key) => [
+                  key,
+                  { value: null, evidence: [], method: "Not supplied by input" },
+                ]),
+              ),
+            );
+          const impact = filtered.priorityRequest
+            ? calculateImpact(filtered.priorityRequest, {
+                ...context,
+                assessedAt: input.report.receivedAt,
+                factors,
+              })
+            : null;
+          const prepared = await rpc("prepared", token, {
+            eventId: input.report.id,
+            status: filtered.priorityRequest
+              ? "accepted"
+              : filtered.result.status === "unavailable"
+                ? "error"
+                : "filtered",
+            summary: input.report.text,
+            evidence: { report: input.report, filter: filtered.result, impact },
+          });
+          if (prepared.code !== "OK") throw new Error("Event preparation lost its lease.");
+        }),
+      );
+      if (preparedBatch.some((result) => result.status === "rejected"))
+        throw new Error("Could not prepare the entire input batch.");
     }
     const state = await readCoordinatorState();
     if (!state.events.length) {
