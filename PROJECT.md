@@ -29,7 +29,7 @@ the visible prototype notice when editing the interface. Some controls are not
 connected; the sketch must not be treated as the target architecture.
 
 Status: the codebase is unified under the standard Next.js `src/` directory
-(`src/app/`, `src/components/`, `src/lib/`, and `tests/`): operator panel,
+(`src/app/`, `src/components/`, and `src/lib/`): operator panel,
 HTTP API, self-advancing scenario scripts, action queue with human approval,
 HappyRobot adapter (contract unverified, `mock` mode by default) and the digital
 twin. Persistence is in-memory (optional JSON under `.data/`); Supabase, operator
@@ -38,6 +38,13 @@ still name Sierra Morena; the confirmed scenario is Sierra Bermeja (see
 `thoughts/open-questions.md`, "Confirmed, do not reopen"). Model selection,
 credentials and live integrations remain open; do not resolve them with
 invented values. Track follow-up work in TASKS.md.
+
+The served ingestion slice also includes `src/lib/event-pipeline.ts`,
+`POST /api/events`, `GET /api/telemetry`, the event log on `/` and `npm run mock:events`.
+It accepts events in bounded process memory, logs acceptance, and streams
+`event.accepted` / `filtering.pending`. Supabase saving is a TODO, as are
+filtering/triage/LLM dispatch; no database adapter is implemented for this slice.
+See `docs/event-telemetry.md` for contracts, auth and single-process limits.
 
 ## Start here
 
@@ -71,10 +78,10 @@ invented values. Track follow-up work in TASKS.md.
 - `.vscode`: shared formatting settings and recommended editor extensions.
 - `.gitignore`: local credentials, personal agent settings, and generated caches.
 
-- `src/app/`, `src/components/`, `src/lib/`, `tests/`: the served command center. `src/app/` holds the operator
+- `src/app/`, `src/components/`, `src/lib/`: the served command center. `src/app/` holds the operator
   panel, HTTP API; `src/components/` holds shadcn/ui-inspired primitives (`src/components/ui/`) and the
   tactical React Leaflet map (`src/components/LeafletMap.tsx`) with OpenStreetMap;
-  each `src/lib/` module states its owner in a `// OWNER:` line; `tests/` is its
+  each `src/lib/` module states its owner in a `// OWNER:` line.
   Vitest suite.
 - `src/lib/domain.ts`: shared Zod schemas and domain types.
 - `src/lib/scenario`, `src/lib/signals`: scenario engine, signal model and the
@@ -94,7 +101,8 @@ invented values. Track follow-up work in TASKS.md.
   command-center decisions, `docs/security.md` its credential and demo-recipient
   rules, `docs/happyDocumentation.md` the unverified HappyRobot contract,
   `docs/data-model.md` the Supabase model, `docs/input-architecture.md` batch
-  event ingestion (current endpoint and remaining backend integration),
+  event ingestion (current route split and migration); `docs/event-telemetry.md`
+  describes the served single-event ingestion and SSE slice,
   `docs/input-contract.md` the confirmed simple report/normalization contract
   (envelope and scenario adapter implemented; synchronous receipt, asynchronous Workflow processing),
   `docs/dashboard-design-guide.md`, `docs/code-index.md` and
@@ -112,7 +120,7 @@ invented values. Track follow-up work in TASKS.md.
 
 ## Setup / Build / Test / Run
 
-Use Node.js 22.21+ (22.x) with its bundled npm (10.9+). `packageManager` pins
+Use Node.js 26+ with its bundled npm. `packageManager` pins
 npm 11.6.1 for Corepack users (`corepack enable`); it is optional.
 Commit package-lock.json; use npm only.
 Install: `npm ci`. Develop: `npm run dev`. Production: `npm run build` then

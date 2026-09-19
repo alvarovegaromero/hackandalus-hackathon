@@ -95,8 +95,19 @@ are in the source document.
       self-advancing scripts, chaos fault injection, and plan version diffs in command center.
 - [x] Digital twin, initial release: `src/lib/digitalTwin.ts` reconstructs perceived world from signals and measures accuracy against simulated ground truth; displayed in `src/components/DigitalTwinPanel.tsx`.
 - [ ] Digital twin, second release: simulate variants (wind, road cuts, resource loss) on state clones, compare alternative outcomes, and present recommendations before acting.
-- [ ] Test resource constraints, failures, and human oversight (`tests/`).
+- [ ] Test resource constraints, failures, and human oversight.
 - [ ] Configure and deploy to Vercel upon authorization.
+
+## Vertical HTTP → backend → SSE
+
+- [x] `npm run mock:events` script that sends events to `POST /api/events`.
+- [x] In-memory acceptance, idempotency UUID and correlated telemetry.
+- [x] `GET /api/telemetry` and the event log on `/`, with replay, reconnection and limits.
+- [ ] TODO: save in Supabase; no adapter or migration in this vertical.
+- [ ] Consume the pending handoff in filtering → triage → LLM, independent of the viewer.
+- [ ] Port the old producers (scenario, demo and callbacks) to the common intake.
+
+Contract and limits: [docs/event-telemetry.md](docs/event-telemetry.md).
 
 ## Phase 4 · Consolidation Post Command Center Merge
 

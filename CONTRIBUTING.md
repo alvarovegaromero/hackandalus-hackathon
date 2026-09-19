@@ -4,7 +4,7 @@ Read [PROJECT.md](PROJECT.md): it is the single source of truth for project conv
 
 ## Environment Setup
 
-You need Git and Node.js 22.21+ (22.x) with its bundled npm (10.9+); if you use Corepack, `corepack enable` activates npm 11.6.1 pinned in `package.json`. On Windows, install Git for Windows; hooks use its shell. On macOS and Linux, Git and Node on your PATH are sufficient. Use npm and the repository lockfile.
+You need Git and Node.js 26+ with its bundled npm; if you use Corepack, `corepack enable` activates npm 11.6.1 pinned in `package.json`. On Windows, install Git for Windows; hooks use its shell. On macOS and Linux, Git and Node on your PATH are sufficient. Use npm and the repository lockfile.
 
 ```sh
 git clone https://github.com/alvarovegaromero/hackandalus-hackathon.git
