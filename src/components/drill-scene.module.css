@@ -1,0 +1,91 @@
+.cinema:global(.drill-cinema) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  height: auto;
+  background: var(--ink);
+}
+
+.stage {
+  position: relative;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  height: clamp(340px, 43vw, 530px);
+  overflow: hidden;
+}
+
+.cinema :global(.drill-cinema-hud),
+.cinema :global(.drill-cinema-status) {
+  position: static;
+  padding: 16px 22px 10px;
+  grid-row: 1;
+  align-self: center;
+  pointer-events: auto;
+  max-width: none;
+}
+
+.cinema :global(.drill-cinema-hud) strong {
+  margin-top: 2px;
+  font-size: 27px;
+}
+
+.cinema :global(.drill-cinema-status) {
+  gap: 5px;
+  max-width: none;
+}
+
+.cinema :global(.drill-camera-controls) {
+  position: static;
+  grid-column: 1 / -1;
+  justify-self: center;
+  transform: none;
+  margin: 6px 12px;
+  max-width: calc(100% - 24px);
+  flex-wrap: wrap;
+  justify-content: center;
+  backdrop-filter: none;
+}
+
+.cinema :global(.drill-camera-controls) button {
+  min-height: 44px;
+}
+
+.cinema :global(.drill-camera-controls) button:focus-visible {
+  outline: 3px solid var(--drills-focus);
+  outline-offset: 3px;
+}
+
+.cinema :global(.drill-cinema-legend) {
+  position: static;
+  grid-column: 1 / -1;
+  padding: 12px 18px 18px;
+  background: none;
+}
+
+.perimeter {
+  border: 1px solid #73e4cb;
+}
+
+.route {
+  border-top: 2px dashed #79d5ff;
+}
+
+@media (max-width: 600px) {
+  .cinema :global(.drill-cinema-hud),
+  .cinema :global(.drill-cinema-status) {
+    padding: 12px;
+  }
+
+  .cinema :global(.drill-cinema-hud) p {
+    max-width: 22ch;
+    line-height: 1.5;
+  }
+
+  .cinema :global(.drill-cinema-status) {
+    max-width: 130px;
+    font-size: 11px;
+  }
+
+  .stage {
+    height: 340px;
+  }
+}

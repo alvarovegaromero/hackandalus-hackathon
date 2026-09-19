@@ -6,8 +6,9 @@
 import { FaroIcon, FaroWordmark } from "@/components/landing/logo";
 import { MapSkeleton } from "@/components/Skeleton";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { TriangleAlert } from "lucide-react";
+import { Box, TriangleAlert } from "lucide-react";
 import type { CrisisZone } from "@/lib/types";
 import MissionsPanel, { useMissions } from "@/components/MissionsPanel";
 import SituationPanel, { useCoordinator } from "@/components/CoordinatorPanel";
@@ -140,6 +141,14 @@ export default function Dashboard({
               </time>
             </span>
           ) : null}
+          <Link
+            href="/dashboard/drills"
+            prefetch={false}
+            className="flex items-center gap-1 rounded-md border border-line px-2 py-1 text-meta text-muted hover:text-ink"
+          >
+            <Box size={12} aria-hidden="true" />
+            Wildfire drills
+          </Link>
           {demoControlsEnabled && (
             <>
               <span role="status">{demoMessage}</span>
