@@ -7,7 +7,9 @@
   },
   "packageManager": "npm@11.6.1",
   "scripts": {
+    "predev": "node scripts/clean-stray-app.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/clean-stray-app.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
