@@ -282,7 +282,7 @@ the dashboard, operator authentication and per-incident policies are needed.
 The full model is documented in [docs/data-model.md](docs/data-model.md).
 
 To deploy, import the repository into Vercel as a Next.js project with
-Node.js 26 and `npm ci` / `npm run build`; `withWorkflow` is configured in
+Node.js 24.x and `npm ci` / `npm run build`; `withWorkflow` is configured in
 `next.config.ts`. Add required environment variables in Vercel and deploy when
 authorized by the team.
 

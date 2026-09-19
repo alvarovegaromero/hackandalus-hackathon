@@ -8,7 +8,7 @@ separate TODO for dispatching to filtering, followed by triage and the LLM.
 
 ## Try it
 
-With Node 26+, run `npm ci`, then `npm run dev`. Open
+With Node 24.x, run `npm ci`, then `npm run dev`. Open
 <http://localhost:3000/>. In another terminal run `npm run mock:events`.
 The script sends three timed HTTP requests, prints their IDs and fails on HTTP
 errors. The backend terminal logs each accepted ID without logging its payload.

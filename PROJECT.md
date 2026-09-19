@@ -159,7 +159,7 @@ module-specific docs or use the sketch as the target architecture.
 
 ## Setup / Build / Test / Run
 
-Use Node.js 26+ with its bundled npm. `packageManager` pins
+Use Node.js 24.x with its bundled npm. `packageManager` pins
 npm 11.6.1 for Corepack users (`corepack enable`); it is optional.
 Commit package-lock.json; use npm only.
 Install: `npm ci`. Develop: `npm run dev`. Production: `npm run build` then
