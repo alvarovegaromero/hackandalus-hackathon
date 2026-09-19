@@ -1,5 +1,17 @@
 # P4: LLM planning module
 
+Current implementation: [global coordinator state v2](coordinator-state-contract.md) uses
+one refreshed prompt, a dedicated worker, event/five-second triggers and individual
+ambulance commitments. Apply the v2 migration and run npm run coordinator:work
+alongside the app. Release is disabled; the v1 sections below are historical.
+
+Resource implementation update: GET /api/state, POST /api/agent/plan and
+POST /api/state/release now use persisted Supabase inventory (10 ambulances).
+P4 persisted execution replaces the legacy P3 unlimited fixture with finite state;
+only ambulance proposals are accepted. Plans and allocation audit commit together.
+See [resource state contract](resource-state-contract.md). Earlier unlimited examples below describe
+the historical standalone harness. FE/intake integration remains pending.
+
 `src/lib/agents/plan-report.ts` implements `planReport` for the P3
 `AgentRequest`. It uses the installed Vercel AI SDK's `ToolLoopAgent` and
 `Output.object` with an explicit configured model provider. Model calls are real;
@@ -11,8 +23,7 @@ individual emergency dispatch is a future addon.
 
 P3 supplies the source-of-truth impact calculation, structured observed factors,
 Jev relevance and unknowns. The LLM chooses final priority and finite resource
-quantities under the POC assumption of unlimited availability. Resource types
-are descriptive proposals; an approved execution catalog is still pending.
+quantities within the supplied finite ambulance inventory.
 Confidence is unknown and is never inferred from Jev relevance.
 
 ## Input/output diagram
@@ -105,7 +116,7 @@ See [Go client requirements](https://opencode.ai/docs/go/#where-can-i-use-it).
 arguments: up to 20 finite resource proposals and up to 10 hypothetical voice,
 chat or email messages to generic operator/responders/affected-people audiences.
 It has no recipient addresses, provider credentials, network calls or live adapter
-imports. Resource availability is unlimited; no real reservation is made.
+imports. The tool validates finite availability; planAndAllocate persists the reservation after final plan validation.
 
 Each invocation owns a fresh simulation ledger. The tool returns a validated
 `SimulatedToolExecution` with context, a server-owned tool-call UUID,
@@ -183,6 +194,10 @@ npm run llm:try -- --dry-run
 npm run llm:try -- --limit 5
 npm run llm:try
 ```
+
+For real Jev filtering before triage and planning, add `--with-jev`. This adds a
+greeting stop case and saves `.data/pipeline-smoke-results.json`. See the
+[backend integration exercise and application E2E gaps](poc-backend-smoke.md).
 
 Use the documented Node.js 24 runtime. The command loads the provider settings
 listed above from `.env.local`; shell variables take precedence. Dry run

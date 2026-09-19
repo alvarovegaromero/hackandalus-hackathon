@@ -1,5 +1,12 @@
 # P3 · Source-of-truth impact and planner handoff
 
+Resource implementation update: GET /api/state, POST /api/agent/plan and
+POST /api/state/release now use persisted Supabase inventory (10 ambulances).
+P4 persisted execution replaces the legacy P3 unlimited fixture with finite state;
+only ambulance proposals are accepted. Plans and allocation audit commit together.
+See [resource state contract](resource-state-contract.md). Earlier unlimited examples below describe
+the historical standalone harness. FE/intake integration remains pending.
+
 P3 is a deterministic backend module. It accepts P2's `PriorityRequest` plus a
 structured `ImpactAssessment` from an operator or scenario report. It calculates
 potential impact and prepares an `AgentRequest` for the later LLM. It does not

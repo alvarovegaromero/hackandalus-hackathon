@@ -1,5 +1,5 @@
-// On-demand P3 -> P4 exercise. Synthetic P2 fixtures; real LLM calls unless --dry-run.
-// No Jev calls, live tools, dispatch, persistence adapter, hooks or automated tests.
+// On-demand backend exercise. --with-jev chains real P2 -> P3 -> P4.
+// No HTTP intake, frontend, live tools, persistence adapter, hooks or automated tests.
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { registerHooks } from "node:module";
@@ -11,21 +11,32 @@ import ts from "typescript";
 const root = fileURLToPath(new URL("../", import.meta.url));
 const args = process.argv.slice(2);
 if (args.includes("--help")) {
-  console.log("Usage: npm run llm:try -- [--limit 1..8] [--dry-run]");
   console.log(
-    "Runs a bounded two-step LLM agent with mock tools per case; saves .data/llm-smoke-results.json.",
+    "Usage: npm run llm:try -- [--with-jev] [--limit 1..9] [--available 0..10] [--dry-run]",
+  );
+  console.log(
+    "Runs a bounded agent with mock tools. --with-jev adds real filtering and saves .data/pipeline-smoke-results.json; otherwise saves .data/llm-smoke-results.json.",
   );
   process.exit(0);
 }
-let limit = 8;
+let limit;
 let dryRun = false;
+let withJev = false;
+let available = 10;
 for (let i = 0; i < args.length; i++) {
   if (args[i] === "--dry-run") dryRun = true;
-  else if (args[i] === "--limit" && /^[1-8]$/.test(args[i + 1] ?? "")) limit = Number(args[++i]);
+  else if (args[i] === "--with-jev") withJev = true;
+  else if (args[i] === "--available" && /^(10|[0-9])$/.test(args[i + 1] ?? ""))
+    available = Number(args[++i]);
+  else if (args[i] === "--limit" && /^[1-9]$/.test(args[i + 1] ?? "")) limit = Number(args[++i]);
   else {
     console.error("Invalid arguments. Use --help for usage.");
     process.exit(2);
   }
+}
+if (!withJev && limit === 9) {
+  console.error("The ninth case requires --with-jev.");
+  process.exit(2);
 }
 
 // Load this checkout's settings only; shell values take precedence. Never print credentials.
@@ -60,6 +71,8 @@ const { agentPlanSchema, agentMessageSchema, planningContextSchema, simulatedToo
   await import("../src/lib/contracts/agent.ts");
 const { createPlannerModel, PLANNER_ENV_KEYS, PlannerModelConfigurationError } =
   await import("../src/lib/agents/model.ts");
+const { filterForTriage } = await import("../src/lib/filtering/filter-report.ts");
+const { readFilterPolicy } = await import("../src/lib/filtering/jev.ts");
 hooks.deregister();
 
 for (const key of PLANNER_ENV_KEYS) {
@@ -79,6 +92,16 @@ if (!dryRun) {
       "No calls made. Configure the selected provider in .env.local or the environment.",
     );
     process.exit(2);
+  }
+  if (withJev) {
+    const filterEnv = { ...localEnv, ...process.env };
+    try {
+      if (!filterEnv.TYPESAFE_API_KEY?.trim()) throw new Error();
+      readFilterPolicy(filterEnv);
+    } catch {
+      console.error("Configure TYPESAFE_API_KEY and valid JEV_* settings. No calls made.");
+      process.exit(2);
+    }
   }
 }
 
@@ -125,9 +148,17 @@ const cases = [
     values: [4, 20, "general", 20],
     replan: true,
   },
-].slice(0, limit);
+];
+if (withJev)
+  cases.unshift({
+    name: "Greeting stops before triage",
+    text: "Hello, good morning!",
+    values: [null, null, null, null],
+    stop: true,
+  });
+cases.splice(limit ?? cases.length);
 
-function buildCase(example) {
+async function buildCase(example) {
   const eventId = randomUUID();
   const correlation = { schemaVersion: 1, runId: randomUUID(), eventId, executionId: randomUUID() };
   const at = new Date().toISOString();
@@ -151,11 +182,24 @@ function buildCase(example) {
       summary: "Synthetic P2 fixture for the manual P4 exercise; Jev was not called.",
       decidedAt: at,
       status: "completed",
-      decision: example.uncertain ? "uncertain" : "relevant",
-      relevanceProbability: example.uncertain ? 0.5 : 0.95,
+      decision: example.stop ? "irrelevant" : example.uncertain ? "uncertain" : "relevant",
+      relevanceProbability: example.stop ? 0.01 : example.uncertain ? 0.5 : 0.95,
       failure: null,
     },
   };
+  const filtered =
+    withJev && !dryRun
+      ? await filterForTriage({ ...correlation, report: priorityRequest.report, evidence }, null, {
+          env: { ...localEnv, ...process.env },
+        })
+      : { result: priorityRequest.filter, priorityRequest: example.stop ? null : priorityRequest };
+  if (!filtered.priorityRequest)
+    return {
+      request: null,
+      context: null,
+      filter: filtered.result,
+      report: priorityRequest.report,
+    };
   const factors = Object.fromEntries(
     ["gravity", "peopleExposed", "vulnerabilityGroup", "minutesToHarm"].map((name, i) => [
       name,
@@ -170,13 +214,52 @@ function buildCase(example) {
     ]),
   );
   const request = prepareAgentRequest(
-    priorityRequest,
+    filtered.priorityRequest,
     { ...correlation, assessedAt: at, factors },
     {
       expectedRunRevision: example.replan ? 2 : 0,
       activePlanId: example.replan ? randomUUID() : null,
     },
   );
+  // Synthetic inventory only: exercise real P4 scarcity reasoning without reserving DB resources.
+  request.resources = {
+    availability: "finite",
+    snapshot: {
+      schemaVersion: 1,
+      stateId: randomUUID(),
+      runId: correlation.runId,
+      revision: available === 10 ? 0 : 1,
+      generatedAt: at,
+      updatedAt: at,
+      storage: "supabase",
+      executionMode: "simulation",
+      pollAfterMs: 3000,
+      resources: [
+        {
+          resourceType: "ambulance",
+          label: "Ambulances",
+          unit: "vehicle",
+          total: 10,
+          available,
+          allocated: 10 - available,
+        },
+      ],
+      allocations:
+        available === 10
+          ? []
+          : [
+              {
+                allocationId: randomUUID(),
+                eventId: randomUUID(),
+                executionId: randomUUID(),
+                planId: randomUUID(),
+                resources: [{ resourceType: "ambulance", quantity: 10 - available }],
+                allocatedAt: at,
+                expectedReleaseAt: null,
+              },
+            ],
+    },
+  };
   const context = {
     planVersion: example.replan ? 2 : 1,
     history: example.replan
@@ -198,7 +281,11 @@ function buildCase(example) {
 }
 
 // Defense in depth for local output; provider bodies and raw exceptions are never printed.
-const credentials = [process.env.AI_GATEWAY_API_KEY, process.env.OPENCODE_API_KEY]
+const credentials = [
+  process.env.AI_GATEWAY_API_KEY,
+  process.env.OPENCODE_API_KEY,
+  process.env.TYPESAFE_API_KEY ?? localEnv.TYPESAFE_API_KEY,
+]
   .filter((value) => value?.trim())
   .map((value) => value.trim());
 function redact(value) {
@@ -259,16 +346,45 @@ function validResult(result, request, context) {
 }
 
 console.log(
-  `P3 -> P4 manual exercise: ${cases.length} synthetic cases (${dryRun ? "dry run, no calls" : "live LLM calls, up to 30 seconds per case"}).`,
+  `${withJev ? "P2 -> P3 -> P4" : "P3 -> P4"} manual exercise: ${cases.length} synthetic cases (${dryRun ? "dry run, no calls" : "live provider calls; agent timeout 30 seconds"}).`,
 );
 console.log(
-  "P2 outcomes are synthetic fixtures. Tools simulate resources and HappyRobot communications locally; no Jev or live action calls.",
+  withJev
+    ? "Real Jev filtering in live mode. HTTP intake, persistence and frontend are NOT exercised. All action tools remain mocked."
+    : "P2 outcomes are synthetic fixtures. Tools simulate resources and HappyRobot communications locally; no Jev or live action calls.",
 );
 const startedAt = new Date().toISOString();
 const rows = [];
 const results = [];
 for (const [index, example] of cases.entries()) {
-  const { request, context } = buildCase(example);
+  const start = performance.now();
+  const { request, context, filter, report } = await buildCase(example);
+  if (!request) {
+    const unavailable = filter.status === "unavailable";
+    const verdict = unavailable
+      ? "ERROR"
+      : example.stop && filter.decision === "irrelevant"
+        ? "PASS"
+        : "MISMATCH";
+    rows.push({
+      case: example.name,
+      relevance: filter.decision,
+      route: "stopped before P3/P4",
+      verdict,
+    });
+    results.push({
+      case: example.name,
+      report,
+      filter,
+      result: null,
+      verdict,
+      elapsedMs: Math.round(performance.now() - start),
+    });
+    console.log(
+      `[${index + 1}/${cases.length}] ${example.name}: ${dryRun ? "DRY RUN" : verdict}; stopped before triage and agent${unavailable ? `; ${filter.failure.code}` : ""}`,
+    );
+    continue;
+  }
   if (dryRun) {
     rows.push({
       case: example.name,
@@ -280,14 +396,14 @@ for (const [index, example] of cases.entries()) {
     });
     continue;
   }
-  const start = performance.now();
   try {
     const result = await planReport(request, context);
-    const contractValid = validResult(result, request, context);
+    const contractValid = !example.stop && validResult(result, request, context);
     const verdict = contractValid ? "PASS" : "MISMATCH";
     const elapsedMs = Math.round(performance.now() - start);
     rows.push({
       case: example.name,
+      relevance: request.filter.decision,
       priority: result.decision.priority,
       steps: result.plan.steps.length,
       verification: result.decision.verificationNeeded.length,
@@ -321,20 +437,24 @@ for (const [index, example] of cases.entries()) {
 console.table(rows);
 if (dryRun) {
   console.log(
-    "All synthetic inputs passed the real P3 and P4 input contracts. No model outputs produced or saved.",
+    "Dry run uses synthetic filtering outcomes. Continuing cases passed P3/P4 input contracts. No provider calls or saved outputs.",
   );
   process.exit(0);
 }
 const matched = rows.filter(({ verdict }) => verdict === "PASS").length;
 const errors = rows.filter(({ verdict }) => verdict === "ERROR").length;
-const output = path.join(root, ".data", "llm-smoke-results.json");
+const output = path.join(
+  root,
+  ".data",
+  withJev ? "pipeline-smoke-results.json" : "llm-smoke-results.json",
+);
 mkdirSync(path.dirname(output), { recursive: true });
 writeFileSync(
   output,
   JSON.stringify(
     redact({
       startedAt,
-      mode: "live_llm_synthetic_p2",
+      mode: withJev ? "live_p2_p3_p4_modules_only" : "live_llm_synthetic_p2",
       matched,
       errors,
       total: rows.length,
@@ -345,7 +465,7 @@ writeFileSync(
   ) + "\n",
 );
 console.log(
-  `${matched}/${rows.length} valid output contracts; ${errors} errors. Outputs: ${path.relative(root, output)}`,
+  `${matched}/${rows.length} expected routes and valid downstream contracts; ${errors} errors. Outputs: ${path.relative(root, output)}`,
 );
 console.log(
   "Priorities/resource counts are nondeterministic and need human review. PASS means contract checks passed, not operational correctness. No resources dispatched.",

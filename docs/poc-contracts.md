@@ -1,5 +1,17 @@
 # POC module contracts v1
 
+Current implementation: [global coordinator state v2](coordinator-state-contract.md) uses
+one refreshed prompt, a dedicated worker, event/five-second triggers and individual
+ambulance commitments. Apply the v2 migration and run npm run coordinator:work
+alongside the app. Release is disabled; the v1 sections below are historical.
+
+Resource implementation update: GET /api/state, POST /api/agent/plan and
+POST /api/state/release now use persisted Supabase inventory (10 ambulances).
+P4 persisted execution replaces the legacy P3 unlimited fixture with finite state;
+only ambulance proposals are accepted. Plans and allocation audit commit together.
+See [resource state contract](resource-state-contract.md). Earlier unlimited examples below describe
+the historical standalone harness. FE/intake integration remains pending.
+
 Defined on 2026-09-19 for [P0–P5](poc.md). This is the initial implementation
 contract between packages. P2 filter request/result and P3 handoff schemas are
 implemented in `src/lib/contracts/filter.ts`, with fixtures in

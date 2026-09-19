@@ -3,7 +3,7 @@
 
 import { acceptIncomingEvent, EventConflict } from "@/lib/event-pipeline";
 import { authorizePipeline } from "@/lib/pipeline-auth";
-import { addEvent } from "@/lib/store";
+import { enqueueLegacyEvent, CoordinatorConflict } from "@/lib/coordinator/runtime";
 import type { IncomingEventPayload } from "@/lib/types";
 import {
   apiError,
@@ -30,21 +30,13 @@ export async function POST(request: Request) {
 
   try {
     const { id, ...payload } = parsed.data;
-    const accepted = acceptIncomingEvent(payload as IncomingEventPayload, id);
-    // Preserve the existing command-center projection; it is not the future
-    // filtering/triage/LLM pipeline and has its own semantic signal merging.
-    if (!accepted.duplicate) {
-      try {
-        addEvent(payload as IncomingEventPayload);
-      } catch {
-        console.warn(
-          JSON.stringify({ type: "command_center.projection_failed", eventId: accepted.eventId }),
-        );
-      }
-    }
-    return apiOk(accepted, accepted.duplicate ? 200 : 202);
+    const durable = await enqueueLegacyEvent(payload as IncomingEventPayload, id);
+    const accepted = acceptIncomingEvent(payload as IncomingEventPayload, durable.eventId);
+    // The durable coordinator owns processing; telemetry remains a receipt projection.
+    return apiOk({ ...accepted, ...durable }, durable.duplicate ? 200 : 202);
   } catch (error) {
     if (error instanceof EventConflict) return apiError("conflicto", error.message, 409);
+    if (error instanceof CoordinatorConflict) return apiError("conflicto", error.message, 409);
     return apiErrorFromThrown(error, "Could not register signal");
   }
 }

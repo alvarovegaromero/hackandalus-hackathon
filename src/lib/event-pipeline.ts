@@ -92,11 +92,10 @@ export function acceptIncomingEvent(payload: IncomingEventPayload, id: string = 
   }
 
   const current = state();
-  // TODO: dispatch to the filtering module; its output feeds triage, then LLM.
-  // Pending means no filtering/triage/LLM execution has been claimed or started.
+  // HTTP intake durably queues the report before publishing this receipt.
   publish(current, id, "filtering.pending", {
     status: "awaiting_filtering",
-    reason: "Filtering module not connected",
+    reason: "Awaiting the coordinator worker",
   });
   console.info(
     JSON.stringify({

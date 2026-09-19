@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 2,
+  "stateId": "10000000-0000-4000-8000-000000000001",
+  "runId": "10000000-0000-4000-8000-000000000002",
+  "revision": 1,
+  "updatedAt": "2026-09-19T15:00:00Z",
+  "generatedAt": "2026-09-19T15:00:03Z",
+  "storage": "supabase",
+  "executionMode": "simulation",
+  "pollAfterMs": 3000,
+  "situationOverview": "Wildfire reported near a residential area.",
+  "plan": {
+    "objective": "Coordinate assistance while verifying the threatened residential area.",
+    "steps": [
+      "Verify the affected area, exposed population and safe access routes.",
+      "Reserve ambulance-2 for simulated medical support; verify additional demand."
+    ]
+  },
+  "events": [
+    {
+      "eventId": "10000000-0000-4000-8000-000000000003",
+      "summary": "Wildfire near a residential area.",
+      "status": "active",
+      "priority": "high",
+      "rationale": "Potential population exposure requires prompt verification and medical readiness."
+    }
+  ],
+  "ambulances": {
+    "total": 10,
+    "available": 9,
+    "allocated": 1,
+    "units": [
+      {
+        "id": "ambulance-1",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "ambulance-2",
+        "status": "assigned",
+        "eventId": "10000000-0000-4000-8000-000000000003"
+      },
+      {
+        "id": "ambulance-3",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "ambulance-4",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "ambulance-5",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "ambulance-6",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "ambulance-7",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "ambulance-8",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "ambulance-9",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "ambulance-10",
+        "status": "available",
+        "eventId": null
+      }
+    ]
+  }
+}

@@ -1,5 +1,6 @@
 // OWNER: P0/P3 impact assessment and planner handoff contracts.
 import { z } from "zod";
+import { resourceStateSchema } from "./resource-state";
 import { normalizedReportSchema } from "../report";
 import { evidenceRefSchema, filterResultSchema, processingContextSchema } from "./filter";
 
@@ -108,10 +109,13 @@ export const agentRequestSchema = processingContextSchema
     sourceProfileId: z.uuid().nullable(),
     // P2 estimates relevance only. Truthfulness/confidence are not yet assessed.
     evidenceConfidence: z.null(),
-    resources: z.strictObject({
-      availability: z.literal("unlimited"),
-      mode: z.literal("poc_assumption"),
-    }),
+    resources: z.union([
+      z.strictObject({
+        availability: z.literal("unlimited"),
+        mode: z.literal("poc_assumption"),
+      }),
+      z.strictObject({ availability: z.literal("finite"), snapshot: resourceStateSchema }),
+    ]),
     expectedRunRevision: z.number().int().nonnegative(),
     activePlanId: z.uuid().nullable(),
   })
@@ -151,7 +155,7 @@ export const plannerPriorityDecisionSchema = processingContextSchema.extend({
   verificationNeeded: z.array(z.string().min(1)),
   proposedResources: z.array(
     z.strictObject({
-      resourceType: z.string().min(1),
+      resourceType: z.literal("ambulance"),
       quantity: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
       purpose: z.string().min(1),
     }),

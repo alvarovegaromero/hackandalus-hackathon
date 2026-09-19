@@ -1,5 +1,7 @@
 # Documentation map
 
+Current contract: [global coordinator state v2](coordinator-state-contract.md), with a [complete FE fixture](coordinator-state.example.json). Implemented with a dedicated coordinator worker; the Supabase v2 migration is applied. Resource release is disabled.
+
 Start with [the project README](../README.md) for setup and
 [PROJECT.md](../PROJECT.md) for shared rules. [TASKS.md](../TASKS.md) tracks
 implementation status; [CHALLENGE.md](../CHALLENGE.md) defines the requirements.
@@ -22,6 +24,15 @@ JSON persistence. Outbound communications default to mock mode.
 | [Dashboard design](dashboard-design-guide.md) | Visual and interaction guidance.                                             |
 
 ## Contracts and integration work
+
+[Finite resource state contract](resource-state-contract.md) defines the next
+FE boundary, `GET /api/state` with 3-second polling, 10 initial ambulances
+and available/total counters. The schema and response fixture exist; endpoint,
+FE migration, finite allocation and removal of `/api/situation` remain pending.
+
+[Manual backend integration exercise](poc-backend-smoke.md) chains real Jev,
+triage and the LLM with mock tools. It explicitly distinguishes that run from
+the still-pending HTTP-to-frontend POC integration.
 
 [P3 triage integration](triage.md) defines the source-of-truth impact formula,
 structured factors from operator/scenario observations, and the planner handoff
@@ -85,3 +96,5 @@ awaiting integration, and external services awaiting configuration.
 - [Graft](code-index.md): required code navigation and index maintenance.
 - [Shared skills](agent-skills.md): vendored guidance and upstream provenance.
 - [Context7](context7.md): optional library documentation tooling.
+
+Frontend handoff: [input/output examples and integration](coordinator-frontend-integration.md).

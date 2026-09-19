@@ -20,6 +20,7 @@ import {
 import { TRIAGE_PLANNER_INSTRUCTIONS } from "../triage/impact";
 import { createMockPlanningTools } from "./mock-tools";
 import { createPlannerModel, PlannerModelConfigurationError, type PlannerModel } from "./model";
+import { resourceStateSchema, type ResourceState } from "../contracts/resource-state";
 
 export class AgentPlanningError extends Error {
   constructor(
@@ -47,10 +48,16 @@ export type AgentPlanningResult = {
 export async function planReport(
   input: AgentRequest,
   contextInput: PlanningContext,
-  options: { abortSignal?: AbortSignal } = {},
+  options: { abortSignal?: AbortSignal; resourceState?: ResourceState } = {},
 ): Promise<AgentPlanningResult> {
   const request = agentRequestSchema.parse(input);
   const context = planningContextSchema.parse(contextInput);
+  const snapshot =
+    options.resourceState ??
+    (request.resources.availability === "finite" ? request.resources.snapshot : undefined);
+  const inventory = snapshot && resourceStateSchema.parse(snapshot);
+  if (inventory && inventory.runId !== request.runId)
+    throw new Error("Inventory must belong to the planning run.");
   if (
     context.history.some(
       (item, index) =>
@@ -71,7 +78,7 @@ export async function planReport(
     }
     throw new AgentPlanningError("AGENT_NOT_CONFIGURED", "Invalid planner provider configuration.");
   }
-  const simulation = createMockPlanningTools(request);
+  const simulation = createMockPlanningTools(request, inventory);
   let output;
   let toolCallCount = 0;
   try {
@@ -100,7 +107,12 @@ approved, resources dispatched, people contacted or outcomes achieved.`,
       maxRetries: 0,
     });
     const generated = await agent.generate({
-      prompt: JSON.stringify({ request, history: context.history }),
+      prompt: JSON.stringify({
+        request: inventory
+          ? { ...request, resources: { availability: "finite", snapshot: inventory } }
+          : request,
+        history: context.history,
+      }),
       timeout: 30_000,
       abortSignal: options.abortSignal,
     });
