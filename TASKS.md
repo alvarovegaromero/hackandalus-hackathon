@@ -1,5 +1,7 @@
 # Project Tasks
 
+- [x] Five live-model subagent tool scenarios passed using the production agent/tools with isolated persistence; script: npm run subagents:try. No real contacts or Supabase writes.
+
 ## Person B: subagent execution
 
 - [x] Implement reserved-mission handoff, durable worker/leases, scoped mock communication tools, results/activity and read-only APIs. See docs/subagent-execution.md.
