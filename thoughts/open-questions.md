@@ -138,3 +138,10 @@ the end so nobody reopens them.
   checking are code.
 - **Autonomy**: verify and notify, automatic; move resources, automatic with
   notice and undoable; mass alerts and evacuation, always a person.
+- **Orchestrator memory**: cross-run memory lives in `learned_weights`,
+  `lessons` (person-validated) and `source_reliability`, loaded read-only at
+  run start — not a free-form `memory.md` the model writes to itself. Within a
+  run the orchestrator's memory is the DB state rebuilt from `domain_events`.
+  This keeps "the LLM proposes, the code validates" and audit provenance
+  intact, and avoids a signal (untrusted data) poisoning future runs. Wiring
+  the load path is phase 5 (learning); do not add a free-form agent memory file.
