@@ -40,6 +40,13 @@ const steps = [
   },
 ];
 
+const learnLoop = [
+  ["Rehearse.", "Run the fire as road closures, network loss and a wind shift hit."],
+  ["Review.", "Replay each decision in 3D and compare it with no intervention."],
+  ["Approve.", "A facilitator accepts or rejects each lesson Far0 proposes."],
+  ["Reuse.", "The next matching drill starts briefed with the approved lessons."],
+] as const;
+
 function DashboardLink({ className }: { className: string }) {
   return (
     <Link className={className} href="/dashboard" prefetch={false}>
@@ -149,6 +156,9 @@ export default function LandingPage() {
             <li>
               <a href="#control">Human control</a>
             </li>
+            <li>
+              <a href="#learn">Learning</a>
+            </li>
           </ul>
           <DashboardLink className="lp-btn lp-btn-outline lp-nav-cta" />
         </nav>
@@ -238,6 +248,60 @@ export default function LandingPage() {
               </details>
             </div>
           </div>
+        </section>
+        <section className="lp-learn" id="learn" aria-labelledby="learn-title">
+          <div className="lp-wrap lp-learn-grid">
+            <div>
+              <p className="lp-section-label">Learning from past runs</p>
+              <h2 id="learn-title">
+                Every drill shapes
+                <br />
+                the next response.
+              </h2>
+              <p className="lp-learn-lead">
+                Rehearse the wildfire in a 3D training town before the real one. Far0 records every
+                decision, replays it against doing nothing and shows what worked and what did not.
+              </p>
+              <ol className="lp-learn-loop">
+                {learnLoop.map(([name, text]) => (
+                  <li key={name}>
+                    <span>
+                      <strong>{name}</strong> {text}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+              <Link className="lp-btn lp-btn-primary" href="/dashboard/drills" prefetch={false}>
+                Try a wildfire drill
+              </Link>
+            </div>
+            <figure className="lp-learn-media">
+              <div className="lp-learn-video">
+                <video
+                  src="/media/faro-drills.mp4"
+                  poster="/media/faro-drills-poster.jpg"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                  aria-hidden="true"
+                />
+              </div>
+              <figcaption>
+                <span className="lp-learn-tag">Lesson from a recorded drill</span>
+                <p>Road closed at T+5; no alternative route was recorded.</p>
+                <p className="lp-learn-fix">
+                  <span aria-hidden="true">→</span> Reserve one team for alternative access when the
+                  road closes.
+                </p>
+              </figcaption>
+            </figure>
+          </div>
+          <p className="lp-wrap lp-demo-note">
+            Training simulator with synthetic geography. Approved lessons brief the next drill; they
+            do not yet change the live coordinator.
+          </p>
         </section>
         <section className="lp-demo lp-wrap" id="demo" aria-labelledby="demo-title">
           <div className="lp-demo-top">

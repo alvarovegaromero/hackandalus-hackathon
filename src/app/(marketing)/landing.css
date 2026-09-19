@@ -890,6 +890,88 @@
   color: var(--lp-muted);
   margin-top: 1.25rem;
 }
+.lp .lp-learn {
+  padding-block: 5.5rem 1.5rem;
+}
+.lp .lp-learn-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 4rem;
+  align-items: center;
+}
+.lp .lp-learn-lead {
+  max-width: 44ch;
+  margin-top: 1.5rem;
+  color: var(--lp-muted);
+}
+.lp .lp-learn-loop {
+  display: grid;
+  gap: 0.75rem;
+  margin-block: 2rem 2.5rem;
+  padding: 0;
+  list-style: none;
+  counter-reset: learn;
+  font-size: 0.875rem;
+  color: var(--lp-muted);
+}
+.lp .lp-learn-loop li {
+  display: grid;
+  grid-template-columns: 2rem 1fr;
+  counter-increment: learn;
+}
+.lp .lp-learn-loop li::before {
+  content: counter(learn, decimal-leading-zero);
+  font-family: var(--lp-mono);
+  color: var(--lp-green);
+}
+.lp .lp-learn-loop strong {
+  color: var(--lp-paper);
+  font-weight: 500;
+}
+.lp .lp-learn-media {
+  margin: 0;
+  border: 1px solid #a7f3d033;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: var(--lp-surface);
+  box-shadow: 0 20px 60px #080d162e;
+}
+.lp .lp-learn-video {
+  aspect-ratio: 2 / 1;
+  background: #0e1219 url("/media/faro-drills-poster.jpg") center / cover;
+}
+.lp .lp-learn-video video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.lp .lp-learn-media figcaption {
+  padding: 1.25rem 1.5rem 1.5rem;
+  border-top: 1px solid var(--lp-line);
+  font-size: 0.875rem;
+}
+.lp .lp-learn-tag {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--lp-muted);
+}
+.lp .lp-learn-fix {
+  margin-top: 0.25rem;
+  color: #a7f3d0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp .lp-learn-video video {
+    display: none;
+  }
+}
+@media (max-width: 1000px) {
+  .lp .lp-learn-grid {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+}
 .lp .lp-demo {
   padding-block: 5.5rem 4rem;
 }
