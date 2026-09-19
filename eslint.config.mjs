@@ -12,6 +12,7 @@ export default defineConfig([
     ".vercel/**",
     ".workflow-data/**",
     "src/app/.well-known/workflow/**",
-    "next-env.d.ts"
-  ])
+    "app/.well-known/workflow/**",
+    "next-env.d.ts",
+  ]),
 ]);

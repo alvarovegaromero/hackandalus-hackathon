@@ -25,7 +25,7 @@ export default function ScenarioBar({
   busy,
   onStart,
   onStop,
-  onSpeed
+  onSpeed,
 }: Props) {
   const runtime = scenarioRuntime(scenario);
   const total = Math.max(1, ...scenario.beats.map((beat) => beat.atSeconds));
@@ -50,7 +50,11 @@ export default function ScenarioBar({
             <strong>{clockLabel(elapsedSeconds)}</strong>
             <small>{scenario.running ? "en marcha" : "parado"}</small>
           </div>
-          <button onClick={onStart} disabled={busy || scenario.running} aria-label="Arrancar el escenario">
+          <button
+            onClick={onStart}
+            disabled={busy || scenario.running}
+            aria-label="Arrancar el escenario"
+          >
             <Play size={15} aria-hidden="true" /> Arrancar
           </button>
           <button
@@ -92,7 +96,8 @@ export default function ScenarioBar({
       {world ? (
         <div className="world-strip" aria-label="Estado del mundo simulado">
           <span className="pill">
-            <Wind size={13} aria-hidden="true" /> Viento {world.windDirection} · {world.windSpeedKmh} km/h
+            <Wind size={13} aria-hidden="true" /> Viento {world.windDirection} ·{" "}
+            {world.windSpeedKmh} km/h
           </span>
           <span className={world.blockedRoads.length > 0 ? "pill zone-active" : "pill"}>
             {world.blockedRoads.length > 0
@@ -115,11 +120,17 @@ export default function ScenarioBar({
           return (
             <li key={beat.id} className={`beat ${fired ? "fired" : ""} ${isNext ? "next" : ""}`}>
               <span className="beat-time">
-                {fired ? <Zap size={13} aria-hidden="true" /> : <CircleDot size={13} aria-hidden="true" />}
+                {fired ? (
+                  <Zap size={13} aria-hidden="true" />
+                ) : (
+                  <CircleDot size={13} aria-hidden="true" />
+                )}
                 {clockLabel(beat.atSeconds)}
               </span>
               <span className="beat-label">{beat.label}</span>
-              <span className="beat-state">{fired ? "Disparado" : isNext ? "Siguiente" : "Pendiente"}</span>
+              <span className="beat-state">
+                {fired ? "Disparado" : isNext ? "Siguiente" : "Pendiente"}
+              </span>
             </li>
           );
         })}

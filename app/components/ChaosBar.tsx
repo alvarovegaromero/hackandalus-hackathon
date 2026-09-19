@@ -21,7 +21,12 @@ const buttons: ChaosButton[] = [
   { id: "wind", label: "Girar el viento", effect: "El frente cambia de dirección", icon: "wind" },
   { id: "road", label: "Cortar la carretera", effect: "Se pierde una vía de acceso", icon: "road" },
   { id: "sms", label: "Tumbar el SMS", effect: "Cae el canal de mensajería", icon: "sms" },
-  { id: "people", label: "+50 personas", effect: "Llegan más desplazados de los previstos", icon: "people" }
+  {
+    id: "people",
+    label: "+50 personas",
+    effect: "Llegan más desplazados de los previstos",
+    icon: "people",
+  },
 ];
 
 function icon(kind: ChaosButton["icon"]) {

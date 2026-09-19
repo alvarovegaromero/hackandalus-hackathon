@@ -110,7 +110,7 @@ import type {
   Severity,
   SignalAssessment,
   SourceReliability,
-  TriageDecision
+  TriageDecision,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -146,7 +146,7 @@ export const defaultTriageThresholds: TriageThresholds = {
   urgencyRelief: 0.08,
   verifyUrgencyRelief: 0.15,
   relevanceForAct: 0.6,
-  relevanceForVerify: 0.35
+  relevanceForVerify: 0.35,
 };
 
 /** Fiabilidad que se aplica a una fuente de la que no se sabe nada todavía. */
@@ -195,7 +195,7 @@ export const MAX_SOURCE_RELIABILITY = 0.98;
 const claimByConfidence: Record<Confidence, number> = {
   low: 0.5,
   medium: 0.75,
-  high: 0.95
+  high: 0.95,
 };
 
 /** Probabilidad base de que una señal sea relevante, por gravedad declarada. */
@@ -203,7 +203,7 @@ const relevanceBySeverity: Record<Severity, number> = {
   low: 0.35,
   medium: 0.55,
   high: 0.78,
-  critical: 0.9
+  critical: 0.9,
 };
 
 /** Urgencia base por gravedad declarada. */
@@ -211,20 +211,20 @@ const urgencyBySeverity: Record<Severity, number> = {
   low: 0.2,
   medium: 0.45,
   high: 0.75,
-  critical: 0.95
+  critical: 0.95,
 };
 
 const severityLabel: Record<Severity, string> = {
   low: "baja",
   medium: "media",
   high: "alta",
-  critical: "crítica"
+  critical: "crítica",
 };
 
 const confidenceLabel: Record<Confidence, string> = {
   low: "baja",
   medium: "media",
-  high: "alta"
+  high: "alta",
 };
 
 const sourceLabel: Record<EventSource, string> = {
@@ -233,7 +233,7 @@ const sourceLabel: Record<EventSource, string> = {
   operator: "operador",
   public: "aviso ciudadano",
   demo: "demo",
-  scenario: "escenario"
+  scenario: "escenario",
 };
 
 const roleLabel: Record<ContactRole, string> = {
@@ -242,7 +242,7 @@ const roleLabel: Record<ContactRole, string> = {
   "public-safety": "seguridad pública",
   volunteer: "voluntariado",
   "operations-lead": "sala de coordinación",
-  authority: "autoridad de emergencias"
+  authority: "autoridad de emergencias",
 };
 
 // ---------------------------------------------------------------------------
@@ -295,12 +295,15 @@ function normalizeTopic(category: string): string {
 }
 
 /** Fiabilidad aprendida de una fuente, o el valor por defecto si no hay historial. */
-export function reliabilityOf(reliability: SourceReliability[] | undefined, source: EventSource): number {
+export function reliabilityOf(
+  reliability: SourceReliability[] | undefined,
+  source: EventSource,
+): number {
   const entry = reliability?.find((candidate) => candidate.source === source);
   return clamp(
     entry?.reliability ?? DEFAULT_SOURCE_RELIABILITY,
     MIN_SOURCE_RELIABILITY,
-    MAX_SOURCE_RELIABILITY
+    MAX_SOURCE_RELIABILITY,
   );
 }
 
@@ -417,7 +420,7 @@ export function fuseConfidence(signals: FusionSignal[], options: FusionOptions =
 export function updateSourceReliability(
   reliability: SourceReliability[],
   source: EventSource,
-  wasConfirmed: boolean
+  wasConfirmed: boolean,
 ): SourceReliability[] {
   const list = reliability ? [...reliability] : [];
   const index = list.findIndex((candidate) => candidate.source === source);
@@ -437,7 +440,7 @@ export function updateSourceReliability(
     const delta = clamp(
       observedRate - current.reliability,
       -SOURCE_RELIABILITY_STEP,
-      SOURCE_RELIABILITY_STEP
+      SOURCE_RELIABILITY_STEP,
     );
     next = clamp(current.reliability + delta, MIN_SOURCE_RELIABILITY, MAX_SOURCE_RELIABILITY);
   }
@@ -446,7 +449,7 @@ export function updateSourceReliability(
     source,
     reliability: round(next),
     observations,
-    confirmed
+    confirmed,
   };
 
   if (index >= 0) list[index] = updated;
@@ -499,7 +502,11 @@ function zoneDistance(zones: CrisisZone[], a: string | undefined, b: string): nu
  * Las que ya se descartaron por falsas cuentan contradigan cuando contradigan:
  * un bulo desmentido hace media hora sigue siendo un bulo desmentido.
  */
-function gatherCorroboration(signal: TriageSignal, context: TriageContext, now: number): Corroboration {
+function gatherCorroboration(
+  signal: TriageSignal,
+  context: TriageContext,
+  now: number,
+): Corroboration {
   const events = context.events ?? [];
   const zones = context.zones ?? [];
   const zoneId = signal.zoneId;
@@ -537,7 +544,11 @@ function gatherCorroboration(signal: TriageSignal, context: TriageContext, now: 
 }
 
 /** Probabilidad de que lo contado sea cierto, antes de aplicar la fuente. */
-function claimProbability(confidence: Confidence, occurrences: number, contradictions: number): number {
+function claimProbability(
+  confidence: Confidence,
+  occurrences: number,
+  contradictions: number,
+): number {
   const base = claimByConfidence[confidence] ?? claimByConfidence.medium;
   const count = Math.max(1, Math.floor(occurrences || 1));
   // Repetir refuerza con rendimientos decrecientes: el complemento se eleva a
@@ -554,7 +565,7 @@ function relevanceProbability(
   signal: TriageSignal,
   zone: CrisisZone | undefined,
   zonesKnown: boolean,
-  corroboration: Corroboration
+  corroboration: Corroboration,
 ): number {
   const severity = signal.severity ?? "medium";
   let value = relevanceBySeverity[severity] ?? relevanceBySeverity.medium;
@@ -612,7 +623,7 @@ function buildRationale(input: {
   const gravedad = severityLabel[signal.severity ?? "medium"];
 
   const partes: string[] = [
-    `${source} (fiabilidad ${percent(reliability)}), gravedad ${gravedad} y confianza declarada ${confianza}`
+    `${source} (fiabilidad ${percent(reliability)}), gravedad ${gravedad} y confianza declarada ${confianza}`,
   ];
   if ((signal.occurrences ?? 1) > 1) partes.push(`${signal.occurrences} avisos equivalentes`);
   if (corroboration.supporting.length > 0) {
@@ -656,10 +667,14 @@ function assessDeterministic(signal: TriageSignal, context: TriageContext = {}):
   const pClaim = claimProbability(
     signal.confidence ?? "medium",
     signal.occurrences ?? 1,
-    corroboration.contradicting.length
+    corroboration.contradicting.length,
   );
   const pTruthful =
-    signal.confirmed === true ? 0.97 : signal.confirmed === false ? 0.03 : clamp(pClaim * reliability);
+    signal.confirmed === true
+      ? 0.97
+      : signal.confirmed === false
+        ? 0.03
+        : clamp(pClaim * reliability);
 
   // 2. ¿Importa para esta crisis?
   const pRelevant = relevanceProbability(signal, zone, zones.length > 0, corroboration);
@@ -674,16 +689,19 @@ function assessDeterministic(signal: TriageSignal, context: TriageContext = {}):
     fusion.push({
       source: event.source,
       probability: claimProbability(event.confidence, event.occurrences, 0) * weight,
-      reliability: reliabilityOf(context.sourceReliability, event.source)
+      reliability: reliabilityOf(context.sourceReliability, event.source),
     });
   }
-  const fused = signal.confirmed === true ? 0.97 : signal.confirmed === false ? 0.03 : fuseConfidence(fusion);
+  const fused =
+    signal.confirmed === true ? 0.97 : signal.confirmed === false ? 0.03 : fuseConfidence(fusion);
   const confidence = round(clamp(fused));
 
   // 5. Decisión. El umbral baja con la urgencia: equivocarse callando ante una
   //    señal crítica cuesta más que equivocarse llamando.
   const actThreshold = round(clamp(thresholds.act - thresholds.urgencyRelief * urgency, 0.2, 1));
-  const verifyThreshold = round(clamp(thresholds.verify - thresholds.verifyUrgencyRelief * urgency, 0.1, 1));
+  const verifyThreshold = round(
+    clamp(thresholds.verify - thresholds.verifyUrgencyRelief * urgency, 0.1, 1),
+  );
 
   let decision: TriageDecision;
   if (confidence >= actThreshold && pRelevant >= thresholds.relevanceForAct) {
@@ -709,11 +727,11 @@ function assessDeterministic(signal: TriageSignal, context: TriageContext = {}):
       actThreshold,
       verifyThreshold,
       corroboration,
-      thresholds
+      thresholds,
     }),
     assessedBy: "deterministic",
     sourceReliability: round(reliability),
-    assessedAt: new Date(now).toISOString()
+    assessedAt: new Date(now).toISOString(),
   };
 }
 
@@ -738,7 +756,7 @@ export interface SignalAssessor {
 export const deterministicAssessor: SignalAssessor = {
   name: "deterministic",
   available: () => true,
-  assess: (signal, context) => assessDeterministic(signal, context)
+  assess: (signal, context) => assessDeterministic(signal, context),
 };
 
 /**
@@ -761,9 +779,9 @@ export const externalAssessorPlaceholder: SignalAssessor = {
     const assessment = assessDeterministic(signal, context);
     return {
       ...assessment,
-      rationale: `Evaluador externo no disponible; respaldo determinista. ${assessment.rationale}`
+      rationale: `Evaluador externo no disponible; respaldo determinista. ${assessment.rationale}`,
     };
-  }
+  },
 };
 
 let registeredAssessor: SignalAssessor | null = null;
@@ -808,7 +826,7 @@ export function assessSignal(signal: TriageSignal, context: TriageContext = {}):
     const fallback = assessDeterministic(signal, context);
     return {
       ...fallback,
-      rationale: `El evaluador ${assessor.name} falló; respaldo determinista. ${fallback.rationale}`
+      rationale: `El evaluador ${assessor.name} falló; respaldo determinista. ${fallback.rationale}`,
     };
   }
 }
@@ -855,12 +873,14 @@ export interface VerificationContext {
 export function buildVerificationRequest(
   event: CrisisEvent,
   assessment: SignalAssessment,
-  context: VerificationContext = {}
+  context: VerificationContext = {},
 ): VerificationRequest {
   const zone = context.zones?.find((candidate) => candidate.id === event.zoneId);
   const zoneName = zone?.name ?? event.zoneId;
   const role = rolesForCategory(event.category)[0] ?? "operations-lead";
-  const contact = context.contacts ? selectContactByRole(context.contacts, event.zoneId, role) : null;
+  const contact = context.contacts
+    ? selectContactByRole(context.contacts, event.zoneId, role)
+    : null;
 
   // La duda dominante es la pata más floja: si dudamos de que sea cierto,
   // preguntamos por los hechos; si dudamos de que importe, preguntamos por el
@@ -878,9 +898,13 @@ export function buildVerificationRequest(
 
   if (doubt === "veracidad") {
     questions.push(`¿Está viendo usted ahora mismo ${hecho.toLowerCase()} en ${zoneName}? (sí/no)`);
-    questions.push("¿Lo ha comprobado en persona o se lo han contado? (en persona/me lo han contado)");
+    questions.push(
+      "¿Lo ha comprobado en persona o se lo han contado? (en persona/me lo han contado)",
+    );
   } else if (doubt === "relevancia") {
-    questions.push(`¿Lo que ocurre está dentro de ${zoneName} o en otra zona? (esta zona/otra zona)`);
+    questions.push(
+      `¿Lo que ocurre está dentro de ${zoneName} o en otra zona? (esta zona/otra zona)`,
+    );
     questions.push(`¿Tiene que ver con ${event.category.replace(/-/g, " ")}? (sí/no)`);
   } else {
     questions.push(`¿Sigue activo ${hecho.toLowerCase()} en ${zoneName}? (sí/no)`);
@@ -911,7 +935,7 @@ export function buildVerificationRequest(
     channel,
     questions,
     objective,
-    reason
+    reason,
   };
 }
 
@@ -919,5 +943,5 @@ export function buildVerificationRequest(
 export const decisionLabel: Record<TriageDecision, string> = {
   act: "Actuar",
   verify: "Verificar",
-  discard: "Descartar"
+  discard: "Descartar",
 };

@@ -21,7 +21,7 @@ const persistInSupabase: PersistEvents = async (events) => {
   const db = createServerSupabase();
   const incidents = [...new Set(events.map((e) => e.incidentId))].map((id) => ({
     id,
-    title: `Incidente ${id.slice(0, 8)}`
+    title: `Incidente ${id.slice(0, 8)}`,
   }));
   const { error: incidentError } = await db
     .from("incidents")
@@ -32,7 +32,7 @@ const persistInSupabase: PersistEvents = async (events) => {
     incident_id: e.incidentId,
     summary: e.summary,
     severity: e.severity,
-    source: e.source
+    source: e.source,
   }));
   const { data, error } = await db
     .from("events")
@@ -71,7 +71,7 @@ export async function ingestBatch(items: unknown[] | undefined, wait = false) {
       } catch (error) {
         return { ...entry, resultError: error instanceof Error ? error.message : String(error) };
       }
-    })
+    }),
   );
   const status = ingestStatus(result, items.length);
   return { status: status === 202 ? 200 : status, body: { ...result, accepted } };

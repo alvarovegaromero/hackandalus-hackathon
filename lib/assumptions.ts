@@ -39,7 +39,7 @@ import type {
   CrisisZone,
   Plan,
   Resource,
-  WorldState
+  WorldState,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -58,7 +58,13 @@ const MAX_CANALES = 2;
 export const UMBRAL_CAMAS = 10;
 
 /** Estados de acción que siguen esperando que el supuesto se cumpla. */
-const ESTADOS_VIVOS = new Set<ActionStatus>(["pending", "approved", "running", "blocked", "stalled"]);
+const ESTADOS_VIVOS = new Set<ActionStatus>([
+  "pending",
+  "approved",
+  "running",
+  "blocked",
+  "stalled",
+]);
 
 /**
  * Carreteras que unen cada par de zonas. Un medio que sale de su base hacia
@@ -75,7 +81,7 @@ const CARRETERAS_ENTRE_ZONAS: Record<string, string> = {
   "zone-east|zone-south": "A-7",
   "zone-islands|zone-north": "A-66",
   "zone-islands|zone-south": "A-381",
-  "zone-north|zone-south": "A-397"
+  "zone-north|zone-south": "A-397",
 };
 
 /** Vía principal de cada zona, para las señales de corte que no citan carretera. */
@@ -84,18 +90,18 @@ const CARRETERA_PRINCIPAL: Record<string, string> = {
   "zone-central": "A-4",
   "zone-east": "A-92",
   "zone-south": "A-7",
-  "zone-islands": "A-381"
+  "zone-islands": "A-381",
 };
 
 /** Hospital de referencia de cada zona para la evacuación sanitaria. */
 const HOSPITAL_POR_ZONA: Record<string, string> = {
   "zone-north": "hospital-serrania",
-  "zone-south": "hospital-costa-del-sol"
+  "zone-south": "hospital-costa-del-sol",
 };
 
 const NOMBRES_DE_HOSPITAL: Record<string, string> = {
   "hospital-serrania": "Hospital de la Serranía",
-  "hospital-costa-del-sol": "Hospital Costa del Sol"
+  "hospital-costa-del-sol": "Hospital Costa del Sol",
 };
 
 const NOMBRES_DE_VIENTO: Record<string, string> = {
@@ -109,11 +115,19 @@ const NOMBRES_DE_VIENTO: Record<string, string> = {
   O: "oeste",
   W: "oeste",
   NO: "noroeste",
-  NW: "noroeste"
+  NW: "noroeste",
 };
 
 /** Palabras que delatan que una acción mueve heridos o evacúa población. */
-const PALABRAS_SANITARIAS = ["evacua", "triaje", "sanitari", "herid", "hospital", "medic", "rescate"];
+const PALABRAS_SANITARIAS = [
+  "evacua",
+  "triaje",
+  "sanitari",
+  "herid",
+  "hospital",
+  "medic",
+  "rescate",
+];
 
 // ---------------------------------------------------------------------------
 // Utilidades
@@ -214,7 +228,7 @@ export function interpretarSupuesto(assumption: Assumption): Interpretacion {
       origenId: origen?.id ?? null,
       origenName: origen?.nombre ?? null,
       destinoId: destino?.id ?? null,
-      destinoName: destino?.nombre ?? null
+      destinoName: destino?.nombre ?? null,
     };
   }
 
@@ -232,7 +246,7 @@ export function interpretarSupuesto(assumption: Assumption): Interpretacion {
       hospitalName: hospital?.nombre ?? nombreDeHospital(hospitalId),
       minimo: Number.isFinite(minimo) ? minimo : UMBRAL_CAMAS,
       zoneId: zona?.id ?? null,
-      zoneName: zona?.nombre ?? null
+      zoneName: zona?.nombre ?? null,
     };
   }
 
@@ -259,7 +273,9 @@ export function evaluateAssumption(assumption: Assumption, world: WorldState): A
     }
     case "carretera": {
       if (!Array.isArray(world?.blockedRoads)) return "unknown";
-      const cortada = world.blockedRoads.some((via) => normalizar(via) === normalizar(info.carretera));
+      const cortada = world.blockedRoads.some(
+        (via) => normalizar(via) === normalizar(info.carretera),
+      );
       return cortada ? "broken" : "ok";
     }
     case "sms": {
@@ -284,7 +300,12 @@ export function evaluateAssumption(assumption: Assumption, world: WorldState): A
 // 1. Derivación: de qué depende este plan
 // ---------------------------------------------------------------------------
 
-function supuesto(planVersion: number, variable: string, text: string, condition: string): Assumption {
+function supuesto(
+  planVersion: number,
+  variable: string,
+  text: string,
+  condition: string,
+): Assumption {
   return {
     id: `sup-v${planVersion}-${slug(variable)}`,
     text,
@@ -293,7 +314,7 @@ function supuesto(planVersion: number, variable: string, text: string, condition
     status: "ok",
     brokenByEventId: null,
     brokenAt: null,
-    planVersion
+    planVersion,
   };
 }
 
@@ -310,7 +331,7 @@ export function deriveAssumptions(
   zones: CrisisZone[],
   resources: Resource[],
   world: WorldState,
-  actions: Action[]
+  actions: Action[],
 ): Assumption[] {
   const version = plan?.version ?? 1;
   const prioridades = plan?.priorities ?? [];
@@ -343,8 +364,8 @@ export function deriveAssumptions(
         version,
         "wind.direction",
         `El viento sigue del ${nombreDeViento(direccion)}, que es lo que mantiene a ${zonaTop.name} como prioridad uno.`,
-        `dirección = ${direccion.toUpperCase()} · zona: ${zonaTop.name} (${zonaTop.id})`
-      )
+        `dirección = ${direccion.toUpperCase()} · zona: ${zonaTop.name} (${zonaTop.id})`,
+      ),
     );
   }
 
@@ -369,8 +390,8 @@ export function deriveAssumptions(
         version,
         `road.${carretera}`,
         `La ${carretera} sigue abierta para llevar ${recurso.name} a ${destino.name}.`,
-        `abierta · destino: ${destino.name} (${destino.id}) · origen: ${origen.name} (${origen.id})`
-      )
+        `abierta · destino: ${destino.name} (${destino.id}) · origen: ${origen.name} (${origen.id})`,
+      ),
     );
   }
 
@@ -390,8 +411,8 @@ export function deriveAssumptions(
         version,
         `hospital.beds.${hospitalId}`,
         `${hospital} mantiene al menos ${UMBRAL_CAMAS} camas libres para los evacuados de ${zona.name}.`,
-        `libres >= ${UMBRAL_CAMAS} · hospital: ${hospital} (${hospitalId}) · zona: ${zona.name} (${zona.id})`
-      )
+        `libres >= ${UMBRAL_CAMAS} · hospital: ${hospital} (${hospitalId}) · zona: ${zona.name} (${zona.id})`,
+      ),
     );
   }
 
@@ -402,8 +423,8 @@ export function deriveAssumptions(
         version,
         "comms.sms",
         "La mensajería sigue operativa para los avisos que salen por SMS.",
-        "operativo = sí"
-      )
+        "operativo = sí",
+      ),
     );
   }
   if (vivas.some((action) => action.channel === "call")) {
@@ -412,8 +433,8 @@ export function deriveAssumptions(
         version,
         "comms.voice",
         "El canal de voz sigue operativo para las llamadas en curso.",
-        "operativo = sí"
-      )
+        "operativo = sí",
+      ),
     );
   }
 
@@ -429,7 +450,7 @@ export function deriveAssumptions(
     ...sostenible(viento, 1),
     ...sostenible(carreteras, MAX_CARRETERAS),
     ...sostenible(camas, MAX_HOSPITALES),
-    ...sostenible(canales, MAX_CANALES)
+    ...sostenible(canales, MAX_CANALES),
   ].slice(0, MAX_SUPUESTOS);
 }
 
@@ -461,7 +482,7 @@ export interface AssumptionCheck {
 export function checkAssumptions(
   assumptions: Assumption[],
   world: WorldState,
-  event?: CrisisEvent | null
+  event?: CrisisEvent | null,
 ): AssumptionCheck {
   const actualizados: Assumption[] = [];
   const broken: Assumption[] = [];
@@ -483,7 +504,7 @@ export function checkAssumptions(
         ...assumption,
         status,
         brokenByEventId: event?.id ?? null,
-        brokenAt: event?.createdAt ?? world?.updatedAt ?? null
+        brokenAt: event?.createdAt ?? world?.updatedAt ?? null,
       };
       actualizados.push(roto);
       broken.push(roto);
@@ -515,7 +536,7 @@ const DIRECCIONES: [string, string][] = [
   ["norte", "N"],
   ["oeste", "O"],
   ["este", "E"],
-  ["sur", "S"]
+  ["sur", "S"],
 ];
 
 /** Lee la dirección del viento del texto de la señal, o null si no la cita. */
@@ -523,9 +544,17 @@ function direccionDeSenal(crudo: string, texto: string): string | null {
   // Primero el código en mayúsculas ("el viento gira al SO"), que es
   // inequívoco; después los nombres largos, del más largo al más corto para
   // que "sureste" no se lea como "este".
-  const codigo = /\b(?:viento|frente|racha)[^.]{0,40}?\b(NE|NO|NW|SE|SO|SW|N|S|E|O|W)\b/.exec(crudo);
+  const codigo = /\b(?:viento|frente|racha)[^.]{0,40}?\b(NE|NO|NW|SE|SO|SW|N|S|E|O|W)\b/.exec(
+    crudo,
+  );
   if (codigo)
-    return codigo[1] === "NW" ? "NO" : codigo[1] === "SW" ? "SO" : codigo[1] === "W" ? "O" : codigo[1];
+    return codigo[1] === "NW"
+      ? "NO"
+      : codigo[1] === "SW"
+        ? "SO"
+        : codigo[1] === "W"
+          ? "O"
+          : codigo[1];
 
   for (const [nombre, valor] of DIRECCIONES) {
     if (texto.includes(nombre)) return valor;
@@ -564,7 +593,9 @@ export function applyEventToWorld(world: WorldState, event: CrisisEvent): WorldS
   if (hablaDeVia && reabre) {
     const carretera = carreteraDeSenal(event, crudo);
     if (!carretera) return world;
-    const quedan = (world.blockedRoads ?? []).filter((via) => normalizar(via) !== normalizar(carretera));
+    const quedan = (world.blockedRoads ?? []).filter(
+      (via) => normalizar(via) !== normalizar(carretera),
+    );
     if (quedan.length === (world.blockedRoads ?? []).length) return world;
     return { ...world, blockedRoads: quedan, updatedAt: cuando };
   }
@@ -572,9 +603,15 @@ export function applyEventToWorld(world: WorldState, event: CrisisEvent): WorldS
   if (hablaDeVia && corta) {
     const carretera = carreteraDeSenal(event, crudo);
     if (!carretera) return world;
-    const yaCortada = (world.blockedRoads ?? []).some((via) => normalizar(via) === normalizar(carretera));
+    const yaCortada = (world.blockedRoads ?? []).some(
+      (via) => normalizar(via) === normalizar(carretera),
+    );
     if (yaCortada) return world;
-    return { ...world, blockedRoads: [...(world.blockedRoads ?? []), carretera], updatedAt: cuando };
+    return {
+      ...world,
+      blockedRoads: [...(world.blockedRoads ?? []), carretera],
+      updatedAt: cuando,
+    };
   }
 
   // --- Viento -------------------------------------------------------------
@@ -587,22 +624,25 @@ export function applyEventToWorld(world: WorldState, event: CrisisEvent): WorldS
       ...world,
       windDirection: direccion ?? world.windDirection,
       windSpeedKmh: velocidad ? Number(velocidad) : world.windSpeedKmh,
-      updatedAt: cuando
+      updatedAt: cuando,
     };
     const igual =
-      siguiente.windDirection === world.windDirection && siguiente.windSpeedKmh === world.windSpeedKmh;
+      siguiente.windDirection === world.windDirection &&
+      siguiente.windSpeedKmh === world.windSpeedKmh;
     return igual ? world : siguiente;
   }
 
   // --- Canales de comunicación -------------------------------------------
   const hablaDeCanal = /integration|sms|mensajeri|telefoni|voz|llamad|cobertura|comms|telecom/.test(
-    `${categoria} ${texto}`
+    `${categoria} ${texto}`,
   );
   if (hablaDeCanal) {
-    const restablece = /restablecid|recuperad|vuelve a funcionar|de nuevo operativ|resuelt/.test(texto);
+    const restablece = /restablecid|recuperad|vuelve a funcionar|de nuevo operativ|resuelt/.test(
+      texto,
+    );
     const cae =
       /caid|cae|fallo|falla|fuera de servicio|no funciona|inoperativ|sin servicio|failure|down/.test(
-        `${categoria} ${texto}`
+        `${categoria} ${texto}`,
       );
     if (!restablece && !cae) return world;
 
@@ -662,25 +702,26 @@ export interface AssumptionConsequence {
 export function consequencesOfBreak(
   assumption: Assumption,
   plan: Plan,
-  actions: Action[]
+  actions: Action[],
 ): AssumptionConsequence[] {
   const info = interpretarSupuesto(assumption);
   const propuestas = new Set(plan?.proposedActionIds ?? []);
   const vivas = (actions ?? []).filter((action) => ESTADOS_VIVOS.has(action.status));
   // Si el plan enumera sus acciones, se respeta esa lista; si no, se miran
   // todas las vivas para no dejar consecuencias sin contar.
-  const candidatas = propuestas.size > 0 ? vivas.filter((action) => propuestas.has(action.id)) : vivas;
+  const candidatas =
+    propuestas.size > 0 ? vivas.filter((action) => propuestas.has(action.id)) : vivas;
 
   const consecuencia = (
     action: Action,
     effect: AssumptionConsequence["effect"],
-    reason: string
+    reason: string,
   ): AssumptionConsequence => ({
     actionId: action.id,
     objective: action.objective,
     zoneId: action.zoneId,
     effect,
-    reason
+    reason,
   });
 
   switch (info.kind) {
@@ -693,8 +734,8 @@ export function consequencesOfBreak(
           consecuencia(
             action,
             "invalidada",
-            `El medio asignado llegaba a ${destino} por la ${carretera}, que está cortada: hay que buscar otra ruta u otro medio.`
-          )
+            `El medio asignado llegaba a ${destino} por la ${carretera}, que está cortada: hay que buscar otra ruta u otro medio.`,
+          ),
         );
     }
     case "sms":
@@ -704,8 +745,8 @@ export function consequencesOfBreak(
           consecuencia(
             action,
             "invalidada",
-            "El aviso salía por mensajería y el canal está caído: hay que cursarlo por voz o por otro canal."
-          )
+            "El aviso salía por mensajería y el canal está caído: hay que cursarlo por voz o por otro canal.",
+          ),
         );
     case "voz":
       return candidatas
@@ -714,8 +755,8 @@ export function consequencesOfBreak(
           consecuencia(
             action,
             "invalidada",
-            "La llamada no puede cursarse con el canal de voz caído: hay que pasar el aviso a mensajería."
-          )
+            "La llamada no puede cursarse con el canal de voz caído: hay que pasar el aviso a mensajería.",
+          ),
         );
     case "camas":
       return candidatas
@@ -724,8 +765,8 @@ export function consequencesOfBreak(
           consecuencia(
             action,
             "invalidada",
-            `La evacuación sanitaria apuntaba a ${info.hospitalName} y ya no hay camas suficientes: hay que redirigirla.`
-          )
+            `La evacuación sanitaria apuntaba a ${info.hospitalName} y ya no hay camas suficientes: hay que redirigirla.`,
+          ),
         );
     case "viento":
       return candidatas
@@ -734,8 +775,8 @@ export function consequencesOfBreak(
           consecuencia(
             action,
             "en-riesgo",
-            `Esta acción se priorizó con el viento del ${nombreDeViento(info.direccion)}; al girar, el orden de prioridades puede cambiar.`
-          )
+            `Esta acción se priorizó con el viento del ${nombreDeViento(info.direccion)}; al girar, el orden de prioridades puede cambiar.`,
+          ),
         );
     default:
       return [];
@@ -761,7 +802,7 @@ function frasesDeSupuesto(assumption: Assumption): Frases {
       return {
         dependencia: `contaba con que la ${info.carretera} siguiera abierta para llevar medios a ${destino}`,
         rotura: "y acaba de cortarse",
-        consecuencia: `los equipos que iban hacia ${destino} se quedan sin ruta`
+        consecuencia: `los equipos que iban hacia ${destino} se quedan sin ruta`,
       };
     }
     case "viento": {
@@ -769,27 +810,29 @@ function frasesDeSupuesto(assumption: Assumption): Frases {
       return {
         dependencia: `daba por hecho que el viento seguiría del ${nombreDeViento(info.direccion)} sobre ${zona}`,
         rotura: "y acaba de girar",
-        consecuencia: "el orden de prioridades ya no se sostiene y hay que volver a mirar qué zona va primero"
+        consecuencia:
+          "el orden de prioridades ya no se sostiene y hay que volver a mirar qué zona va primero",
       };
     }
     case "sms":
       return {
         dependencia: "daba por hecho que la mensajería seguía operativa",
         rotura: "y se ha caído",
-        consecuencia: "los avisos que salían por SMS se quedan sin enviar y hay que pasarlos a otro canal"
+        consecuencia:
+          "los avisos que salían por SMS se quedan sin enviar y hay que pasarlos a otro canal",
       };
     case "voz":
       return {
         dependencia: "daba por hecho que las llamadas seguían saliendo",
         rotura: "y el canal de voz se ha caído",
-        consecuencia: "los avisos telefónicos se quedan sin cursar y hay que pasarlos a mensajería"
+        consecuencia: "los avisos telefónicos se quedan sin cursar y hay que pasarlos a mensajería",
       };
     case "camas": {
       const zona = info.zoneName ? ` de ${info.zoneName}` : "";
       return {
         dependencia: `contaba con al menos ${info.minimo} camas libres en ${info.hospitalName}`,
         rotura: "y ya no las hay",
-        consecuencia: `la evacuación sanitaria${zona} hacia ese hospital deja de caber y hay que buscar destino`
+        consecuencia: `la evacuación sanitaria${zona} hacia ese hospital deja de caber y hay que buscar destino`,
       };
     }
     default: {
@@ -797,7 +840,7 @@ function frasesDeSupuesto(assumption: Assumption): Frases {
       return {
         dependencia: `contaba con que ${texto.charAt(0).toLowerCase()}${texto.slice(1)}`,
         rotura: "y ha dejado de cumplirse",
-        consecuencia: "las acciones que dependían de ello dejan de sostenerse"
+        consecuencia: "las acciones que dependían de ello dejan de sostenerse",
       };
     }
   }
@@ -825,7 +868,10 @@ export function explainInvalidation(brokenAssumptions: Assumption[], plan: Plan)
 
   const otros = resto
     .map((assumption) =>
-      frasesDeSupuesto(assumption).dependencia.replace(/^(contaba con que |daba por hecho que )/, "")
+      frasesDeSupuesto(assumption).dependencia.replace(
+        /^(contaba con que |daba por hecho que )/,
+        "",
+      ),
     )
     .join("; ");
   return `${cabecera} ${efecto} También ha caído: ${otros}.`;
@@ -854,7 +900,7 @@ export function evaluatePlanAgainstWorld(
   plan: Plan,
   world: WorldState,
   actions: Action[],
-  event?: CrisisEvent | null
+  event?: CrisisEvent | null,
 ): PlanAssumptionOutcome {
   const check = checkAssumptions(plan?.assumptions ?? [], world, event);
   const rotos = [...check.broken, ...check.alreadyBroken];
@@ -874,10 +920,10 @@ export function evaluatePlanAgainstWorld(
       ...plan,
       assumptions: check.assumptions,
       valid: rotos.length === 0,
-      invalidatedReason: rotos.length > 0 ? explainInvalidation(rotos, plan) : null
+      invalidatedReason: rotos.length > 0 ? explainInvalidation(rotos, plan) : null,
     },
     broken: check.broken,
     consequences,
-    invalidated: check.broken.length > 0
+    invalidated: check.broken.length > 0,
   };
 }

@@ -19,7 +19,7 @@ function jsonRequest(url: string, body: unknown, headers: Record<string, string>
   return new Request(url, {
     method: "POST",
     headers: { "content-type": "application/json", ...headers },
-    body: typeof body === "string" ? body : JSON.stringify(body)
+    body: typeof body === "string" ? body : JSON.stringify(body),
   });
 }
 
@@ -41,8 +41,8 @@ describe("crisis API routes", () => {
         zoneId: "zone-south",
         category: "shelter-overflow",
         severity: "critical",
-        confidence: "high"
-      })
+        confidence: "high",
+      }),
     );
 
     expect(response.status).toBe(201);
@@ -55,7 +55,7 @@ describe("crisis API routes", () => {
   it("approves an action through the mock HappyRobot adapter", async () => {
     const action = getSituation().actions[0];
     const response = await approvePost(new Request("http://localhost"), {
-      params: Promise.resolve({ id: action.id })
+      params: Promise.resolve({ id: action.id }),
     });
     const body = await response.json();
 
@@ -71,7 +71,7 @@ describe("crisis API routes", () => {
 
     const action = getSituation().actions[0];
     const response = await approvePost(new Request("http://localhost"), {
-      params: Promise.resolve({ id: action.id })
+      params: Promise.resolve({ id: action.id }),
     });
     const body = await response.json();
 
@@ -88,9 +88,9 @@ describe("crisis API routes", () => {
       jsonRequest("http://localhost", {
         status: "running",
         externalActionId: "hr-123",
-        localActionId: action.id
+        localActionId: action.id,
       }),
-      { params: Promise.resolve({ id: action.id }) }
+      { params: Promise.resolve({ id: action.id }) },
     );
     const body = await response.json();
 
@@ -102,7 +102,9 @@ describe("crisis API routes", () => {
 
 describe("validacion de entrada", () => {
   it("rechaza un JSON malformado con 400 en vez de reventar con 500", async () => {
-    const response = await eventPost(jsonRequest("http://localhost/api/events", "{ esto no es json"));
+    const response = await eventPost(
+      jsonRequest("http://localhost/api/events", "{ esto no es json"),
+    );
     const body = await response.json();
 
     expect(response.status).toBe(400);
@@ -116,8 +118,8 @@ describe("validacion de entrada", () => {
       jsonRequest("http://localhost/api/events", {
         zoneId: "zone-nope",
         category: "incendio",
-        severity: "critical"
-      })
+        severity: "critical",
+      }),
     );
     const body = await response.json();
 
@@ -129,12 +131,17 @@ describe("validacion de entrada", () => {
 
   it("rechaza valores fuera del enumerado y campos desconocidos", async () => {
     const response = await eventPost(
-      jsonRequest("http://localhost/api/events", { zoneId: "zone-south", severity: "apocaliptica" })
+      jsonRequest("http://localhost/api/events", {
+        zoneId: "zone-south",
+        severity: "apocaliptica",
+      }),
     );
     expect(response.status).toBe(400);
     expect((await response.json()).code).toBe("cuerpo_invalido");
 
-    const typo = await eventPost(jsonRequest("http://localhost/api/events", { zoneid: "zone-south" }));
+    const typo = await eventPost(
+      jsonRequest("http://localhost/api/events", { zoneid: "zone-south" }),
+    );
     expect(typo.status).toBe(400);
   });
 
@@ -143,7 +150,7 @@ describe("validacion de entrada", () => {
     expect(response.status).toBe(400);
 
     const mark = await markPost(jsonRequest("http://localhost", ""), {
-      params: Promise.resolve({ id: getSituation().events[0].id })
+      params: Promise.resolve({ id: getSituation().events[0].id }),
     });
     expect(mark.status).toBe(400);
     expect((await mark.json()).code).toBe("cuerpo_vacio");
@@ -154,19 +161,24 @@ describe("validacion de entrada", () => {
       new Request("http://localhost/api/events", {
         method: "POST",
         headers: { "content-type": "application/x-www-form-urlencoded" },
-        body: "zoneId=zone-south"
-      })
+        body: "zoneId=zone-south",
+      }),
     );
     expect(tipo.status).toBe(415);
 
     const gigante = await eventPost(
-      jsonRequest("http://localhost/api/events", { zoneId: "zone-south", description: "x".repeat(40_000) })
+      jsonRequest("http://localhost/api/events", {
+        zoneId: "zone-south",
+        description: "x".repeat(40_000),
+      }),
     );
     expect(gigante.status).toBe(413);
   });
 
   it("valida el cuerpo de la creación manual de acciones", async () => {
-    const incompleta = await actionsPost(jsonRequest("http://localhost/api/actions", { channel: "call" }));
+    const incompleta = await actionsPost(
+      jsonRequest("http://localhost/api/actions", { channel: "call" }),
+    );
     expect(incompleta.status).toBe(400);
 
     const recursoFantasma = await actionsPost(
@@ -176,8 +188,8 @@ describe("validacion de entrada", () => {
         objective: "Confirmar evacuación",
         reason: "Zona crítica",
         zoneId: "zone-south",
-        resourceId: "res-nope"
-      })
+        resourceId: "res-nope",
+      }),
     );
     expect(recursoFantasma.status).toBe(400);
     expect((await recursoFantasma.json()).detalles[0].campo).toBe("resourceId");
@@ -188,15 +200,15 @@ describe("validacion de entrada", () => {
         target: "Coordinadora de campo",
         objective: "Confirmar evacuación",
         reason: "Zona crítica",
-        zoneId: "zone-south"
-      })
+        zoneId: "zone-south",
+      }),
     );
     expect(valida.status).toBe(201);
   });
 
   it("distingue 404 de 400 y responde 405 a un método no permitido", async () => {
     const inexistente = await statusPost(jsonRequest("http://localhost", { operation: "cancel" }), {
-      params: Promise.resolve({ id: "act-no-existe" })
+      params: Promise.resolve({ id: "act-no-existe" }),
     });
     expect(inexistente.status).toBe(404);
     expect((await inexistente.json()).code).toBe("no_encontrado");
@@ -215,13 +227,13 @@ describe("operaciones de interfaz sobre acciones", () => {
     const action = getSituation().actions[0];
 
     const cancel = await statusPost(jsonRequest("http://localhost", { operation: "cancel" }), {
-      params: Promise.resolve({ id: action.id })
+      params: Promise.resolve({ id: action.id }),
     });
     expect(cancel.status).toBe(200);
     expect((await cancel.json()).action.status).toBe("cancelled");
 
     const retry = await statusPost(jsonRequest("http://localhost", { operation: "retry" }), {
-      params: Promise.resolve({ id: action.id })
+      params: Promise.resolve({ id: action.id }),
     });
     expect(retry.status).toBe(200);
     const reintentada = (await retry.json()).action;
@@ -231,10 +243,12 @@ describe("operaciones de interfaz sobre acciones", () => {
 
   it("responde 409 cuando la operación no encaja con el estado actual", async () => {
     const action = getSituation().actions[0];
-    await approvePost(new Request("http://localhost"), { params: Promise.resolve({ id: action.id }) });
+    await approvePost(new Request("http://localhost"), {
+      params: Promise.resolve({ id: action.id }),
+    });
 
     const cancel = await statusPost(jsonRequest("http://localhost", { operation: "cancel" }), {
-      params: Promise.resolve({ id: action.id })
+      params: Promise.resolve({ id: action.id }),
     });
     expect(cancel.status).toBe(409);
     expect((await cancel.json()).code).toBe("conflicto");
@@ -243,7 +257,9 @@ describe("operaciones de interfaz sobre acciones", () => {
 
 describe("proteccion de las rutas de demo", () => {
   it("funciona sin fricción en desarrollo cuando no hay token configurado", async () => {
-    const inject = await injectPost(jsonRequest("http://localhost/api/demo/inject", { kind: "incident" }));
+    const inject = await injectPost(
+      jsonRequest("http://localhost/api/demo/inject", { kind: "incident" }),
+    );
     expect(inject.status).toBe(200);
 
     const reset = await resetPost(jsonRequest("http://localhost/api/demo/reset", {}));
@@ -253,7 +269,9 @@ describe("proteccion de las rutas de demo", () => {
   it("exige el token cuando DEMO_API_TOKEN está configurado", async () => {
     process.env.DEMO_API_TOKEN = "token-de-demo";
 
-    const sinToken = await injectPost(jsonRequest("http://localhost/api/demo/inject", { kind: "incident" }));
+    const sinToken = await injectPost(
+      jsonRequest("http://localhost/api/demo/inject", { kind: "incident" }),
+    );
     expect(sinToken.status).toBe(401);
     expect((await sinToken.json()).code).toBe("no_autorizado");
 
@@ -264,8 +282,8 @@ describe("proteccion de las rutas de demo", () => {
       jsonRequest(
         "http://localhost/api/demo/inject",
         { kind: "incident" },
-        { "x-demo-token": "token-de-demo" }
-      )
+        { "x-demo-token": "token-de-demo" },
+      ),
     );
     expect(conToken.status).toBe(200);
   });
@@ -282,7 +300,9 @@ describe("proteccion de las rutas de demo", () => {
   });
 
   it("rechaza una avería de demo desconocida", async () => {
-    const response = await injectPost(jsonRequest("http://localhost/api/demo/inject", { kind: "terremoto" }));
+    const response = await injectPost(
+      jsonRequest("http://localhost/api/demo/inject", { kind: "terremoto" }),
+    );
     expect(response.status).toBe(400);
     expect((await response.json()).code).toBe("cuerpo_invalido");
   });

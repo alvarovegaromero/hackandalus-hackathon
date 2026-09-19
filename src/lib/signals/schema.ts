@@ -5,7 +5,7 @@ export const locationSchema = z
     lat: z.number().min(-90).max(90),
     lon: z.number().min(-180).max(180),
     accuracyM: z.number().min(0),
-    placeName: z.string().trim().min(1)
+    placeName: z.string().trim().min(1),
   })
   .strict();
 
@@ -26,10 +26,10 @@ export const signalSchema = z
           type: z.literal("reading"),
           metric: z.string().min(1),
           value: z.union([z.string(), z.number(), z.boolean()]),
-          unit: z.string().optional()
+          unit: z.string().optional(),
         })
-        .strict()
-    ])
+        .strict(),
+    ]),
   })
   .strict();
 
@@ -41,5 +41,5 @@ export const channelLabels: Record<Channel, string> = {
   citizen_call: "Llamada",
   sms: "SMS",
   sensor: "Sensor",
-  verification: "Verificación"
+  verification: "Verificación",
 };

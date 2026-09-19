@@ -84,7 +84,12 @@ export interface Resource {
 // ---------------------------------------------------------------------------
 
 export type ContactRole =
-  "field-coordinator" | "medical-lead" | "public-safety" | "volunteer" | "operations-lead" | "authority";
+  | "field-coordinator"
+  | "medical-lead"
+  | "public-safety"
+  | "volunteer"
+  | "operations-lead"
+  | "authority";
 
 export interface Contact {
   id: string;
@@ -343,7 +348,8 @@ export interface SourceReliability {
 // Vulnerabilidad
 // ---------------------------------------------------------------------------
 
-export type VulnerabilityKind = "residencia" | "colegio" | "camping" | "hospital" | "urbanizacion" | "nucleo";
+export type VulnerabilityKind =
+  "residencia" | "colegio" | "camping" | "hospital" | "urbanizacion" | "nucleo";
 
 export interface VulnerableSite {
   id: string;
@@ -440,7 +446,8 @@ export interface DigitalTwinState {
 
 export type AutonomyLevel = "auto" | "auto-notify" | "approval";
 export type Reversibility = "reversible" | "partial" | "irreversible";
-export type ActionKind = "verificar" | "avisar" | "asignar-recurso" | "aviso-masivo" | "evacuar" | "escalar";
+export type ActionKind =
+  "verificar" | "avisar" | "asignar-recurso" | "aviso-masivo" | "evacuar" | "escalar";
 
 export interface AutonomyRule {
   actionKind: ActionKind;

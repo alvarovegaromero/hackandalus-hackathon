@@ -13,7 +13,7 @@ export const factDefSchema = z
     location: locationSchema,
     initial: factValueSchema,
     alternatives: z.array(factValueSchema).default([]),
-    unit: z.string().optional()
+    unit: z.string().optional(),
   })
   .strict();
 

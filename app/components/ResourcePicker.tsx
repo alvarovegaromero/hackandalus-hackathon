@@ -21,10 +21,10 @@ export default function ResourcePicker({ action, resources, zones, busy, onAssig
   const candidates = rankResourcesForAction(
     { zoneId: action.zoneId, objective: action.objective, channel: action.channel },
     resources,
-    zones
+    zones,
   );
   const usable = candidates.filter(
-    (candidate) => candidate.compatible && candidate.resource.status !== "unavailable"
+    (candidate) => candidate.compatible && candidate.resource.status !== "unavailable",
   );
   const discarded = candidates.filter((candidate) => candidate.rejection !== null);
 
@@ -36,7 +36,7 @@ export default function ResourcePicker({ action, resources, zones, busy, onAssig
           {explainUnassignable(
             { zoneId: action.zoneId, objective: action.objective, channel: action.channel },
             resources,
-            zones
+            zones,
           )}
         </p>
       ) : null}

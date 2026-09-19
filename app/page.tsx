@@ -15,7 +15,7 @@ import {
   RotateCcw,
   Route,
   ShieldAlert,
-  Siren
+  Siren,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CreateActionPayload, SituationState } from "@/lib/types";
@@ -36,7 +36,7 @@ import {
   maybe,
   severityRank,
   troubledActionStatuses,
-  zoneStatusLabels
+  zoneStatusLabels,
 } from "./components/shared";
 
 const POLL_MS = 4000;
@@ -49,7 +49,7 @@ const tabLabels: Record<TabId, string> = {
   signals: "Señales",
   resources: "Recursos",
   contacts: "Contactos y escalado",
-  audit: "Auditoría"
+  audit: "Auditoría",
 };
 
 /** Traduce una respuesta de error de la API a una frase para el operador. */
@@ -68,7 +68,7 @@ async function describeFailure(response: Response, path: string) {
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...init,
-    headers: { "content-type": "application/json", ...(init?.headers ?? {}) }
+    headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
   });
   if (!response.ok) throw new Error(await describeFailure(response, path));
   return response.json() as Promise<T>;
@@ -85,7 +85,10 @@ export default function Home() {
   const [prefillZoneId, setPrefillZoneId] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [seenTimes, setSeenTimes] = useState<Map<string, number>>(() => new Map());
-  const [planSeen, setPlanSeen] = useState<{ version: number; at: number }>(() => ({ version: -1, at: 0 }));
+  const [planSeen, setPlanSeen] = useState<{ version: number; at: number }>(() => ({
+    version: -1,
+    at: 0,
+  }));
 
   // Control del refresco: la huella evita repintar cuando nada ha cambiado, y
   // los mapas de "primera vez que lo vi" permiten resaltar lo recién llegado.
@@ -129,7 +132,7 @@ export default function Home() {
         setBusy(null);
       }
     },
-    [refresh]
+    [refresh],
   );
 
   // Sondeo del estado. GET /api/situation ya hace avanzar el guion y barrer las
@@ -140,7 +143,8 @@ export default function Home() {
       try {
         await refresh();
       } catch (caught) {
-        if (!cancelled) setError(caught instanceof Error ? caught.message : "No se pudo leer la situación");
+        if (!cancelled)
+          setError(caught instanceof Error ? caught.message : "No se pudo leer la situación");
       }
     };
     poll();
@@ -186,17 +190,18 @@ export default function Home() {
         const response = await fetch(`/api/scenario/${operation}`, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify(body)
+          body: JSON.stringify(body),
         });
         if (response.status === 404 || response.status === 405) {
           setNotice(
-            `El endpoint POST /api/scenario/${operation} todavía no existe en este servidor. El control queda listo en la interfaz y funcionará en cuanto la ruta esté publicada.`
+            `El endpoint POST /api/scenario/${operation} todavía no existe en este servidor. El control queda listo en la interfaz y funcionará en cuanto la ruta esté publicada.`,
           );
           return;
         }
-        if (!response.ok) throw new Error(await describeFailure(response, `/api/scenario/${operation}`));
+        if (!response.ok)
+          throw new Error(await describeFailure(response, `/api/scenario/${operation}`));
       }),
-    [run]
+    [run],
   );
 
   // Interruptor general de autonomía: es el mando más importante para poder
@@ -208,17 +213,17 @@ export default function Home() {
         const response = await fetch("/api/autonomy", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ paused })
+          body: JSON.stringify({ paused }),
         });
         if (response.status === 404 || response.status === 405) {
           setNotice(
-            "Para parar o reanudar la autonomía hace falta POST /api/autonomy con { paused }. La ruta todavía no responde, así que el sistema sigue como estaba."
+            "Para parar o reanudar la autonomía hace falta POST /api/autonomy con { paused }. La ruta todavía no responde, así que el sistema sigue como estaba.",
           );
           return;
         }
         if (!response.ok) throw new Error(await describeFailure(response, "/api/autonomy"));
       }),
-    [run]
+    [run],
   );
 
   const reassignResource = useCallback(
@@ -227,7 +232,7 @@ export default function Home() {
         setNotice(null);
         const primary = await fetch(`/api/actions/${actionId}/assign`, {
           method: "POST",
-          body: JSON.stringify({ resourceId })
+          body: JSON.stringify({ resourceId }),
         });
         if (primary.ok) return;
         if (primary.status !== 404 && primary.status !== 405) {
@@ -236,14 +241,14 @@ export default function Home() {
         // Segunda convención posible: la ruta de estado con una operación.
         const fallback = await fetch(`/api/actions/${actionId}/status`, {
           method: "POST",
-          body: JSON.stringify({ operation: "assign", resourceId })
+          body: JSON.stringify({ operation: "assign", resourceId }),
         });
         if (fallback.ok) return;
         setNotice(
-          "La reasignación de recursos necesita POST /api/actions/:id/assign con { resourceId }. La ruta aún no responde, así que el recurso no se ha cambiado."
+          "La reasignación de recursos necesita POST /api/actions/:id/assign con { resourceId }. La ruta aún no responde, así que el recurso no se ha cambiado.",
         );
       }),
-    [run]
+    [run],
   );
 
   const createAction = useCallback(
@@ -252,17 +257,17 @@ export default function Home() {
         await requestJson("/api/actions", { method: "POST", body: JSON.stringify(payload) });
         setFormOpen(false);
       }),
-    [run]
+    [run],
   );
 
   const injectDemo = useCallback(
     (kind: string) =>
       run(`inject-${kind}`, () =>
         requestJson("/api/demo/inject", { method: "POST", body: JSON.stringify({ kind }) }).then(
-          () => undefined
-        )
+          () => undefined,
+        ),
       ),
-    [run]
+    [run],
   );
 
   if (!situation) {
@@ -276,10 +281,12 @@ export default function Home() {
 
   const autonomyPaused = maybe(situation, "autonomyPaused") === true;
   const openActions = situation.actions.filter(isOpenAction);
-  const troubled = situation.actions.filter((action) => troubledActionStatuses.includes(action.status));
+  const troubled = situation.actions.filter((action) =>
+    troubledActionStatuses.includes(action.status),
+  );
   const unverified = situation.events.filter((event) => event.confirmed === null);
   const criticalSignals = situation.events.filter(
-    (event) => event.confirmed !== false && severityRank[event.severity] >= severityRank.high
+    (event) => event.confirmed !== false && severityRank[event.severity] >= severityRank.high,
   );
 
   const tabBadges: Record<TabId, number> = {
@@ -287,7 +294,7 @@ export default function Home() {
     signals: unverified.length,
     resources: situation.resources.filter((resource) => resource.status === "unavailable").length,
     contacts: situation.chains.filter((chain) => chain.status === "active").length,
-    audit: situation.audit.length
+    audit: situation.audit.length,
   };
 
   return (
@@ -297,8 +304,12 @@ export default function Home() {
           <p className="eyebrow">Centro de mando de crisis · HappyRobot · Andalucía</p>
           <h1>
             Plan vivo de respuesta v{situation.plan.version}
-            <span className={situation.integration.mode === "happyrobot" ? "mode live" : "mode mock"}>
-              {situation.integration.mode === "happyrobot" ? "Ejecución real" : "Ejecución simulada"}
+            <span
+              className={situation.integration.mode === "happyrobot" ? "mode live" : "mode mock"}
+            >
+              {situation.integration.mode === "happyrobot"
+                ? "Ejecución real"
+                : "Ejecución simulada"}
             </span>
           </h1>
           <p className="topbar-sub">
@@ -339,7 +350,9 @@ export default function Home() {
           <button
             aria-label="Reiniciar la demo al estado inicial"
             className="icon-button danger-light"
-            onClick={() => run("reset", () => requestJson("/api/demo/reset", { method: "POST", body: "{}" }))}
+            onClick={() =>
+              run("reset", () => requestJson("/api/demo/reset", { method: "POST", body: "{}" }))
+            }
             disabled={busy !== null}
           >
             <RotateCcw size={18} aria-hidden="true" />
@@ -352,27 +365,32 @@ export default function Home() {
         {notice ? <div className="banner warning">{notice}</div> : null}
         {autonomyPaused ? (
           <div className="banner warning">
-            Autonomía parada por una persona: el sistema sigue analizando y proponiendo, pero no ejecuta nada
-            por su cuenta hasta que se reanude.
+            Autonomía parada por una persona: el sistema sigue analizando y proponiendo, pero no
+            ejecuta nada por su cuenta hasta que se reanude.
           </div>
         ) : null}
         {situation.plan.valid === false ? (
           <div className="banner error">
             El plan v{situation.plan.version} ya no es válido
-            {situation.plan.invalidatedReason ? `: ${situation.plan.invalidatedReason}` : "."} Hay que
-            rehacerlo.
+            {situation.plan.invalidatedReason ? `: ${situation.plan.invalidatedReason}` : "."} Hay
+            que rehacerlo.
           </div>
         ) : null}
         {situation.integration.lastExternalError ? (
-          <div className="banner warning">Integración: {situation.integration.lastExternalError}</div>
+          <div className="banner warning">
+            Integración: {situation.integration.lastExternalError}
+          </div>
         ) : null}
-        <div className={situation.integration.mode === "happyrobot" ? "banner live" : "banner mock"}>
+        <div
+          className={situation.integration.mode === "happyrobot" ? "banner live" : "banner mock"}
+        >
           {situation.integration.mode === "happyrobot"
             ? "Modo de ejecución real: las acciones aprobadas salen a HappyRobot."
             : "Modo simulación: ninguna acción sale al exterior, todo lo que ves aquí es simulado."}{" "}
           Acciones reales ejecutadas: {situation.integration.liveActionsExecuted} · simuladas:{" "}
           {situation.integration.mockActionsExecuted}.
-          {situation.integration.mode === "happyrobot" && !situation.integration.happyRobotConfigured
+          {situation.integration.mode === "happyrobot" &&
+          !situation.integration.happyRobotConfigured
             ? " Faltan credenciales de HappyRobot, así que las acciones fallarán."
             : ""}
         </div>
@@ -463,7 +481,9 @@ export default function Home() {
                     <div>
                       <h3>
                         {zone.name}{" "}
-                        <span className={`pill zone-${zone.status}`}>{zoneStatusLabels[zone.status]}</span>
+                        <span className={`pill zone-${zone.status}`}>
+                          {zoneStatusLabels[zone.status]}
+                        </span>
                       </h3>
                       <p>{priority.reason}</p>
                     </div>
@@ -525,25 +545,26 @@ export default function Home() {
                 onToggleForm={setFormOpen}
                 onApprove={(actionId) =>
                   run(actionId, () =>
-                    requestJson(`/api/actions/${actionId}/approve`, { method: "POST", body: "{}" }).then(
-                      () => undefined
-                    )
+                    requestJson(`/api/actions/${actionId}/approve`, {
+                      method: "POST",
+                      body: "{}",
+                    }).then(() => undefined),
                   )
                 }
                 onRetry={(actionId) =>
                   run(`${actionId}-retry`, () =>
                     requestJson(`/api/actions/${actionId}/status`, {
                       method: "POST",
-                      body: JSON.stringify({ operation: "retry" })
-                    }).then(() => undefined)
+                      body: JSON.stringify({ operation: "retry" }),
+                    }).then(() => undefined),
                   )
                 }
                 onCancel={(actionId) =>
                   run(`${actionId}-cancel`, () =>
                     requestJson(`/api/actions/${actionId}/status`, {
                       method: "POST",
-                      body: JSON.stringify({ operation: "cancel" })
-                    }).then(() => undefined)
+                      body: JSON.stringify({ operation: "cancel" }),
+                    }).then(() => undefined),
                   )
                 }
                 onReassign={reassignResource}
@@ -562,8 +583,8 @@ export default function Home() {
                   run(`${eventId}-mark`, () =>
                     requestJson(`/api/events/${eventId}/mark`, {
                       method: "POST",
-                      body: JSON.stringify({ confirmed })
-                    }).then(() => undefined)
+                      body: JSON.stringify({ confirmed }),
+                    }).then(() => undefined),
                   )
                 }
               />

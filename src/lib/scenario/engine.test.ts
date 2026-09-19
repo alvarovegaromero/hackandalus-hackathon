@@ -66,7 +66,7 @@ describe("scenario engine", () => {
 
   it("can mislabel stale testimony after a chaos event", () => {
     const wrong = run(1).emitted.filter(
-      (l) => l.label.eventId === "chaos-wind-sw" && l.label.truth === "wrong"
+      (l) => l.label.eventId === "chaos-wind-sw" && l.label.truth === "wrong",
     );
     for (const l of wrong) expect(l.label.factId).toBe("wind");
   });
@@ -101,8 +101,8 @@ describe("manual injection", () => {
       label: "Corte de la MA-8301",
       effects: [
         { type: "set_fact" as const, factId: "road-ma8301", value: "cortada" },
-        { type: "witness" as const, factId: "road-ma8301", count: 2, sourceIds: ["road-api"] }
-      ]
+        { type: "witness" as const, factId: "road-ma8301", count: 2, sourceIds: ["road-api"] },
+      ],
     };
     const step = fire(pack, createState(pack, 1), improvised, 10);
     expect(step.fired).toEqual(["live-1"]);
@@ -128,7 +128,7 @@ describe("probe", () => {
   it("errs at roughly the source's unreliability", () => {
     const { state } = run(1);
     const answers = Array.from({ length: 400 }, (_, i) =>
-      probe(pack, state, "road-a397", "mayor", 45 + i * 0.01)
+      probe(pack, state, "road-a397", "mayor", 45 + i * 0.01),
     ).filter((a) => a !== null);
     const wrongRate = answers.filter((a) => a.label.truth === "wrong").length / answers.length;
     expect(wrongRate).toBeGreaterThan(0.04);
@@ -158,7 +158,7 @@ describe("support", () => {
   it("rejects packs with dangling references", () => {
     const bad = {
       ...pack,
-      events: [{ ...pack.events[0], effects: [{ type: "set_fact", factId: "ghost", value: 1 }] }]
+      events: [{ ...pack.events[0], effects: [{ type: "set_fact", factId: "ghost", value: 1 }] }],
     };
     expect(scenarioPackSchema.safeParse(bad).success).toBe(false);
   });

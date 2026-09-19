@@ -7,7 +7,7 @@ import type {
   Resource,
   ScenarioBeat,
   SourceReliability,
-  WorldState
+  WorldState,
 } from "./types";
 
 const now = new Date().toISOString();
@@ -21,7 +21,7 @@ export const seedZones: CrisisZone[] = [
     riskScore: 42,
     needs: ["evaluacion de monte"],
     coordinates: { x: 39, y: 32 },
-    lastUpdatedAt: now
+    lastUpdatedAt: now,
   },
   {
     id: "zone-central",
@@ -31,7 +31,7 @@ export const seedZones: CrisisZone[] = [
     riskScore: 68,
     needs: ["alerta publica", "triaje sanitario"],
     coordinates: { x: 32, y: 52 },
-    lastUpdatedAt: now
+    lastUpdatedAt: now,
   },
   {
     id: "zone-east",
@@ -41,7 +41,7 @@ export const seedZones: CrisisZone[] = [
     riskScore: 24,
     needs: ["vigilancia de rutas"],
     coordinates: { x: 72, y: 55 },
-    lastUpdatedAt: now
+    lastUpdatedAt: now,
   },
   {
     id: "zone-south",
@@ -51,7 +51,7 @@ export const seedZones: CrisisZone[] = [
     riskScore: 35,
     needs: ["capacidad de refugios"],
     coordinates: { x: 54, y: 76 },
-    lastUpdatedAt: now
+    lastUpdatedAt: now,
   },
   {
     id: "zone-islands",
@@ -61,8 +61,8 @@ export const seedZones: CrisisZone[] = [
     riskScore: 18,
     needs: ["enlace logistico"],
     coordinates: { x: 22, y: 71 },
-    lastUpdatedAt: now
-  }
+    lastUpdatedAt: now,
+  },
 ];
 
 export const seedResources: Resource[] = [
@@ -76,7 +76,7 @@ export const seedResources: Resource[] = [
     homeZoneId: "zone-central",
     capabilities: ["triaje", "sanitario", "evacuacion"],
     assignedActionId: null,
-    assignedAt: null
+    assignedAt: null,
   },
   {
     id: "res-field-1",
@@ -88,7 +88,7 @@ export const seedResources: Resource[] = [
     homeZoneId: "zone-north",
     capabilities: ["extincion", "evaluacion de monte", "campo"],
     assignedActionId: null,
-    assignedAt: null
+    assignedAt: null,
   },
   {
     id: "res-transport-1",
@@ -100,7 +100,7 @@ export const seedResources: Resource[] = [
     homeZoneId: "zone-south",
     capabilities: ["evacuacion", "transporte", "refugio"],
     assignedActionId: null,
-    assignedAt: null
+    assignedAt: null,
   },
   {
     id: "res-comms-1",
@@ -112,7 +112,7 @@ export const seedResources: Resource[] = [
     homeZoneId: null,
     capabilities: ["coordinacion", "alerta publica", "comunicaciones"],
     assignedActionId: null,
-    assignedAt: null
+    assignedAt: null,
   },
   {
     id: "res-med-2",
@@ -124,8 +124,8 @@ export const seedResources: Resource[] = [
     homeZoneId: "zone-east",
     capabilities: ["triaje", "sanitario"],
     assignedActionId: null,
-    assignedAt: null
-  }
+    assignedAt: null,
+  },
 ];
 
 /**
@@ -144,7 +144,7 @@ export const seedContacts: Contact[] = [
     email: null,
     demoSafe: false,
     lastContactedAt: null,
-    responsiveness: 0.8
+    responsiveness: 0.8,
   },
   {
     id: "con-med-central",
@@ -156,7 +156,7 @@ export const seedContacts: Contact[] = [
     email: null,
     demoSafe: false,
     lastContactedAt: null,
-    responsiveness: 0.75
+    responsiveness: 0.75,
   },
   {
     id: "con-ops-lead",
@@ -168,7 +168,7 @@ export const seedContacts: Contact[] = [
     email: null,
     demoSafe: false,
     lastContactedAt: null,
-    responsiveness: 0.9
+    responsiveness: 0.9,
   },
   {
     id: "con-safety-east",
@@ -180,7 +180,7 @@ export const seedContacts: Contact[] = [
     email: null,
     demoSafe: false,
     lastContactedAt: null,
-    responsiveness: 0.6
+    responsiveness: 0.6,
   },
   {
     id: "con-volunteer-south",
@@ -192,7 +192,7 @@ export const seedContacts: Contact[] = [
     email: null,
     demoSafe: false,
     lastContactedAt: null,
-    responsiveness: 0.45
+    responsiveness: 0.45,
   },
   {
     id: "con-authority",
@@ -204,8 +204,8 @@ export const seedContacts: Contact[] = [
     email: null,
     demoSafe: false,
     lastContactedAt: null,
-    responsiveness: 0.5
-  }
+    responsiveness: 0.5,
+  },
 ];
 
 export const seedEvents: CrisisEvent[] = [
@@ -224,8 +224,8 @@ export const seedEvents: CrisisEvent[] = [
     occurrences: 1,
     appliedRiskDelta: 0,
     appliedNeed: null,
-    previousZoneStatus: null
-  }
+    previousZoneStatus: null,
+  },
 ];
 
 export const seedActions: Action[] = [
@@ -247,8 +247,8 @@ export const seedActions: Action[] = [
     approvedAt: null,
     completedAt: null,
     createdAt: now,
-    updatedAt: now
-  }
+    updatedAt: now,
+  },
 ];
 
 /**
@@ -269,8 +269,8 @@ export const seedScenarioBeats: ScenarioBeat[] = [
       category: "incendio",
       severity: "high",
       confidence: "high",
-      confirmed: true
-    }
+      confirmed: true,
+    },
   },
   {
     id: "beat-2",
@@ -284,20 +284,20 @@ export const seedScenarioBeats: ScenarioBeat[] = [
       category: "evacuacion",
       severity: "critical",
       confidence: "high",
-      confirmed: true
-    }
+      confirmed: true,
+    },
   },
   {
     id: "beat-3",
     atSeconds: 90,
     label: "Carretera de acceso cortada",
-    demoKind: "route-blocked"
+    demoKind: "route-blocked",
   },
   {
     id: "beat-4",
     atSeconds: 125,
     label: "Un recurso asignado queda fuera de servicio",
-    demoKind: "resource-down"
+    demoKind: "resource-down",
   },
   {
     id: "beat-5",
@@ -311,15 +311,15 @@ export const seedScenarioBeats: ScenarioBeat[] = [
       category: "refugio",
       severity: "high",
       confidence: "medium",
-      confirmed: null
-    }
+      confirmed: null,
+    },
   },
   {
     id: "beat-6",
     atSeconds: 200,
     label: "Caída de la integración de mensajería",
-    demoKind: "integration-failure"
-  }
+    demoKind: "integration-failure",
+  },
 ];
 
 /**
@@ -334,9 +334,9 @@ export const seedWorld: WorldState = {
   voiceOperational: true,
   hospitalBeds: {
     "hospital-costa-del-sol": 14,
-    "hospital-serrania": 8
+    "hospital-serrania": 8,
   },
-  updatedAt: now
+  updatedAt: now,
 };
 
 /**
@@ -350,19 +350,19 @@ export const seedAutonomyRules: AutonomyRule[] = [
     actionKind: "verificar",
     reversibility: "reversible",
     level: "auto",
-    rationale: "Llamar para comprobar un dato no compromete nada y reduce la incertidumbre."
+    rationale: "Llamar para comprobar un dato no compromete nada y reduce la incertidumbre.",
   },
   {
     actionKind: "avisar",
     reversibility: "reversible",
     level: "auto-notify",
-    rationale: "Informar a un responsable es reversible; queda anotado para que se pueda revisar."
+    rationale: "Informar a un responsable es reversible; queda anotado para que se pueda revisar.",
   },
   {
     actionKind: "asignar-recurso",
     reversibility: "reversible",
     level: "auto-notify",
-    rationale: "Mover un medio se puede deshacer, y esperar aprobación cuesta minutos que no hay."
+    rationale: "Mover un medio se puede deshacer, y esperar aprobación cuesta minutos que no hay.",
   },
   {
     actionKind: "aviso-masivo",
@@ -370,20 +370,21 @@ export const seedAutonomyRules: AutonomyRule[] = [
     level: "approval",
     confidenceThreshold: 0.9,
     rationale:
-      "Un aviso a la población no se puede retirar. Se automatiza solo con confianza muy alta; por debajo, lo aprueba una persona."
+      "Un aviso a la población no se puede retirar. Se automatiza solo con confianza muy alta; por debajo, lo aprueba una persona.",
   },
   {
     actionKind: "evacuar",
     reversibility: "irreversible",
     level: "approval",
-    rationale: "Ordenar una evacuación mueve a personas vulnerables. Siempre lo decide una persona."
+    rationale:
+      "Ordenar una evacuación mueve a personas vulnerables. Siempre lo decide una persona.",
   },
   {
     actionKind: "escalar",
     reversibility: "irreversible",
     level: "approval",
-    rationale: "Pedir refuerzos externos compromete recursos ajenos y no se deshace."
-  }
+    rationale: "Pedir refuerzos externos compromete recursos ajenos y no se deshace.",
+  },
 ];
 
 /**
@@ -396,5 +397,5 @@ export const seedSourceReliability: SourceReliability[] = [
   { source: "happyrobot", reliability: 0.85, observations: 0, confirmed: 0 },
   { source: "public", reliability: 0.55, observations: 0, confirmed: 0 },
   { source: "demo", reliability: 0.8, observations: 0, confirmed: 0 },
-  { source: "scenario", reliability: 0.9, observations: 0, confirmed: 0 }
+  { source: "scenario", reliability: 0.9, observations: 0, confirmed: 0 },
 ];

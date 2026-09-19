@@ -6,6 +6,6 @@ export async function executeAction(action: Plan["actions"][number]) {
   return {
     status: "blocked" as const,
     action,
-    reason: "HappyRobot pendiente de configurar: operación y destinatarios de demo sin definir."
+    reason: "HappyRobot pendiente de configurar: operación y destinatarios de demo sin definir.",
   };
 }

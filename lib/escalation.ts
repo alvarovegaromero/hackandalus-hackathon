@@ -12,7 +12,7 @@ import {
   rolesForCategory,
   selectChannelWithReason,
   selectContact,
-  selectContactByRole
+  selectContactByRole,
 } from "./contacts";
 import type { Contact, EscalationChain, EscalationStep, LearnedWeights } from "./types";
 
@@ -65,7 +65,7 @@ export function buildEscalationChain(input: BuildChainInput): EscalationChain {
       objective: input.objective,
       zoneName: input.zoneId,
       reason: motivo,
-      urgent: urgenteEnEsteEscalon
+      urgent: urgenteEnEsteEscalon,
     });
     const salvaguarda = canReceiveLiveAction(contact)
       ? "aprobado para ejecución real"
@@ -78,7 +78,7 @@ export function buildEscalationChain(input: BuildChainInput): EscalationChain {
       channel: canal.channel,
       waitSeconds: waitFor(contact, urgenteEnEsteEscalon, order),
       reason: `Escalón ${order}: ${motivo} Canal ${canal.channel} porque ${canal.reason}. Se le pide: ${briefing.askFor} (${salvaguarda}).`,
-      actionId: null
+      actionId: null,
     });
   };
 
@@ -87,7 +87,7 @@ export function buildEscalationChain(input: BuildChainInput): EscalationChain {
   if (primero) {
     push(
       primero,
-      `es el contacto más adecuado para ${input.category} en la zona y puede actuar sobre el terreno.`
+      `es el contacto más adecuado para ${input.category} en la zona y puede actuar sobre el terreno.`,
     );
   }
 
@@ -95,17 +95,29 @@ export function buildEscalationChain(input: BuildChainInput): EscalationChain {
   // no insistir dos veces a la misma persona por el mismo motivo.
   for (const role of rolesForCategory(input.category)) {
     if (steps.length >= MAX_STEPS - 1) break;
-    const candidato = selectContactByRole(input.contacts, input.zoneId, role, input.learning, usados);
+    const candidato = selectContactByRole(
+      input.contacts,
+      input.zoneId,
+      role,
+      input.learning,
+      usados,
+    );
     if (!candidato) continue;
     push(
       candidato,
-      `el escalón anterior no respondió a tiempo y el rol ${role} puede resolverlo por otra vía.`
+      `el escalón anterior no respondió a tiempo y el rol ${role} puede resolverlo por otra vía.`,
     );
   }
 
   // Penúltimo recurso: la sala de coordinación, que puede reasignar medios.
   if (steps.length < MAX_STEPS) {
-    const operaciones = selectContactByRole(input.contacts, null, "operations-lead", input.learning, usados);
+    const operaciones = selectContactByRole(
+      input.contacts,
+      null,
+      "operations-lead",
+      input.learning,
+      usados,
+    );
     if (operaciones) {
       push(operaciones, "nadie sobre el terreno ha confirmado y hace falta reasignar medios.");
     }
@@ -117,7 +129,7 @@ export function buildEscalationChain(input: BuildChainInput): EscalationChain {
     if (steps.length >= MAX_STEPS) steps.pop();
     push(
       autoridad,
-      "la cadena operativa se ha agotado sin respuesta y el caso requiere respaldo institucional."
+      "la cadena operativa se ha agotado sin respuesta y el caso requiere respaldo institucional.",
     );
   }
 
@@ -129,7 +141,7 @@ export function buildEscalationChain(input: BuildChainInput): EscalationChain {
     currentStep: 0,
     status: "active",
     createdAt: input.at,
-    updatedAt: input.at
+    updatedAt: input.at,
   };
 }
 

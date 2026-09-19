@@ -9,7 +9,7 @@ import {
   type FactValue,
   type Keyframe,
   type LabeledSignal,
-  type TruthLabel
+  type TruthLabel,
 } from "./world";
 
 // Plain data, so it can be stored and replayed. The engine is a pure function of (pack, state, time).
@@ -29,11 +29,12 @@ export function createState(pack: ScenarioPack, seed: number): EngineState {
     nowMin: 0,
     facts: Object.fromEntries(pack.facts.map((f) => [f.id, [{ atMin: 0, value: f.initial }]])),
     fired: [],
-    pending: []
+    pending: [],
   };
 }
 
-export const factValue = (state: EngineState, factId: string, t: number) => valueAt(state.facts[factId], t);
+export const factValue = (state: EngineState, factId: string, t: number) =>
+  valueAt(state.facts[factId], t);
 
 type Claim = Pick<FactDef, "kind" | "entityLabel" | "location" | "unit">;
 
@@ -44,7 +45,7 @@ function report(
   claim: Claim,
   value: FactValue,
   id: string,
-  atMin: number
+  atMin: number,
 ): Signal | null {
   if (r() < source.lossRate) return null;
   const receivedAtMin = +(atMin + between(r, source.delayMin)).toFixed(2);
@@ -57,8 +58,8 @@ function report(
           text: render(pick(r, pack.templates[claim.kind]), {
             entity: claim.entityLabel,
             value: String(value),
-            place: location.placeName
-          })
+            place: location.placeName,
+          }),
         };
   return { id, channel: source.channel, sourceId: source.id, receivedAtMin, location, body };
 }
@@ -74,7 +75,12 @@ function truthAt(frames: Keyframe[], t: number) {
   return { truth: upTo.at(-1)!.value, previous: upTo.at(-2)?.value };
 }
 
-function runEvent(pack: ScenarioPack, state: EngineState, event: ScenarioEvent, atMin: number): EngineState {
+function runEvent(
+  pack: ScenarioPack,
+  state: EngineState,
+  event: ScenarioEvent,
+  atMin: number,
+): EngineState {
   const r = rng(hashSeed(state.seed, event.id));
   const facts = { ...state.facts };
   const made: LabeledSignal[] = [];
@@ -92,12 +98,18 @@ function runEvent(pack: ScenarioPack, state: EngineState, event: ScenarioEvent, 
       let sawTruth = false;
       for (let i = 0; i < effect.count; i++) {
         const source = sourceOf(pack, pick(r, effect.sourceIds));
-        const { value, wrong } = chooseValue(r, source.reliability, truth, previous, fact.alternatives);
+        const { value, wrong } = chooseValue(
+          r,
+          source.reliability,
+          truth,
+          previous,
+          fact.alternatives,
+        );
         const truthLabel = wrong ? "wrong" : sawTruth ? "duplicate" : "genuine";
         emit(report(pack, r, source, fact, value, `${event.id}-${n++}`, atMin), {
           truth: truthLabel,
           eventId: event.id,
-          factId: fact.id
+          factId: fact.id,
         });
         if (!wrong) sawTruth = true;
       }
@@ -106,7 +118,7 @@ function runEvent(pack: ScenarioPack, state: EngineState, event: ScenarioEvent, 
         const source = sourceOf(pack, pick(r, effect.sourceIds));
         emit(report(pack, r, source, effect, effect.value, `${event.id}-${n++}`, atMin), {
           truth: "hoax",
-          eventId: event.id
+          eventId: event.id,
         });
       }
     }
@@ -115,7 +127,7 @@ function runEvent(pack: ScenarioPack, state: EngineState, event: ScenarioEvent, 
     ...state,
     facts,
     fired: [...state.fired, event.id],
-    pending: [...state.pending, ...made]
+    pending: [...state.pending, ...made],
   };
 }
 
@@ -126,9 +138,9 @@ function flush(state: EngineState): { state: EngineState; emitted: LabeledSignal
   return {
     state: {
       ...state,
-      pending: state.pending.filter((l) => l.signal.receivedAtMin > state.nowMin)
+      pending: state.pending.filter((l) => l.signal.receivedAtMin > state.nowMin),
     },
-    emitted: due
+    emitted: due,
   };
 }
 
@@ -150,7 +162,7 @@ export function fire(
   pack: ScenarioPack,
   state: EngineState,
   eventOrId: string | ScenarioEvent,
-  atMin = state.nowMin
+  atMin = state.nowMin,
 ): Step {
   const event =
     typeof eventOrId === "string"
@@ -168,7 +180,7 @@ export function probe(
   state: EngineState,
   factId: string,
   sourceId: string,
-  atMin: number
+  atMin: number,
 ): LabeledSignal | null {
   const fact = pack.facts.find((f) => f.id === factId);
   if (!fact) throw new Error(`unknown fact ${factId}`);
@@ -177,6 +189,16 @@ export function probe(
   const r = rng(hashSeed(state.seed, "probe", factId, sourceId, atMin));
   const { truth, previous } = truthAt(state.facts[factId], atMin);
   const { value, wrong } = chooseValue(r, source.reliability, truth, previous, fact.alternatives);
-  const signal = report(pack, r, source, fact, value, `probe-${factId}-${sourceId}-${atMin}`, atMin);
-  return signal && { signal, label: { truth: wrong ? "wrong" : "genuine", eventId: "probe", factId } };
+  const signal = report(
+    pack,
+    r,
+    source,
+    fact,
+    value,
+    `probe-${factId}-${sourceId}-${atMin}`,
+    atMin,
+  );
+  return (
+    signal && { signal, label: { truth: wrong ? "wrong" : "genuine", eventId: "probe", factId } }
+  );
 }

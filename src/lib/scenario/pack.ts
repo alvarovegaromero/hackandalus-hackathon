@@ -12,7 +12,7 @@ export const sourceSchema = z
     reliability: z.number().min(0).max(1),
     delayMin: range,
     lossRate: z.number().min(0).max(1),
-    accuracyM: z.number().min(0)
+    accuracyM: z.number().min(0),
   })
   .strict();
 
@@ -26,7 +26,7 @@ export const scenarioPackSchema = z
     sources: z.array(sourceSchema).min(1),
     // Spanish message templates per fact kind; placeholders: {entity} {value} {place}.
     templates: z.record(z.string(), z.array(z.string().min(1)).min(1)),
-    events: z.array(scenarioEventSchema).min(1)
+    events: z.array(scenarioEventSchema).min(1),
   })
   .strict()
   .superRefine((pack, ctx) => {
@@ -36,15 +36,15 @@ export const scenarioPackSchema = z
     };
     unique(
       pack.facts.map((f) => f.id),
-      "fact"
+      "fact",
     );
     unique(
       pack.sources.map((s) => s.id),
-      "source"
+      "source",
     );
     unique(
       pack.events.map((e) => e.id),
-      "event"
+      "event",
     );
 
     const facts = new Set(pack.facts.map((f) => f.id));
@@ -56,7 +56,8 @@ export const scenarioPackSchema = z
           fail(`${event.id}: unknown fact ${effect.factId}`);
         if (effect.type === "hoax") kinds.add(effect.kind);
         if (effect.type !== "set_fact") {
-          for (const id of effect.sourceIds) if (!sources.has(id)) fail(`${event.id}: unknown source ${id}`);
+          for (const id of effect.sourceIds)
+            if (!sources.has(id)) fail(`${event.id}: unknown source ${id}`);
         }
       }
     }

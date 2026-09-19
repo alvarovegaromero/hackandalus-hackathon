@@ -39,7 +39,7 @@ import type {
   PlanPriority,
   PriorityFactor,
   Resource,
-  Severity
+  Severity,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -108,7 +108,7 @@ export const defaultPriorityWeights: PriorityWeights = {
   reliefPerAction: 20,
   reliefHalfLifeMinutes: 20,
   reliefDamping: 0.5,
-  reliefShareCap: 0.5
+  reliefShareCap: 0.5,
 };
 
 export interface PriorityOptions {
@@ -183,7 +183,8 @@ export function decayFactor(event: CrisisEvent, options?: PriorityOptions) {
   const weights = resolveWeights(options);
   const now = resolveNow(options);
   const halfLife = weights.halfLifeMinutes[event.severity] ?? weights.halfLifeMinutes.medium;
-  const floor = event.confirmed === true ? weights.decayFloorConfirmed : weights.decayFloorUnverified;
+  const floor =
+    event.confirmed === true ? weights.decayFloorConfirmed : weights.decayFloorUnverified;
   const raw = Math.pow(0.5, ageInMinutes(event.createdAt, now) / Math.max(0.01, halfLife));
   return Math.min(1, Math.max(floor, raw));
 }
@@ -219,13 +220,13 @@ const severityLabel: Record<Severity, string> = {
   low: "baja",
   medium: "media",
   high: "alta",
-  critical: "crítica"
+  critical: "crítica",
 };
 
 const confidenceLabel: Record<Confidence, string> = {
   low: "baja",
   medium: "media",
-  high: "alta"
+  high: "alta",
 };
 
 /**
@@ -237,7 +238,7 @@ export function explainZone(
   events: CrisisEvent[],
   resources: Resource[],
   actions: Action[] = [],
-  options?: PriorityOptions
+  options?: PriorityOptions,
 ): ZoneExplanation {
   const weights = resolveWeights(options);
   const now = resolveNow(options);
@@ -253,47 +254,52 @@ export function explainZone(
   const signalPressure = dampedSum(
     live.map((event) => signalWeight(event, options)),
     weights.stackingDamping,
-    weights.signalCap
+    weights.signalCap,
   );
 
   // 3. Población expuesta.
   const population = Math.min(
     weights.populationCap,
-    zone.populationAtRisk / Math.max(1, weights.populationDivisor)
+    zone.populationAtRisk / Math.max(1, weights.populationDivisor),
   );
 
   // 4. Necesidades abiertas. Las que nacieron de una señal viva ya están
   //    contadas como señal: aportan una miseria y con techo propio, para que
   //    abrir categorías nuevas no infle la zona a perpetuidad.
   const signalNeeds = new Set(
-    live.map((event) => event.appliedNeed).filter((need): need is string => Boolean(need))
+    live.map((event) => event.appliedNeed).filter((need): need is string => Boolean(need)),
   );
   const structuralNeedCount = zone.needs.filter((need) => !signalNeeds.has(need)).length;
   const signalNeedCount = zone.needs.length - structuralNeedCount;
   const needScore = Math.min(
     weights.needCap,
     structuralNeedCount * weights.baseNeedWeight +
-      Math.min(weights.signalNeedCap, signalNeedCount * weights.signalNeedWeight)
+      Math.min(weights.signalNeedCap, signalNeedCount * weights.signalNeedWeight),
   );
 
   // 5. Recursos caídos en la zona: menos capacidad, más presión.
   const downResources = resources.filter(
-    (resource) => resource.zoneId === zone.id && resource.status === "unavailable"
+    (resource) => resource.zoneId === zone.id && resource.status === "unavailable",
   ).length;
   const resourceGap = Math.min(weights.resourceGapCap, downResources * weights.resourceGapWeight);
 
   // 6. Alivio: si el sistema resolvió algo aquí, la presión baja. El alivio
   //    también caduca, porque una zona atendida hace media hora puede haberse
   //    vuelto a degradar.
-  const resolved = actions.filter((action) => action.zoneId === zone.id && action.status === "succeeded");
+  const resolved = actions.filter(
+    (action) => action.zoneId === zone.id && action.status === "succeeded",
+  );
   const rawRelief = dampedSum(
     resolved.map((action) => {
       const at = action.completedAt ?? action.updatedAt;
-      const decay = Math.pow(0.5, ageInMinutes(at, now) / Math.max(0.01, weights.reliefHalfLifeMinutes));
+      const decay = Math.pow(
+        0.5,
+        ageInMinutes(at, now) / Math.max(0.01, weights.reliefHalfLifeMinutes),
+      );
       return weights.reliefPerAction * Math.min(1, Math.max(0, decay));
     }),
     weights.reliefDamping,
-    Number.POSITIVE_INFINITY
+    Number.POSITIVE_INFINITY,
   );
 
   const pressure = baseRisk + signalPressure + population + needScore + resourceGap;
@@ -317,7 +323,7 @@ export function explainZone(
     { label: "Riesgo base", value: roundedBase },
     { label: "Señales vivas", value: roundedSignals },
     { label: "Población en riesgo", value: roundedPopulation },
-    { label: "Necesidades abiertas", value: roundedNeeds }
+    { label: "Necesidades abiertas", value: roundedNeeds },
   ];
   if (roundedGap !== 0) factors.push({ label: "Recursos caídos", value: roundedGap });
   if (roundedRelief !== 0) {
@@ -326,7 +332,11 @@ export function explainZone(
 
   const score = positive - roundedRelief;
 
-  return { score, factors, reason: buildReason(zone, live, resolved.length, downResources, options) };
+  return {
+    score,
+    factors,
+    reason: buildReason(zone, live, resolved.length, downResources, options),
+  };
 }
 
 /** Frase corta y honesta de por qué esta zona puntúa lo que puntúa. */
@@ -335,7 +345,7 @@ function buildReason(
   live: CrisisEvent[],
   resolvedCount: number,
   downResources: number,
-  options?: PriorityOptions
+  options?: PriorityOptions,
 ) {
   const strongest = [...live].sort((a, b) => {
     const diff = signalWeight(b, options) - signalWeight(a, options);
@@ -351,7 +361,7 @@ function buildReason(
     const repeated = strongest.occurrences > 1 ? `, repetida ${strongest.occurrences} veces` : "";
     const weight = Math.round(signalWeight(strongest, options));
     parts.push(
-      `Señal de ${strongest.category} con gravedad ${severityLabel[strongest.severity]}, confianza ${confidenceLabel[strongest.confidence]}, ${verification}${repeated} (aporta ${weight} puntos ya descontada su antigüedad)`
+      `Señal de ${strongest.category} con gravedad ${severityLabel[strongest.severity]}, confianza ${confidenceLabel[strongest.confidence]}, ${verification}${repeated} (aporta ${weight} puntos ya descontada su antigüedad)`,
     );
   } else {
     parts.push("Sin señales vivas");
@@ -364,7 +374,7 @@ function buildReason(
     parts.push(
       resolvedCount === 1
         ? "1 acción completada con éxito ya alivia la zona"
-        : `${resolvedCount} acciones completadas con éxito ya alivian la zona`
+        : `${resolvedCount} acciones completadas con éxito ya alivian la zona`,
     );
   }
 
@@ -380,7 +390,7 @@ export function scoreZone(
   events: CrisisEvent[],
   resources: Resource[],
   actions: Action[] = [],
-  options?: PriorityOptions
+  options?: PriorityOptions,
 ) {
   return explainZone(zone, events, resources, actions, options).score;
 }
@@ -400,7 +410,7 @@ export function buildPlan(
   resources: Resource[],
   actions: Action[],
   invalidatedActionIds: string[] = [],
-  options?: PriorityOptions
+  options?: PriorityOptions,
 ): Plan {
   const priorities: PlanPriority[] = zones
     .map((zone) => {
@@ -409,7 +419,7 @@ export function buildPlan(
         zoneId: zone.id,
         score: explanation.score,
         factors: explanation.factors,
-        reason: explanation.reason
+        reason: explanation.reason,
       };
     })
     // Empates resueltos por identificador: el orden nunca depende del azar ni
@@ -419,7 +429,9 @@ export function buildPlan(
   const topPriority = priorities[0];
   const topZone = zones.find((zone) => zone.id === topPriority?.zoneId);
   const openActionIds = actions
-    .filter((action) => ["pending", "approved", "running", "blocked", "failed"].includes(action.status))
+    .filter((action) =>
+      ["pending", "approved", "running", "blocked", "failed"].includes(action.status),
+    )
     .map((action) => action.id);
 
   return {
@@ -434,6 +446,6 @@ export function buildPlan(
     proposedActionIds: openActionIds,
     invalidatedActionIds,
     changes: [],
-    trigger: "replanificación"
+    trigger: "replanificación",
   };
 }

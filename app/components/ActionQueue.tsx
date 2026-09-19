@@ -17,7 +17,7 @@ import {
   Ticket,
   Truck,
   Webhook,
-  X
+  X,
 } from "lucide-react";
 import type { Action, Contact, CreateActionPayload, CrisisZone, Resource } from "@/lib/types";
 import NewActionForm from "./NewActionForm";
@@ -29,7 +29,7 @@ import {
   contactName,
   executionLabel,
   isOpenAction,
-  troubledActionStatuses
+  troubledActionStatuses,
 } from "./shared";
 
 interface Props {
@@ -55,12 +55,13 @@ type Filter = "open" | "trouble" | "all";
 const filterLabels: Record<Filter, string> = {
   open: "Abiertas",
   trouble: "Necesitan a alguien",
-  all: "Todas"
+  all: "Todas",
 };
 
 function channelIcon(action: Action) {
   if (action.status === "running") return <Loader2 className="spin" size={16} aria-hidden="true" />;
-  if (troubledActionStatuses.includes(action.status)) return <CircleAlert size={16} aria-hidden="true" />;
+  if (troubledActionStatuses.includes(action.status))
+    return <CircleAlert size={16} aria-hidden="true" />;
   if (action.status === "succeeded") return <CheckCircle2 size={16} aria-hidden="true" />;
   if (action.channel === "call") return <PhoneCall size={16} aria-hidden="true" />;
   if (action.channel === "email") return <Mail size={16} aria-hidden="true" />;
@@ -84,7 +85,7 @@ export default function ActionQueue({
   onRetry,
   onCancel,
   onReassign,
-  onCreate
+  onCreate,
 }: Props) {
   const [filter, setFilter] = useState<Filter>("open");
   const [pickerFor, setPickerFor] = useState<string | null>(null);
@@ -111,13 +112,18 @@ export default function ActionQueue({
                 {option === "all"
                   ? actions.length
                   : option === "trouble"
-                    ? actions.filter((action) => troubledActionStatuses.includes(action.status)).length
+                    ? actions.filter((action) => troubledActionStatuses.includes(action.status))
+                        .length
                     : actions.filter(isOpenAction).length}
               </em>
             </button>
           ))}
         </div>
-        <button className="primary" onClick={() => onToggleForm(!formOpen)} aria-expanded={formOpen}>
+        <button
+          className="primary"
+          onClick={() => onToggleForm(!formOpen)}
+          aria-expanded={formOpen}
+        >
           <Plus size={15} aria-hidden="true" /> Nueva acción
         </button>
       </div>
@@ -136,11 +142,14 @@ export default function ActionQueue({
       ) : null}
 
       <div className="action-list" role="list">
-        {visible.length === 0 ? <p className="muted-note">No hay acciones con este filtro.</p> : null}
+        {visible.length === 0 ? (
+          <p className="muted-note">No hay acciones con este filtro.</p>
+        ) : null}
         {visible.map((action) => {
           const zone = zones.find((candidate) => candidate.id === action.zoneId);
           const contact = contactName(contacts, action.contactId);
-          const assignedResource = resources.find((resource) => resource.id === action.resourceId) ?? null;
+          const assignedResource =
+            resources.find((resource) => resource.id === action.resourceId) ?? null;
           const fresh = freshIds.has(action.id);
           return (
             <article
@@ -166,19 +175,23 @@ export default function ActionQueue({
                   {action.error ? <p className="inline-error">{action.error}</p> : null}
                   {assignedResource?.status === "unavailable" && isOpenAction(action) ? (
                     <p className="inline-error">
-                      {assignedResource.name} está fuera de servicio: aprobar ahora dejaría la acción
-                      bloqueada. Reasigna el recurso antes.
+                      {assignedResource.name} está fuera de servicio: aprobar ahora dejaría la
+                      acción bloqueada. Reasigna el recurso antes.
                     </p>
                   ) : null}
                 </div>
               </div>
 
               <div className="action-meta">
-                <span className={`pill status-${action.status}`}>{actionStatusLabels[action.status]}</span>
+                <span className={`pill status-${action.status}`}>
+                  {actionStatusLabels[action.status]}
+                </span>
                 <span className={action.executionMode === "happyrobot" ? "pill live" : "pill mock"}>
                   {executionLabel(action.executionMode)}
                 </span>
-                {action.approvedBy ? <span className="pill">Aprobada por {action.approvedBy}</span> : null}
+                {action.approvedBy ? (
+                  <span className="pill">Aprobada por {action.approvedBy}</span>
+                ) : null}
               </div>
 
               <div className="row-actions">
@@ -186,7 +199,8 @@ export default function ActionQueue({
                   aria-label={`Aprobar y ejecutar: ${action.objective}`}
                   onClick={() => onApprove(action.id)}
                   disabled={
-                    busy !== null || !["pending", "failed", "blocked", "stalled"].includes(action.status)
+                    busy !== null ||
+                    !["pending", "failed", "blocked", "stalled"].includes(action.status)
                   }
                 >
                   <Check size={15} aria-hidden="true" /> Aprobar
@@ -195,7 +209,8 @@ export default function ActionQueue({
                   aria-label={`Reintentar: ${action.objective}`}
                   onClick={() => onRetry(action.id)}
                   disabled={
-                    busy !== null || !["failed", "blocked", "cancelled", "stalled"].includes(action.status)
+                    busy !== null ||
+                    !["failed", "blocked", "cancelled", "stalled"].includes(action.status)
                   }
                 >
                   <RefreshCw size={15} aria-hidden="true" /> Reintentar

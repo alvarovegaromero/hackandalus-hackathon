@@ -6,7 +6,7 @@ import {
   categoriaDeAccion,
   classifyAction,
   decideAutonomy,
-  describeAutonomy
+  describeAutonomy,
 } from "@/lib/autonomy";
 import { seedAutonomyRules, seedResources, seedZones } from "@/lib/seed";
 import type { Action, ActionChannel, Resource } from "@/lib/types";
@@ -37,7 +37,7 @@ function accion(overrides: Partial<Action> & Pick<Action, "objective" | "zoneId"
     completedAt: null,
     createdAt: at,
     updatedAt: at,
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -55,9 +55,9 @@ describe("clasificación del tipo de acción", () => {
     // así que la palabra "coordinar" no distingue nada: la señal es la categoría.
     const objetivo = "Coordinar respuesta de incendio en Sierra Morena.";
     expect(categoriaDeAccion({ objective: objetivo })).toBe("incendio");
-    expect(classifyAction({ objective: objetivo, channel: "call", target: "Coordinación INFOCA" })).toBe(
-      "asignar-recurso"
-    );
+    expect(
+      classifyAction({ objective: objetivo, channel: "call", target: "Coordinación INFOCA" }),
+    ).toBe("asignar-recurso");
   });
 
   it("no clasifica como aviso cualquier objetivo por empezar con Coordinar", () => {
@@ -67,10 +67,16 @@ describe("clasificación del tipo de acción", () => {
 
   it("clasifica igual con acentos y sin ellos", () => {
     expect(
-      classifyAction({ objective: "Coordinar respuesta de evacuación en Almería.", channel: "call" })
+      classifyAction({
+        objective: "Coordinar respuesta de evacuación en Almería.",
+        channel: "call",
+      }),
     ).toBe("evacuar");
     expect(
-      classifyAction({ objective: "Coordinar respuesta de inundación en Almería.", channel: "call" })
+      classifyAction({
+        objective: "Coordinar respuesta de inundación en Almería.",
+        channel: "call",
+      }),
     ).toBe("asignar-recurso");
   });
 
@@ -79,8 +85,8 @@ describe("clasificación del tipo de acción", () => {
       classifyAction({
         objective: "Coordinar respuesta de coordinacion en Sevilla Hub.",
         channel: "call",
-        verifiesEventId: "evt-1"
-      })
+        verifiesEventId: "evt-1",
+      }),
     ).toBe("verificar");
   });
 
@@ -89,14 +95,18 @@ describe("clasificación del tipo de acción", () => {
       classifyAction({
         objective: "Instrucciones de autoprotección",
         channel: "sms",
-        target: "Población de Costa del Sol"
-      })
+        target: "Población de Costa del Sol",
+      }),
     ).toBe("aviso-masivo");
   });
 
   it("devuelve null cuando no hay señal suficiente", () => {
     expect(
-      classifyAction({ objective: "Gestionar el asunto de siempre.", channel: "ticket", target: "Equipo" })
+      classifyAction({
+        objective: "Gestionar el asunto de siempre.",
+        channel: "ticket",
+        target: "Equipo",
+      }),
     ).toBeNull();
     expect(classifyAction({})).toBeNull();
   });
@@ -113,43 +123,43 @@ describe("nivel de autonomía por tipo de acción", () => {
       objetivo: "Verificar con el vigilante la columna de humo antes de movilizar.",
       canal: "call" as ActionChannel,
       tipo: "verificar" as const,
-      nivel: "auto" as const
+      nivel: "auto" as const,
     },
     {
       nombre: "avisar a un responsable: lo hace sola y avisa",
       objetivo: "Coordinar respuesta de coordinacion en Sevilla Hub.",
       canal: "call" as ActionChannel,
       tipo: "avisar" as const,
-      nivel: "auto-notify" as const
+      nivel: "auto-notify" as const,
     },
     {
       nombre: "mover un recurso: lo hace sola y se puede deshacer",
       objetivo: "Coordinar respuesta de incendio en Sierra Morena.",
       canal: "call" as ActionChannel,
       tipo: "asignar-recurso" as const,
-      nivel: "auto-notify" as const
+      nivel: "auto-notify" as const,
     },
     {
       nombre: "aviso masivo sin confianza conocida: lo aprueba una persona",
       objetivo: "Aviso masivo a la población de Costa del Sol.",
       canal: "sms" as ActionChannel,
       tipo: "aviso-masivo" as const,
-      nivel: "approval" as const
+      nivel: "approval" as const,
     },
     {
       nombre: "ordenar una evacuación: siempre lo aprueba una persona",
       objetivo: "Coordinar respuesta de evacuacion en Granada y Almería.",
       canal: "call" as ActionChannel,
       tipo: "evacuar" as const,
-      nivel: "approval" as const
+      nivel: "approval" as const,
     },
     {
       nombre: "pedir refuerzos externos: siempre lo aprueba una persona",
       objetivo: "Coordinar respuesta de resource-shortage en Sevilla Hub.",
       canal: "ticket" as ActionChannel,
       tipo: "escalar" as const,
-      nivel: "approval" as const
-    }
+      nivel: "approval" as const,
+    },
   ];
 
   for (const caso of casos) {
@@ -164,7 +174,7 @@ describe("nivel de autonomía por tipo de acción", () => {
   it("el motivo se puede enseñar a un jurado", () => {
     const decision = decideAutonomy(
       { objective: "Coordinar respuesta de coordinacion en Sevilla Hub.", channel: "call" },
-      reglas
+      reglas,
     );
     expect(decision.reason).toContain("Se ejecuta sola");
     expect(decision.reason).toContain("reversible");
@@ -178,7 +188,7 @@ describe("nivel de autonomía por tipo de acción", () => {
 describe("aviso masivo y umbral de confianza", () => {
   const avisoMasivo = {
     objective: "Aviso masivo a la población de Costa del Sol.",
-    channel: "sms" as ActionChannel
+    channel: "sms" as ActionChannel,
   };
 
   it("por debajo del umbral espera aprobación humana", () => {
@@ -209,7 +219,7 @@ describe("aviso masivo y umbral de confianza", () => {
 
   it("una señal confirmada de confianza alta supera el umbral sin triaje calibrado", () => {
     const decision = decideAutonomy(avisoMasivo, reglas, {
-      event: { category: "alerta publica", confidence: "high", confirmed: true }
+      event: { category: "alerta publica", confidence: "high", confirmed: true },
     });
     expect(decision.confidence).toBe(0.95);
     expect(decision.level).toBe("auto-notify");
@@ -217,7 +227,7 @@ describe("aviso masivo y umbral de confianza", () => {
 
   it("la misma señal sin verificar se queda esperando aprobación", () => {
     const decision = decideAutonomy(avisoMasivo, reglas, {
-      event: { category: "alerta publica", confidence: "high", confirmed: null }
+      event: { category: "alerta publica", confidence: "high", confirmed: null },
     });
     expect(decision.level).toBe("approval");
   });
@@ -231,7 +241,7 @@ describe("barandillas de la autonomía", () => {
   it("una acción sin clasificar cae en aprobación humana", () => {
     const decision = decideAutonomy(
       { objective: "Gestionar el asunto de siempre.", channel: "ticket", target: "Equipo" },
-      reglas
+      reglas,
     );
     expect(decision.actionKind).toBeNull();
     expect(decision.level).toBe("approval");
@@ -239,8 +249,12 @@ describe("barandillas de la autonomía", () => {
   });
 
   it("sin reglas cargadas no se automatiza nada", () => {
-    expect(decideAutonomy({ objective: "Verificar el dato.", channel: "call" }, []).level).toBe("approval");
-    expect(decideAutonomy({ objective: "Verificar el dato.", channel: "call" }, null).level).toBe("approval");
+    expect(decideAutonomy({ objective: "Verificar el dato.", channel: "call" }, []).level).toBe(
+      "approval",
+    );
+    expect(decideAutonomy({ objective: "Verificar el dato.", channel: "call" }, null).level).toBe(
+      "approval",
+    );
   });
 
   it("el interruptor general fuerza aprobación en todos los tipos de acción", () => {
@@ -250,13 +264,13 @@ describe("barandillas de la autonomía", () => {
       "Coordinar respuesta de incendio en Sierra Morena.",
       "Aviso masivo a la población de Costa del Sol.",
       "Coordinar respuesta de evacuacion en Granada y Almería.",
-      "Coordinar respuesta de resource-shortage en Sevilla Hub."
+      "Coordinar respuesta de resource-shortage en Sevilla Hub.",
     ];
 
     for (const objetivo of objetivos) {
       const decision = decideAutonomy({ objective: objetivo, channel: "call" }, reglas, {
         autonomyPaused: true,
-        confidence: 1
+        confidence: 1,
       });
       expect(decision.level).toBe("approval");
       expect(decision.reason).toContain("autonomía está en pausa");
@@ -267,7 +281,7 @@ describe("barandillas de la autonomía", () => {
     const evacuacion = decideAutonomy(
       { objective: "Coordinar respuesta de evacuacion en Granada y Almería.", channel: "call" },
       reglas,
-      { confidence: 1 }
+      { confidence: 1 },
     );
     expect(evacuacion.level).toBe("approval");
     expect(evacuacion.reversibility).toBe("irreversible");
@@ -276,7 +290,7 @@ describe("barandillas de la autonomía", () => {
     const escalado = decideAutonomy(
       { objective: "Coordinar respuesta de resource-shortage en Sevilla Hub.", channel: "ticket" },
       reglas,
-      { confidence: 1 }
+      { confidence: 1 },
     );
     expect(escalado.level).toBe("approval");
   });
@@ -288,13 +302,13 @@ describe("barandillas de la autonomía", () => {
         reversibility: "irreversible" as const,
         level: "auto" as const,
         confidenceThreshold: 0.1,
-        rationale: "Regla mal configurada a propósito para la prueba."
-      }
+        rationale: "Regla mal configurada a propósito para la prueba.",
+      },
     ];
     const decision = decideAutonomy(
       { objective: "Coordinar respuesta de evacuacion en Costa del Sol.", channel: "call" },
       reglaFloja,
-      { confidence: 1 }
+      { confidence: 1 },
     );
     expect(decision.level).toBe("approval");
   });
@@ -305,9 +319,9 @@ describe("barandillas de la autonomía", () => {
         objective: "Coordinar respuesta de evacuacion en Granada y Almería.",
         channel: "call",
         status: "approved",
-        approvedBy: "operator"
+        approvedBy: "operator",
       },
-      reglas
+      reglas,
     );
     expect(decision.level).toBe("auto");
     expect(decision.reason).toContain("Ya la aprobó una persona");
@@ -324,7 +338,7 @@ describe("canAutoDispatch", () => {
   it("deja salir sola una verificación recién propuesta", () => {
     const action = accion({
       objective: "Verificar con el vigilante la columna de humo antes de movilizar.",
-      zoneId: "zone-north"
+      zoneId: "zone-north",
     });
     expect(canAutoDispatch(action, estado)).toBe(true);
     expect(autonomyDecisionFor(action, estado).level).toBe("auto");
@@ -333,7 +347,7 @@ describe("canAutoDispatch", () => {
   it("frena una evacuación aunque todo lo demás esté en orden", () => {
     const action = accion({
       objective: "Coordinar respuesta de evacuacion en Granada y Almería.",
-      zoneId: "zone-east"
+      zoneId: "zone-east",
     });
     expect(canAutoDispatch(action, estado)).toBe(false);
   });
@@ -345,7 +359,10 @@ describe("canAutoDispatch", () => {
     expect(canAutoDispatch(action, { autonomyRules: [], autonomyPaused: false })).toBe(false);
     // Un estado sin interruptor no es un estado con la autonomía encendida.
     expect(
-      canAutoDispatch(action, { autonomyRules: reglas, autonomyPaused: undefined as unknown as boolean })
+      canAutoDispatch(action, {
+        autonomyRules: reglas,
+        autonomyPaused: undefined as unknown as boolean,
+      }),
     ).toBe(false);
     expect(canAutoDispatch({ ...action, objective: "" }, estado)).toBe(false);
   });
@@ -354,7 +371,7 @@ describe("canAutoDispatch", () => {
     const action = accion({
       objective: "Verificar el dato.",
       zoneId: "zone-north",
-      status: "running"
+      status: "running",
     });
     expect(canAutoDispatch(action, estado)).toBe(false);
   });
@@ -369,7 +386,7 @@ describe("canAutoDispatch", () => {
       objective: "Coordinar respuesta de alerta publica en Sevilla Hub.",
       zoneId: "zone-central",
       channel: "sms",
-      target: "Población de Sevilla"
+      target: "Población de Sevilla",
     });
     const conSenal = {
       autonomyRules: reglas,
@@ -390,9 +407,9 @@ describe("canAutoDispatch", () => {
           occurrences: 1,
           appliedRiskDelta: 0,
           appliedNeed: null,
-          previousZoneStatus: null
-        }
-      ]
+          previousZoneStatus: null,
+        },
+      ],
     };
     expect(autonomyDecisionFor(action, conSenal).confidence).toBe(0.95);
     expect(canAutoDispatch(action, conSenal)).toBe(true);
@@ -435,12 +452,12 @@ describe("lista de espera", () => {
     const sevilla = accion({
       id: "act-sevilla",
       objective: "Coordinar respuesta de incendio en Sevilla Hub.",
-      zoneId: "zone-central"
+      zoneId: "zone-central",
     });
     const sierra = accion({
       id: "act-sierra",
       objective: "Coordinar respuesta de incendio en Sierra Morena.",
-      zoneId: "zone-north"
+      zoneId: "zone-north",
     });
 
     const espera = buildWaitingList([sevilla, sierra], brigada, zones);
@@ -462,18 +479,18 @@ describe("lista de espera", () => {
       accion({
         id: "act-1",
         objective: "Coordinar respuesta de incendio en Sevilla Hub.",
-        zoneId: "zone-central"
+        zoneId: "zone-central",
       }),
       accion({
         id: "act-2",
         objective: "Coordinar respuesta de incendio en Sierra Morena.",
-        zoneId: "zone-north"
+        zoneId: "zone-north",
       }),
       accion({
         id: "act-3",
         objective: "Coordinar respuesta de incendio en Costa del Sol.",
-        zoneId: "zone-south"
-      })
+        zoneId: "zone-south",
+      }),
     ];
 
     const espera = buildWaitingList(acciones, brigada, zones);
@@ -487,7 +504,7 @@ describe("lista de espera", () => {
     const soloComunicaciones = recursos().filter((resource) => resource.id === "res-comms-1");
     const accionIncendio = accion({
       objective: "Coordinar respuesta de incendio en Sierra Morena.",
-      zoneId: "zone-north"
+      zoneId: "zone-north",
     });
 
     const espera = buildWaitingList([accionIncendio], soloComunicaciones, zones);
@@ -500,7 +517,7 @@ describe("lista de espera", () => {
   it("con recursos de sobra la lista de espera queda vacía", () => {
     const accionTriaje = accion({
       objective: "Coordinar respuesta de triaje sanitario en Sevilla Hub.",
-      zoneId: "zone-central"
+      zoneId: "zone-central",
     });
     expect(buildWaitingList([accionTriaje], recursos(), zones)).toEqual([]);
   });
@@ -511,12 +528,12 @@ describe("lista de espera", () => {
       id: "act-cerrada",
       objective: "Coordinar respuesta de incendio en Sevilla Hub.",
       zoneId: "zone-central",
-      status: "succeeded"
+      status: "succeeded",
     });
     const abierta = accion({
       id: "act-abierta",
       objective: "Coordinar respuesta de incendio en Sierra Morena.",
-      zoneId: "zone-north"
+      zoneId: "zone-north",
     });
 
     expect(buildWaitingList([cerrada, abierta], brigada, zones)).toEqual([]);

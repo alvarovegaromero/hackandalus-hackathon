@@ -11,7 +11,7 @@ const event = (n: number): CrisisEvent => ({
   incidentId,
   summary: `Aviso ${n}`,
   severity: "high",
-  source: "sensor"
+  source: "sensor",
 });
 
 // A fake store with the same contract as the Supabase ignore-duplicates upsert.
@@ -44,7 +44,11 @@ describe("ingest", () => {
 
   it("partitions a mixed batch and deduplicates within it", async () => {
     const { started, start } = starter();
-    const result = await ingest([event(1), { bad: true }, event(1), event(2)], memoryStore(), start);
+    const result = await ingest(
+      [event(1), { bad: true }, event(1), event(2)],
+      memoryStore(),
+      start,
+    );
     expect(result.accepted.map((a) => a.index)).toEqual([0, 3]);
     expect(result.duplicates).toEqual([{ index: 2, id: event(1).id }]);
     expect(result.rejected.map((r) => r.index)).toEqual([1]);

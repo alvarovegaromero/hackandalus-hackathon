@@ -10,6 +10,6 @@ export async function GET(request: Request, context: { params: Promise<{ runId: 
   return Response.json({
     runId,
     status,
-    result: status === "completed" ? await run.returnValue : null
+    result: status === "completed" ? await run.returnValue : null,
   });
 }

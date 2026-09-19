@@ -12,7 +12,7 @@ import type {
   DigitalTwinFact,
   DigitalTwinFactStatus,
   DigitalTwinState,
-  WorldState
+  WorldState,
 } from "./types";
 
 const STALE_AFTER_MINUTES = 25;
@@ -20,7 +20,7 @@ const STALE_AFTER_MINUTES = 25;
 const confidenceValue: Record<CrisisEvent["confidence"], number> = {
   low: 0.45,
   medium: 0.7,
-  high: 0.9
+  high: 0.9,
 };
 
 function clone<T>(value: T): T {
@@ -79,7 +79,7 @@ function statusFrom(
   confidence: number,
   matchesTruth: boolean,
   updatedAt: string | null,
-  nowMs: number
+  nowMs: number,
 ): DigitalTwinFactStatus {
   if (!updatedAt || confidence <= 0) return "unknown";
   const stale = nowMs - new Date(updatedAt).getTime() > STALE_AFTER_MINUTES * 60_000;
@@ -107,7 +107,7 @@ function fact(input: FactInput, nowMs: number): DigitalTwinFact {
       ? 0
       : Math.min(
           0.99,
-          input.evidence.reduce((max, event) => Math.max(max, signalConfidence(event, nowMs)), 0)
+          input.evidence.reduce((max, event) => Math.max(max, signalConfidence(event, nowMs)), 0),
         );
 
   return {
@@ -120,7 +120,7 @@ function fact(input: FactInput, nowMs: number): DigitalTwinFact {
     status: statusFrom(confidence, input.matchesTruth, updatedAt, nowMs),
     evidenceEventIds: input.evidence.map((event) => event.id),
     updatedAt,
-    impact: input.impact
+    impact: input.impact,
   };
 }
 
@@ -135,7 +135,7 @@ function perceivedFromSignals(events: CrisisEvent[]) {
 export function buildDigitalTwin(
   truth: WorldState,
   events: CrisisEvent[],
-  options: { now?: string | number | Date } = {}
+  options: { now?: string | number | Date } = {},
 ): DigitalTwinState {
   const nowMs =
     options.now instanceof Date
@@ -151,20 +151,20 @@ export function buildDigitalTwin(
   const windEvidence = evidenceFor(events, (event) => event.category === "wind-shift");
   const roadEvidence = evidenceFor(
     events,
-    (event) => event.category === "route-blocked" || event.category === "route-open"
+    (event) => event.category === "route-blocked" || event.category === "route-open",
   );
   const smsEvidence = evidenceFor(
     events,
     (event) =>
       event.category === "integration-failure" &&
-      normalizar(`${event.title} ${event.description}`).includes("sms")
+      normalizar(`${event.title} ${event.description}`).includes("sms"),
   );
   const voiceEvidence = evidenceFor(
     events,
     (event) =>
       event.category === "integration-failure" &&
       (normalizar(`${event.title} ${event.description}`).includes("voz") ||
-        normalizar(`${event.title} ${event.description}`).includes("llamada"))
+        normalizar(`${event.title} ${event.description}`).includes("llamada")),
   );
   const hospitalEvidence = evidenceFor(events, (event) => event.category === "hospital-beds");
 
@@ -180,9 +180,9 @@ export function buildDigitalTwin(
           normalizar(perceivedWorld.windDirection) === normalizar(truth.windDirection) &&
           perceivedWorld.windSpeedKmh === truth.windSpeedKmh,
         evidence: windEvidence,
-        impact: "Sostiene el orden de prioridades y cuándo descartar un plan."
+        impact: "Sostiene el orden de prioridades y cuándo descartar un plan.",
       },
-      nowMs
+      nowMs,
     ),
     fact(
       {
@@ -193,9 +193,9 @@ export function buildDigitalTwin(
         truth: formatRoads(truth.blockedRoads),
         matchesTruth: roadsMatch(perceivedWorld.blockedRoads, truth.blockedRoads),
         evidence: roadEvidence,
-        impact: "Decide si los recursos pueden llegar o si hay que reasignarlos."
+        impact: "Decide si los recursos pueden llegar o si hay que reasignarlos.",
       },
-      nowMs
+      nowMs,
     ),
     fact(
       {
@@ -206,9 +206,9 @@ export function buildDigitalTwin(
         truth: formatBoolean(truth.smsOperational, "operativo", "caído"),
         matchesTruth: perceivedWorld.smsOperational === truth.smsOperational,
         evidence: smsEvidence,
-        impact: "Determina si los avisos masivos y verificaciones por SMS son seguros."
+        impact: "Determina si los avisos masivos y verificaciones por SMS son seguros.",
       },
-      nowMs
+      nowMs,
     ),
     fact(
       {
@@ -219,9 +219,9 @@ export function buildDigitalTwin(
         truth: formatBoolean(truth.voiceOperational, "operativo", "caído"),
         matchesTruth: perceivedWorld.voiceOperational === truth.voiceOperational,
         evidence: voiceEvidence,
-        impact: "Determina si las llamadas de escalado pueden salir."
+        impact: "Determina si las llamadas de escalado pueden salir.",
       },
-      nowMs
+      nowMs,
     ),
     ...Object.keys({ ...perceivedWorld.hospitalBeds, ...truth.hospitalBeds })
       .sort()
@@ -239,17 +239,18 @@ export function buildDigitalTwin(
               truth.hospitalBeds[hospitalId] === undefined
                 ? "sin dato"
                 : `${truth.hospitalBeds[hospitalId]} camas`,
-            matchesTruth: perceivedWorld.hospitalBeds[hospitalId] === truth.hospitalBeds[hospitalId],
+            matchesTruth:
+              perceivedWorld.hospitalBeds[hospitalId] === truth.hospitalBeds[hospitalId],
             evidence: hospitalEvidence.filter((event) =>
               normalizar(`${event.title} ${event.description}`).includes(
-                normalizar(hospitalId.replace(/^hospital-/, "").replace(/-/g, " "))
-              )
+                normalizar(hospitalId.replace(/^hospital-/, "").replace(/-/g, " ")),
+              ),
             ),
-            impact: "Condiciona evacuación sanitaria y derivación de heridos."
+            impact: "Condiciona evacuación sanitaria y derivación de heridos.",
           },
-          nowMs
-        )
-      )
+          nowMs,
+        ),
+      ),
   ];
 
   const known = facts.filter((item) => item.status !== "unknown");
@@ -272,6 +273,6 @@ export function buildDigitalTwin(
     summary:
       known.length === 0
         ? "FARO todavía no tiene evidencia suficiente para reconstruir el mundo."
-        : `${accuracy}% de coincidencia con la verdad simulada; ${mismatches} divergencia(s), ${unknownFacts} dato(s) sin evidencia.`
+        : `${accuracy}% de coincidencia con la verdad simulada; ${mismatches} divergencia(s), ${unknownFacts} dato(s) sin evidencia.`,
   };
 }

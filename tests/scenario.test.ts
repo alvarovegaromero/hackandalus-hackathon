@@ -23,7 +23,7 @@ import {
   scriptSeconds,
   startScenario,
   stopScenario,
-  withRuntime
+  withRuntime,
 } from "@/lib/scenario";
 import { resetSituation } from "@/lib/store";
 import type { ScenarioBeat, ScenarioState } from "@/lib/types";
@@ -232,7 +232,7 @@ describe("motor del escenario: orden determinista", () => {
   const empate: ScenarioBeat[] = [
     { id: "tie-b", atSeconds: 30, label: "Segundo del empate" },
     { id: "tie-a", atSeconds: 30, label: "Primero del empate" },
-    { id: "tie-early", atSeconds: 10, label: "El más temprano" }
+    { id: "tie-early", atSeconds: 10, label: "El más temprano" },
   ];
 
   it("ordena por instante y, ante empate, por posicion en el guion", () => {
@@ -348,7 +348,7 @@ describe("rutas HTTP del escenario", () => {
     return new Request("http://localhost/api/scenario/start", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) })
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
   }
 
@@ -385,8 +385,8 @@ describe("rutas HTTP del escenario", () => {
       new Request("http://localhost/api/scenario/start", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: "{no json"
-      })
+        body: "{no json",
+      }),
     );
     expect(roto.status).toBe(400);
   });

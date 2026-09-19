@@ -34,8 +34,8 @@ export default function ContactsPanel({ contacts, chains, zones, nowMs }: Props)
                   </p>
                   <p className="action-trace">
                     Canales por preferencia:{" "}
-                    {contact.channels.map((channel) => channelLabels[channel]).join(" › ")} · responde el{" "}
-                    {Math.round(contact.responsiveness * 100)}% de las veces
+                    {contact.channels.map((channel) => channelLabels[channel]).join(" › ")} ·
+                    responde el {Math.round(contact.responsiveness * 100)}% de las veces
                     {contact.lastContactedAt
                       ? ` · último aviso ${agoLabel(contact.lastContactedAt, nowMs)}`
                       : ""}
@@ -62,11 +62,14 @@ export default function ContactsPanel({ contacts, chains, zones, nowMs }: Props)
               <article key={chain.id} className={`chain ${chain.status}`}>
                 <header>
                   <h4>{chain.objective}</h4>
-                  <span className={`pill chain-${chain.status}`}>{chainStatusLabels[chain.status]}</span>
+                  <span className={`pill chain-${chain.status}`}>
+                    {chainStatusLabels[chain.status]}
+                  </span>
                 </header>
                 <p className="action-trace">
-                  {zone?.name ?? chain.zoneId} · escalón {Math.min(chain.currentStep + 1, chain.steps.length)}{" "}
-                  de {chain.steps.length} · actualizada {agoLabel(chain.updatedAt, nowMs)}
+                  {zone?.name ?? chain.zoneId} · escalón{" "}
+                  {Math.min(chain.currentStep + 1, chain.steps.length)} de {chain.steps.length} ·
+                  actualizada {agoLabel(chain.updatedAt, nowMs)}
                 </p>
                 <ol className="chain-steps">
                   {chain.steps.map((step, index) => {
@@ -82,7 +85,8 @@ export default function ContactsPanel({ contacts, chains, zones, nowMs }: Props)
                         <div>
                           <strong>{contact?.name ?? step.contactId}</strong>
                           <small>
-                            {channelLabels[step.channel]} · espera {step.waitSeconds}s · {step.reason}
+                            {channelLabels[step.channel]} · espera {step.waitSeconds}s ·{" "}
+                            {step.reason}
                           </small>
                         </div>
                         <span className={contact?.demoSafe ? "pill live" : "pill mock"}>

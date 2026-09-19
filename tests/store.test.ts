@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // El adaptador se simula para poder controlar el momento exacto en que
 // responde el ejecutor externo. Todo lo demás del módulo se mantiene real.
 const externo = vi.hoisted(() => ({
-  impl: null as null | ((...args: unknown[]) => Promise<unknown>)
+  impl: null as null | ((...args: unknown[]) => Promise<unknown>),
 }));
 
 vi.mock("@/lib/happyrobot", async (importOriginal) => {
@@ -13,7 +13,7 @@ vi.mock("@/lib/happyrobot", async (importOriginal) => {
     executeHappyRobotAction: (...args: unknown[]) =>
       externo.impl
         ? externo.impl(...args)
-        : Promise.resolve({ externalActionId: "mock-test", mode: "mock", simulated: true })
+        : Promise.resolve({ externalActionId: "mock-test", mode: "mock", simulated: true }),
   };
 });
 
@@ -27,7 +27,7 @@ const {
   pollSituation,
   resetSituation,
   retryAction,
-  updateResource
+  updateResource,
 } = await import("@/lib/store");
 
 beforeEach(() => {
@@ -48,7 +48,7 @@ describe("descartar una señal deshace su efecto", () => {
       zoneId: "zone-east",
       category: "rumor",
       severity: "critical",
-      confidence: "low"
+      confidence: "low",
     });
 
     const durante = getSituation().zones.find((zona) => zona.id === "zone-east")!;
@@ -65,7 +65,7 @@ describe("descartar una señal deshace su efecto", () => {
     expect(zona.needs).not.toContain("rumor");
 
     const accion = despues.actions.find(
-      (candidata) => candidata.zoneId === "zone-east" && candidata.objective.includes("rumor")
+      (candidata) => candidata.zoneId === "zone-east" && candidata.objective.includes("rumor"),
     );
     expect(accion?.status).toBe("cancelled");
   });
@@ -75,9 +75,14 @@ describe("descartar una señal deshace su efecto", () => {
       zoneId: "zone-south",
       category: "refugio",
       severity: "high",
-      confidence: "high"
+      confidence: "high",
     });
-    addEvent({ zoneId: "zone-south", category: "refugio", severity: "critical", confidence: "high" });
+    addEvent({
+      zoneId: "zone-south",
+      category: "refugio",
+      severity: "critical",
+      confidence: "high",
+    });
 
     markEvent(primera.event.id, false);
 
@@ -90,7 +95,7 @@ describe("descartar una señal deshace su efecto", () => {
       zoneId: "zone-east",
       category: "rumor",
       severity: "high",
-      confidence: "medium"
+      confidence: "medium",
     });
     const conSenal = getSituation().zones.find((zona) => zona.id === "zone-east")!.riskScore;
 
@@ -177,7 +182,11 @@ describe("aprobar una acción sin recurso disponible", () => {
     const llamadas: unknown[] = [];
     externo.impl = (...args) => {
       llamadas.push(args);
-      return Promise.resolve({ externalActionId: "no-deberia-pasar", mode: "mock", simulated: true });
+      return Promise.resolve({
+        externalActionId: "no-deberia-pasar",
+        mode: "mock",
+        simulated: true,
+      });
     };
 
     const accion = getSituation().actions[0];
@@ -233,13 +242,13 @@ describe("idempotencia y deduplicación", () => {
       zoneId: "zone-east",
       category: "route-blocked",
       severity: "high",
-      confidence: "medium"
+      confidence: "medium",
     });
     const segunda = addEvent({
       zoneId: "zone-east",
       category: "route-blocked",
       severity: "high",
-      confidence: "high"
+      confidence: "high",
     });
 
     expect(primera.duplicate).toBe(false);
@@ -252,7 +261,7 @@ describe("idempotencia y deduplicación", () => {
       zoneId: "zone-east",
       category: "route-blocked",
       severity: "high",
-      confidence: "medium"
+      confidence: "medium",
     });
     markEvent(primera.event.id, false);
 
@@ -260,7 +269,7 @@ describe("idempotencia y deduplicación", () => {
       zoneId: "zone-east",
       category: "route-blocked",
       severity: "high",
-      confidence: "high"
+      confidence: "high",
     });
     expect(segunda.duplicate).toBe(false);
   });

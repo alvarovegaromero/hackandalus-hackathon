@@ -13,7 +13,9 @@ interface Props {
 }
 
 export default function OperationsMap({ zones, plan, selectedZoneId, onSelect }: Props) {
-  const rankByZone = new Map(plan.priorities.map((priority, index) => [priority.zoneId, index + 1]));
+  const rankByZone = new Map(
+    plan.priorities.map((priority, index) => [priority.zoneId, index + 1]),
+  );
 
   return (
     <div className="map">
@@ -28,7 +30,10 @@ export default function OperationsMap({ zones, plan, selectedZoneId, onSelect }:
           className="map-land andalucia"
           d="M94 285 L126 226 L185 206 L238 165 L314 152 L371 178 L431 143 L510 157 L574 188 L647 197 L694 235 L676 291 L628 328 L590 383 L506 389 L437 365 L374 386 L301 369 L248 397 L174 374 L121 335 Z"
         />
-        <path className="map-land border-context" d="M86 214 L126 226 L94 285 L121 335 L83 354 L55 296 Z" />
+        <path
+          className="map-land border-context"
+          d="M86 214 L126 226 L94 285 L121 335 L83 354 L55 296 Z"
+        />
         <path
           className="map-land sea-context"
           d="M148 408 L249 421 L354 406 L451 421 L571 411 L650 374 L691 395 L632 461 L423 479 L238 459 Z"

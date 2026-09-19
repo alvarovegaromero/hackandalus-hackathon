@@ -74,7 +74,10 @@ export default function ContextPanel({ events, zones, actions, busy, nowMs, onMa
             {unknown.map((event) => {
               const verification = verificationFor(event, actions);
               return (
-                <li key={event.id} className={`mini-row ${event.confirmed === false ? "" : "sev-high"}`}>
+                <li
+                  key={event.id}
+                  className={`mini-row ${event.confirmed === false ? "" : "sev-high"}`}
+                >
                   <div>
                     <strong>{event.title}</strong>
                     <small>

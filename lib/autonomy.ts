@@ -37,7 +37,7 @@ import type {
   Resource,
   Reversibility,
   SituationState,
-  WaitingDemand
+  WaitingDemand,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -102,13 +102,13 @@ export interface AutonomyDecision {
 export const ETIQUETA_NIVEL: Record<AutonomyLevel, string> = {
   auto: "Se ejecuta sola",
   "auto-notify": "Se ejecuta sola y avisa",
-  approval: "Requiere aprobación humana"
+  approval: "Requiere aprobación humana",
 };
 
 export const ETIQUETA_REVERSIBILIDAD: Record<Reversibility, string> = {
   reversible: "reversible",
   partial: "parcialmente reversible",
-  irreversible: "irreversible"
+  irreversible: "irreversible",
 };
 
 /** Cómo se nombra cada tipo de acción dentro de una frase. */
@@ -118,7 +118,7 @@ export const ETIQUETA_TIPO: Record<ActionKind, string> = {
   "asignar-recurso": "mover un recurso",
   "aviso-masivo": "avisar a la población",
   evacuar: "ordenar una evacuación",
-  escalar: "pedir refuerzos externos"
+  escalar: "pedir refuerzos externos",
 };
 
 function porcentaje(valor: number) {
@@ -153,7 +153,7 @@ function normalizar(texto: string) {
 const TABLA_TIPOS: { tipo: ActionKind; claves: string[] }[] = [
   {
     tipo: "evacuar",
-    claves: ["evacua", "desaloj", "realoj", "rescate", "vulnerable", "evacuation-support"]
+    claves: ["evacua", "desaloj", "realoj", "rescate", "vulnerable", "evacuation-support"],
   },
   {
     tipo: "escalar",
@@ -166,8 +166,8 @@ const TABLA_TIPOS: { tipo: ActionKind; claves: string[] }[] = [
       "mando unico",
       "escasez",
       "resource-shortage",
-      "ume"
-    ]
+      "ume",
+    ],
   },
   {
     tipo: "aviso-masivo",
@@ -182,12 +182,12 @@ const TABLA_TIPOS: { tipo: ActionKind; claves: string[] }[] = [
       "vecindario",
       "vecinos",
       "residentes",
-      "ciudadania"
-    ]
+      "ciudadania",
+    ],
   },
   {
     tipo: "verificar",
-    claves: ["verifica", "comprueb", "comproba", "contrast", "confirmar", "cotejar"]
+    claves: ["verifica", "comprueb", "comproba", "contrast", "confirmar", "cotejar"],
   },
   {
     tipo: "asignar-recurso",
@@ -210,8 +210,8 @@ const TABLA_TIPOS: { tipo: ActionKind; claves: string[] }[] = [
       "triaje",
       "sanitari",
       "route-blocked",
-      "ruta bloqueada"
-    ]
+      "ruta bloqueada",
+    ],
   },
   {
     tipo: "avisar",
@@ -224,13 +224,20 @@ const TABLA_TIPOS: { tipo: ActionKind; claves: string[] }[] = [
       "comunicaciones",
       "enlace",
       "seguimiento",
-      "responsable"
-    ]
-  }
+      "responsable",
+    ],
+  },
 ];
 
 /** Destinatarios que no son una persona concreta sino un colectivo. */
-const DESTINATARIOS_COLECTIVOS = ["poblacion", "vecinos", "residentes", "ciudadania", "abonados", "usuarios"];
+const DESTINATARIOS_COLECTIVOS = [
+  "poblacion",
+  "vecinos",
+  "residentes",
+  "ciudadania",
+  "abonados",
+  "usuarios",
+];
 
 /** Canales por los que se puede lanzar un aviso masivo. */
 const CANALES_DE_DIFUSION = new Set(["sms", "whatsapp", "email"]);
@@ -239,7 +246,10 @@ const CANALES_DE_DIFUSION = new Set(["sms", "whatsapp", "email"]);
  * Categoría de la señal que hay detrás de la acción. Se prefiere el dato
  * explícito; si no lo hay, se extrae del objetivo que redacta el store.
  */
-export function categoriaDeAccion(action: AccionParaAutonomia, context: AutonomyContext = {}): string | null {
+export function categoriaDeAccion(
+  action: AccionParaAutonomia,
+  context: AutonomyContext = {},
+): string | null {
   if (context.category) return context.category;
   if (context.event?.category) return context.event.category;
 
@@ -262,14 +272,14 @@ function coincide(texto: string, claves: string[]) {
  */
 export function classifyAction(
   action: AccionParaAutonomia,
-  context: AutonomyContext = {}
+  context: AutonomyContext = {},
 ): ActionKind | null {
   // Si alguien ya declaró el tipo, se respeta: es más fiable que adivinarlo.
   if (action.actionKind) return action.actionKind;
 
   const categoria = categoriaDeAccion(action, context);
   const partes = [categoria, action.objective, action.target].filter(
-    (parte): parte is string => typeof parte === "string" && parte.length > 0
+    (parte): parte is string => typeof parte === "string" && parte.length > 0,
   );
   if (partes.length === 0) return null;
 
@@ -307,7 +317,7 @@ export function classifyAction(
 const ESCALA_CONFIANZA: Record<Confidence, number> = {
   low: 0.35,
   medium: 0.6,
-  high: 0.85
+  high: 0.85,
 };
 
 /**
@@ -324,7 +334,10 @@ export function confianzaDeContexto(context: AutonomyContext = {}): number | nul
   const event = context.event;
   if (!event) return null;
 
-  if (typeof event.assessment?.confidence === "number" && Number.isFinite(event.assessment.confidence)) {
+  if (
+    typeof event.assessment?.confidence === "number" &&
+    Number.isFinite(event.assessment.confidence)
+  ) {
     return Math.min(1, Math.max(0, event.assessment.confidence));
   }
 
@@ -345,7 +358,7 @@ function decisionDeAprobacion(
   reason: string,
   actionKind: ActionKind | null,
   rule: AutonomyRule | null,
-  confidence: number | null
+  confidence: number | null,
 ): AutonomyDecision {
   return {
     level: "approval",
@@ -353,7 +366,7 @@ function decisionDeAprobacion(
     reversibility: rule?.reversibility ?? null,
     rule,
     confidence,
-    reason
+    reason,
   };
 }
 
@@ -366,11 +379,12 @@ function decisionDeAprobacion(
 export function decideAutonomy(
   action: AccionParaAutonomia,
   rules: AutonomyRule[] | null | undefined,
-  context: AutonomyContext = {}
+  context: AutonomyContext = {},
 ): AutonomyDecision {
   const kind = classifyAction(action, context);
   const confidence = confianzaDeContexto(context);
-  const rule = kind && Array.isArray(rules) ? (rules.find((item) => item.actionKind === kind) ?? null) : null;
+  const rule =
+    kind && Array.isArray(rules) ? (rules.find((item) => item.actionKind === kind) ?? null) : null;
 
   // a) El interruptor general manda sobre todo lo demás.
   if (context.autonomyPaused) {
@@ -378,7 +392,7 @@ export function decideAutonomy(
       "Espera aprobación humana porque la autonomía está en pausa: un operador ha detenido el despacho automático y ninguna acción sale sola hasta que la reanude.",
       kind,
       rule,
-      confidence
+      confidence,
     );
   }
 
@@ -390,7 +404,7 @@ export function decideAutonomy(
       reversibility: rule?.reversibility ?? null,
       rule,
       confidence,
-      reason: `Ya la aprobó una persona (${action.approvedBy}); el motor de autonomía no degrada una decisión humana.`
+      reason: `Ya la aprobó una persona (${action.approvedBy}); el motor de autonomía no degrada una decisión humana.`,
     };
   }
 
@@ -401,7 +415,7 @@ export function decideAutonomy(
       `Espera aprobación humana porque no se ha podido clasificar el tipo de acción${objetivo}. Ante la duda se elige siempre el nivel más conservador.`,
       null,
       null,
-      confidence
+      confidence,
     );
   }
 
@@ -410,7 +424,7 @@ export function decideAutonomy(
       `Espera aprobación humana porque no hay ninguna regla de autonomía vigente para "${kind}". Sin regla escrita, decide una persona.`,
       kind,
       null,
-      confidence
+      confidence,
     );
   }
 
@@ -423,7 +437,7 @@ export function decideAutonomy(
       `Espera aprobación humana porque ${etiqueta} es irreversible: no hay forma de deshacerlo una vez hecho. ${rule.rationale}`,
       kind,
       rule,
-      confidence
+      confidence,
     );
   }
 
@@ -433,22 +447,22 @@ export function decideAutonomy(
     if (confidence === null) {
       return decisionDeAprobacion(
         `Espera aprobación humana porque ${etiqueta} es ${reversibilidad} y exige confianza ≥ ${porcentaje(
-          rule.confidenceThreshold
+          rule.confidenceThreshold,
         )}, pero no se conoce la confianza de la señal. Ante la duda se elige el nivel más conservador.`,
         kind,
         rule,
-        confidence
+        confidence,
       );
     }
 
     if (confidence < rule.confidenceThreshold) {
       return decisionDeAprobacion(
         `Espera aprobación humana porque ${etiqueta} es ${reversibilidad} y la confianza es ${porcentaje(
-          confidence
+          confidence,
         )}, por debajo del ${porcentaje(rule.confidenceThreshold)} exigido para hacerlo sin preguntar. ${rule.rationale}`,
         kind,
         rule,
-        confidence
+        confidence,
       );
     }
 
@@ -462,8 +476,8 @@ export function decideAutonomy(
       rule,
       confidence,
       reason: `Se ejecuta sola y se avisa al operador: la confianza es ${porcentaje(
-        confidence
-      )} y supera el ${porcentaje(rule.confidenceThreshold)} que ${etiqueta} exige. ${rule.rationale}`
+        confidence,
+      )} y supera el ${porcentaje(rule.confidenceThreshold)} que ${etiqueta} exige. ${rule.rationale}`,
     };
   }
 
@@ -472,7 +486,7 @@ export function decideAutonomy(
       `Espera aprobación humana porque la política vigente reserva ${etiqueta} a una persona. ${rule.rationale}`,
       kind,
       rule,
-      confidence
+      confidence,
     );
   }
 
@@ -487,7 +501,7 @@ export function decideAutonomy(
     reversibility: rule.reversibility,
     rule,
     confidence,
-    reason: `Se ejecuta sola porque ${etiqueta} es ${reversibilidad}, ${cola}. ${rule.rationale}`
+    reason: `Se ejecuta sola porque ${etiqueta} es ${reversibilidad}, ${cola}. ${rule.rationale}`,
   };
 }
 
@@ -514,7 +528,7 @@ function senalDeLaAccion(action: AccionParaAutonomia, events: CrisisEvent[] | un
       (event) =>
         event.zoneId === action.zoneId &&
         event.confirmed !== false &&
-        objetivo.includes(normalizar(event.category))
+        objetivo.includes(normalizar(event.category)),
     ) ?? null
   );
 }
@@ -526,20 +540,20 @@ function senalDeLaAccion(action: AccionParaAutonomia, events: CrisisEvent[] | un
  */
 export function autonomyDecisionFor(
   action: AccionParaAutonomia | null | undefined,
-  state: EstadoParaAutonomia | null | undefined
+  state: EstadoParaAutonomia | null | undefined,
 ): AutonomyDecision {
   if (!action || !state) {
     return decisionDeAprobacion(
       "Espera aprobación humana porque falta información para decidir la autonomía.",
       null,
       null,
-      null
+      null,
     );
   }
 
   return decideAutonomy(action, state.autonomyRules, {
     event: senalDeLaAccion(action, state.events),
-    autonomyPaused: state.autonomyPaused === true
+    autonomyPaused: state.autonomyPaused === true,
   });
 }
 
@@ -552,7 +566,7 @@ export function autonomyDecisionFor(
  */
 export function canAutoDispatch(
   action: AccionParaAutonomia | null | undefined,
-  state: EstadoParaAutonomia | null | undefined
+  state: EstadoParaAutonomia | null | undefined,
 ): boolean {
   if (!action || !state) return false;
   if (!Array.isArray(state.autonomyRules) || state.autonomyRules.length === 0) return false;
@@ -591,7 +605,7 @@ export interface AutonomyPolicySummary {
  */
 export function describeAutonomy(
   rules: AutonomyRule[] | null | undefined,
-  options: { paused?: boolean } = {}
+  options: { paused?: boolean } = {},
 ): AutonomyPolicySummary {
   const vigentes = Array.isArray(rules) ? rules : [];
 
@@ -609,31 +623,33 @@ export function describeAutonomy(
       reversibility: rule.reversibility,
       levelLabel,
       reversibilityLabel,
-      text: `${ETIQUETA_TIPO[rule.actionKind]}: ${levelLabel.toLowerCase()} porque es ${reversibilityLabel}${umbral}. ${rule.rationale}`
+      text: `${ETIQUETA_TIPO[rule.actionKind]}: ${levelLabel.toLowerCase()} porque es ${reversibilityLabel}${umbral}. ${rule.rationale}`,
     };
   });
 
   if (vigentes.length === 0) {
     return {
       headline: "Sin política de autonomía cargada: todas las acciones esperan aprobación humana.",
-      lines
+      lines,
     };
   }
 
   if (options.paused) {
     return {
       headline: `Autonomía en pausa: los ${vigentes.length} tipos de acción esperan aprobación humana hasta que un operador la reanude.`,
-      lines
+      lines,
     };
   }
 
   const solas = vigentes.filter((rule) => rule.level !== "approval").length;
   const conUmbral = vigentes.filter(
-    (rule) => rule.level === "approval" && typeof rule.confidenceThreshold === "number"
+    (rule) => rule.level === "approval" && typeof rule.confidenceThreshold === "number",
   ).length;
   const humanas = vigentes.length - solas - conUmbral;
 
-  const partes = [`${solas} de ${vigentes.length} tipos de acción se ejecutan solos por ser reversibles`];
+  const partes = [
+    `${solas} de ${vigentes.length} tipos de acción se ejecutan solos por ser reversibles`,
+  ];
   if (conUmbral > 0) partes.push(`${conUmbral} solo con confianza muy alta`);
   if (humanas > 0) partes.push(`${humanas} los firma siempre una persona`);
 
@@ -660,7 +676,7 @@ const MINUTOS_POR_NECESIDAD: Record<string, number> = {
   sanitario: 25,
   "alerta publica": 10,
   comunicaciones: 15,
-  coordinacion: 15
+  coordinacion: 15,
 };
 
 const MINUTOS_POR_DEFECTO = 20;
@@ -682,13 +698,13 @@ export function duracionEstimadaMinutos(action: Pick<Action, "objective" | "chan
 export function buildWaitingList(
   actions: Action[],
   resources: Resource[],
-  zones: CrisisZone[]
+  zones: CrisisZone[],
 ): WaitingDemand[] {
   return construirEspera(
     resolveResourceConflicts(actions, resources, zones).waiting,
     actions,
     resources,
-    zones
+    zones,
   );
 }
 
@@ -697,7 +713,7 @@ function construirEspera(
   waiting: ReturnType<typeof resolveResourceConflicts>["waiting"],
   actions: Action[],
   resources: Resource[],
-  zones: CrisisZone[]
+  zones: CrisisZone[],
 ): WaitingDemand[] {
   const porId = new Map(actions.map((action) => [action.id, action]));
   const nombreRecurso = new Map(resources.map((resource) => [resource.id, resource.name]));
@@ -713,7 +729,7 @@ function construirEspera(
     // Qué recurso querría esta acción si no hubiera competencia.
     const deseado = peticion
       ? (rankResourcesForAction(peticion, resources, zones).find(
-          (candidato) => candidato.compatible && candidato.resource.status !== "unavailable"
+          (candidato) => candidato.compatible && candidato.resource.status !== "unavailable",
         ) ?? null)
       : null;
     const wantedResourceId = deseado?.resource.id ?? null;
@@ -749,7 +765,7 @@ function construirEspera(
       wantedResourceId,
       blockedByActionId: item.blockedByActionId,
       estimatedWaitMinutes,
-      reason: `${item.reason}${detalle}`
+      reason: `${item.reason}${detalle}`,
     };
   });
 }
@@ -763,6 +779,6 @@ export function buildWaitingReport(actions: Action[], resources: Resource[], zon
   return {
     waiting: construirEspera(resolution.waiting, actions, resources, zones),
     allocations: resolution.allocations,
-    summary: resolution.summary
+    summary: resolution.summary,
   };
 }

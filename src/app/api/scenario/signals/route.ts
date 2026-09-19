@@ -3,7 +3,9 @@ import { ingestBatch } from "@/lib/ingest-server";
 import { signalSchema } from "@/lib/signals/schema";
 import { signalToEvent } from "@/lib/signals/to-event";
 
-const bodySchema = z.object({ incidentId: z.uuid(), signals: z.array(signalSchema).min(1) }).strict();
+const bodySchema = z
+  .object({ incidentId: z.uuid(), signals: z.array(signalSchema).min(1) })
+  .strict();
 
 // Demo bridge: the browser scenario sends its simulated signals to the agent without the API
 // token. Open in development; a deployment must opt in with SCENARIO_AGENT_ENABLED=true.
@@ -11,7 +13,7 @@ export async function POST(request: Request) {
   if (process.env.NODE_ENV === "production" && process.env.SCENARIO_AGENT_ENABLED !== "true")
     return Response.json(
       { error: "Scenario agent bridge disabled: set SCENARIO_AGENT_ENABLED=true." },
-      { status: 503 }
+      { status: 503 },
     );
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success)

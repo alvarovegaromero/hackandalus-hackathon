@@ -20,7 +20,7 @@ function alertLevel(situation: SituationState) {
   const criticalZones = situation.zones.filter((zone) => zone.status === "critical").length;
   const activeZones = situation.zones.filter((zone) => zone.status === "active").length;
   const criticalSignals = situation.events.filter(
-    (event) => event.confirmed !== false && severityRank[event.severity] >= severityRank.high
+    (event) => event.confirmed !== false && severityRank[event.severity] >= severityRank.high,
   ).length;
 
   if (criticalZones > 0) {
@@ -41,23 +41,30 @@ export default function ChangeBar({ situation, nowMs, planIsFresh }: Props) {
 
   // Lo que ha cambiado: primero los cambios que declaró el plan, y si no llega a
   // tres, se completa con el registro de los últimos cinco minutos.
-  const recentAudit = situation.audit.filter((entry) => nowMs - new Date(entry.at).getTime() < WINDOW_MS);
+  const recentAudit = situation.audit.filter(
+    (entry) => nowMs - new Date(entry.at).getTime() < WINDOW_MS,
+  );
   const fromPlan = (situation.plan.changes ?? []).map((change, index) => ({
     id: `plan-${situation.plan.version}-${index}`,
     tag: planChangeLabels[change.kind],
     text: change.label,
-    at: situation.plan.generatedAt
+    at: situation.plan.generatedAt,
   }));
   const fromAudit = recentAudit.map((entry) => ({
     id: entry.id,
-    tag: entry.actor === "operator" ? "Operador" : entry.actor === "scenario" ? "Terreno" : "Sistema",
+    tag:
+      entry.actor === "operator" ? "Operador" : entry.actor === "scenario" ? "Terreno" : "Sistema",
     text: entry.summary,
-    at: entry.at
+    at: entry.at,
   }));
   const changes = [...fromPlan, ...fromAudit].slice(0, 3);
 
   return (
-    <section className={`change-bar tone-${alert.tone}`} aria-label="Qué ha cambiado" aria-live="polite">
+    <section
+      className={`change-bar tone-${alert.tone}`}
+      aria-label="Qué ha cambiado"
+      aria-live="polite"
+    >
       <div className="alert-level">
         <span className="eyebrow">Nivel de alerta</span>
         <strong>{alert.label}</strong>
@@ -90,7 +97,9 @@ export default function ChangeBar({ situation, nowMs, planIsFresh }: Props) {
         )}
       </div>
 
-      <div className={`plan-state ${planInvalid ? "invalid" : ""} ${planIsFresh ? "just-changed" : ""}`}>
+      <div
+        className={`plan-state ${planInvalid ? "invalid" : ""} ${planIsFresh ? "just-changed" : ""}`}
+      >
         <span className="eyebrow">Plan</span>
         <strong>
           v{situation.plan.version}{" "}

@@ -7,7 +7,7 @@ import {
   apiOk,
   markEventSchema,
   methodNotAllowed,
-  parseJsonBody
+  parseJsonBody,
 } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";

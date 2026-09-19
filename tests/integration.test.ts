@@ -10,7 +10,7 @@ import {
   canReceiveLiveAction,
   rolesForCategory,
   selectChannel,
-  selectContact
+  selectContact,
 } from "@/lib/contacts";
 import { buildEscalationChain } from "@/lib/escalation";
 import {
@@ -18,7 +18,7 @@ import {
   actionEndpoint,
   buildActionPayload,
   executeHappyRobotAction,
-  verifyWebhookSecret
+  verifyWebhookSecret,
 } from "@/lib/happyrobot";
 import { getSituation, resetSituation } from "@/lib/store";
 import type { Action, ActionChannel, Contact } from "@/lib/types";
@@ -47,7 +47,7 @@ function makeAction(overrides: Partial<Action> = {}): Action {
     completedAt: null,
     createdAt: at,
     updatedAt: at,
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -63,14 +63,14 @@ function makeContact(overrides: Partial<Contact> = {}): Contact {
     demoSafe: true,
     lastContactedAt: null,
     responsiveness: 0.8,
-    ...overrides
+    ...overrides,
   };
 }
 
 function jsonResponse(status: number, body: unknown) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json" }
+    headers: { "content-type": "application/json" },
   });
 }
 
@@ -129,7 +129,7 @@ describe("adaptador HappyRobot: salvaguardas", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(executeHappyRobotAction(makeAction(), makeContact())).rejects.toMatchObject({
-      kind: "missing-credentials"
+      kind: "missing-credentials",
     });
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -140,7 +140,7 @@ describe("adaptador HappyRobot: salvaguardas", () => {
 
     const result = await executeHappyRobotAction(
       makeAction(),
-      makeContact({ demoSafe: false, name: "Contacto real no aprobado" })
+      makeContact({ demoSafe: false, name: "Contacto real no aprobado" }),
     );
 
     expect(fetchMock).not.toHaveBeenCalled();
@@ -154,7 +154,10 @@ describe("adaptador HappyRobot: salvaguardas", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await executeHappyRobotAction(makeAction(), makeContact({ phone: null, email: null }));
+    const result = await executeHappyRobotAction(
+      makeAction(),
+      makeContact({ phone: null, email: null }),
+    );
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(result.simulated).toBe(true);
@@ -211,7 +214,9 @@ describe("adaptador HappyRobot: transporte", () => {
   it("no reintenta un 4xx", async () => {
     // Cada intento necesita su propia Response: un cuerpo ya leido no se
     // puede volver a leer, y eso enmascararia el código real.
-    const fetchMock = vi.fn().mockImplementation(() => jsonResponse(422, { error: "payload invalido" }));
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(() => jsonResponse(422, { error: "payload invalido" }));
     vi.stubGlobal("fetch", fetchMock);
 
     const error = await executeHappyRobotAction(makeAction(), makeContact()).catch((err) => err);
@@ -237,7 +242,7 @@ describe("adaptador HappyRobot: transporte", () => {
     // Todos los reintentos internos comparten clave: HappyRobot puede
     // deduplicarlos y el destinatario no recibe tres llamadas.
     const claves = fetchMock.mock.calls.map(
-      (call) => (call[1] as RequestInit).headers as Record<string, string>
+      (call) => (call[1] as RequestInit).headers as Record<string, string>,
     );
     expect(new Set(claves.map((header) => header["idempotency-key"])).size).toBe(1);
   });
@@ -263,7 +268,7 @@ describe("adaptador HappyRobot: transporte", () => {
             abortError.name = "AbortError";
             reject(abortError);
           });
-        })
+        }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -285,7 +290,9 @@ describe("adaptador HappyRobot: transporte", () => {
 
   it("no da por buena una respuesta ilegible", async () => {
     process.env.HAPPYROBOT_MAX_ATTEMPTS = "1";
-    const fetchMock = vi.fn().mockImplementation(() => new Response("<html>gateway</html>", { status: 200 }));
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(() => new Response("<html>gateway</html>", { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
     const error = await executeHappyRobotAction(makeAction(), makeContact()).catch((err) => err);
@@ -300,7 +307,9 @@ describe("adaptador HappyRobot: transporte", () => {
     process.env.HAPPYROBOT_AUTH_HEADER = "x-api-key";
     process.env.HAPPYROBOT_AUTH_SCHEME = "";
     process.env.HAPPYROBOT_PAYLOAD_SHAPE = "trigger";
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { data: { id: "hr-externo-3" } }));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(200, { data: { id: "hr-externo-3" } }));
     vi.stubGlobal("fetch", fetchMock);
 
     expect(actionEndpoint()).toBe("https://api.happyrobot.test/v2/workflows/wf-crisis/run");
@@ -322,16 +331,18 @@ describe("adaptador HappyRobot: transporte", () => {
   it("adapta el mensaje al rol del destinatario", () => {
     const paraVoluntario = buildActionPayload(
       makeAction({ channel: "sms" }),
-      makeContact({ role: "volunteer" })
+      makeContact({ role: "volunteer" }),
     );
     const paraAutoridad = buildActionPayload(
       makeAction({ channel: "email" }),
-      makeContact({ role: "authority" })
+      makeContact({ role: "authority" }),
     );
 
     const briefingVoluntario = (paraVoluntario.briefing as { detail: string }).detail;
     const briefingAutoridad = (paraAutoridad.briefing as { askFor: string }).askFor;
-    expect(briefingVoluntario).not.toBe((paraAutoridad as { briefing: { detail: string } }).briefing.detail);
+    expect(briefingVoluntario).not.toBe(
+      (paraAutoridad as { briefing: { detail: string } }).briefing.detail,
+    );
     expect(briefingAutoridad).toMatch(/respaldo|medios/i);
   });
 });
@@ -343,20 +354,25 @@ describe("adaptador HappyRobot: transporte", () => {
 describe("seleccion de contacto y canal", () => {
   const contactos: Contact[] = [
     makeContact({ id: "con-field", role: "field-coordinator", zoneId: "zone-north" }),
-    makeContact({ id: "con-med", role: "medical-lead", zoneId: "zone-central", responsiveness: 0.7 }),
+    makeContact({
+      id: "con-med",
+      role: "medical-lead",
+      zoneId: "zone-central",
+      responsiveness: 0.7,
+    }),
     makeContact({
       id: "con-vol",
       role: "volunteer",
       zoneId: "zone-south",
-      channels: ["sms", "whatsapp", "call"]
+      channels: ["sms", "whatsapp", "call"],
     }),
     makeContact({
       id: "con-ops",
       role: "operations-lead",
       zoneId: null,
-      channels: ["slack", "call", "email"]
+      channels: ["slack", "call", "email"],
     }),
-    makeContact({ id: "con-auth", role: "authority", zoneId: null, channels: ["email", "call"] })
+    makeContact({ id: "con-auth", role: "authority", zoneId: null, channels: ["email", "call"] }),
   ];
 
   it("elige el rol adecuado para la categoria", () => {
@@ -374,7 +390,7 @@ describe("seleccion de contacto y canal", () => {
   it("prefiere la zona afectada cuando hay varios candidatos del mismo rol", () => {
     const ampliado = [
       ...contactos,
-      makeContact({ id: "con-field-sur", role: "field-coordinator", zoneId: "zone-south" })
+      makeContact({ id: "con-field-sur", role: "field-coordinator", zoneId: "zone-south" }),
     ];
     expect(selectContact(ampliado, "zone-south", "incendio")?.id).toBe("con-field-sur");
   });
@@ -398,12 +414,12 @@ describe("seleccion de contacto y canal", () => {
     const canalConAprendizaje = selectChannel(contacto, true, {
       channelStats: {
         sms: { attempts: 10, successes: 0 },
-        whatsapp: { attempts: 10, successes: 10 }
+        whatsapp: { attempts: 10, successes: 10 },
       },
       contactStats: {},
       unconfirmedPenalty: 0,
       runsAnalyzed: 3,
-      updatedAt: null
+      updatedAt: null,
     });
 
     expect(canalSinAprendizaje).toBe("sms");
@@ -415,7 +431,7 @@ describe("seleccion de contacto y canal", () => {
       objective: "Confirmar evacuacion.",
       zoneName: "Sierra Morena",
       reason: "el frente giro",
-      urgent: true
+      urgent: true,
     };
     const voluntario = briefingForRole("volunteer", entrada);
     const autoridad = briefingForRole("authority", entrada);
@@ -440,7 +456,7 @@ describe("cadena de escalado", () => {
       category: "evacuacion",
       urgent: true,
       contacts: getSituation().contacts,
-      at: new Date().toISOString()
+      at: new Date().toISOString(),
     });
 
     expect(chain.steps.length).toBeGreaterThanOrEqual(3);
@@ -468,12 +484,14 @@ describe("cadena de escalado", () => {
       category: "route-blocked",
       urgent: true,
       contacts: getSituation().contacts,
-      at: new Date().toISOString()
+      at: new Date().toISOString(),
     });
 
     const directos: ActionChannel[] = ["call", "sms", "whatsapp"];
     expect(directos).toContain(chain.steps[0].channel);
-    expect(chain.steps[chain.steps.length - 1].waitSeconds).toBeGreaterThan(chain.steps[0].waitSeconds);
+    expect(chain.steps[chain.steps.length - 1].waitSeconds).toBeGreaterThan(
+      chain.steps[0].waitSeconds,
+    );
   });
 });
 
@@ -487,13 +505,15 @@ function webhookRequest(body: unknown, secret: string | null = SECRET) {
   return new Request("http://localhost/api/webhooks/happyrobot", {
     method: "POST",
     headers,
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
   });
 }
 
 describe("webhook de entrada de HappyRobot", () => {
   it("rechaza un secreto invalido", async () => {
-    const response = await webhookPost(webhookRequest({ status: "completed" }, "secreto-equivocado"));
+    const response = await webhookPost(
+      webhookRequest({ status: "completed" }, "secreto-equivocado"),
+    );
     expect(response.status).toBe(401);
   });
 
@@ -520,8 +540,8 @@ describe("webhook de entrada de HappyRobot", () => {
         localActionId: action.id,
         externalActionId: "hr-callback-1",
         status: "completed",
-        summary: "El coordinador confirmo la evacuacion."
-      })
+        summary: "El coordinador confirmo la evacuacion.",
+      }),
     );
     const body = await response.json();
 
@@ -545,10 +565,10 @@ describe("webhook de entrada de HappyRobot", () => {
           {
             type: "route-blocked",
             zoneId: "zone-east",
-            description: "La A-92 esta cortada a la altura de la salida 241."
-          }
-        ]
-      })
+            description: "La A-92 esta cortada a la altura de la salida 241.",
+          },
+        ],
+      }),
     );
     const body = await response.json();
     const situacion = getSituation();
@@ -572,9 +592,9 @@ describe("webhook de entrada de HappyRobot", () => {
         {
           type: "shelter-overflow",
           zoneId: "zone-south",
-          description: "El pabellon municipal esta al limite de aforo."
-        }
-      ]
+          description: "El pabellon municipal esta al limite de aforo.",
+        },
+      ],
     };
 
     const primera = await webhookPost(webhookRequest(payload));
@@ -602,10 +622,10 @@ describe("webhook de entrada de HappyRobot", () => {
           {
             type: "medical-support",
             zoneId: "zone-central",
-            description: "Un equipo sanitario informa de diez atenciones nuevas."
-          }
-        ]
-      })
+            description: "Un equipo sanitario informa de diez atenciones nuevas.",
+          },
+        ],
+      }),
     );
     const body = await response.json();
 
@@ -619,7 +639,7 @@ describe("webhook de entrada de HappyRobot", () => {
     expect(vacio.status).toBe(400);
 
     const desconocido = await webhookPost(
-      webhookRequest({ deliveryId: "entrega-rara-1", status: "teletransportado" })
+      webhookRequest({ deliveryId: "entrega-rara-1", status: "teletransportado" }),
     );
     expect(desconocido.status).toBe(400);
   });

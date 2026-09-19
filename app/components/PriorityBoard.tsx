@@ -21,10 +21,16 @@ function oneLine(reason: string) {
   return firstSentence.endsWith(".") ? firstSentence.slice(0, -1) : firstSentence;
 }
 
-export default function PriorityBoard({ plan, planHistory, zones, selectedZoneId, onSelect }: Props) {
+export default function PriorityBoard({
+  plan,
+  planHistory,
+  zones,
+  selectedZoneId,
+  onSelect,
+}: Props) {
   const previous = planHistory[0] ?? null;
   const previousRank = new Map(
-    (previous?.priorities ?? []).map((priority, index) => [priority.zoneId, index])
+    (previous?.priorities ?? []).map((priority, index) => [priority.zoneId, index]),
   );
 
   return (
@@ -64,7 +70,9 @@ export default function PriorityBoard({ plan, planHistory, zones, selectedZoneId
                         <Minus size={14} />
                       )}
                     </span>
-                    <span className={`pill zone-${zone.status}`}>{zoneStatusLabels[zone.status]}</span>
+                    <span className={`pill zone-${zone.status}`}>
+                      {zoneStatusLabels[zone.status]}
+                    </span>
                   </h3>
                   <p className="one-line" title={priority.reason}>
                     {oneLine(priority.reason)}

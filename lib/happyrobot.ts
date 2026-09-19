@@ -9,7 +9,12 @@
 // día de la demo basta con tocar `.env.local`, nunca este fichero.
 
 import { timingSafeEqual } from "node:crypto";
-import { briefingForRole, canReceiveLiveAction, contactDestination, liveActionBlockReason } from "./contacts";
+import {
+  briefingForRole,
+  canReceiveLiveAction,
+  contactDestination,
+  liveActionBlockReason,
+} from "./contacts";
 import type { Action, ActionChannel, Contact, ExecutionMode } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -43,7 +48,7 @@ export class HappyRobotError extends Error {
   constructor(
     kind: HappyRobotErrorKind,
     message: string,
-    options: { status?: number; attempts?: number } = {}
+    options: { status?: number; attempts?: number } = {},
   ) {
     super(message);
     this.name = "HappyRobotError";
@@ -120,7 +125,7 @@ export function happyRobotConfig(): HappyRobotConfig {
     timeoutMs: envNumber("HAPPYROBOT_TIMEOUT_MS", 8000),
     maxAttempts: Math.max(1, envNumber("HAPPYROBOT_MAX_ATTEMPTS", 3)),
     retryBaseMs: envNumber("HAPPYROBOT_RETRY_BASE_MS", 400),
-    channelMap: parseChannelMap(process.env.HAPPYROBOT_CHANNEL_MAP)
+    channelMap: parseChannelMap(process.env.HAPPYROBOT_CHANNEL_MAP),
   };
 }
 
@@ -130,7 +135,9 @@ export function getExecutionMode(): ExecutionMode {
 
 export function isHappyRobotConfigured() {
   return Boolean(
-    process.env.HAPPYROBOT_API_KEY && process.env.HAPPYROBOT_BASE_URL && process.env.HAPPYROBOT_AGENT_ID
+    process.env.HAPPYROBOT_API_KEY &&
+    process.env.HAPPYROBOT_BASE_URL &&
+    process.env.HAPPYROBOT_AGENT_ID,
   );
 }
 
@@ -177,7 +184,7 @@ export function verifyWebhookSecret(request: Request): { ok: boolean; reason?: s
     return {
       ok: false,
       reason:
-        "El webhook de HappyRobot no está configurado: define HAPPYROBOT_WEBHOOK_SECRET en .env.local antes de exponer esta ruta."
+        "El webhook de HappyRobot no está configurado: define HAPPYROBOT_WEBHOOK_SECRET en .env.local antes de exponer esta ruta.",
     };
   }
   const received = request.headers.get(WEBHOOK_SECRET_HEADER);
@@ -226,7 +233,7 @@ export interface ActionPayloadCore {
 export function buildActionPayload(
   action: Action,
   contact: Contact | null,
-  config = happyRobotConfig()
+  config = happyRobotConfig(),
 ): Record<string, unknown> {
   const channel = config.channelMap[action.channel] ?? action.channel;
   const briefing = contact
@@ -234,7 +241,7 @@ export function buildActionPayload(
         objective: action.objective,
         zoneName: action.zoneId,
         reason: action.reason,
-        urgent: action.channel === "call" || action.channel === "sms"
+        urgent: action.channel === "call" || action.channel === "sms",
       })
     : null;
 
@@ -253,8 +260,8 @@ export function buildActionPayload(
       contactRole: contact?.role ?? null,
       chainId: action.chainId ?? null,
       idempotencyKey: action.idempotencyKey,
-      ...(config.workflowId ? { workflowId: config.workflowId } : {})
-    }
+      ...(config.workflowId ? { workflowId: config.workflowId } : {}),
+    },
   };
 
   if (config.payloadShape === "wrapped") return { action: core };
@@ -284,7 +291,7 @@ function mockResult(action: Action, detail: string): HappyRobotResult {
     externalActionId: `mock-simulado-${action.id}`,
     mode: "mock",
     simulated: true,
-    detail
+    detail,
   };
 }
 
@@ -317,7 +324,7 @@ async function resolveContact(action: Action): Promise<Contact | null> {
  */
 export async function executeHappyRobotAction(
   action: Action,
-  contact?: Contact | null
+  contact?: Contact | null,
 ): Promise<HappyRobotResult> {
   const mode = getExecutionMode();
 
@@ -330,7 +337,7 @@ export async function executeHappyRobotAction(
       "missing-credentials",
       // El sufijo en inglés se mantiene por compatibilidad con tests de otro
       // módulo; el texto útil para el operador es el castellano.
-      "Faltan credenciales de HappyRobot: define HAPPYROBOT_API_KEY, HAPPYROBOT_BASE_URL y HAPPYROBOT_AGENT_ID en .env.local (HappyRobot credentials are missing)."
+      "Faltan credenciales de HappyRobot: define HAPPYROBOT_API_KEY, HAPPYROBOT_BASE_URL y HAPPYROBOT_AGENT_ID en .env.local (HappyRobot credentials are missing).",
     );
   }
 
@@ -342,7 +349,7 @@ export async function executeHappyRobotAction(
       externalActionId: `mock-no-aprobado-${action.id}`,
       mode: "mock",
       simulated: true,
-      detail: `Degradado a simulación porque ${bloqueo ?? "el destinatario no está aprobado para la demo"}. No se ha enviado nada al exterior.`
+      detail: `Degradado a simulación porque ${bloqueo ?? "el destinatario no está aprobado para la demo"}. No se ha enviado nada al exterior.`,
     };
   }
 
@@ -355,7 +362,9 @@ export async function executeHappyRobotAction(
     // Clave de idempotencia canónica: la que gestiona el store y que cambia
     // en cada reintento del operador, no una inventada aquí.
     [config.idempotencyHeader]: action.idempotencyKey,
-    [config.authHeader]: config.authScheme ? `${config.authScheme} ${config.apiKey}` : config.apiKey
+    [config.authHeader]: config.authScheme
+      ? `${config.authScheme} ${config.apiKey}`
+      : config.apiKey,
   };
 
   /** Un único intento, con su propio temporizador de cancelacion. */
@@ -368,7 +377,7 @@ export async function executeHappyRobotAction(
         method: "POST",
         headers,
         body,
-        signal: controller.signal
+        signal: controller.signal,
       });
 
       const text = await response.text();
@@ -381,13 +390,13 @@ export async function executeHappyRobotAction(
           throw new HappyRobotError(
             "client-error",
             `HappyRobot rechazó la acción con ${response.status}: revisa la ruta (${config.actionPath}), la clave o el formato del cuerpo. Respuesta: ${recorte || "sin cuerpo"}`,
-            { status: response.status, attempts: attempt }
+            { status: response.status, attempts: attempt },
           );
         }
         throw new HappyRobotError(
           "server-error",
           `HappyRobot respondió ${response.status} (fallo del servicio). Respuesta: ${recorte || "sin cuerpo"}`,
-          { status: response.status, attempts: attempt }
+          { status: response.status, attempts: attempt },
         );
       }
 
@@ -400,7 +409,7 @@ export async function executeHappyRobotAction(
         throw new HappyRobotError(
           "unreadable-response",
           `HappyRobot aceptó la petición (${response.status}) pero devolvió una respuesta ilegible. Comprueba en HappyRobot si la acción salió antes de reintentar. Respuesta: ${text.slice(0, 200)}`,
-          { status: response.status, attempts: attempt }
+          { status: response.status, attempts: attempt },
         );
       }
 
@@ -412,7 +421,7 @@ export async function executeHappyRobotAction(
         externalActionId: externalId,
         mode: "happyrobot",
         simulated: false,
-        detail: `Acción enviada a HappyRobot (${config.channelMap[action.channel] ?? action.channel}) para ${resolved.name}, intento ${attempt} de ${config.maxAttempts}.`
+        detail: `Acción enviada a HappyRobot (${config.channelMap[action.channel] ?? action.channel}) para ${resolved.name}, intento ${attempt} de ${config.maxAttempts}.`,
       };
     } finally {
       clearTimeout(timer);
@@ -441,7 +450,8 @@ export async function executeHappyRobotAction(
   }
 
   throw (
-    ultimoError ?? new HappyRobotError("network", "HappyRobot no respondió y no se pudo clasificar el fallo.")
+    ultimoError ??
+    new HappyRobotError("network", "HappyRobot no respondió y no se pudo clasificar el fallo.")
   );
 }
 
@@ -452,16 +462,20 @@ function classifyError(error: unknown, attempt: number, config: HappyRobotConfig
       return new HappyRobotError(
         "timeout",
         `HappyRobot agotó el tiempo de espera de ${config.timeoutMs} ms en el intento ${attempt}. La acción puede no haber salido; el centro de mando no se queda bloqueado esperando.`,
-        { attempts: attempt }
+        { attempts: attempt },
       );
     }
     return new HappyRobotError(
       "network",
       `No se pudo contactar con HappyRobot en el intento ${attempt}: ${error.message}. Comprueba HAPPYROBOT_BASE_URL y la conectividad.`,
-      { attempts: attempt }
+      { attempts: attempt },
     );
   }
-  return new HappyRobotError("network", `Fallo desconocido al llamar a HappyRobot: ${String(error)}`, {
-    attempts: attempt
-  });
+  return new HappyRobotError(
+    "network",
+    `Fallo desconocido al llamar a HappyRobot: ${String(error)}`,
+    {
+      attempts: attempt,
+    },
+  );
 }

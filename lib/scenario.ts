@@ -77,7 +77,7 @@ const wildfireScript: ScenarioScript = {
   name: "Incendio forestal en Sierra Morena",
   description:
     "El frente avanza, el viento gira, una carretera se corta y un recurso cae mientras el sistema ejecuta acciones.",
-  beats: seedScenarioBeats
+  beats: seedScenarioBeats,
 };
 
 /** Guion alternativo: apagon en cascada sobre el valle del Guadalquivir. */
@@ -100,8 +100,8 @@ const blackoutScript: ScenarioScript = {
         category: "apagon",
         severity: "high",
         confidence: "high",
-        confirmed: true
-      }
+        confirmed: true,
+      },
     },
     {
       id: "blackout-2",
@@ -116,14 +116,14 @@ const blackoutScript: ScenarioScript = {
         category: "suministro critico",
         severity: "critical",
         confidence: "high",
-        confirmed: true
-      }
+        confirmed: true,
+      },
     },
     {
       id: "blackout-3",
       atSeconds: 85,
       label: "Semáforos apagados: accesos cortados y tráfico colapsado",
-      demoKind: "route-blocked"
+      demoKind: "route-blocked",
     },
     {
       id: "blackout-4",
@@ -138,14 +138,14 @@ const blackoutScript: ScenarioScript = {
         category: "comunicaciones",
         severity: "high",
         confidence: "medium",
-        confirmed: null
-      }
+        confirmed: null,
+      },
     },
     {
       id: "blackout-5",
       atSeconds: 155,
       label: "Un equipo desplegado se queda sin combustible y cae del dispositivo",
-      demoKind: "resource-down"
+      demoKind: "resource-down",
     },
     {
       id: "blackout-6",
@@ -160,16 +160,16 @@ const blackoutScript: ScenarioScript = {
         category: "poblacion vulnerable",
         severity: "critical",
         confidence: "medium",
-        confirmed: null
-      }
+        confirmed: null,
+      },
     },
     {
       id: "blackout-7",
       atSeconds: 225,
       label: "La mensajería masiva deja de confirmar envíos",
-      demoKind: "integration-failure"
-    }
-  ]
+      demoKind: "integration-failure",
+    },
+  ],
 };
 
 /** Guion alternativo: crecida del Guadalquivir y temporal en el litoral. */
@@ -192,8 +192,8 @@ const floodScript: ScenarioScript = {
         category: "inundacion",
         severity: "high",
         confidence: "high",
-        confirmed: true
-      }
+        confirmed: true,
+      },
     },
     {
       id: "flood-2",
@@ -208,14 +208,14 @@ const floodScript: ScenarioScript = {
         category: "evacuacion",
         severity: "critical",
         confidence: "high",
-        confirmed: true
-      }
+        confirmed: true,
+      },
     },
     {
       id: "flood-3",
       atSeconds: 90,
       label: "La carretera de acceso queda cortada por la crecida",
-      demoKind: "route-blocked"
+      demoKind: "route-blocked",
     },
     {
       id: "flood-4",
@@ -230,14 +230,14 @@ const floodScript: ScenarioScript = {
         category: "logistica",
         severity: "high",
         confidence: "medium",
-        confirmed: null
-      }
+        confirmed: null,
+      },
     },
     {
       id: "flood-5",
       atSeconds: 160,
       label: "Una embarcación de rescate queda fuera de servicio",
-      demoKind: "resource-down"
+      demoKind: "resource-down",
     },
     {
       id: "flood-6",
@@ -252,16 +252,16 @@ const floodScript: ScenarioScript = {
         category: "refugio",
         severity: "high",
         confidence: "medium",
-        confirmed: null
-      }
+        confirmed: null,
+      },
     },
     {
       id: "flood-7",
       atSeconds: 230,
       label: "El proveedor de SMS deja de confirmar entregas",
-      demoKind: "integration-failure"
-    }
-  ]
+      demoKind: "integration-failure",
+    },
+  ],
 };
 
 export const DEFAULT_SCRIPT_ID = wildfireScript.id;
@@ -278,7 +278,7 @@ export function listScenarioScripts() {
     name: script.name,
     description: script.description,
     beats: script.beats.length,
-    durationSeconds: script.beats.reduce((max, beat) => Math.max(max, beat.atSeconds), 0)
+    durationSeconds: script.beats.reduce((max, beat) => Math.max(max, beat.atSeconds), 0),
   }));
 }
 
@@ -322,7 +322,7 @@ function defaultRuntime(scriptId: string): ScenarioRuntime {
     segmentStartedAtMs: null,
     skippedBeatIds: [],
     finishedAt: null,
-    startedAtReal: null
+    startedAtReal: null,
   };
 }
 
@@ -341,17 +341,23 @@ export function withRuntime(scenario: ScenarioState, nowMs = Date.now()): Scenar
     paused: existing?.paused === true,
     pausedAt: typeof existing?.pausedAt === "string" ? existing.pausedAt : null,
     accumulatedSeconds:
-      typeof existing?.accumulatedSeconds === "number" && Number.isFinite(existing.accumulatedSeconds)
+      typeof existing?.accumulatedSeconds === "number" &&
+      Number.isFinite(existing.accumulatedSeconds)
         ? Math.max(0, existing.accumulatedSeconds)
         : base.accumulatedSeconds,
     segmentStartedAtMs:
-      typeof existing?.segmentStartedAtMs === "number" && Number.isFinite(existing.segmentStartedAtMs)
+      typeof existing?.segmentStartedAtMs === "number" &&
+      Number.isFinite(existing.segmentStartedAtMs)
         ? existing.segmentStartedAtMs
         : null,
-    skippedBeatIds: Array.isArray(existing?.skippedBeatIds) ? [...(existing.skippedBeatIds as string[])] : [],
+    skippedBeatIds: Array.isArray(existing?.skippedBeatIds)
+      ? [...(existing.skippedBeatIds as string[])]
+      : [],
     finishedAt: typeof existing?.finishedAt === "string" ? existing.finishedAt : null,
     startedAtReal:
-      typeof existing?.startedAtReal === "string" ? existing.startedAtReal : (scenario.startedAt ?? null)
+      typeof existing?.startedAtReal === "string"
+        ? existing.startedAtReal
+        : (scenario.startedAt ?? null),
   };
 
   // Un estado restaurado puede decir "corriendo" sin tramo abierto: se abre uno
@@ -364,7 +370,9 @@ export function withRuntime(scenario: ScenarioState, nowMs = Date.now()): Scenar
 }
 
 function isUsableSpeed(value: unknown): value is number {
-  return typeof value === "number" && Number.isFinite(value) && value >= MIN_SPEED && value <= MAX_SPEED;
+  return (
+    typeof value === "number" && Number.isFinite(value) && value >= MIN_SPEED && value <= MAX_SPEED
+  );
 }
 
 /** Normaliza una velocidad recibida de fuera. Devuelve null si no es valida. */
@@ -505,7 +513,7 @@ export function createScenarioState(scriptId: string = DEFAULT_SCRIPT_ID): Scena
     startedAt: null,
     elapsedSeconds: 0,
     beats: cloneBeats(script.beats),
-    firedBeatIds: []
+    firedBeatIds: [],
   };
   return withRuntime(scenario);
 }
@@ -547,7 +555,8 @@ export function startScenario(scenario: ScenarioState, at: string): ScenarioStat
   if (script && scriptChanged) applyScript(target, script);
 
   const neverStarted = target.startedAt === null;
-  const exhausted = runtime.finishedAt !== null || target.beats.every((beat) => isSettled(target, beat));
+  const exhausted =
+    runtime.finishedAt !== null || target.beats.every((beat) => isSettled(target, beat));
   const fresh = scriptChanged || requestedRestart || neverStarted || exhausted;
 
   if (fresh) {
@@ -583,7 +592,9 @@ export function stopScenario(scenario: ScenarioState, atMs = Date.now()): Scenar
 
   const exhausted = target.beats.every((beat) => isSettled(target, beat));
   target.runtime.paused = !exhausted && target.startedAt !== null;
-  target.runtime.pausedAt = target.runtime.paused ? new Date(atMs).toISOString() : target.runtime.pausedAt;
+  target.runtime.pausedAt = target.runtime.paused
+    ? new Date(atMs).toISOString()
+    : target.runtime.pausedAt;
   return target;
 }
 
@@ -605,7 +616,9 @@ export function dueBeats(scenario: ScenarioState, nowMs: number): ScenarioBeat[]
   target.elapsedSeconds = Math.max(0, Math.round(seconds));
   syncVirtualStart(target, nowMs, seconds);
 
-  const due = orderedBeats(target).filter((beat) => !isSettled(target, beat) && beat.atSeconds <= seconds);
+  const due = orderedBeats(target).filter(
+    (beat) => !isSettled(target, beat) && beat.atSeconds <= seconds,
+  );
   if (due.length === 0) return [];
 
   // El ultimo vencido nunca se omite: representa el presente de la crisis.
@@ -638,7 +651,7 @@ export function scenarioStatus(scenario: ScenarioState, nowMs = Date.now()) {
     firedBeats: target.firedBeatIds.length,
     skippedBeats: target.runtime.skippedBeatIds.length,
     remainingBeats: total - settled,
-    nextBeat: next ? { id: next.id, atSeconds: next.atSeconds, label: next.label } : null
+    nextBeat: next ? { id: next.id, atSeconds: next.atSeconds, label: next.label } : null,
   };
 }
 
@@ -693,7 +706,7 @@ export function stopHeartbeat(): void {
  */
 export function ensureHeartbeat(
   tick: () => boolean,
-  intervalMs: number = DEFAULT_HEARTBEAT_MS
+  intervalMs: number = DEFAULT_HEARTBEAT_MS,
 ): "started" | "disabled" {
   if (!heartbeatEnabled()) return "disabled";
 
@@ -716,7 +729,7 @@ export function ensureHeartbeat(
   globalThis.crisisScenarioHeartbeat = {
     timer,
     intervalMs: safeInterval,
-    startedAt: new Date().toISOString()
+    startedAt: new Date().toISOString(),
   };
   return "started";
 }

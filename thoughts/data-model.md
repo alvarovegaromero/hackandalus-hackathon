@@ -342,17 +342,17 @@ export const worldStateSchema = z
   .object({
     wind: z.object({
       direction: z.enum(["N", "NE", "E", "SE", "S", "SO", "O", "NO"]),
-      speedKmh: z.number().min(0)
+      speedKmh: z.number().min(0),
     }),
     roads: z.record(z.string(), z.enum(["open", "restricted", "closed"])),
     channels: z.object({
       sms: z.boolean(),
       voice: z.boolean(),
       whatsapp: z.boolean(),
-      email: z.boolean()
+      email: z.boolean(),
     }),
     hospitals: z.record(z.string(), z.object({ beds: z.number().int().min(0) })),
-    frontline: z.object({ x: z.number(), y: z.number(), headingDeg: z.number() }).optional()
+    frontline: z.object({ x: z.number(), y: z.number(), headingDeg: z.number() }).optional(),
   })
   .strict();
 ```
@@ -1084,7 +1084,14 @@ export const confidenceLabel = z.enum(["low", "medium", "high"]);
 export const probability = z.number().min(0).max(1);
 export const isoDate = z.iso.datetime();
 
-export const signalSource = z.enum(["operator", "sensor", "happyrobot", "public", "scenario", "webhook"]);
+export const signalSource = z.enum([
+  "operator",
+  "sensor",
+  "happyrobot",
+  "public",
+  "scenario",
+  "webhook",
+]);
 export const channel = z.enum([
   "call",
   "sms",
@@ -1094,7 +1101,7 @@ export const channel = z.enum([
   "teams",
   "ticket",
   "webhook",
-  "internal"
+  "internal",
 ]);
 export const triageDecision = z.enum(["act", "verify", "discard"]);
 export const autonomyLevel = z.enum(["auto", "auto_notify", "approval"]);
@@ -1107,7 +1114,7 @@ export const actionKind = z.enum([
   "evacuate",
   "escalate",
   "ticket",
-  "review"
+  "review",
 ]);
 export const actionStatus = z.enum([
   "proposed",
@@ -1119,7 +1126,7 @@ export const actionStatus = z.enum([
   "failed",
   "blocked",
   "stalled",
-  "cancelled"
+  "cancelled",
 ]);
 ```
 
@@ -1139,7 +1146,7 @@ export const incomingSignalSchema = z
     reportedConfidence: confidenceLabel.optional(),
     location: z.object({ x: z.number(), y: z.number() }).optional(),
     occurredAt: isoDate.optional(),
-    raw: z.unknown().optional()
+    raw: z.unknown().optional(),
   })
   .strict();
 
@@ -1154,7 +1161,7 @@ export const signalAssessmentSchema = z
     assessor: z.enum(["deterministic", "jev", "llm", "operator"]),
     latencyMs: z.number().int().min(0).optional(),
     costMicros: z.number().int().min(0).optional(),
-    details: z.record(z.string(), z.unknown()).optional()
+    details: z.record(z.string(), z.unknown()).optional(),
   })
   .strict();
 ```
@@ -1166,7 +1173,7 @@ export const priorityFactorSchema = z
     key: z.string(),
     label: z.string(),
     value: z.number(),
-    op: z.enum(["add", "mul"]).default("add")
+    op: z.enum(["add", "mul"]).default("add"),
   })
   .strict();
 
@@ -1178,7 +1185,7 @@ export const planPrioritySchema = z
     score: z.number(),
     formulaVersion: z.string(),
     factors: z.array(priorityFactorSchema).min(1),
-    reason: z.string().min(1).max(400)
+    reason: z.string().min(1).max(400),
   })
   .strict();
 
@@ -1192,10 +1199,10 @@ export const planChangeSchema = z
       "resource_reassigned",
       "assumption_broken",
       "zone_status",
-      "integration"
+      "integration",
     ]),
     label: z.string().min(1).max(160),
-    detail: z.string().min(1).max(600)
+    detail: z.string().min(1).max(600),
   })
   .strict();
 
@@ -1206,7 +1213,7 @@ export const assumptionSchema = z
     variable: z.string(),
     operator: z.enum(["eq", "neq", "lt", "lte", "gt", "gte", "in", "contains"]),
     expected: z.unknown(),
-    consequence: z.string().max(400).optional()
+    consequence: z.string().max(400).optional(),
   })
   .strict();
 
@@ -1228,12 +1235,12 @@ export const plannerOutputSchema = z
             objective: z.string().min(1).max(400),
             messageBody: z.string().max(1200).optional(),
             askFor: z.string().max(300).optional(),
-            reason: z.string().min(1).max(400)
+            reason: z.string().min(1).max(400),
           })
-          .strict()
+          .strict(),
       )
       .max(12),
-    planB: z.string().max(800).optional()
+    planB: z.string().max(800).optional(),
   })
   .strict();
 ```
@@ -1251,7 +1258,7 @@ export const createActionSchema = z
     targetLabel: z.string().min(1).max(200),
     objective: z.string().min(1).max(400),
     messageBody: z.string().max(1200).optional(),
-    reason: z.string().min(1).max(400)
+    reason: z.string().min(1).max(400),
   })
   .strict();
 
@@ -1260,14 +1267,22 @@ export const actionResultSchema = z
     externalActionId: z.string().optional(),
     localActionId: z.uuid().optional(),
     attempt: z.number().int().min(1),
-    outcome: z.enum(["accepted", "declined", "no_answer", "needs_human", "delivered", "failed", "info"]),
+    outcome: z.enum([
+      "accepted",
+      "declined",
+      "no_answer",
+      "needs_human",
+      "delivered",
+      "failed",
+      "info",
+    ]),
     summary: z.string().max(2000).optional(),
     transcript: z.string().max(20000).optional(),
     structured: z.record(z.string(), z.unknown()).optional(),
     newInformation: z
       .array(incomingSignalSchema.omit({ runId: true }))
       .max(10)
-      .optional()
+      .optional(),
   })
   .strict();
 ```
@@ -1278,14 +1293,14 @@ export const approvalDecisionSchema = z
   .object({
     approvalId: z.uuid(),
     decision: z.enum(["approved", "rejected"]),
-    note: z.string().max(400).optional()
+    note: z.string().max(400).optional(),
   })
   .strict();
 
 export const directiveSchema = z
   .object({
     runId: z.uuid(),
-    rawText: z.string().trim().min(1).max(300)
+    rawText: z.string().trim().min(1).max(300),
   })
   .strict();
 
@@ -1294,22 +1309,22 @@ export const interpretedDirectiveSchema = z.discriminatedUnion("kind", [
     kind: z.literal("boost"),
     target: z.object({
       incidentId: z.uuid().optional(),
-      vulnerableSiteSlug: z.string().optional()
+      vulnerableSiteSlug: z.string().optional(),
     }),
-    factor: z.number().min(1).max(3)
+    factor: z.number().min(1).max(3),
   }),
   z.object({ kind: z.literal("forbid_resource"), resourceSlug: z.string() }),
   z.object({
     kind: z.literal("reserve"),
     resourceKind: z.string(),
-    minimum: z.number().int().min(0)
+    minimum: z.number().int().min(0),
   }),
   z.object({ kind: z.literal("pause_autonomy") }),
   z.object({
     kind: z.literal("set_autonomy"),
     actionKind,
-    level: autonomyLevel
-  })
+    level: autonomyLevel,
+  }),
 ]);
 ```
 

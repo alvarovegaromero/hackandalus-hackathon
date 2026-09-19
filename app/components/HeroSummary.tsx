@@ -12,7 +12,7 @@ import {
   planChangeLabels,
   severityRank,
   troubledActionStatuses,
-  zoneStatusLabels
+  zoneStatusLabels,
 } from "./shared";
 
 interface Props {
@@ -23,17 +23,25 @@ interface Props {
   onOpenAudit: () => void;
 }
 
-export default function HeroSummary({ situation, nowMs, planIsFresh, onFocusZone, onOpenAudit }: Props) {
+export default function HeroSummary({
+  situation,
+  nowMs,
+  planIsFresh,
+  onFocusZone,
+  onOpenAudit,
+}: Props) {
   const priority = situation.plan.priorities[0] ?? null;
   const topZone = situation.zones.find((zone) => zone.id === priority?.zoneId) ?? null;
 
   const openActions = situation.actions.filter(isOpenAction);
   const troubled = openActions.filter((action) => troubledActionStatuses.includes(action.status));
   const criticalSignals = situation.events.filter(
-    (event) => event.confirmed !== false && severityRank[event.severity] >= severityRank.high
+    (event) => event.confirmed !== false && severityRank[event.severity] >= severityRank.high,
   );
   const unverifiedSignals = situation.events.filter((event) => event.confirmed === null);
-  const availableResources = situation.resources.filter((resource) => resource.status === "available");
+  const availableResources = situation.resources.filter(
+    (resource) => resource.status === "available",
+  );
   const downResources = situation.resources.filter((resource) => resource.status === "unavailable");
   const peopleAtRisk = situation.zones
     .filter((zone) => zone.status === "active" || zone.status === "critical")
@@ -59,11 +67,13 @@ export default function HeroSummary({ situation, nowMs, planIsFresh, onFocusZone
             <h2>{topZone.name}</h2>
             <p className="hero-reason">{priority.reason}</p>
             <div className="hero-foot">
-              <span className={`pill zone-${topZone.status}`}>{zoneStatusLabels[topZone.status]}</span>
+              <span className={`pill zone-${topZone.status}`}>
+                {zoneStatusLabels[topZone.status]}
+              </span>
               <span className="pill">Puntuación {priority.score}</span>
               <span className="pill">
-                <Users size={13} aria-hidden="true" /> {topZone.populationAtRisk.toLocaleString("es-ES")}{" "}
-                personas
+                <Users size={13} aria-hidden="true" />{" "}
+                {topZone.populationAtRisk.toLocaleString("es-ES")} personas
               </span>
               <button className="link-button" onClick={() => onFocusZone(topZone.id)}>
                 Ver zona <ArrowRight size={14} aria-hidden="true" />
@@ -75,7 +85,10 @@ export default function HeroSummary({ situation, nowMs, planIsFresh, onFocusZone
         )}
       </article>
 
-      <article className={`hero-card hero-change ${planIsFresh ? "just-changed" : ""}`} aria-live="polite">
+      <article
+        className={`hero-card hero-change ${planIsFresh ? "just-changed" : ""}`}
+        aria-live="polite"
+      >
         <header>
           <History size={16} aria-hidden="true" />
           <span>Qué ha cambiado</span>
@@ -95,7 +108,9 @@ export default function HeroSummary({ situation, nowMs, planIsFresh, onFocusZone
           <ul className="change-list compact">
             {changes.slice(0, 3).map((change, index) => (
               <li key={`${change.kind}-${index}`}>
-                <span className={`change-kind ${change.kind}`}>{planChangeLabels[change.kind]}</span>
+                <span className={`change-kind ${change.kind}`}>
+                  {planChangeLabels[change.kind]}
+                </span>
                 <span className="change-label">{change.label}</span>
               </li>
             ))}
@@ -132,7 +147,9 @@ export default function HeroSummary({ situation, nowMs, planIsFresh, onFocusZone
         <article className="kpi">
           <span>Personas en zonas activas</span>
           <strong>{peopleAtRisk.toLocaleString("es-ES")}</strong>
-          <small>{situation.zones.filter((zone) => zone.status !== "stable").length} zonas no estables</small>
+          <small>
+            {situation.zones.filter((zone) => zone.status !== "stable").length} zonas no estables
+          </small>
         </article>
         <article className="kpi">
           <span>Ejecución</span>
@@ -140,8 +157,8 @@ export default function HeroSummary({ situation, nowMs, planIsFresh, onFocusZone
             {situation.integration.mode === "happyrobot" ? "Real" : "Simulada"}
           </strong>
           <small>
-            {situation.integration.liveActionsExecuted} reales · {situation.integration.mockActionsExecuted}{" "}
-            simuladas
+            {situation.integration.liveActionsExecuted} reales ·{" "}
+            {situation.integration.mockActionsExecuted} simuladas
           </small>
         </article>
         <article className={situation.scenario.running ? "kpi running" : "kpi"}>

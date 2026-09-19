@@ -7,7 +7,7 @@ const event = {
   incidentId: "22222222-2222-4222-8222-222222222222",
   summary: "Acceso cortado",
   severity: "high" as const,
-  source: "operator" as const
+  source: "operator" as const,
 };
 
 describe("crisis boundaries", () => {

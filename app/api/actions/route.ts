@@ -8,7 +8,7 @@ import {
   createActionSchema,
   methodNotAllowed,
   parseJsonBody,
-  validarReferencias
+  validarReferencias,
 } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   const referencias = validarReferencias({
     zoneId: parsed.data.zoneId,
     resourceId: parsed.data.resourceId,
-    contactId: parsed.data.contactId
+    contactId: parsed.data.contactId,
   });
   if (referencias) return referencias;
 

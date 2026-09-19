@@ -29,7 +29,14 @@
 // Como la reconstruccion siempre parte de los RunRecord, reiniciar el proceso
 // no infla ningun contador.
 
-import type { Action, ActionChannel, ChannelStat, LearnedWeights, RunRecord, SituationState } from "./types";
+import type {
+  Action,
+  ActionChannel,
+  ChannelStat,
+  LearnedWeights,
+  RunRecord,
+  SituationState,
+} from "./types";
 
 // ---------------------------------------------------------------------------
 // Umbrales de aprendizaje
@@ -67,14 +74,18 @@ export function emptyWeights(): LearnedWeights {
     contactStats: {},
     unconfirmedPenalty: 0,
     runsAnalyzed: 0,
-    updatedAt: null
+    updatedAt: null,
   };
 }
 
-function addStat(target: ChannelStat | undefined, attempts: number, successes: number): ChannelStat {
+function addStat(
+  target: ChannelStat | undefined,
+  attempts: number,
+  successes: number,
+): ChannelStat {
   return {
     attempts: (target?.attempts ?? 0) + attempts,
-    successes: (target?.successes ?? 0) + successes
+    successes: (target?.successes ?? 0) + successes,
   };
 }
 
@@ -98,13 +109,21 @@ export function recordActionOutcome(weights: LearnedWeights, action: Action): Le
   const next: LearnedWeights = {
     ...weights,
     channelStats: { ...weights.channelStats },
-    contactStats: { ...weights.contactStats }
+    contactStats: { ...weights.contactStats },
   };
 
-  next.channelStats[action.channel] = addStat(next.channelStats[action.channel], 1, succeeded ? 1 : 0);
+  next.channelStats[action.channel] = addStat(
+    next.channelStats[action.channel],
+    1,
+    succeeded ? 1 : 0,
+  );
 
   if (action.contactId) {
-    next.contactStats[action.contactId] = addStat(next.contactStats[action.contactId], 1, succeeded ? 1 : 0);
+    next.contactStats[action.contactId] = addStat(
+      next.contactStats[action.contactId],
+      1,
+      succeeded ? 1 : 0,
+    );
   }
 
   next.updatedAt = new Date().toISOString();
@@ -149,13 +168,15 @@ function parseStatNote(note: string): ParsedStat | null {
  */
 export function buildRunRecord(
   state: SituationState,
-  options: { id?: string; startedAt?: string; endedAt?: string; notes?: string[] } = {}
+  options: { id?: string; startedAt?: string; endedAt?: string; notes?: string[] } = {},
 ): RunRecord {
   const actions = state.actions ?? [];
   const events = state.events ?? [];
 
   const succeeded = actions.filter((action) => action.status === "succeeded");
-  const failed = actions.filter((action) => action.status === "failed" || action.status === "stalled");
+  const failed = actions.filter(
+    (action) => action.status === "failed" || action.status === "stalled",
+  );
 
   // Exito por canal y por contacto, contando solo intentos que llegaron a salir.
   const channelStats: Partial<Record<ActionChannel, ChannelStat>> = {};
@@ -175,7 +196,7 @@ export function buildRunRecord(
 
   const notes: string[] = [
     ...(options.notes ?? []),
-    statNote("unconfirmed", "todas", falseSignals.length, Math.max(resolved.length, 1))
+    statNote("unconfirmed", "todas", falseSignals.length, Math.max(resolved.length, 1)),
   ];
   if (resolved.length === 0) notes.pop();
 
@@ -189,7 +210,7 @@ export function buildRunRecord(
   // Una linea legible para el jurado, junto a las notas estructuradas.
   notes.push(
     `Resumen: ${succeeded.length} de ${actions.length} acciones completadas, ${failed.length} fallidas, ` +
-      `${resolved.length} señales verificadas de las cuales ${falseSignals.length} resultaron falsas.`
+      `${resolved.length} señales verificadas de las cuales ${falseSignals.length} resultaron falsas.`,
   );
 
   const startedAt = options.startedAt ?? state.scenario?.startedAt ?? new Date().toISOString();
@@ -203,7 +224,7 @@ export function buildRunRecord(
     actionsSucceeded: succeeded.length,
     actionsFailed: failed.length,
     planVersions: state.plan?.version ?? 0,
-    notes
+    notes,
   };
 }
 
@@ -300,7 +321,7 @@ function rate(stat: ChannelStat | undefined, minSamples: number): number | null 
 export function channelSuccessRate(
   weights: LearnedWeights,
   channel: ActionChannel,
-  minSamples: number = MIN_CHANNEL_SAMPLES
+  minSamples: number = MIN_CHANNEL_SAMPLES,
 ): number | null {
   return rate(weights.channelStats[channel], minSamples);
 }
@@ -309,7 +330,7 @@ export function channelSuccessRate(
 export function contactSuccessRate(
   weights: LearnedWeights,
   contactId: string,
-  minSamples: number = MIN_CONTACT_SAMPLES
+  minSamples: number = MIN_CONTACT_SAMPLES,
 ): number | null {
   return rate(weights.contactStats[contactId], minSamples);
 }
@@ -317,7 +338,7 @@ export function contactSuccessRate(
 /** Canal con mejor historial entre los candidatos, o null si nadie llega al minimo. */
 export function bestLearnedChannel(
   weights: LearnedWeights,
-  candidates: ActionChannel[]
+  candidates: ActionChannel[],
 ): ActionChannel | null {
   let best: { channel: ActionChannel; rate: number } | null = null;
   for (const channel of candidates) {
@@ -376,7 +397,7 @@ export function explainWeights(weights: LearnedWeights, runs: RunRecord[] = []):
         "El sistema arranca sin historial: ningún peso está ajustado y se usan los valores por defecto.",
       samples: 0,
       value: 0,
-      applied: false
+      applied: false,
     });
     return insights;
   }
@@ -387,7 +408,7 @@ export function explainWeights(weights: LearnedWeights, runs: RunRecord[] = []):
     detail: `Los pesos se han reconstruido sumando ${weights.runsAnalyzed} ejecución${weights.runsAnalyzed === 1 ? "" : "es"} guardada${weights.runsAnalyzed === 1 ? "" : "s"} en disco.`,
     samples: weights.runsAnalyzed,
     value: weights.runsAnalyzed,
-    applied: true
+    applied: true,
   });
 
   for (const [channel, stat] of Object.entries(weights.channelStats)) {
@@ -399,7 +420,7 @@ export function explainWeights(weights: LearnedWeights, runs: RunRecord[] = []):
       detail: `${stat.successes} de ${stat.attempts} intentos por ${channel} terminaron bien en ejecuciones anteriores, así que se prefiere ${value >= 0.5 ? "frente a" : "por detrás de"} los canales con peor historial.`,
       samples: stat.attempts,
       value: round(value),
-      applied: true
+      applied: true,
     });
   }
 
@@ -411,20 +432,21 @@ export function explainWeights(weights: LearnedWeights, runs: RunRecord[] = []):
       detail: `${stat.successes} de ${stat.attempts} avisos a ${contactId} obtuvieron respuesta. Con ${stat.attempts} muestras ya se supera el mínimo de ${MIN_CONTACT_SAMPLES}, así que este dato pesa en la elección de contacto.`,
       samples: stat.attempts,
       value: round(value),
-      applied: true
+      applied: true,
     });
   }
 
   const { unconfirmed } = gatherEvidence(runs);
   if (weights.unconfirmedPenalty > 0) {
-    const falseRate = unconfirmed.resolved > 0 ? unconfirmed.falseSignals / unconfirmed.resolved : 0;
+    const falseRate =
+      unconfirmed.resolved > 0 ? unconfirmed.falseSignals / unconfirmed.resolved : 0;
     insights.push({
       key: "unconfirmed",
       label: `Las señales sin confirmar pierden un ${percent(weights.unconfirmedPenalty)} de peso`,
       detail: `De ${unconfirmed.resolved} señales que llegaron a verificarse, ${unconfirmed.falseSignals} resultaron falsas (${percent(falseRate)}). El ajuste sube como mucho ${UNCONFIRMED_PENALTY_STEP} por ejecución y nunca pasa de ${MAX_UNCONFIRMED_PENALTY}.`,
       samples: unconfirmed.resolved,
       value: weights.unconfirmedPenalty,
-      applied: true
+      applied: true,
     });
   } else if (unconfirmed.resolved > 0) {
     const falta =
@@ -437,7 +459,7 @@ export function explainWeights(weights: LearnedWeights, runs: RunRecord[] = []):
       detail: `Hay indicios (${unconfirmed.falseSignals} de ${unconfirmed.resolved} señales verificadas resultaron falsas), pero ${falta}. Con tan pocos datos, mover el peso sería sobrerreaccionar.`,
       samples: unconfirmed.resolved,
       value: 0,
-      applied: false
+      applied: false,
     });
   }
 

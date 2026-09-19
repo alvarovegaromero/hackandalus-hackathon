@@ -16,7 +16,7 @@ import type {
   ScenarioState,
   Severity,
   SituationState,
-  ZoneStatus
+  ZoneStatus,
 } from "@/lib/types";
 
 export const actionStatusLabels: Record<Action["status"], string> = {
@@ -27,7 +27,7 @@ export const actionStatusLabels: Record<Action["status"], string> = {
   failed: "Fallida",
   blocked: "Bloqueada",
   cancelled: "Cancelada",
-  stalled: "Sin respuesta"
+  stalled: "Sin respuesta",
 };
 
 export const channelLabels: Record<ActionChannel, string> = {
@@ -37,40 +37,40 @@ export const channelLabels: Record<ActionChannel, string> = {
   ticket: "Ticket",
   webhook: "Webhook",
   whatsapp: "WhatsApp",
-  slack: "Slack"
+  slack: "Slack",
 };
 
 export const severityLabels: Record<Severity, string> = {
   low: "Baja",
   medium: "Media",
   high: "Alta",
-  critical: "Crítica"
+  critical: "Crítica",
 };
 
 export const confidenceLabels: Record<Confidence, string> = {
   low: "Confianza baja",
   medium: "Confianza media",
-  high: "Confianza alta"
+  high: "Confianza alta",
 };
 
 export const zoneStatusLabels: Record<ZoneStatus, string> = {
   stable: "Estable",
   watch: "Vigilancia",
   active: "Activa",
-  critical: "Crítica"
+  critical: "Crítica",
 };
 
 export const resourceStatusLabels: Record<Resource["status"], string> = {
   available: "Disponible",
   assigned: "Asignado",
-  unavailable: "Fuera de servicio"
+  unavailable: "Fuera de servicio",
 };
 
 export const actorLabels: Record<Actor, string> = {
   system: "Sistema",
   operator: "Operador",
   happyrobot: "HappyRobot",
-  scenario: "Escenario"
+  scenario: "Escenario",
 };
 
 export const roleLabels: Record<ContactRole, string> = {
@@ -79,14 +79,14 @@ export const roleLabels: Record<ContactRole, string> = {
   "public-safety": "Seguridad pública",
   volunteer: "Voluntariado",
   "operations-lead": "Jefatura de operaciones",
-  authority: "Autoridad"
+  authority: "Autoridad",
 };
 
 export const chainStatusLabels: Record<EscalationChain["status"], string> = {
   active: "Escalando",
   satisfied: "Resuelta",
   exhausted: "Agotada",
-  cancelled: "Cancelada"
+  cancelled: "Cancelada",
 };
 
 export const planChangeLabels: Record<PlanChangeKind, string> = {
@@ -96,7 +96,7 @@ export const planChangeLabels: Record<PlanChangeKind, string> = {
   "action-invalidated": "Acción invalidada",
   "resource-reassigned": "Recurso reasignado",
   "zone-status": "Cambio de zona",
-  integration: "Integración"
+  integration: "Integración",
 };
 
 export const eventSourceLabels: Record<CrisisEvent["source"], string> = {
@@ -105,14 +105,14 @@ export const eventSourceLabels: Record<CrisisEvent["source"], string> = {
   operator: "Operador",
   public: "Aviso ciudadano",
   demo: "Inyector de demo",
-  scenario: "Guion del escenario"
+  scenario: "Guion del escenario",
 };
 
 export const severityRank: Record<Severity, number> = {
   low: 1,
   medium: 2,
   high: 3,
-  critical: 4
+  critical: 4,
 };
 
 /** Estados que mantienen una acción viva en la cola. */
@@ -122,7 +122,7 @@ export const openActionStatuses: Action["status"][] = [
   "running",
   "failed",
   "blocked",
-  "stalled"
+  "stalled",
 ];
 
 /** Estados que exigen que alguien mire la acción ya. */
@@ -136,7 +136,7 @@ export function timeLabel(value: string) {
   return new Intl.DateTimeFormat("es-ES", {
     hour: "2-digit",
     minute: "2-digit",
-    second: "2-digit"
+    second: "2-digit",
   }).format(new Date(value));
 }
 
@@ -183,7 +183,7 @@ export type RunFn = (label: string, operation: () => Promise<void>) => void;
  */
 export function maybe<K extends keyof SituationState>(
   situation: SituationState,
-  key: K
+  key: K,
 ): SituationState[K] | undefined {
   return (situation as Partial<SituationState>)[key];
 }

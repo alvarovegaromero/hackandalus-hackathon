@@ -7,7 +7,9 @@ const sourceIds = z.array(z.string().min(1)).min(1);
 
 export const effectSchema = z.discriminatedUnion("type", [
   // Change the hidden world.
-  z.object({ type: z.literal("set_fact"), factId: z.string().min(1), value: factValueSchema }).strict(),
+  z
+    .object({ type: z.literal("set_fact"), factId: z.string().min(1), value: factValueSchema })
+    .strict(),
   // Sources report the current value of a real fact (with noise).
   z.object({ type: z.literal("witness"), factId: z.string().min(1), count, sourceIds }).strict(),
   // Sources report something that does not exist in the world.
@@ -19,9 +21,9 @@ export const effectSchema = z.discriminatedUnion("type", [
       value: factValueSchema,
       location: locationSchema,
       count,
-      sourceIds
+      sourceIds,
     })
-    .strict()
+    .strict(),
 ]);
 
 export const scenarioEventSchema = z
@@ -30,7 +32,7 @@ export const scenarioEventSchema = z
     atMin: z.number().min(0),
     kind: z.enum(["scheduled", "chaos", "noise_burst"]),
     label: z.string().min(1),
-    effects: z.array(effectSchema).min(1)
+    effects: z.array(effectSchema).min(1),
   })
   .strict();
 

@@ -12,13 +12,18 @@ function stableUuid(...parts: string[]) {
 export function signalToEvent(incidentId: string, signal: Signal): CrisisEvent {
   const { body } = signal;
   const content =
-    body.type === "text" ? body.text : `${body.metric}: ${body.value}${body.unit ? ` ${body.unit}` : ""}`;
+    body.type === "text"
+      ? body.text
+      : `${body.metric}: ${body.value}${body.unit ? ` ${body.unit}` : ""}`;
   return {
     id: stableUuid(incidentId, signal.id),
     incidentId,
-    summary: `${channelLabels[signal.channel]} · ${signal.location.placeName}: ${content}`.slice(0, 2000),
+    summary: `${channelLabels[signal.channel]} · ${signal.location.placeName}: ${content}`.slice(
+      0,
+      2000,
+    ),
     // ponytail: signals carry no severity; the agent triages. Derive one when FARO's triage lands.
     severity: "medium",
-    source: signal.channel === "sensor" ? "sensor" : "webhook"
+    source: signal.channel === "sensor" ? "sensor" : "webhook",
   };
 }

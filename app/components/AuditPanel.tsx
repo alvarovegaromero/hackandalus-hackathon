@@ -14,7 +14,7 @@ interface Props {
 const lessonStatusLabels: Record<Lesson["status"], string> = {
   proposed: "Pendiente de validar",
   accepted: "Aceptada",
-  rejected: "Descartada"
+  rejected: "Descartada",
 };
 
 export default function AuditPanel({ audit, lessons }: Props) {
@@ -41,7 +41,8 @@ export default function AuditPanel({ audit, lessons }: Props) {
             ))}
           </ul>
           <p className="muted-note">
-            Validar o descartar una lección todavía no tiene ruta en la API: aquí se muestran tal como llegan.
+            Validar o descartar una lección todavía no tiene ruta en la API: aquí se muestran tal
+            como llegan.
           </p>
         </section>
       ) : null}

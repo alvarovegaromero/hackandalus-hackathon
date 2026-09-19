@@ -43,7 +43,7 @@ const message = (error: unknown) => (error instanceof Error ? error.message : St
 export async function ingest(
   items: unknown[],
   persist: PersistEvents,
-  startRun: StartRun
+  startRun: StartRun,
 ): Promise<IngestResult> {
   const result: IngestResult = { accepted: [], duplicates: [], rejected: [], errors: [] };
   const valid: { index: number; event: CrisisEvent }[] = [];
@@ -64,7 +64,8 @@ export async function ingest(
   try {
     inserted = await persist(valid.map((v) => v.event));
   } catch (error) {
-    for (const { index, event } of valid) result.errors.push({ index, id: event.id, error: message(error) });
+    for (const { index, event } of valid)
+      result.errors.push({ index, id: event.id, error: message(error) });
     return result;
   }
 

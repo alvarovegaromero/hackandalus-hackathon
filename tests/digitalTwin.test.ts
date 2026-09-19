@@ -10,7 +10,7 @@ function mundo(overrides: Partial<WorldState> = {}): WorldState {
 }
 
 function senal(
-  overrides: Partial<CrisisEvent> & Pick<CrisisEvent, "id" | "category" | "description">
+  overrides: Partial<CrisisEvent> & Pick<CrisisEvent, "id" | "category" | "description">,
 ): CrisisEvent {
   const { id, category, description, ...rest } = overrides;
   return {
@@ -29,7 +29,7 @@ function senal(
     appliedRiskDelta: 0,
     appliedNeed: null,
     previousZoneStatus: null,
-    description
+    description,
   };
 }
 
@@ -46,7 +46,7 @@ describe("digital twin", () => {
     const event = senal({
       id: "evt-a397",
       category: "route-blocked",
-      description: "La A-397 queda cortada por el frente."
+      description: "La A-397 queda cortada por el frente.",
     });
 
     const twin = buildDigitalTwin(mundo({ blockedRoads: ["A-397"] }), [event], { now: AHORA });
@@ -72,9 +72,11 @@ describe("digital twin", () => {
       id: "evt-a92",
       category: "route-blocked",
       description: "La A-92 queda cortada.",
-      zoneId: "zone-east"
+      zoneId: "zone-east",
     });
-    const divergent = buildDigitalTwin(mundo({ blockedRoads: ["A-397"] }), [staleEvidence], { now: AHORA });
+    const divergent = buildDigitalTwin(mundo({ blockedRoads: ["A-397"] }), [staleEvidence], {
+      now: AHORA,
+    });
     const divergentRoads = divergent.facts.find((fact) => fact.id === "roads");
 
     expect(divergentRoads?.status).toBe("mismatch");

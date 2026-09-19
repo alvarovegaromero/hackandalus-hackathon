@@ -5,7 +5,10 @@ import { createRequire } from "node:module";
 import path from "node:path";
 
 const require = createRequire(import.meta.url);
-const cli = path.join(path.dirname(require.resolve("secretlint/package.json")), "bin/secretlint.js");
+const cli = path.join(
+  path.dirname(require.resolve("secretlint/package.json")),
+  "bin/secretlint.js",
+);
 const files = execFileSync("git", ["ls-files", "--cached", "-z"], { encoding: "utf8" })
   .split("\0")
   .filter((file) => file && existsSync(file));
@@ -16,7 +19,7 @@ const files = execFileSync("git", ["ls-files", "--cached", "-z"], { encoding: "u
 for (const file of files) {
   const result = spawnSync(process.execPath, [cli, "--stdinFileName", file], {
     input: readFileSync(file),
-    stdio: ["pipe", "inherit", "inherit"]
+    stdio: ["pipe", "inherit", "inherit"],
   });
   if (result.error) throw result.error;
   if (result.status !== 0) process.exit(result.status ?? 1);

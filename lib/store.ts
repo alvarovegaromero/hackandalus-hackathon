@@ -17,14 +17,14 @@ import {
   loadWeights,
   saveRun,
   saveState,
-  saveWeights
+  saveWeights,
 } from "./persistence";
 import { buildDedupeKey, buildPlan } from "./priority";
 import {
   assignResource,
   reassignAffectedActions,
   releaseResource,
-  selectResourceForAction
+  selectResourceForAction,
 } from "./resources";
 import { createScenarioState, dueBeats, startScenario, stopScenario } from "./scenario";
 import {
@@ -35,7 +35,7 @@ import {
   seedResources,
   seedSourceReliability,
   seedWorld,
-  seedZones
+  seedZones,
 } from "./seed";
 import type {
   Action,
@@ -46,10 +46,9 @@ import type {
   CrisisZone,
   DemoKind,
   IncomingEventPayload,
-  IntegrationState,
   Resource,
   SituationState,
-  WorldState
+  WorldState,
 } from "./types";
 
 type MutableState = SituationState & { nextVersion: number };
@@ -102,7 +101,7 @@ function createInitialState(): MutableState {
       happyRobotConfigured: isHappyRobotConfigured(),
       lastExternalError: null,
       liveActionsExecuted: 0,
-      mockActionsExecuted: 0
+      mockActionsExecuted: 0,
     },
     world,
     digitalTwin: buildDigitalTwin(world, events),
@@ -111,7 +110,7 @@ function createInitialState(): MutableState {
     waiting: [],
     sourceReliability: clone(seedSourceReliability),
     lessons: [],
-    nextVersion: 2
+    nextVersion: 2,
   };
   return initial;
 }
@@ -126,12 +125,13 @@ function withDefaults(restored: SituationState): SituationState {
     ...restored,
     world: restored.world ?? clone(seedWorld),
     digitalTwin:
-      restored.digitalTwin ?? buildDigitalTwin(restored.world ?? clone(seedWorld), restored.events ?? []),
+      restored.digitalTwin ??
+      buildDigitalTwin(restored.world ?? clone(seedWorld), restored.events ?? []),
     autonomyRules: restored.autonomyRules ?? clone(seedAutonomyRules),
     autonomyPaused: restored.autonomyPaused ?? false,
     waiting: restored.waiting ?? [],
     sourceReliability: restored.sourceReliability ?? clone(seedSourceReliability),
-    lessons: restored.lessons ?? []
+    lessons: restored.lessons ?? [],
   };
 }
 
@@ -178,25 +178,8 @@ function audit(actor: Actor, kind: string, summary: string, ref?: string) {
     kind,
     summary,
     planVersion: current.plan.version,
-    ref
+    ref,
   });
-}
-
-/** Foto de lo que hay que comparar para explicar qué cambió entre planes. */
-let planContext: {
-  zones: CrisisZone[];
-  resources: Resource[];
-  integration: IntegrationState;
-} | null = null;
-
-/** Se llama ANTES de mutar, para que diffPlans pueda comparar contra el antes. */
-function capturePlanContext() {
-  const current = state();
-  planContext = {
-    zones: clone(current.zones),
-    resources: clone(current.resources),
-    integration: clone(current.integration)
-  };
 }
 
 function replan(trigger: string, invalidatedActionIds: string[] = []) {
@@ -208,19 +191,18 @@ function replan(trigger: string, invalidatedActionIds: string[] = []) {
     current.events,
     current.resources,
     current.actions,
-    invalidatedActionIds
+    invalidatedActionIds,
   );
   next.trigger = trigger;
   next.changes = diffPlans(previous, next, {
-    previousZones: planContext?.zones ?? current.zones,
+    previousZones: current.zones,
     nextZones: current.zones,
-    previousResources: planContext?.resources ?? current.resources,
+    previousResources: current.resources,
     nextResources: current.resources,
     actions: current.actions,
-    previousIntegration: planContext?.integration ?? current.integration,
-    nextIntegration: current.integration
+    previousIntegration: current.integration,
+    nextIntegration: current.integration,
   });
-  planContext = null;
   current.planHistory = pushPlanHistory(current.planHistory, previous);
   current.plan = next;
   persist();
@@ -242,7 +224,12 @@ function sweepStalledActions() {
     action.error = `Sin respuesta del ejecutor externo tras ${STALL_SECONDS} segundos.`;
     action.updatedAt = nowIso();
     releaseResource(current.resources, action.id);
-    audit("system", "action-stalled", `La acción "${action.objective}" dejó de responder.`, action.id);
+    audit(
+      "system",
+      "action-stalled",
+      `La acción "${action.objective}" dejó de responder.`,
+      action.id,
+    );
     changed = true;
   }
 
@@ -277,7 +264,7 @@ function normalizeIncomingEvent(payload: IncomingEventPayload): CrisisEvent {
     occurrences: 1,
     appliedRiskDelta: 0,
     appliedNeed: null,
-    previousZoneStatus: null
+    previousZoneStatus: null,
   };
 }
 
@@ -285,7 +272,7 @@ const riskDeltaBySeverity: Record<CrisisEvent["severity"], number> = {
   low: 4,
   medium: 4,
   high: 10,
-  critical: 18
+  critical: 18,
 };
 
 /**
@@ -304,7 +291,7 @@ function applyEventToZone(zone: CrisisZone, event: CrisisEvent): CrisisZone {
     low: zone.status === "stable" ? "stable" : zone.status,
     medium: zone.status === "critical" ? "critical" : "watch",
     high: zone.status === "critical" ? "critical" : "active",
-    critical: "critical"
+    critical: "critical",
   };
 
   const need = needOfEvent(event);
@@ -321,7 +308,7 @@ function applyEventToZone(zone: CrisisZone, event: CrisisEvent): CrisisZone {
     status: statusBySeverity[event.severity],
     riskScore: zone.riskScore + appliedDelta,
     needs: addsNeed ? [...zone.needs, need] : zone.needs,
-    lastUpdatedAt: event.createdAt
+    lastUpdatedAt: event.createdAt,
   };
 }
 
@@ -350,7 +337,7 @@ function revertEventFromZone(zone: CrisisZone, event: CrisisEvent): CrisisZone {
       other.id !== event.id &&
       other.zoneId === event.zoneId &&
       other.confirmed !== false &&
-      needOfEvent(other) === event.appliedNeed
+      needOfEvent(other) === event.appliedNeed,
   );
 
   return {
@@ -361,7 +348,7 @@ function revertEventFromZone(zone: CrisisZone, event: CrisisEvent): CrisisZone {
       event.appliedNeed && !stillNeeded
         ? zone.needs.filter((need) => need !== event.appliedNeed)
         : zone.needs,
-    lastUpdatedAt: nowIso()
+    lastUpdatedAt: nowIso(),
   };
 }
 
@@ -374,20 +361,24 @@ function proposeActionForEvent(event: CrisisEvent) {
     (action) =>
       action.zoneId === event.zoneId &&
       action.objective.toLowerCase().includes(event.category.toLowerCase()) &&
-      !["succeeded", "cancelled"].includes(action.status)
+      !["succeeded", "cancelled"].includes(action.status),
   );
   if (existingOpen) return;
 
   const urgent = event.severity === "critical" || event.severity === "high";
   const contact = selectContact(current.contacts, zone.id, event.category, current.learning);
-  const channel = contact ? selectChannel(contact, urgent, current.learning) : urgent ? "call" : "ticket";
+  const channel = contact
+    ? selectChannel(contact, urgent, current.learning)
+    : urgent
+      ? "call"
+      : "ticket";
   const at = nowIso();
   const id = uid("act");
 
   const assignment = selectResourceForAction(
     { zoneId: zone.id, objective: event.category, channel },
     current.resources,
-    current.zones
+    current.zones,
   );
 
   const chain = buildEscalationChain({
@@ -398,7 +389,7 @@ function proposeActionForEvent(event: CrisisEvent) {
     urgent,
     contacts: current.contacts,
     learning: current.learning,
-    at
+    at,
   });
   if (chain.steps.length > 0) current.chains.unshift(chain);
 
@@ -421,7 +412,7 @@ function proposeActionForEvent(event: CrisisEvent) {
     approvedAt: null,
     completedAt: null,
     createdAt: at,
-    updatedAt: at
+    updatedAt: at,
   };
 
   current.actions.unshift(action);
@@ -453,7 +444,7 @@ export function getSituation(): SituationState {
     autonomyPaused: current.autonomyPaused,
     waiting: current.waiting,
     sourceReliability: current.sourceReliability,
-    lessons: current.lessons
+    lessons: current.lessons,
   });
 }
 
@@ -491,7 +482,7 @@ export function addEvent(payload: IncomingEventPayload, actor: Actor = "system")
     (candidate) =>
       candidate.dedupeKey === event.dedupeKey &&
       candidate.confirmed !== false &&
-      Date.now() - new Date(candidate.createdAt).getTime() < 5 * 60 * 1000
+      Date.now() - new Date(candidate.createdAt).getTime() < 5 * 60 * 1000,
   );
 
   if (duplicate) {
@@ -499,16 +490,26 @@ export function addEvent(payload: IncomingEventPayload, actor: Actor = "system")
     duplicate.description = `${duplicate.description}\nSeñal duplicada: ${event.description}`;
     duplicate.confidence = duplicate.confidence === "high" ? "high" : event.confidence;
     duplicate.createdAt = event.createdAt;
-    audit(actor, "event-deduplicated", `Señal repetida fusionada: ${duplicate.title}`, duplicate.id);
+    audit(
+      actor,
+      "event-deduplicated",
+      `Señal repetida fusionada: ${duplicate.title}`,
+      duplicate.id,
+    );
   } else {
     current.events.unshift(event);
     current.zones = current.zones.map((zone) =>
-      zone.id === event.zoneId ? applyEventToZone(zone, event) : zone
+      zone.id === event.zoneId ? applyEventToZone(zone, event) : zone,
     );
     const worldChanged = applyEventToWorldState(event);
     audit(actor, "event-ingested", `Nueva señal: ${event.title}`, event.id);
     if (worldChanged) {
-      audit(actor, "world-updated", `El gemelo digital incorporó evidencia: ${event.title}`, event.id);
+      audit(
+        actor,
+        "world-updated",
+        `El gemelo digital incorporó evidencia: ${event.title}`,
+        event.id,
+      );
     }
     proposeActionForEvent(event);
   }
@@ -530,7 +531,7 @@ export function markEvent(eventId: string, confirmed: boolean, actor: Actor = "o
     // Descartar una senal deshace su efecto sobre la zona y cancela las
     // acciones que solo existian por ella.
     current.zones = current.zones.map((zone) =>
-      zone.id === event.zoneId ? revertEventFromZone(zone, event) : zone
+      zone.id === event.zoneId ? revertEventFromZone(zone, event) : zone,
     );
     for (const action of current.actions) {
       const bornFromEvent =
@@ -543,11 +544,16 @@ export function markEvent(eventId: string, confirmed: boolean, actor: Actor = "o
       action.updatedAt = nowIso();
       releaseResource(current.resources, action.id);
     }
-    audit(actor, "event-discarded", `Señal descartada y efecto revertido: ${event.title}`, event.id);
+    audit(
+      actor,
+      "event-discarded",
+      `Señal descartada y efecto revertido: ${event.title}`,
+      event.id,
+    );
   } else {
     if (wasDiscarded) {
       current.zones = current.zones.map((zone) =>
-        zone.id === event.zoneId ? applyEventToZone(zone, event) : zone
+        zone.id === event.zoneId ? applyEventToZone(zone, event) : zone,
       );
     }
     audit(actor, "event-confirmed", `Señal confirmada: ${event.title}`, event.id);
@@ -566,7 +572,7 @@ export function createAction(payload: CreateActionPayload, actor: Actor = "opera
     : selectResourceForAction(
         { zoneId: payload.zoneId, objective: payload.objective, channel: payload.channel },
         current.resources,
-        current.zones
+        current.zones,
       );
 
   const action: Action = {
@@ -582,7 +588,7 @@ export function createAction(payload: CreateActionPayload, actor: Actor = "opera
     approvedAt: null,
     completedAt: null,
     createdAt: at,
-    updatedAt: at
+    updatedAt: at,
   };
   current.actions.unshift(action);
   audit(actor, "action-created", `Acción creada a mano: ${action.objective}`, action.id);
@@ -607,14 +613,24 @@ export async function approveAction(actionId: string, actor: Actor = "operator")
   // llamada externa: de lo contrario se avisaría a alguien de que va en camino
   // un recurso que no existe, y la acción acabaría marcada como completada.
   if (action.resourceId) {
-    const asignado = assignResource(current.resources, action.resourceId, action.id, action.approvedAt);
+    const asignado = assignResource(
+      current.resources,
+      action.resourceId,
+      action.id,
+      action.approvedAt,
+    );
     if (!asignado) {
       const recurso = current.resources.find((candidate) => candidate.id === action.resourceId);
       action.status = "blocked";
       action.error = `${recurso?.name ?? action.resourceId} no está disponible: la acción no se ejecuta.`;
       action.updatedAt = nowIso();
       action.stalledAfter = null;
-      audit(actor, "action-blocked", `Acción bloqueada por falta de recurso: ${action.objective}`, action.id);
+      audit(
+        actor,
+        "action-blocked",
+        `Acción bloqueada por falta de recurso: ${action.objective}`,
+        action.id,
+      );
       replan("se intentó aprobar una acción sin recurso disponible");
       return action;
     }
@@ -625,7 +641,8 @@ export async function approveAction(actionId: string, actor: Actor = "operator")
   const attemptAtDispatch = action.attempt;
 
   try {
-    const contacto = current.contacts.find((candidate) => candidate.id === action.contactId) ?? null;
+    const contacto =
+      current.contacts.find((candidate) => candidate.id === action.contactId) ?? null;
     const result = await executeHappyRobotAction(action, contacto);
 
     // El operador puede haber cancelado o reintentado mientras la llamada
@@ -675,11 +692,11 @@ export function setActionStatus(
   status: ActionStatus,
   externalActionId?: string,
   error?: string,
-  actor: Actor = "happyrobot"
+  actor: Actor = "happyrobot",
 ) {
   const current = state();
   const action = current.actions.find(
-    (candidate) => candidate.id === actionId || candidate.externalActionId === actionId
+    (candidate) => candidate.id === actionId || candidate.externalActionId === actionId,
   );
   if (!action) throw new Error("Action not found");
 
@@ -696,7 +713,8 @@ export function setActionStatus(
   if (["succeeded", "failed"].includes(status)) {
     current.learning = recordActionOutcome(current.learning, action);
   }
-  if (status === "failed") current.integration.lastExternalError = error ?? "External action failed";
+  if (status === "failed")
+    current.integration.lastExternalError = error ?? "External action failed";
 
   audit(actor, `action-${status}`, `La acción "${action.objective}" pasó a ${status}.`, action.id);
   replan(`una acción pasó a ${status}`);
@@ -722,12 +740,21 @@ export function retryAction(actionId: string, actor: Actor = "operator") {
   action.externalActionId = undefined;
   action.stalledAfter = null;
   action.updatedAt = nowIso();
-  audit(actor, "action-retried", `Reintento ${action.attempt} de "${action.objective}".`, action.id);
+  audit(
+    actor,
+    "action-retried",
+    `Reintento ${action.attempt} de "${action.objective}".`,
+    action.id,
+  );
   replan("un operador reintentó una acción");
   return action;
 }
 
-export function updateResource(resourceId: string, status: Resource["status"], actor: Actor = "operator") {
+export function updateResource(
+  resourceId: string,
+  status: Resource["status"],
+  actor: Actor = "operator",
+) {
   const current = state();
   const resource = current.resources.find((candidate) => candidate.id === resourceId);
   if (!resource) throw new Error("Resource not found");
@@ -783,11 +810,11 @@ export function injectDemo(kind: DemoKind, actor: Actor = "operator") {
       current.actions
         .filter((action) => ["pending", "approved", "running"].includes(action.status))
         .map((action) => action.resourceId)
-        .filter(Boolean) as string[]
+        .filter(Boolean) as string[],
     );
     const resource =
       current.resources.find(
-        (candidate) => candidate.status !== "unavailable" && busyIds.has(candidate.id)
+        (candidate) => candidate.status !== "unavailable" && busyIds.has(candidate.id),
       ) ?? current.resources.find((candidate) => candidate.status !== "unavailable");
 
     if (!resource) return getSituation();
@@ -799,7 +826,8 @@ export function injectDemo(kind: DemoKind, actor: Actor = "operator") {
     const invalidated = current.actions
       .filter(
         (action) =>
-          action.resourceId === resource.id && ["pending", "approved", "running"].includes(action.status)
+          action.resourceId === resource.id &&
+          ["pending", "approved", "running"].includes(action.status),
       )
       .map((action) => {
         action.status = "blocked";
@@ -812,7 +840,7 @@ export function injectDemo(kind: DemoKind, actor: Actor = "operator") {
       current.actions,
       current.resources,
       current.zones,
-      resource.id
+      resource.id,
     );
     for (const move of reassignments) {
       const action = current.actions.find((candidate) => candidate.id === move.actionId);
@@ -839,14 +867,15 @@ export function injectDemo(kind: DemoKind, actor: Actor = "operator") {
       {
         source: actor === "scenario" ? "scenario" : "demo",
         title: `${resource.name} queda no disponible`,
-        description: "La disponibilidad de recursos cambió durante la ejecución; el plan debe rehacerse.",
+        description:
+          "La disponibilidad de recursos cambió durante la ejecución; el plan debe rehacerse.",
         zoneId: resource.zoneId ?? defaultZoneId(),
         category: "resource-shortage",
         severity: "high",
         confidence: "high",
-        confirmed: true
+        confirmed: true,
       },
-      actor
+      actor,
     );
     replan(`${resource.name} quedó fuera de servicio`, invalidated);
     return getSituation();
@@ -863,9 +892,9 @@ export function injectDemo(kind: DemoKind, actor: Actor = "operator") {
         category: "route-blocked",
         severity: "critical",
         confidence: "high",
-        confirmed: true
+        confirmed: true,
       },
-      actor
+      actor,
     );
     return getSituation();
   }
@@ -882,7 +911,7 @@ export function injectDemo(kind: DemoKind, actor: Actor = "operator") {
         "failed",
         action.externalActionId,
         "Fallo simulado de callback HappyRobot.",
-        "happyrobot"
+        "happyrobot",
       );
     }
     return getSituation();
@@ -892,14 +921,15 @@ export function injectDemo(kind: DemoKind, actor: Actor = "operator") {
     {
       source: actor === "scenario" ? "scenario" : "demo",
       title: "Nuevo incidente de alta prioridad",
-      description: "Una nueva señal desde Sierra Morena indica una necesidad operativa que cambia rápido.",
+      description:
+        "Una nueva señal desde Sierra Morena indica una necesidad operativa que cambia rápido.",
       zoneId: "zone-north",
       category: "evacuation-support",
       severity: "critical",
       confidence: "medium",
-      confirmed: null
+      confirmed: null,
     },
-    actor
+    actor,
   );
   return getSituation();
 }

@@ -15,6 +15,6 @@ export function createMemoryStore(): ScenarioStore {
     },
     async save(runId, state) {
       runs.set(runId, structuredClone(state));
-    }
+    },
   };
 }

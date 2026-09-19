@@ -9,7 +9,11 @@
 
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
-import { WEBHOOK_SECRET_HEADER, isWebhookSecretConfigured, verifyWebhookSecret } from "@/lib/happyrobot";
+import {
+  WEBHOOK_SECRET_HEADER,
+  isWebhookSecretConfigured,
+  verifyWebhookSecret,
+} from "@/lib/happyrobot";
 import { addEvent, setActionStatus } from "@/lib/store";
 import type { ActionStatus, Confidence, IncomingEventPayload, Severity } from "@/lib/types";
 
@@ -23,7 +27,7 @@ export const dynamic = "force-dynamic";
  */
 const NO_CACHE = {
   "cache-control": "no-store, no-cache, must-revalidate",
-  pragma: "no-cache"
+  pragma: "no-cache",
 } as const;
 
 function json(body: Record<string, unknown>, status = 200) {
@@ -37,8 +41,11 @@ function fail(code: string, error: string, status: number, extra: Record<string,
 /** Esta ruta solo atiende callbacks: cualquier otro método se rechaza. */
 const noPermitido = () =>
   NextResponse.json(
-    { error: "Método no permitido. Métodos válidos en esta ruta: POST.", code: "metodo_no_permitido" },
-    { status: 405, headers: { ...NO_CACHE, allow: "POST" } }
+    {
+      error: "Método no permitido. Métodos válidos en esta ruta: POST.",
+      code: "metodo_no_permitido",
+    },
+    { status: 405, headers: { ...NO_CACHE, allow: "POST" } },
   );
 
 export const GET = noPermitido;
@@ -84,7 +91,7 @@ const statusMap: Record<string, ActionStatus> = {
   failed: "failed",
   error: "failed",
   cancelled: "cancelled",
-  canceled: "cancelled"
+  canceled: "cancelled",
 };
 
 const severidades: Severity[] = ["low", "medium", "high", "critical"];
@@ -164,7 +171,7 @@ export async function POST(request: Request) {
       configurado ? "no_autorizado" : "error_interno",
       verificacion.reason ?? "Callback rechazado.",
       configurado ? 401 : 503,
-      { expectedHeader: WEBHOOK_SECRET_HEADER }
+      { expectedHeader: WEBHOOK_SECRET_HEADER },
     );
   }
 
@@ -183,7 +190,7 @@ export async function POST(request: Request) {
     return fail(
       "cuerpo_invalido",
       "El callback no trae ni estado ni información nueva: no hay nada que aplicar.",
-      400
+      400,
     );
   }
 
@@ -206,18 +213,21 @@ export async function POST(request: Request) {
     const payloadEvento: IncomingEventPayload = {
       source: "happyrobot",
       title: item.type ? `Información nueva: ${item.type}` : "Información nueva desde HappyRobot",
-      description: item.description ?? "Información recogida durante una interacción de HappyRobot.",
+      description:
+        item.description ?? "Información recogida durante una interacción de HappyRobot.",
       zoneId: item.zoneId,
       category: item.type ?? "coordinacion",
       // Lo que cuenta alguien al teléfono llega con confianza alta pero sin
       // verificar: entra como señal fuerte y sin confirmar salvo que lo digan.
       severity: item.severity && severidades.includes(item.severity) ? item.severity : "high",
-      confidence: item.confidence && confianzas.includes(item.confidence) ? item.confidence : "high",
-      confirmed: item.confirmed ?? null
+      confidence:
+        item.confidence && confianzas.includes(item.confidence) ? item.confidence : "high",
+      confirmed: item.confirmed ?? null,
     };
     const resultado = addEvent(payloadEvento, "happyrobot");
     ingestedEventIds.push(resultado.event.id);
-    if (resultado.duplicate) notes.push(`Señal fusionada con una equivalente: ${resultado.event.title}.`);
+    if (resultado.duplicate)
+      notes.push(`Señal fusionada con una equivalente: ${resultado.event.title}.`);
   }
 
   // 5. Estado de la acción.
@@ -228,7 +238,7 @@ export async function POST(request: Request) {
       const body = {
         error: `Estado "${payload.status}" no reconocido.`,
         code: "cuerpo_invalido",
-        ingestedEventIds
+        ingestedEventIds,
       };
       rememberDelivery(key, 400, body);
       return json(body, 400);
@@ -245,7 +255,7 @@ export async function POST(request: Request) {
           mapeado === "failed"
             ? (payload.error ?? payload.summary ?? "HappyRobot marcó la acción como fallida.")
             : undefined,
-          "happyrobot"
+          "happyrobot",
         );
       } catch {
         // La acción puede haberse reiniciado entre la llamada y el callback.
@@ -261,7 +271,7 @@ export async function POST(request: Request) {
     action,
     ingestedEventIds,
     notes,
-    summary: payload.summary ?? null
+    summary: payload.summary ?? null,
   };
   rememberDelivery(key, status, body);
   return json(body, status);

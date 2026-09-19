@@ -17,7 +17,7 @@ const statusLabels: Record<DigitalTwinFactStatus, string> = {
   inferred: "Inferido",
   unknown: "Sin evidencia",
   stale: "Obsoleto",
-  mismatch: "Diverge"
+  mismatch: "Diverge",
 };
 
 const statusIcons: Record<DigitalTwinFactStatus, typeof CheckCircle2> = {
@@ -25,7 +25,7 @@ const statusIcons: Record<DigitalTwinFactStatus, typeof CheckCircle2> = {
   inferred: BrainCircuit,
   unknown: CircleHelp,
   stale: Clock3,
-  mismatch: AlertTriangle
+  mismatch: AlertTriangle,
 };
 
 function confidenceLabel(confidence: number) {

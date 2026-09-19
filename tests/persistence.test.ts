@@ -20,7 +20,7 @@ import {
   emptyWeights,
   explainWeights,
   recordActionOutcome,
-  weightsFromRuns
+  weightsFromRuns,
 } from "@/lib/learning";
 import {
   SCHEMA_VERSION,
@@ -34,7 +34,7 @@ import {
   saveRun,
   saveState,
   saveWeights,
-  validateState
+  validateState,
 } from "@/lib/persistence";
 import { addEvent, getSituation, resetSituation } from "@/lib/store";
 import type { Action, IntegrationState, Plan, RunRecord, SituationState } from "@/lib/types";
@@ -62,14 +62,19 @@ function makePlan(version: number, overrides: Partial<Plan> = {}): Plan {
     generatedAt: "2026-02-01T10:00:00.000Z",
     summary: "Resumen del plan",
     priorities: [
-      { zoneId: "zone-central", score: 120, reason: "Zona con más población en riesgo", factors: [] },
-      { zoneId: "zone-north", score: 90, reason: "Frente de incendio activo", factors: [] }
+      {
+        zoneId: "zone-central",
+        score: 120,
+        reason: "Zona con más población en riesgo",
+        factors: [],
+      },
+      { zoneId: "zone-north", score: 90, reason: "Frente de incendio activo", factors: [] },
     ],
     proposedActionIds: ["act-1"],
     invalidatedActionIds: [],
     changes: [],
     trigger: "replanificación",
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -91,7 +96,7 @@ function makeAction(overrides: Partial<Action> = {}): Action {
     completedAt: null,
     createdAt: "2026-02-01T10:00:00.000Z",
     updatedAt: "2026-02-01T10:00:00.000Z",
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -102,7 +107,7 @@ function makeIntegration(overrides: Partial<IntegrationState> = {}): Integration
     lastExternalError: null,
     liveActionsExecuted: 0,
     mockActionsExecuted: 0,
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -124,8 +129,8 @@ function makeState(overrides: Partial<SituationState> = {}): SituationState {
         occurrences: 1,
         appliedRiskDelta: 10,
         appliedNeed: null,
-        previousZoneStatus: null
-      }
+        previousZoneStatus: null,
+      },
     ],
     zones: [
       {
@@ -136,7 +141,7 @@ function makeState(overrides: Partial<SituationState> = {}): SituationState {
         riskScore: 40,
         needs: ["evacuacion"],
         coordinates: { x: 10, y: 20 },
-        lastUpdatedAt: "2026-02-01T09:55:00.000Z"
+        lastUpdatedAt: "2026-02-01T09:55:00.000Z",
       },
       {
         id: "zone-central",
@@ -146,8 +151,8 @@ function makeState(overrides: Partial<SituationState> = {}): SituationState {
         riskScore: 55,
         needs: [],
         coordinates: { x: 30, y: 40 },
-        lastUpdatedAt: "2026-02-01T09:55:00.000Z"
-      }
+        lastUpdatedAt: "2026-02-01T09:55:00.000Z",
+      },
     ],
     resources: [
       {
@@ -160,8 +165,8 @@ function makeState(overrides: Partial<SituationState> = {}): SituationState {
         assignedActionId: null,
         capabilities: ["triaje"],
         homeZoneId: "zone-central",
-        assignedAt: null
-      }
+        assignedAt: null,
+      },
     ],
     contacts: [
       {
@@ -174,8 +179,8 @@ function makeState(overrides: Partial<SituationState> = {}): SituationState {
         email: "coordinacion@ejemplo.es",
         demoSafe: true,
         lastContactedAt: null,
-        responsiveness: 0.8
-      }
+        responsiveness: 0.8,
+      },
     ],
     chains: [],
     actions: [makeAction()],
@@ -188,8 +193,8 @@ function makeState(overrides: Partial<SituationState> = {}): SituationState {
         actor: "operator",
         kind: "nota",
         summary: "Se avisó al +34 600 123 456 desde soporte@ejemplo.es.",
-        planVersion: 3
-      }
+        planVersion: 3,
+      },
     ],
     scenario: {
       id: "sc-1",
@@ -199,7 +204,7 @@ function makeState(overrides: Partial<SituationState> = {}): SituationState {
       startedAt: null,
       elapsedSeconds: 0,
       beats: [],
-      firedBeatIds: []
+      firedBeatIds: [],
     },
     learning: emptyWeights(),
     integration: makeIntegration(),
@@ -210,7 +215,7 @@ function makeState(overrides: Partial<SituationState> = {}): SituationState {
       smsOperational: true,
       voiceOperational: true,
       hospitalBeds: {},
-      updatedAt: "2026-02-01T10:00:00.000Z"
+      updatedAt: "2026-02-01T10:00:00.000Z",
     },
     digitalTwin: buildDigitalTwin(
       {
@@ -220,17 +225,17 @@ function makeState(overrides: Partial<SituationState> = {}): SituationState {
         smsOperational: true,
         voiceOperational: true,
         hospitalBeds: {},
-        updatedAt: "2026-02-01T10:00:00.000Z"
+        updatedAt: "2026-02-01T10:00:00.000Z",
       },
       [],
-      { now: "2026-02-01T10:00:00.000Z" }
+      { now: "2026-02-01T10:00:00.000Z" },
     ),
     autonomyRules: [],
     autonomyPaused: false,
     waiting: [],
     sourceReliability: [],
     lessons: [],
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -244,7 +249,7 @@ function makeRun(id: string, notes: string[]): RunRecord {
     actionsSucceeded: 0,
     actionsFailed: 0,
     planVersions: 1,
-    notes
+    notes,
   };
 }
 
@@ -306,8 +311,8 @@ describe("persistencia del estado", () => {
       JSON.stringify({
         schemaVersion: SCHEMA_VERSION - 1,
         savedAt: "2026-01-01T00:00:00.000Z",
-        payload: makeState()
-      })
+        payload: makeState(),
+      }),
     );
     expect(loadState()).toBeNull();
   });
@@ -315,7 +320,9 @@ describe("persistencia del estado", () => {
   it("descarta un estado sin plan, que reventaría a store.ts al arrancar", () => {
     const sinPlan = makeState() as unknown as Record<string, unknown>;
     delete sinPlan.plan;
-    writeRawState(JSON.stringify({ schemaVersion: SCHEMA_VERSION, savedAt: "x", payload: sinPlan }));
+    writeRawState(
+      JSON.stringify({ schemaVersion: SCHEMA_VERSION, savedAt: "x", payload: sinPlan }),
+    );
     expect(loadState()).toBeNull();
     expect(validateState(sinPlan)).toBeNull();
   });
@@ -426,7 +433,7 @@ describe("reinicio del proceso con CRISIS_PERSISTENCE=on", () => {
       category: "incendio",
       severity: "critical",
       confidence: "high",
-      confirmed: true
+      confirmed: true,
     });
 
     const antes = getSituation();
@@ -464,7 +471,7 @@ describe("reinicio del proceso con CRISIS_PERSISTENCE=on", () => {
 describe("diffPlans", () => {
   const zones = [
     { id: "zone-north", name: "Sierra Morena", status: "watch" as const },
-    { id: "zone-central", name: "Sevilla Hub", status: "active" as const }
+    { id: "zone-central", name: "Sevilla Hub", status: "active" as const },
   ];
 
   it("no inventa cambios cuando no hay plan anterior", () => {
@@ -476,9 +483,9 @@ describe("diffPlans", () => {
     const next = makePlan(2, {
       priorities: [
         { zoneId: "zone-north", score: 200, reason: "Giro del viento", factors: [] },
-        { zoneId: "zone-central", score: 120, reason: "Estable", factors: [] }
+        { zoneId: "zone-central", score: 120, reason: "Estable", factors: [] },
       ],
-      trigger: "el giro del viento"
+      trigger: "el giro del viento",
     });
 
     const changes = diffPlans(previous, next);
@@ -497,14 +504,24 @@ describe("diffPlans", () => {
     const previous = makePlan(1, { proposedActionIds: ["act-1"] });
     const next = makePlan(2, {
       proposedActionIds: ["act-1", "act-2"],
-      invalidatedActionIds: ["act-3"]
+      invalidatedActionIds: ["act-3"],
     });
 
     const changes = diffPlans(previous, next, {
       actions: [
-        makeAction({ id: "act-2", channel: "sms", target: "Voluntariado Costa", objective: "Abrir refugio" }),
-        makeAction({ id: "act-3", channel: "call", target: "Jefatura sanitaria", objective: "Enviar triaje" })
-      ]
+        makeAction({
+          id: "act-2",
+          channel: "sms",
+          target: "Voluntariado Costa",
+          objective: "Abrir refugio",
+        }),
+        makeAction({
+          id: "act-3",
+          channel: "call",
+          target: "Jefatura sanitaria",
+          objective: "Enviar triaje",
+        }),
+      ],
     });
 
     const nueva = changes.find((change) => change.kind === "action-added");
@@ -520,11 +537,13 @@ describe("diffPlans", () => {
     const next = makePlan(2, { proposedActionIds: ["act-1"] });
 
     const changes = diffPlans(previous, next, {
-      actions: [makeAction({ id: "act-9", status: "cancelled", target: "Sala 112" })]
+      actions: [makeAction({ id: "act-9", status: "cancelled", target: "Sala 112" })],
     });
 
     expect(
-      changes.some((change) => change.kind === "action-invalidated" && change.detail.includes("canceló"))
+      changes.some(
+        (change) => change.kind === "action-invalidated" && change.detail.includes("canceló"),
+      ),
     ).toBe(true);
   });
 
@@ -533,7 +552,7 @@ describe("diffPlans", () => {
     const next = makePlan(2, { proposedActionIds: ["act-1"] });
 
     const changes = diffPlans(previous, next, {
-      actions: [makeAction({ id: "act-9", status: "succeeded" })]
+      actions: [makeAction({ id: "act-9", status: "succeeded" })],
     });
 
     expect(changes.some((change) => change.kind === "action-invalidated")).toBe(false);
@@ -542,7 +561,7 @@ describe("diffPlans", () => {
   it("detecta un cambio de estado de zona y dice si agrava o mejora", () => {
     const changes = diffPlans(makePlan(1), makePlan(2), {
       previousZones: zones,
-      nextZones: [{ ...zones[0], status: "critical" }, zones[1]]
+      nextZones: [{ ...zones[0], status: "critical" }, zones[1]],
     });
 
     const cambio = changes.find((change) => change.kind === "zone-status");
@@ -554,7 +573,7 @@ describe("diffPlans", () => {
   it("detecta caídas y recuperaciones de la integración", () => {
     const caida = diffPlans(makePlan(1), makePlan(2), {
       previousIntegration: makeIntegration(),
-      nextIntegration: makeIntegration({ lastExternalError: "502 desde la plataforma" })
+      nextIntegration: makeIntegration({ lastExternalError: "502 desde la plataforma" }),
     });
     expect(caida[0].kind).toBe("integration");
     expect(caida[0].label).toContain("fallando");
@@ -562,7 +581,7 @@ describe("diffPlans", () => {
 
     const vuelta = diffPlans(makePlan(1), makePlan(2), {
       previousIntegration: makeIntegration({ lastExternalError: "502" }),
-      nextIntegration: makeIntegration({ mode: "happyrobot" })
+      nextIntegration: makeIntegration({ mode: "happyrobot" }),
     });
     expect(vuelta.some((change) => change.label.includes("modo real"))).toBe(true);
     expect(vuelta.some((change) => change.label.includes("vuelve a responder"))).toBe(true);
@@ -571,9 +590,11 @@ describe("diffPlans", () => {
   it("detecta la reasignación de un recurso", () => {
     const changes = diffPlans(makePlan(1), makePlan(2), {
       previousResources: [
-        { id: "res-1", name: "EPES Sevilla Alpha", zoneId: "zone-central", status: "available" }
+        { id: "res-1", name: "EPES Sevilla Alpha", zoneId: "zone-central", status: "available" },
       ],
-      nextResources: [{ id: "res-1", name: "EPES Sevilla Alpha", zoneId: "zone-north", status: "assigned" }]
+      nextResources: [
+        { id: "res-1", name: "EPES Sevilla Alpha", zoneId: "zone-north", status: "assigned" },
+      ],
     });
 
     const cambio = changes.find((change) => change.kind === "resource-reassigned");
@@ -597,8 +618,16 @@ describe("aprendizaje entre ejecuciones", () => {
 
   it("con dos ejecuciones y pocas muestras no publica ningún peso", () => {
     const runs = [
-      makeRun("run-1", ["stat:channel:call:1/2", "stat:contact:con-1:0/1", "stat:unconfirmed:todas:2/3"]),
-      makeRun("run-2", ["stat:channel:call:1/2", "stat:contact:con-1:1/2", "stat:unconfirmed:todas:2/3"])
+      makeRun("run-1", [
+        "stat:channel:call:1/2",
+        "stat:contact:con-1:0/1",
+        "stat:unconfirmed:todas:2/3",
+      ]),
+      makeRun("run-2", [
+        "stat:channel:call:1/2",
+        "stat:contact:con-1:1/2",
+        "stat:unconfirmed:todas:2/3",
+      ]),
     ];
 
     const weights = weightsFromRuns(runs);
@@ -614,7 +643,7 @@ describe("aprendizaje entre ejecuciones", () => {
     const runs = [
       makeRun("run-1", ["stat:channel:call:2/3", "stat:contact:con-1:1/2"]),
       makeRun("run-2", ["stat:channel:call:1/3", "stat:contact:con-1:2/3"]),
-      makeRun("run-3", ["stat:channel:sms:1/1"])
+      makeRun("run-3", ["stat:channel:sms:1/1"]),
     ];
 
     const weights = weightsFromRuns(runs);
@@ -634,14 +663,16 @@ describe("aprendizaje entre ejecuciones", () => {
       todasFalsas("r2"),
       todasFalsas("r3"),
       todasFalsas("r4"),
-      todasFalsas("r5")
+      todasFalsas("r5"),
     ]);
 
     expect(tres.unconfirmedPenalty).toBeGreaterThan(0);
     expect(cinco.unconfirmedPenalty).toBeGreaterThan(tres.unconfirmedPenalty);
     expect(cinco.unconfirmedPenalty).toBeLessThanOrEqual(MAX_UNCONFIRMED_PENALTY);
     // Ni siquiera con el peor historial posible se pasa del tope.
-    const muchas = weightsFromRuns(Array.from({ length: 30 }, (_, index) => todasFalsas(`r${index}`)));
+    const muchas = weightsFromRuns(
+      Array.from({ length: 30 }, (_, index) => todasFalsas(`r${index}`)),
+    );
     expect(muchas.unconfirmedPenalty).toBe(MAX_UNCONFIRMED_PENALTY);
   });
 
@@ -666,8 +697,8 @@ describe("aprendizaje entre ejecuciones", () => {
       actions: [
         makeAction({ id: "a1", status: "succeeded", contactId: "con-1" }),
         makeAction({ id: "a2", status: "failed", contactId: "con-1" }),
-        makeAction({ id: "a3", status: "pending" })
-      ]
+        makeAction({ id: "a3", status: "pending" }),
+      ],
     });
     state.events[0].confirmed = false;
 
@@ -691,7 +722,7 @@ describe("aprendizaje entre ejecuciones", () => {
 
     const runs = [
       makeRun("r1", ["stat:channel:call:2/3", "stat:unconfirmed:todas:2/3"]),
-      makeRun("r2", ["stat:channel:call:1/3", "stat:unconfirmed:todas:1/3"])
+      makeRun("r2", ["stat:channel:call:1/3", "stat:unconfirmed:todas:1/3"]),
     ];
     const weights = weightsFromRuns(runs);
     const insights = explainWeights(weights, runs);
@@ -705,13 +736,13 @@ describe("aprendizaje entre ejecuciones", () => {
       weightsFromRuns([
         makeRun("r1", ["stat:channel:call:2/3", "stat:unconfirmed:todas:3/4"]),
         makeRun("r2", ["stat:channel:call:1/3", "stat:unconfirmed:todas:3/4"]),
-        makeRun("r3", ["stat:channel:call:2/2", "stat:unconfirmed:todas:3/4"])
+        makeRun("r3", ["stat:channel:call:2/2", "stat:unconfirmed:todas:3/4"]),
       ]),
       [
         makeRun("r1", ["stat:unconfirmed:todas:3/4"]),
         makeRun("r2", ["stat:unconfirmed:todas:3/4"]),
-        makeRun("r3", ["stat:unconfirmed:todas:3/4"])
-      ]
+        makeRun("r3", ["stat:unconfirmed:todas:3/4"]),
+      ],
     );
     const canal = conPeso.find((insight) => insight.key === "channel:call");
     expect(canal?.applied).toBe(true);

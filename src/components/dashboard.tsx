@@ -6,7 +6,7 @@ import {
   simulatePlan,
   type CrisisEvent,
   type Plan,
-  type ActionStatus
+  type ActionStatus,
 } from "@/lib/domain";
 import { ScenarioPanel } from "./scenario-panel";
 
@@ -27,7 +27,7 @@ export function Dashboard() {
       incidentId,
       summary,
       severity,
-      source: "operator"
+      source: "operator",
     });
     if (!parsed.success) {
       setError("Escribe un evento de entre 1 y 2000 caracteres.");
@@ -37,14 +37,16 @@ export function Dashboard() {
     setEntries((current) => [
       { event: parsed.data, plan: simulatePlan(parsed.data), status: "proposed" },
       ...current.map((entry): Entry =>
-        entry.status === "proposed" ? { ...entry, status: "cancelled" } : entry
-      )
+        entry.status === "proposed" ? { ...entry, status: "cancelled" } : entry,
+      ),
     ]);
     setSummary("");
   }
 
   function updateStatus(id: string, status: ActionStatus) {
-    setEntries((current) => current.map((entry) => (entry.event.id === id ? { ...entry, status } : entry)));
+    setEntries((current) =>
+      current.map((entry) => (entry.event.id === id ? { ...entry, status } : entry)),
+    );
   }
 
   return (
@@ -60,8 +62,8 @@ export function Dashboard() {
         <span className="badge">SIMULACIÓN LOCAL</span>
       </header>
       <aside>
-        Sin conexiones externas: datos temporales en este navegador, decisiones deterministas y acciones
-        simuladas. El escenario de incendio en Sierra Bermeja genera avisos simulados.
+        Sin conexiones externas: datos temporales en este navegador, decisiones deterministas y
+        acciones simuladas. El escenario de incendio en Sierra Bermeja genera avisos simulados.
       </aside>
       <section className="metrics" aria-label="Estado de la simulación">
         <article>
@@ -150,7 +152,9 @@ export function Dashboard() {
         </section>
       </div>
       <ScenarioPanel onAgentEntries={(fresh) => setEntries((current) => [...fresh, ...current])} />
-      <footer>AI SDK · Workflow · Supabase · HappyRobot — conexiones reales pendientes de configurar</footer>
+      <footer>
+        AI SDK · Workflow · Supabase · HappyRobot — conexiones reales pendientes de configurar
+      </footer>
     </main>
   );
 }

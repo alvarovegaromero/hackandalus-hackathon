@@ -9,7 +9,7 @@ import {
   incomingEventSchema,
   methodNotAllowed,
   parseJsonBody,
-  validarReferencias
+  validarReferencias,
 } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";

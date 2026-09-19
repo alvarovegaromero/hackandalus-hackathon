@@ -8,7 +8,7 @@ import {
   autorizarRutaDemo,
   demoInjectSchema,
   methodNotAllowed,
-  parseJsonBody
+  parseJsonBody,
 } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";

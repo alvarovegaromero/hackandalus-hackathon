@@ -17,7 +17,7 @@ const emptyBlob = execFileSync("git", ["hash-object", "-w", "--stdin"], {
   cwd: fixtureRoot,
   env: fixtureEnv,
   input: "",
-  encoding: "utf8"
+  encoding: "utf8",
 }).trim();
 
 afterAll(() => {
@@ -30,12 +30,12 @@ function stagedFileCheck(filename: string) {
   execFileSync("git", ["read-tree", "--empty"], { cwd: fixtureRoot, env: fixtureEnv });
   execFileSync("git", ["update-index", "--add", "--cacheinfo", `100644,${emptyBlob},${filename}`], {
     cwd: fixtureRoot,
-    env: fixtureEnv
+    env: fixtureEnv,
   });
   return spawnSync(process.execPath, [path.join(projectRoot, "scripts/guard-staged-files.mjs")], {
     cwd: fixtureRoot,
     env: fixtureEnv,
-    encoding: "utf8"
+    encoding: "utf8",
   });
 }
 
@@ -55,8 +55,11 @@ describe("credential guards", () => {
     const syntheticToken = ["ghp", "A".repeat(36)].join("_");
     const result = spawnSync(
       process.execPath,
-      [path.join(projectRoot, "node_modules/secretlint/bin/secretlint.js"), "--stdinFileName=fixture.txt"],
-      { cwd: projectRoot, input: `token=${syntheticToken}`, encoding: "utf8" }
+      [
+        path.join(projectRoot, "node_modules/secretlint/bin/secretlint.js"),
+        "--stdinFileName=fixture.txt",
+      ],
+      { cwd: projectRoot, input: `token=${syntheticToken}`, encoding: "utf8" },
     );
     expect(result.status).toBe(1);
     expect(result.stdout + result.stderr).not.toContain(syntheticToken);
@@ -65,8 +68,11 @@ describe("credential guards", () => {
   it("allows empty credential placeholders", () => {
     const result = spawnSync(
       process.execPath,
-      [path.join(projectRoot, "node_modules/secretlint/bin/secretlint.js"), "--stdinFileName=.env.example"],
-      { cwd: projectRoot, input: "AI_GATEWAY_API_KEY=\nSUPABASE_SECRET_KEY=\n", encoding: "utf8" }
+      [
+        path.join(projectRoot, "node_modules/secretlint/bin/secretlint.js"),
+        "--stdinFileName=.env.example",
+      ],
+      { cwd: projectRoot, input: "AI_GATEWAY_API_KEY=\nSUPABASE_SECRET_KEY=\n", encoding: "utf8" },
     );
     expect(result.status).toBe(0);
   }, 20000);

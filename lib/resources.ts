@@ -32,7 +32,7 @@ export const PESOS = {
   proximidad: 25,
   suficiencia: 15,
   disponibilidad: 10,
-  canal: 5
+  canal: 5,
 } as const;
 
 export interface CandidateFactors {
@@ -71,25 +71,33 @@ export interface ResourceCandidate {
 const TABLA_NECESIDADES: { claves: string[]; capacidades: string[] }[] = [
   {
     claves: ["incendio", "fuego", "extincion", "llama", "humo", "frente"],
-    capacidades: ["extincion", "campo"]
+    capacidades: ["extincion", "campo"],
   },
   {
     claves: ["monte", "forestal", "evaluacion de monte", "vigilancia", "reconocimiento"],
-    capacidades: ["evaluacion de monte", "campo"]
+    capacidades: ["evaluacion de monte", "campo"],
   },
   {
     claves: ["triaje", "sanitari", "medic", "herid", "salud", "hospital", "ambulancia"],
-    capacidades: ["triaje", "sanitario"]
+    capacidades: ["triaje", "sanitario"],
   },
   { claves: ["evacua", "desaloj", "rescate"], capacidades: ["evacuacion", "transporte"] },
   { claves: ["refugio", "alberg", "acogida", "realojo"], capacidades: ["refugio", "transporte"] },
   {
-    claves: ["transporte", "logistic", "ruta", "route", "carretera", "traslado", "enlace logistico"],
-    capacidades: ["transporte", "evacuacion"]
+    claves: [
+      "transporte",
+      "logistic",
+      "ruta",
+      "route",
+      "carretera",
+      "traslado",
+      "enlace logistico",
+    ],
+    capacidades: ["transporte", "evacuacion"],
   },
   {
     claves: ["alerta", "aviso", "poblacion", "publica", "publico", "informacion", "comunicacion"],
-    capacidades: ["alerta publica", "comunicaciones"]
+    capacidades: ["alerta publica", "comunicaciones"],
   },
   {
     // Ojo: aqui NO va "coordina". store.ts redacta todos los objetivos como
@@ -97,8 +105,8 @@ const TABLA_NECESIDADES: { claves: string[]; capacidades: string[] }[] = [
     // aparece siempre y convertiria al Enlace 112 en comodin universal, capaz
     // hasta de apagar un incendio. La necesidad real es la categoria.
     claves: ["mando", "enlace", "escasez", "resource-shortage", "integration", "112"],
-    capacidades: ["coordinacion", "comunicaciones"]
-  }
+    capacidades: ["coordinacion", "comunicaciones"],
+  },
 ];
 
 /** Necesidad por defecto cuando el texto de la accion no encaja en la tabla. */
@@ -111,7 +119,7 @@ const CAPACIDADES_DIMENSIONADAS = new Set([
   "refugio",
   "triaje",
   "sanitario",
-  "extincion"
+  "extincion",
 ]);
 
 const CANALES_DE_CONTACTO: ActionChannel[] = ["call", "sms", "email", "whatsapp", "slack"];
@@ -121,7 +129,7 @@ const PESO_ESTADO_ZONA: Record<ZoneStatus, number> = {
   stable: 0,
   watch: 15,
   active: 30,
-  critical: 45
+  critical: 45,
 };
 
 /** Estados de accion que siguen dependiendo del recurso asignado. */
@@ -204,7 +212,7 @@ function redondear(valor: number) {
 export function rankResourcesForAction(
   action: Pick<Action, "zoneId" | "objective" | "channel">,
   resources: Resource[],
-  zones: CrisisZone[]
+  zones: CrisisZone[],
 ): ResourceCandidate[] {
   const zonaAccion = buscarZona(zones, action.zoneId);
   const necesidades = necesidadesDeAccion(action.objective, action.channel);
@@ -212,8 +220,12 @@ export function rankResourcesForAction(
   const esCanalDeContacto = CANALES_DE_CONTACTO.includes(action.channel);
 
   // Cuanta capacidad hace falta: una unidad por cada 100 personas en riesgo.
-  const necesitaDimension = necesidades.some((necesidad) => CAPACIDADES_DIMENSIONADAS.has(necesidad));
-  const capacidadRequerida = zonaAccion ? Math.max(1, Math.ceil(zonaAccion.populationAtRisk / 100)) : 1;
+  const necesitaDimension = necesidades.some((necesidad) =>
+    CAPACIDADES_DIMENSIONADAS.has(necesidad),
+  );
+  const capacidadRequerida = zonaAccion
+    ? Math.max(1, Math.ceil(zonaAccion.populationAtRisk / 100))
+    : 1;
 
   const candidatos = resources.map<ResourceCandidate>((resource) => {
     // Las capacidades se comparan sin acentos: los datos semilla se estan
@@ -222,7 +234,8 @@ export function rankResourcesForAction(
     const matched = necesidades.filter((necesidad) => capacidades.has(normalizar(necesidad)));
 
     // Proximidad: desde donde esta desplegado, y si no, desde su base.
-    const zonaRecurso = buscarZona(zones, resource.zoneId) ?? buscarZona(zones, resource.homeZoneId);
+    const zonaRecurso =
+      buscarZona(zones, resource.zoneId) ?? buscarZona(zones, resource.homeZoneId);
     let distance: number | null = null;
     let proximidad: number;
     if (!zonaAccion || !zonaRecurso) {
@@ -236,7 +249,9 @@ export function rankResourcesForAction(
     // Capacidad tecnica: cubrir la necesidad principal manda.
     const cubrePrincipal = capacidades.has(normalizar(principal));
     const capacidadTecnica =
-      matched.length === 0 ? 0 : (cubrePrincipal ? 0.7 : 0) + 0.3 * (matched.length / necesidades.length);
+      matched.length === 0
+        ? 0
+        : (cubrePrincipal ? 0.7 : 0) + 0.3 * (matched.length / necesidades.length);
 
     // Suficiencia: solo se mide cuando la necesidad escala con la poblacion.
     const suficiencia = necesitaDimension ? Math.min(1, resource.capacity / capacidadRequerida) : 1;
@@ -249,7 +264,13 @@ export function rankResourcesForAction(
         : 0.4
       : 1;
 
-    const factors: CandidateFactors = { capacidadTecnica, proximidad, suficiencia, disponibilidad, canal };
+    const factors: CandidateFactors = {
+      capacidadTecnica,
+      proximidad,
+      suficiencia,
+      disponibilidad,
+      canal,
+    };
     const compatible = matched.length > 0;
 
     let rejection: string | null = null;
@@ -275,7 +296,7 @@ export function rankResourcesForAction(
       factors,
       distance,
       matched,
-      rejection
+      rejection,
     };
   });
 
@@ -286,7 +307,7 @@ export function rankResourcesForAction(
 export function explainUnassignable(
   action: Pick<Action, "zoneId" | "objective" | "channel">,
   resources: Resource[],
-  zones: CrisisZone[]
+  zones: CrisisZone[],
 ): string {
   const zona = buscarZona(zones, action.zoneId);
   const necesidades = necesidadesDeAccion(action.objective, action.channel);
@@ -298,11 +319,15 @@ export function explainUnassignable(
 
   const candidatos = rankResourcesForAction(action, resources, zones);
   const compatibles = candidatos.filter((candidato) => candidato.compatible);
-  const compatiblesLibres = compatibles.filter((candidato) => candidato.resource.status === "available");
+  const compatiblesLibres = compatibles.filter(
+    (candidato) => candidato.resource.status === "available",
+  );
 
   if (compatibles.length === 0) {
     return `Ningún recurso cubre ${necesidades.join(" ni ")} para ${donde}. Disponible solo: ${candidatos
-      .map((candidato) => `${candidato.resource.name} (${candidato.resource.capabilities.join(", ")})`)
+      .map(
+        (candidato) => `${candidato.resource.name} (${candidato.resource.capabilities.join(", ")})`,
+      )
       .join("; ")}. Hace falta pedir apoyo externo.`;
   }
 
@@ -314,7 +339,8 @@ export function explainUnassignable(
       .filter((candidato) => candidato.resource.status === "unavailable")
       .map((candidato) => candidato.resource.name);
     const partes: string[] = [];
-    if (ocupados.length > 0) partes.push(`ocupados en zonas más prioritarias: ${ocupados.join(", ")}`);
+    if (ocupados.length > 0)
+      partes.push(`ocupados en zonas más prioritarias: ${ocupados.join(", ")}`);
     if (caidos.length > 0) partes.push(`fuera de servicio: ${caidos.join(", ")}`);
     return `Hay recursos capaces de cubrir ${necesidades[0]} en ${donde}, pero ninguno libre (${partes.join("; ")}). ${donde} se queda esperando.`;
   }
@@ -334,13 +360,13 @@ export function explainUnassignable(
 export function selectResourceForAction(
   action: Pick<Action, "zoneId" | "objective" | "channel">,
   resources: Resource[],
-  zones: CrisisZone[]
+  zones: CrisisZone[],
 ): AssignmentDecision | null {
   const candidatos = rankResourcesForAction(action, resources, zones);
   const zonaAccion = buscarZona(zones, action.zoneId);
   const necesidades = necesidadesDeAccion(action.objective, action.channel);
   const utiles = candidatos.filter(
-    (candidato) => candidato.compatible && candidato.resource.status !== "unavailable"
+    (candidato) => candidato.compatible && candidato.resource.status !== "unavailable",
   );
   if (utiles.length === 0) return null;
 
@@ -352,7 +378,7 @@ export function selectResourceForAction(
     return {
       resourceId: elegido.resource.id,
       score: elegido.score,
-      reason: construirMotivo(elegido, alternativa, candidatos, zonaAccion, necesidades, false)
+      reason: construirMotivo(elegido, alternativa, candidatos, zonaAccion, necesidades, false),
     };
   }
 
@@ -369,7 +395,14 @@ export function selectResourceForAction(
   return {
     resourceId: elegido.resource.id,
     score: elegido.score,
-    reason: construirMotivo(elegido, expropiables[1] ?? null, candidatos, zonaAccion, necesidades, true)
+    reason: construirMotivo(
+      elegido,
+      expropiables[1] ?? null,
+      candidatos,
+      zonaAccion,
+      necesidades,
+      true,
+    ),
   };
 }
 
@@ -380,7 +413,7 @@ function construirMotivo(
   todos: ResourceCandidate[],
   zonaAccion: CrisisZone | null,
   necesidades: string[],
-  expropiado: boolean
+  expropiado: boolean,
 ) {
   const recurso = elegido.resource;
   const donde = zonaAccion ? zonaAccion.name : "la zona afectada";
@@ -393,8 +426,8 @@ function construirMotivo(
   } else if (elegido.distance !== null) {
     partes.push(
       `y es el compatible más cercano (distancia ${redondear(elegido.distance)}, proximidad ${porcentaje(
-        elegido.factors.proximidad
-      )})`
+        elegido.factors.proximidad,
+      )})`,
     );
   } else {
     partes.push("y es un recurso regional sin base fija");
@@ -403,8 +436,8 @@ function construirMotivo(
   if (zonaAccion) {
     partes.push(
       `con capacidad ${recurso.capacity} para ${zonaAccion.populationAtRisk} personas en riesgo (suficiencia ${porcentaje(
-        elegido.factors.suficiencia
-      )})`
+        elegido.factors.suficiencia,
+      )})`,
     );
   }
 
@@ -417,7 +450,7 @@ function construirMotivo(
         !candidato.compatible &&
         candidato.resource.status !== "unavailable" &&
         candidato.distance !== null &&
-        (elegido.distance === null || candidato.distance < elegido.distance)
+        (elegido.distance === null || candidato.distance < elegido.distance),
     )
     .sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0))[0];
 
@@ -439,7 +472,12 @@ function construirMotivo(
 // ---------------------------------------------------------------------------
 
 /** Marca el recurso como asignado a la accion. Muta el array recibido. */
-export function assignResource(resources: Resource[], resourceId: string, actionId: string, at: string) {
+export function assignResource(
+  resources: Resource[],
+  resourceId: string,
+  actionId: string,
+  at: string,
+) {
   const resource = resources.find((candidate) => candidate.id === resourceId);
   if (!resource || resource.status === "unavailable") return null;
   resource.status = "assigned";
@@ -481,13 +519,13 @@ export function reassignAffectedActions(
   actions: Action[],
   resources: Resource[],
   zones: CrisisZone[],
-  downResourceId: string
+  downResourceId: string,
 ): Reassignment[] {
   const caido = resources.find((resource) => resource.id === downResourceId) ?? null;
   const nombreCaido = caido?.name ?? downResourceId;
 
   const afectadas = actions.filter(
-    (action) => action.resourceId === downResourceId && ESTADOS_VIVOS.has(action.status)
+    (action) => action.resourceId === downResourceId && ESTADOS_VIVOS.has(action.status),
   );
   if (afectadas.length === 0) return [];
 
@@ -508,7 +546,7 @@ export function reassignAffectedActions(
     const decision = selectResourceForAction(
       { zoneId: action.zoneId, objective: action.objective, channel: action.channel },
       disponibles,
-      zones
+      zones,
     );
 
     if (!decision) {
@@ -519,8 +557,8 @@ export function reassignAffectedActions(
         reason: `Sin sustituto para ${nombreCaido}: ${explainUnassignable(
           { zoneId: action.zoneId, objective: action.objective, channel: action.channel },
           disponibles,
-          zones
-        )} La acción sigue bloqueada hasta que se libere o llegue un recurso capaz.`
+          zones,
+        )} La acción sigue bloqueada hasta que se libere o llegue un recurso capaz.`,
       });
       continue;
     }
@@ -530,7 +568,7 @@ export function reassignAffectedActions(
       actionId: action.id,
       fromResourceId: downResourceId,
       toResourceId: decision.resourceId,
-      reason: `Sustitución tras la caída de ${nombreCaido}: ${decision.reason}`
+      reason: `Sustitución tras la caída de ${nombreCaido}: ${decision.reason}`,
     });
   }
 
@@ -577,7 +615,7 @@ export interface ConflictResolution {
 export function resolveResourceConflicts(
   actions: Action[],
   resources: Resource[],
-  zones: CrisisZone[]
+  zones: CrisisZone[],
 ): ConflictResolution {
   const abiertas = actions.filter((action) => ESTADOS_VIVOS.has(action.status));
 
@@ -597,7 +635,7 @@ export function resolveResourceConflicts(
       resource.status === "available" ||
       (resource.status === "assigned" &&
         resource.assignedActionId !== null &&
-        idsAbiertas.has(resource.assignedActionId))
+        idsAbiertas.has(resource.assignedActionId)),
   );
 
   const allocations: ResourceAllocation[] = [];
@@ -608,12 +646,16 @@ export function resolveResourceConflicts(
   for (const action of ordenadas) {
     const zona = buscarZona(zones, action.zoneId);
     const urgency = zona ? Math.round(urgenciaDeZona(zona)) : 0;
-    const peticion = { zoneId: action.zoneId, objective: action.objective, channel: action.channel };
+    const peticion = {
+      zoneId: action.zoneId,
+      objective: action.objective,
+      channel: action.channel,
+    };
 
     // Se anota que recurso querria esta accion si no hubiera competencia, para
     // saber cual es el mas peleado aunque quien lo pida acabe esperando.
     const preferido = rankResourcesForAction(peticion, repartibles, zones).find(
-      (candidato) => candidato.compatible && candidato.resource.status !== "unavailable"
+      (candidato) => candidato.compatible && candidato.resource.status !== "unavailable",
     );
     if (preferido) {
       disputas.set(preferido.resource.id, (disputas.get(preferido.resource.id) ?? 0) + 1);
@@ -629,7 +671,7 @@ export function resolveResourceConflicts(
     // Se fuerza el estado a libre para puntuar: en este reparto todo lo que
     // queda en `libres` esta realmente disponible para esta accion.
     const libresComoDisponibles = libres.map((resource) =>
-      resource.status === "available" ? resource : { ...resource, status: "available" as const }
+      resource.status === "available" ? resource : { ...resource, status: "available" as const },
     );
 
     const decision = selectResourceForAction(peticion, libresComoDisponibles, zones);
@@ -641,18 +683,20 @@ export function resolveResourceConflicts(
         zoneId: action.zoneId,
         resourceId: decision.resourceId,
         reason: decision.reason,
-        urgency
+        urgency,
       });
       continue;
     }
 
     // Se queda esperando: se busca quien tiene el recurso que esta accion queria.
     const deseados = rankResourcesForAction(peticion, repartibles, zones).filter(
-      (candidato) => candidato.compatible && candidato.resource.status !== "unavailable"
+      (candidato) => candidato.compatible && candidato.resource.status !== "unavailable",
     );
     const disputado = deseados.find((candidato) => tomados.has(candidato.resource.id));
     const ganadoraId = disputado ? (tomados.get(disputado.resource.id) ?? null) : null;
-    const ganadora = ganadoraId ? (allocations.find((item) => item.actionId === ganadoraId) ?? null) : null;
+    const ganadora = ganadoraId
+      ? (allocations.find((item) => item.actionId === ganadoraId) ?? null)
+      : null;
     const zonaGanadora = ganadora ? buscarZona(zones, ganadora.zoneId) : null;
 
     const reason = disputado
@@ -668,7 +712,7 @@ export function resolveResourceConflicts(
       zoneId: action.zoneId,
       reason,
       blockedByActionId: ganadoraId,
-      urgency
+      urgency,
     });
   }
 

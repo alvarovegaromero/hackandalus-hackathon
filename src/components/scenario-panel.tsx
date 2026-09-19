@@ -41,7 +41,7 @@ const initial = (incidentId: string): Sim => ({
   running: false,
   feed: [],
   log: [],
-  error: ""
+  error: "",
 });
 
 const labelOf = (id: string) => pack.events.find((e) => e.id === id)?.label ?? id;
@@ -62,10 +62,10 @@ function reduce(sim: Sim, action: Action): Sim {
           id,
           label: labelOf(id),
           atMin: pack.events.find((e) => e.id === id)!.atMin,
-          manual: false
+          manual: false,
         })),
-        ...sim.log
-      ]
+        ...sim.log,
+      ],
     };
   }
   try {
@@ -77,7 +77,7 @@ function reduce(sim: Sim, action: Action): Sim {
       engine: step.state,
       feed: [...step.emitted.map((l) => l.signal).reverse(), ...sim.feed],
       log: [{ id: step.fired[0], label, atMin: sim.engine.nowMin, manual: true }, ...sim.log],
-      error: ""
+      error: "",
     };
   } catch {
     return { ...sim, error: "El evento no es válido para este escenario." };
@@ -96,18 +96,18 @@ const agentResponseSchema = z.object({
           results: z.array(
             z.object({
               status: z.enum(["proposed", "cancelled", "simulated", "blocked"]),
-              reason: z.string().optional()
-            })
-          )
+              reason: z.string().optional(),
+            }),
+          ),
         })
         .optional(),
-      resultError: z.string().optional()
-    })
+      resultError: z.string().optional(),
+    }),
   ),
   duplicates: z.array(z.unknown()),
   rejected: z.array(z.unknown()),
   errors: z.array(z.unknown()),
-  events: z.array(crisisEventSchema)
+  events: z.array(crisisEventSchema),
 });
 
 type AgentStats = { pending: number; done: number; duplicates: number; failed: number };
@@ -147,7 +147,7 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
       const response = await fetch("/api/scenario/signals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ incidentId, signals })
+        body: JSON.stringify({ incidentId, signals }),
       });
       const data: unknown = await response.json().catch(() => null);
       if (!response.ok) {
@@ -164,11 +164,11 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
               plan: {
                 priority: event.severity,
                 rationale: "El workflow no devolvió resultado.",
-                actions: [{ kind: "review", description: "Revisar el aviso manualmente." }]
+                actions: [{ kind: "review", description: "Revisar el aviso manualmente." }],
               },
               status: "blocked",
-              note: `El agente falló: ${resultError ?? "sin detalle"}`
-            }
+              note: `El agente falló: ${resultError ?? "sin detalle"}`,
+            },
           ];
         const action = result.results[0];
         const mode = result.mode === "ai" ? "IA" : "simulación determinista";
@@ -177,8 +177,8 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
             event,
             plan: result.plan,
             status: action?.status ?? "proposed",
-            note: `Agente (${mode})${action?.reason ? `: ${action.reason}` : ""}`
-          }
+            note: `Agente (${mode})${action?.reason ? `: ${action.reason}` : ""}`,
+          },
         ];
       });
       onAgentEntries(entries.reverse());
@@ -187,7 +187,7 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
         ...s,
         done: s.done + body.accepted.length,
         duplicates: s.duplicates + body.duplicates.length,
-        failed: s.failed + failed
+        failed: s.failed + failed,
       }));
       setAgentError(failed ? "Algunos avisos no se pudieron procesar." : "");
     } catch (error) {
@@ -236,12 +236,12 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
             value: typed,
             location: fact.location,
             count,
-            sourceIds
-          }
+            sourceIds,
+          },
         ]
       : [
           { type: "set_fact", factId: fact.id, value: typed },
-          { type: "witness", factId: fact.id, count, sourceIds }
+          { type: "witness", factId: fact.id, count, sourceIds },
         ];
     const id = `live-${improvised + 1}`;
     setImprovised(improvised + 1);
@@ -252,8 +252,8 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
         atMin: 0,
         kind: "chaos",
         label: `${hoax ? "Bulo" : "Cambio"}: ${fact.entityLabel} → ${typed}`,
-        effects
-      }
+        effects,
+      },
     });
   }
 
@@ -264,15 +264,19 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
         <span className="badge">DATOS SIMULADOS</span>
       </div>
       <p>
-        Genera avisos ruidosos (retrasos, duplicados, bulos) a partir de una realidad oculta. 1 minuto real
-        equivale a 10 minutos de crisis. Semilla {SEED}.
+        Genera avisos ruidosos (retrasos, duplicados, bulos) a partir de una realidad oculta. 1
+        minuto real equivale a 10 minutos de crisis. Semilla {SEED}.
       </p>
       <div className="buttons">
         <strong className="clock" aria-live="polite">
           {minute(sim.engine.nowMin)} / {pack.durationMin} min
         </strong>
         <button onClick={() => dispatch({ type: "toggle" })}>
-          {sim.running ? "Pausar escenario" : sim.elapsedMs ? "Reanudar escenario" : "Iniciar escenario"}
+          {sim.running
+            ? "Pausar escenario"
+            : sim.elapsedMs
+              ? "Reanudar escenario"
+              : "Iniciar escenario"}
         </button>
         <button
           className="secondary"
@@ -342,7 +346,11 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
               </select>
             )}
             <label htmlFor="scenario-source">Quién avisa</label>
-            <select id="scenario-source" value={sourceId} onChange={(e) => setSourceId(e.target.value)}>
+            <select
+              id="scenario-source"
+              value={sourceId}
+              onChange={(e) => setSourceId(e.target.value)}
+            >
               {reportingSources.map((s) => (
                 <option key={s.id} value={s.id}>
                   {channelLabels[s.channel]} · {s.id}
@@ -381,7 +389,9 @@ export function ScenarioPanel({ onAgentEntries }: { onAgentEntries: (entries: En
 
         <div>
           <h3>Avisos recibidos ({sim.feed.length})</h3>
-          {sim.feed.length === 0 && <div className="empty">Inicia el escenario para recibir avisos.</div>}
+          {sim.feed.length === 0 && (
+            <div className="empty">Inicia el escenario para recibir avisos.</div>
+          )}
           <ol className="feed">
             {sim.feed.map((s) => (
               <li key={s.id}>

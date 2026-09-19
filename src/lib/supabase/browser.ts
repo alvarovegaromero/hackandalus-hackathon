@@ -19,7 +19,7 @@ export function subscribeToIncident(incidentId: string, onChange: () => void) {
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "events", filter: `incident_id=eq.${incidentId}` },
-      onChange
+      onChange,
     )
     .subscribe();
   return () => {

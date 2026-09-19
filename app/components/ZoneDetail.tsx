@@ -13,7 +13,7 @@ import {
   isOpenAction,
   resourceStatusLabels,
   severityLabels,
-  zoneStatusLabels
+  zoneStatusLabels,
 } from "./shared";
 
 interface Props {
@@ -25,19 +25,25 @@ interface Props {
 }
 
 export default function ZoneDetail({ zone, situation, nowMs, onClose, onCreateAction }: Props) {
-  const priority = situation.plan.priorities.find((candidate) => candidate.zoneId === zone.id) ?? null;
+  const priority =
+    situation.plan.priorities.find((candidate) => candidate.zoneId === zone.id) ?? null;
   const rank = situation.plan.priorities.findIndex((candidate) => candidate.zoneId === zone.id) + 1;
   const events = situation.events.filter((event) => event.zoneId === zone.id).slice(0, 6);
   const resources = situation.resources.filter(
-    (resource) => resource.zoneId === zone.id || resource.homeZoneId === zone.id
+    (resource) => resource.zoneId === zone.id || resource.homeZoneId === zone.id,
   );
-  const actions = situation.actions.filter((action) => action.zoneId === zone.id && isOpenAction(action));
+  const actions = situation.actions.filter(
+    (action) => action.zoneId === zone.id && isOpenAction(action),
+  );
   const chains = situation.chains.filter((chain) => chain.zoneId === zone.id);
 
   const factors = priority?.factors ?? [];
   const declared = factors.reduce((total, factor) => total + factor.value, 0);
   const rest = (priority?.score ?? 0) - declared;
-  const rows = [...factors, ...(rest !== 0 ? [{ label: "Ajuste no desglosado", value: rest }] : [])];
+  const rows = [
+    ...factors,
+    ...(rest !== 0 ? [{ label: "Ajuste no desglosado", value: rest }] : []),
+  ];
   const maxValue = Math.max(1, ...rows.map((row) => Math.abs(row.value)));
 
   return (
@@ -168,10 +174,13 @@ export default function ZoneDetail({ zone, situation, nowMs, onClose, onCreateAc
               <div>
                 <strong>{resource.name}</strong>
                 <small>
-                  {resource.type} · capacidad {resource.capacity} · {resource.capabilities.join(", ")}
+                  {resource.type} · capacidad {resource.capacity} ·{" "}
+                  {resource.capabilities.join(", ")}
                 </small>
               </div>
-              <span className={`pill res-${resource.status}`}>{resourceStatusLabels[resource.status]}</span>
+              <span className={`pill res-${resource.status}`}>
+                {resourceStatusLabels[resource.status]}
+              </span>
             </li>
           ))}
         </ul>
@@ -207,7 +216,8 @@ export default function ZoneDetail({ zone, situation, nowMs, onClose, onCreateAc
                 <div>
                   <strong>{chain.objective}</strong>
                   <small>
-                    Escalón {Math.min(chain.currentStep + 1, chain.steps.length)} de {chain.steps.length}
+                    Escalón {Math.min(chain.currentStep + 1, chain.steps.length)} de{" "}
+                    {chain.steps.length}
                   </small>
                 </div>
                 <span className="pill">{chainStatusLabels[chain.status]}</span>

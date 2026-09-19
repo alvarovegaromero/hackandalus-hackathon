@@ -9,7 +9,7 @@ import { agoLabel, confidenceLabels, eventSourceLabels, severityLabels } from ".
 const decisionLabels: Record<"act" | "verify" | "discard", string> = {
   act: "Actuar ya",
   verify: "Verificar antes",
-  discard: "Descartable"
+  discard: "Descartable",
 };
 
 interface Props {
@@ -24,7 +24,9 @@ interface Props {
 export default function SignalsPanel({ events, zones, busy, nowMs, freshIds, onMark }: Props) {
   return (
     <div className="timeline" role="log" aria-live="polite" aria-relevant="additions">
-      {events.length === 0 ? <p className="muted-note">Todavía no ha entrado ninguna señal.</p> : null}
+      {events.length === 0 ? (
+        <p className="muted-note">Todavía no ha entrado ninguna señal.</p>
+      ) : null}
       {events.map((event) => {
         const zone = zones.find((candidate) => candidate.id === event.zoneId);
         const fresh = freshIds.has(event.id);
@@ -55,8 +57,9 @@ export default function SignalsPanel({ events, zones, busy, nowMs, freshIds, onM
                   >
                     {decisionLabels[event.assessment.decision]}
                   </span>{" "}
-                  {event.assessment.rationale} (relevante {Math.round(event.assessment.pRelevant * 100)} %,
-                  veraz {Math.round(event.assessment.pTruthful * 100)} %, urgencia{" "}
+                  {event.assessment.rationale} (relevante{" "}
+                  {Math.round(event.assessment.pRelevant * 100)} %, veraz{" "}
+                  {Math.round(event.assessment.pTruthful * 100)} %, urgencia{" "}
                   {Math.round(event.assessment.urgency * 100)} %)
                 </p>
               ) : null}

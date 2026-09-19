@@ -15,7 +15,9 @@ interface Props {
 
 function ChangeRows({ plan }: { plan: Plan }) {
   if (!plan.changes || plan.changes.length === 0) {
-    return <p className="muted-note">Esta versión no registró diferencias respecto a la anterior.</p>;
+    return (
+      <p className="muted-note">Esta versión no registró diferencias respecto a la anterior.</p>
+    );
   }
   return (
     <ul className="change-list">
@@ -38,7 +40,10 @@ export default function PlanChanges({ plan, planHistory, nowMs, isFresh }: Props
   const invalid = plan.valid === false;
 
   return (
-    <section className={`panel plan-panel ${isFresh ? "just-changed" : ""}`} aria-label="Cambios del plan">
+    <section
+      className={`panel plan-panel ${isFresh ? "just-changed" : ""}`}
+      aria-label="Cambios del plan"
+    >
       <div className="panel-title">
         <GitCompareArrows size={18} aria-hidden="true" />
         <h2>Plan v{plan.version}: qué cambió</h2>
@@ -99,7 +104,8 @@ export default function PlanChanges({ plan, planHistory, nowMs, isFresh }: Props
 
       {plan.invalidatedActionIds.length > 0 ? (
         <p className="muted-note">
-          {plan.invalidatedActionIds.length} acción(es) quedaron invalidadas por esta replanificación.
+          {plan.invalidatedActionIds.length} acción(es) quedaron invalidadas por esta
+          replanificación.
         </p>
       ) : null}
 

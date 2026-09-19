@@ -16,7 +16,7 @@ import {
   registerAssessor,
   reliabilityOf,
   selectAssessor,
-  updateSourceReliability
+  updateSourceReliability,
 } from "@/lib/triage";
 import type { SignalAssessor, TriageContext, TriageSignal } from "@/lib/triage";
 import { seedContacts, seedSourceReliability, seedZones } from "@/lib/seed";
@@ -39,7 +39,7 @@ function contexto(overrides: Partial<TriageContext> = {}): TriageContext {
     zones: seedZones,
     events: [],
     now: AHORA,
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -56,7 +56,7 @@ function senal(overrides: Partial<TriageSignal> = {}): TriageSignal {
     confirmed: null,
     occurrences: 1,
     createdAt: AHORA,
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -77,7 +77,7 @@ function evento(overrides: Partial<CrisisEvent> = {}): CrisisEvent {
     appliedRiskDelta: 0,
     appliedNeed: null,
     previousZoneStatus: null,
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -98,7 +98,7 @@ describe("tres salidas del triaje", () => {
   it("una señal de sensor claramente relevante se resuelve como actuar", () => {
     const assessment = assessSignal(
       senal({ severity: "critical", confidence: "high", source: "sensor" }),
-      contexto()
+      contexto(),
     );
 
     expect(assessment.decision).toBe("act");
@@ -118,9 +118,9 @@ describe("tres salidas del triaje", () => {
         zoneId: "zone-south",
         category: "refugio",
         severity: "low",
-        confidence: "low"
+        confidence: "low",
       }),
-      contexto()
+      contexto(),
     );
 
     expect(assessment.decision).toBe("discard");
@@ -138,9 +138,9 @@ describe("tres salidas del triaje", () => {
         zoneId: "zone-east",
         category: "sanitario",
         severity: "high",
-        confidence: "medium"
+        confidence: "medium",
       }),
-      contexto()
+      contexto(),
     );
 
     expect(assessment.decision).toBe("verify");
@@ -154,10 +154,10 @@ describe("tres salidas del triaje", () => {
         zoneId: "zone-east",
         category: "sanitario",
         severity: "high",
-        title: "Llamada avisa de personas atrapadas en un camping"
+        title: "Llamada avisa de personas atrapadas en un camping",
       }),
       assessment,
-      { zones: seedZones, contacts: seedContacts }
+      { zones: seedZones, contacts: seedContacts },
     );
 
     // Dos o tres preguntas, no un cuestionario.
@@ -180,7 +180,7 @@ describe("tres salidas del triaje", () => {
   it("una señal ya descartada por un operador no vuelve a colarse", () => {
     const assessment = assessSignal(
       senal({ confirmed: false, severity: "critical", confidence: "high" }),
-      contexto()
+      contexto(),
     );
 
     expect(assessment.decision).toBe("discard");
@@ -198,12 +198,12 @@ describe("fusión de confianza", () => {
     const uno = fuseConfidence([{ source: "public", probability: 0.8, reliability: 0.6 }]);
     const dos = fuseConfidence([
       { source: "public", probability: 0.8, reliability: 0.6 },
-      { source: "sensor", probability: 0.8, reliability: 0.6 }
+      { source: "sensor", probability: 0.8, reliability: 0.6 },
     ]);
     const tres = fuseConfidence([
       { source: "public", probability: 0.8, reliability: 0.6 },
       { source: "sensor", probability: 0.8, reliability: 0.6 },
-      { source: "operator", probability: 0.8, reliability: 0.6 }
+      { source: "operator", probability: 0.8, reliability: 0.6 },
     ]);
 
     expect(uno).toBeCloseTo(0.48, 3);
@@ -218,25 +218,25 @@ describe("fusión de confianza", () => {
   it("dos señales de la misma fuente no cuentan como dos testigos", () => {
     const independientes = fuseConfidence([
       { source: "public", probability: 0.8, reliability: 0.6 },
-      { source: "sensor", probability: 0.8, reliability: 0.6 }
+      { source: "sensor", probability: 0.8, reliability: 0.6 },
     ]);
     const mismaFuente = fuseConfidence([
       { source: "public", probability: 0.8, reliability: 0.6 },
-      { source: "public", probability: 0.8, reliability: 0.6 }
+      { source: "public", probability: 0.8, reliability: 0.6 },
     ]);
 
     expect(mismaFuente).toBeLessThan(independientes);
     // Sigue aportando algo, pero muy descontado por correlación.
     expect(mismaFuente).toBeGreaterThan(
-      fuseConfidence([{ source: "public", probability: 0.8, reliability: 0.6 }])
+      fuseConfidence([{ source: "public", probability: 0.8, reliability: 0.6 }]),
     );
     // Con peso cero, repetir la misma fuente no aporta absolutamente nada.
     const sinCorrelacion = fuseConfidence(
       [
         { source: "public", probability: 0.8, reliability: 0.6 },
-        { source: "public", probability: 0.8, reliability: 0.6 }
+        { source: "public", probability: 0.8, reliability: 0.6 },
       ],
-      { sameSourceWeight: 0 }
+      { sameSourceWeight: 0 },
     );
     expect(sinCorrelacion).toBeCloseTo(0.48, 3);
   });
@@ -253,13 +253,13 @@ describe("fusión de confianza", () => {
       zoneId: "zone-south",
       category: "evacuacion",
       severity: "high",
-      confidence: "high"
+      confidence: "high",
     });
 
     const solo = assessSignal(aviso, contexto());
     const conTestigo = assessSignal(
       aviso,
-      contexto({ events: [evento({ id: "evt-sensor-sur", source: "sensor" })] })
+      contexto({ events: [evento({ id: "evt-sensor-sur", source: "sensor" })] }),
     );
 
     expect(solo.decision).toBe("verify");
@@ -276,16 +276,16 @@ describe("fusión de confianza", () => {
       zoneId: "zone-south",
       category: "evacuacion",
       severity: "high",
-      confidence: "high"
+      confidence: "high",
     });
 
     const independiente = assessSignal(
       aviso,
-      contexto({ events: [evento({ id: "evt-sensor-sur", source: "sensor" })] })
+      contexto({ events: [evento({ id: "evt-sensor-sur", source: "sensor" })] }),
     );
     const mismaFuente = assessSignal(
       aviso,
-      contexto({ events: [evento({ id: "evt-otro-vecino", source: "public" })] })
+      contexto({ events: [evento({ id: "evt-otro-vecino", source: "public" })] }),
     );
 
     expect(mismaFuente.confidence).toBeLessThan(independiente.confidence);
@@ -300,13 +300,13 @@ describe("fusión de confianza", () => {
       zoneId: "zone-south",
       category: "evacuacion",
       severity: "high",
-      confidence: "high"
+      confidence: "high",
     });
 
     const limpio = assessSignal(aviso, contexto());
     const contradicho = assessSignal(
       aviso,
-      contexto({ events: [evento({ id: "evt-falso", confirmed: false })] })
+      contexto({ events: [evento({ id: "evt-falso", confirmed: false })] }),
     );
 
     expect(contradicho.pTruthful).toBeLessThan(limpio.pTruthful);
@@ -394,7 +394,7 @@ describe("umbrales y determinismo", () => {
       zoneId: "zone-east",
       category: "sanitario",
       severity: "high",
-      confidence: "medium"
+      confidence: "medium",
     });
 
     const pordefecto = assessSignal(aviso, contexto());
@@ -405,14 +405,14 @@ describe("umbrales y determinismo", () => {
     // señal en acción directa.
     const exigenteMenos = assessSignal(
       aviso,
-      contexto({ thresholds: { act: 0.6, urgencyRelief: 0, verifyUrgencyRelief: 0 } })
+      contexto({ thresholds: { act: 0.6, urgencyRelief: 0, verifyUrgencyRelief: 0 } }),
     );
     expect(exigenteMenos.decision).toBe("act");
 
     // Subir el umbral de verificación la manda a la papelera.
     const exigenteMas = assessSignal(
       aviso,
-      contexto({ thresholds: { verify: 0.9, urgencyRelief: 0, verifyUrgencyRelief: 0 } })
+      contexto({ thresholds: { verify: 0.9, urgencyRelief: 0, verifyUrgencyRelief: 0 } }),
     );
     expect(exigenteMas.decision).toBe("discard");
   });
@@ -423,13 +423,13 @@ describe("umbrales y determinismo", () => {
       zoneId: "zone-south",
       category: "evacuacion",
       severity: "high",
-      confidence: "medium"
+      confidence: "medium",
     });
 
     const conAlivio = assessSignal(aviso, contexto());
     const sinAlivio = assessSignal(
       aviso,
-      contexto({ thresholds: { urgencyRelief: 0, verifyUrgencyRelief: 0 } })
+      contexto({ thresholds: { urgencyRelief: 0, verifyUrgencyRelief: 0 } }),
     );
 
     expect(conAlivio.decision).toBe("verify");
@@ -440,12 +440,14 @@ describe("umbrales y determinismo", () => {
 
   it("mismas entradas, misma evaluación", () => {
     const aviso = senal({ source: "happyrobot", confidence: "medium", severity: "high" });
-    const contextoFijo = contexto({ events: [evento({ zoneId: "zone-north", category: "incendio" })] });
+    const contextoFijo = contexto({
+      events: [evento({ zoneId: "zone-north", category: "incendio" })],
+    });
 
     const primera = assessSignal(aviso, contextoFijo);
     const segunda = assessSignal(
       aviso,
-      contexto({ events: [evento({ zoneId: "zone-north", category: "incendio" })] })
+      contexto({ events: [evento({ zoneId: "zone-north", category: "incendio" })] }),
     );
 
     expect(segunda).toEqual(primera);
@@ -456,7 +458,7 @@ describe("umbrales y determinismo", () => {
     const reciente = assessSignal(senal(), contexto());
     const vieja = assessSignal(
       senal({ createdAt: new Date(Date.parse(AHORA) - 90 * 60000).toISOString() }),
-      contexto()
+      contexto(),
     );
 
     expect(vieja.urgency).toBeLessThan(reciente.urgency);
@@ -480,8 +482,8 @@ describe("evaluadores intercambiables", () => {
       rationale: "Evaluación del clasificador externo.",
       assessedBy: "jev",
       sourceReliability: 0.99,
-      assessedAt: AHORA
-    })
+      assessedAt: AHORA,
+    }),
   };
 
   it("sin evaluador registrado se usa el motor determinista", () => {
@@ -508,7 +510,7 @@ describe("evaluadores intercambiables", () => {
       ...falso,
       available: () => {
         throw new Error("sin acceso anticipado");
-      }
+      },
     });
     expect(selectAssessor()).toBe(deterministicAssessor);
   });
@@ -519,7 +521,7 @@ describe("evaluadores intercambiables", () => {
       ...falso,
       assess: () => {
         throw new Error("timeout del clasificador");
-      }
+      },
     });
 
     const assessment = assessSignal(senal({ severity: "critical" }), contexto());
@@ -551,7 +553,7 @@ describe("petición de verificación", () => {
       rationale: "prueba",
       assessedBy: "deterministic",
       sourceReliability: 0.6,
-      assessedAt: AHORA
+      assessedAt: AHORA,
     };
 
     const peticion = buildVerificationRequest(
@@ -560,10 +562,10 @@ describe("petición de verificación", () => {
         zoneId: "zone-south",
         category: "refugio",
         severity: "medium",
-        title: "Aviso de refugio saturado"
+        title: "Aviso de refugio saturado",
       }),
       assessment,
-      { zones: seedZones, contacts: seedContacts }
+      { zones: seedZones, contacts: seedContacts },
     );
 
     expect(peticion.doubt).toBe("relevancia");
@@ -582,7 +584,7 @@ describe("petición de verificación", () => {
       rationale: "prueba",
       assessedBy: "deterministic",
       sourceReliability: 0.6,
-      assessedAt: AHORA
+      assessedAt: AHORA,
     };
 
     const peticion = buildVerificationRequest(evento({ id: "evt-sin-contexto" }), assessment);

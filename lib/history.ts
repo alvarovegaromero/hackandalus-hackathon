@@ -20,7 +20,7 @@ import type {
   PlanChange,
   PlanChangeKind,
   Resource,
-  ZoneStatus
+  ZoneStatus,
 } from "./types";
 
 export const MAX_PLAN_HISTORY = 40;
@@ -37,7 +37,7 @@ const zoneStatusLabel: Record<ZoneStatus, string> = {
   stable: "estable",
   watch: "en vigilancia",
   active: "activa",
-  critical: "crítica"
+  critical: "crítica",
 };
 
 /** Gravedad relativa de cada estado, para saber si la zona empeora o mejora. */
@@ -45,7 +45,7 @@ const zoneStatusRank: Record<ZoneStatus, number> = {
   stable: 0,
   watch: 1,
   active: 2,
-  critical: 3
+  critical: 3,
 };
 
 const channelLabel: Record<ActionChannel, string> = {
@@ -55,7 +55,7 @@ const channelLabel: Record<ActionChannel, string> = {
   ticket: "Ticket",
   webhook: "Webhook",
   whatsapp: "WhatsApp",
-  slack: "Slack"
+  slack: "Slack",
 };
 
 /** Orden de importancia con el que se recortan los cambios en pantalla. */
@@ -66,7 +66,7 @@ const kindRank: Record<PlanChangeKind, number> = {
   "priority-up": 3,
   "priority-down": 4,
   "resource-reassigned": 5,
-  "action-added": 6
+  "action-added": 6,
 };
 
 /** Une nombres en lenguaje natural: "A", "A y B", "A, B y C". */
@@ -101,7 +101,7 @@ export interface PlanDiffContext {
 }
 
 const seedZoneNames: Record<string, string> = Object.fromEntries(
-  seedZones.map((zone) => [zone.id, zone.name])
+  seedZones.map((zone) => [zone.id, zone.name]),
 );
 
 function zoneNameResolver(context: PlanDiffContext) {
@@ -112,14 +112,17 @@ function zoneNameResolver(context: PlanDiffContext) {
   return (zoneId: string) => names[zoneId] ?? zoneId;
 }
 
-function describeAction(actionId: string, context: PlanDiffContext): { label: string; detail: string } {
+function describeAction(
+  actionId: string,
+  context: PlanDiffContext,
+): { label: string; detail: string } {
   const action = context.actions?.find((candidate) => candidate.id === actionId);
   if (!action) {
     return { label: `Acción ${actionId}`, detail: `Acción ${actionId}.` };
   }
   return {
     label: `${channelLabel[action.channel]} a ${action.target}`,
-    detail: `${action.objective} (${channelLabel[action.channel].toLowerCase()} a ${action.target}).`
+    detail: `${action.objective} (${channelLabel[action.channel].toLowerCase()} a ${action.target}).`,
   };
 }
 
@@ -136,8 +139,12 @@ function diffPriorities(previous: Plan, next: Plan, context: PlanDiffContext): P
   const nameOf = zoneNameResolver(context);
   const changes: PlanChange[] = [];
 
-  const previousRank = new Map(previous.priorities.map((priority, index) => [priority.zoneId, index]));
-  const previousScore = new Map(previous.priorities.map((priority) => [priority.zoneId, priority.score]));
+  const previousRank = new Map(
+    previous.priorities.map((priority, index) => [priority.zoneId, index]),
+  );
+  const previousScore = new Map(
+    previous.priorities.map((priority) => [priority.zoneId, priority.score]),
+  );
   const nextRank = new Map(next.priorities.map((priority, index) => [priority.zoneId, index]));
 
   next.priorities.forEach((priority, index) => {
@@ -149,7 +156,7 @@ function diffPriorities(previous: Plan, next: Plan, context: PlanDiffContext): P
       changes.push({
         kind: "priority-up",
         label: `${name} entra en el ranking en el puesto ${index + 1}`,
-        detail: `${name} no figuraba en la versión anterior del plan y entra directamente en el puesto ${index + 1} con puntuación ${Math.round(priority.score)}.${motive(next)}`
+        detail: `${name} no figuraba en la versión anterior del plan y entra directamente en el puesto ${index + 1} con puntuación ${Math.round(priority.score)}.${motive(next)}`,
       });
       return;
     }
@@ -176,12 +183,14 @@ function diffPriorities(previous: Plan, next: Plan, context: PlanDiffContext): P
           overtaken.length > 0
             ? `${name} adelanta a ${joinNames(overtaken)}`
             : `${name} sube al puesto ${index + 1}`,
-        detail: `${name} pasa del puesto ${before + 1} al ${index + 1}. ${scoreText}${motive(next)}`
+        detail: `${name} pasa del puesto ${before + 1} al ${index + 1}. ${scoreText}${motive(next)}`,
       });
       return;
     }
 
-    const aheadNow = next.priorities.slice(before, index).map((candidate) => nameOf(candidate.zoneId));
+    const aheadNow = next.priorities
+      .slice(before, index)
+      .map((candidate) => nameOf(candidate.zoneId));
 
     changes.push({
       kind: "priority-down",
@@ -189,7 +198,7 @@ function diffPriorities(previous: Plan, next: Plan, context: PlanDiffContext): P
         aheadNow.length > 0
           ? `${name} queda por detrás de ${joinNames(aheadNow)}`
           : `${name} baja al puesto ${index + 1}`,
-      detail: `${name} cede el puesto ${before + 1} y baja al ${index + 1}. ${scoreText}${motive(next)}`
+      detail: `${name} cede el puesto ${before + 1} y baja al ${index + 1}. ${scoreText}${motive(next)}`,
     });
   });
 
@@ -210,7 +219,7 @@ function diffActions(previous: Plan, next: Plan, context: PlanDiffContext): Plan
     changes.push({
       kind: "action-added",
       label: `Nueva acción: ${described.label}`,
-      detail: `El plan añade una acción que antes no existía: ${described.detail}${motive(next)}`
+      detail: `El plan añade una acción que antes no existía: ${described.detail}${motive(next)}`,
     });
   }
 
@@ -221,7 +230,7 @@ function diffActions(previous: Plan, next: Plan, context: PlanDiffContext): Plan
     changes.push({
       kind: "action-invalidated",
       label: `Acción anulada: ${described.label}`,
-      detail: `Ya no encaja con el plan y se retira antes de ejecutarse: ${described.detail}${motive(next)}`
+      detail: `Ya no encaja con el plan y se retira antes de ejecutarse: ${described.detail}${motive(next)}`,
     });
   }
 
@@ -243,7 +252,7 @@ function diffActions(previous: Plan, next: Plan, context: PlanDiffContext): Plan
     changes.push({
       kind: "action-invalidated",
       label: `Acción retirada: ${described.label}`,
-      detail: `Sale del plan porque ${reason}: ${described.detail}`
+      detail: `Sale del plan porque ${reason}: ${described.detail}`,
     });
   }
 
@@ -262,7 +271,7 @@ function diffZoneStatus(context: PlanDiffContext, next: Plan): PlanChange[] {
     changes.push({
       kind: "zone-status",
       label: `${zone.name} pasa a ${zoneStatusLabel[zone.status]}`,
-      detail: `${worsens ? "Se agrava" : "Mejora"}: la zona estaba ${zoneStatusLabel[old.status]} y ahora está ${zoneStatusLabel[zone.status]}.${motive(next)}`
+      detail: `${worsens ? "Se agrava" : "Mejora"}: la zona estaba ${zoneStatusLabel[old.status]} y ahora está ${zoneStatusLabel[zone.status]}.${motive(next)}`,
     });
   }
 
@@ -285,7 +294,7 @@ function diffResources(context: PlanDiffContext): PlanChange[] {
       changes.push({
         kind: "resource-reassigned",
         label: `${resource.name} se mueve a ${destino}`,
-        detail: `${resource.name} deja ${origen} y pasa a ${destino}.`
+        detail: `${resource.name} deja ${origen} y pasa a ${destino}.`,
       });
       continue;
     }
@@ -294,7 +303,7 @@ function diffResources(context: PlanDiffContext): PlanChange[] {
       changes.push({
         kind: "resource-reassigned",
         label: `${resource.name} queda fuera de servicio`,
-        detail: `${resource.name} ya no está disponible, así que el plan cuenta con un recurso menos.`
+        detail: `${resource.name} ya no está disponible, así que el plan cuenta con un recurso menos.`,
       });
     }
   }
@@ -311,11 +320,12 @@ function diffIntegration(context: PlanDiffContext): PlanChange[] {
   if (before.mode !== now.mode) {
     changes.push({
       kind: "integration",
-      label: now.mode === "mock" ? "La ejecución pasa a modo simulado" : "La ejecución pasa a modo real",
+      label:
+        now.mode === "mock" ? "La ejecución pasa a modo simulado" : "La ejecución pasa a modo real",
       detail:
         now.mode === "mock"
           ? "Las acciones dejan de salir al exterior y quedan marcadas como simuladas."
-          : "Las acciones vuelven a ejecutarse de verdad contra HappyRobot."
+          : "Las acciones vuelven a ejecutarse de verdad contra HappyRobot.",
     });
   }
 
@@ -323,7 +333,7 @@ function diffIntegration(context: PlanDiffContext): PlanChange[] {
     changes.push({
       kind: "integration",
       label: "La integración con HappyRobot está fallando",
-      detail: `Último error devuelto por la plataforma: ${now.lastExternalError}. Las acciones afectadas necesitan reintento o una vía alternativa.`
+      detail: `Último error devuelto por la plataforma: ${now.lastExternalError}. Las acciones afectadas necesitan reintento o una vía alternativa.`,
     });
   }
 
@@ -331,7 +341,7 @@ function diffIntegration(context: PlanDiffContext): PlanChange[] {
     changes.push({
       kind: "integration",
       label: "La integración con HappyRobot vuelve a responder",
-      detail: "El error anterior se resolvió y las acciones pueden reintentarse."
+      detail: "El error anterior se resolvió y las acciones pueden reintentarse.",
     });
   }
 
@@ -343,7 +353,7 @@ function diffIntegration(context: PlanDiffContext): PlanChange[] {
         : "Faltan credenciales de HappyRobot",
       detail: now.happyRobotConfigured
         ? "La plataforma queda configurada y se puede ejecutar de verdad."
-        : "Sin credenciales, todo lo que se ejecute quedará etiquetado como simulado."
+        : "Sin credenciales, todo lo que se ejecute quedará etiquetado como simulado.",
     });
   }
 
@@ -356,7 +366,11 @@ function diffIntegration(context: PlanDiffContext): PlanChange[] {
  * El contexto es opcional para no romper a quien llama con dos argumentos;
  * cuanto mas contexto recibe, mas tipos de cambio puede detectar.
  */
-export function diffPlans(previous: Plan | null, next: Plan, context: PlanDiffContext = {}): PlanChange[] {
+export function diffPlans(
+  previous: Plan | null,
+  next: Plan,
+  context: PlanDiffContext = {},
+): PlanChange[] {
   if (!previous) return [];
 
   const changes = [
@@ -364,7 +378,7 @@ export function diffPlans(previous: Plan | null, next: Plan, context: PlanDiffCo
     ...diffZoneStatus(context, next),
     ...diffActions(previous, next, context),
     ...diffPriorities(previous, next, context),
-    ...diffResources(context)
+    ...diffResources(context),
   ];
 
   // Orden estable por importancia: lo que primero mira un humano, arriba.
@@ -394,7 +408,7 @@ export function appendAudit(
     summary: string;
     planVersion: number;
     ref?: string;
-  }
+  },
 ): AuditEntry[] {
   return [entry, ...audit].slice(0, MAX_AUDIT_ENTRIES);
 }

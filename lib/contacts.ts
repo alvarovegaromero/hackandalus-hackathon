@@ -23,7 +23,7 @@ export const roleByCategory: Record<string, ContactRole[]> = {
   "resource-shortage": ["operations-lead", "authority"],
   coordinacion: ["operations-lead", "authority"],
   "alerta-publica": ["public-safety", "operations-lead", "authority"],
-  integracion: ["operations-lead"]
+  integracion: ["operations-lead"],
 };
 
 /**
@@ -60,7 +60,7 @@ const categoryAliases: Record<string, keyof typeof roleByCategory> = {
   "alerta-publica": "alerta-publica",
   "capacidad-de-refugios": "refugio",
   "integration-failure": "integracion",
-  "fallo-de-integracion": "integracion"
+  "fallo-de-integracion": "integracion",
 };
 
 /** Normaliza una categoría: minúsculas, sin acentos y con guiones. */
@@ -111,7 +111,7 @@ export function rankContacts(
   contacts: Contact[],
   zoneId: string | null,
   category: string,
-  learning?: LearnedWeights
+  learning?: LearnedWeights,
 ): RankedContact[] {
   const roles = rolesForCategory(category);
 
@@ -123,7 +123,9 @@ export function rankContacts(
 
       if (roleIndex >= 0) {
         score += 100 - roleIndex * 22;
-        motivos.push(`rol ${contact.role} en posición ${roleIndex + 1} para ${normalizeCategory(category)}`);
+        motivos.push(
+          `rol ${contact.role} en posición ${roleIndex + 1} para ${normalizeCategory(category)}`,
+        );
       } else {
         score += 8;
         motivos.push(`rol ${contact.role} sin encaje directo con la categoría`);
@@ -138,7 +140,9 @@ export function rankContacts(
       }
 
       score += contact.responsiveness * 20;
-      motivos.push(`capacidad de respuesta histórica ${(contact.responsiveness * 100).toFixed(0)}%`);
+      motivos.push(
+        `capacidad de respuesta histórica ${(contact.responsiveness * 100).toFixed(0)}%`,
+      );
 
       const learned = successRate(learning?.contactStats[contact.id]);
       if (learned !== null) {
@@ -163,7 +167,7 @@ export function selectContact(
   contacts: Contact[],
   zoneId: string | null,
   category: string,
-  learning?: LearnedWeights
+  learning?: LearnedWeights,
 ): Contact | null {
   if (contacts.length === 0) return null;
   return rankContacts(contacts, zoneId, category, learning)[0]?.contact ?? null;
@@ -175,9 +179,11 @@ export function selectContactByRole(
   zoneId: string | null,
   role: ContactRole,
   learning?: LearnedWeights,
-  excludeIds: string[] = []
+  excludeIds: string[] = [],
 ): Contact | null {
-  const candidates = contacts.filter((contact) => contact.role === role && !excludeIds.includes(contact.id));
+  const candidates = contacts.filter(
+    (contact) => contact.role === role && !excludeIds.includes(contact.id),
+  );
   if (candidates.length === 0) return null;
   const inZone = candidates.filter((contact) => contact.zoneId === zoneId);
   const pool = inZone.length > 0 ? inZone : candidates;
@@ -202,7 +208,7 @@ const urgentChannelScore: Record<ActionChannel, number> = {
   slack: 55,
   email: 32,
   ticket: 25,
-  webhook: 12
+  webhook: 12,
 };
 
 /** Valor de cada canal cuando lo importante es dejar constancia escrita. */
@@ -213,7 +219,7 @@ const calmChannelScore: Record<ActionChannel, number> = {
   sms: 58,
   whatsapp: 52,
   call: 38,
-  webhook: 15
+  webhook: 15,
 };
 
 /**
@@ -227,7 +233,7 @@ const roleChannelBias: Record<ContactRole, Partial<Record<ActionChannel, number>
   "public-safety": { sms: 15, call: 12 },
   volunteer: { sms: 25, whatsapp: 22, call: -20 },
   "operations-lead": { slack: 18, call: 10, email: 8 },
-  authority: { email: 25, slack: 10, call: -12 }
+  authority: { email: 25, slack: 10, call: -12 },
 };
 
 export interface ChannelChoice {
@@ -242,13 +248,13 @@ export interface ChannelChoice {
 export function selectChannelWithReason(
   contact: Contact,
   urgent: boolean,
-  learning?: LearnedWeights
+  learning?: LearnedWeights,
 ): ChannelChoice {
   const available = contact.channels.filter((channel) => Boolean(channel));
   if (available.length === 0) {
     return {
       channel: contact.email ? "email" : "ticket",
-      reason: "El contacto no declara canales; se usa el de respaldo."
+      reason: "El contacto no declara canales; se usa el de respaldo.",
     };
   }
 
@@ -293,7 +299,11 @@ export function selectChannelWithReason(
 }
 
 /** Version compacta usada por el store. */
-export function selectChannel(contact: Contact, urgent: boolean, learning?: LearnedWeights): ActionChannel {
+export function selectChannel(
+  contact: Contact,
+  urgent: boolean,
+  learning?: LearnedWeights,
+): ActionChannel {
   return selectChannelWithReason(contact, urgent, learning).channel;
 }
 
@@ -319,7 +329,9 @@ export function isUsableDestination(value: string | null | undefined): boolean {
 
 /** Un contacto solo puede recibir ejecución real si está aprobado para demo. */
 export function canReceiveLiveAction(contact: Contact): boolean {
-  return contact.demoSafe && (isUsableDestination(contact.phone) || isUsableDestination(contact.email));
+  return (
+    contact.demoSafe && (isUsableDestination(contact.phone) || isUsableDestination(contact.email))
+  );
 }
 
 /** Explica en castellano por qué un contacto no puede recibir acción real. */
@@ -378,44 +390,46 @@ export function briefingForRole(role: ContactRole, input: BriefingInput): Briefi
       return {
         headline: `${urgencia}: coordinación de campo en ${input.zoneName}.`,
         detail: `${input.objective} Motivo del cambio de plan: ${input.reason}`,
-        askFor: "Confirma si tu equipo puede asumirlo ahora, con qué medios y si hay accesos cortados."
+        askFor:
+          "Confirma si tu equipo puede asumirlo ahora, con qué medios y si hay accesos cortados.",
       };
     case "medical-lead":
       return {
         headline: `${urgencia}: apoyo sanitario en ${input.zoneName}.`,
         detail: `${input.objective} Contexto: ${input.reason}`,
-        askFor: "Indica capacidad de triaje disponible, camas libres y tiempo estimado de llegada."
+        askFor: "Indica capacidad de triaje disponible, camas libres y tiempo estimado de llegada.",
       };
     case "public-safety":
       return {
         headline: `${urgencia}: seguridad y accesos en ${input.zoneName}.`,
         detail: `${input.objective} Contexto: ${input.reason}`,
-        askFor: "Confirma qué viales quedan abiertos y si hace falta corte o desvío."
+        askFor: "Confirma qué viales quedan abiertos y si hace falta corte o desvío.",
       };
     case "volunteer":
       return {
         headline: `Aviso de ${input.zoneName}.`,
         // A un voluntario o vecino se le dan instrucciones, no analisis.
         detail: `${input.objective} Sigue las indicaciones del punto de encuentro y no te desplaces por tu cuenta.`,
-        askFor: "Responde OK si puedes acudir, o NO si no estás disponible."
+        askFor: "Responde OK si puedes acudir, o NO si no estás disponible.",
       };
     case "operations-lead":
       return {
         headline: `${urgencia}: decisión operativa pendiente en ${input.zoneName}.`,
         detail: `${input.objective} El plan ha cambiado porque: ${input.reason}`,
-        askFor: "Autoriza el reparto de recursos propuesto o indica qué prioridad prefieres."
+        askFor: "Autoriza el reparto de recursos propuesto o indica qué prioridad prefieres.",
       };
     case "authority":
       return {
         headline: `Escalado institucional por ${input.zoneName}.`,
         detail: `${input.objective} Los escalones previos no han respondido a tiempo. Motivo: ${input.reason}`,
-        askFor: "Se solicita respaldo para movilizar medios adicionales o declarar el nivel superior."
+        askFor:
+          "Se solicita respaldo para movilizar medios adicionales o declarar el nivel superior.",
       };
     default:
       return {
         headline: `${urgencia}: ${input.zoneName}.`,
         detail: `${input.objective} Motivo: ${input.reason}`,
-        askFor: "Confirma recepción y estado actual."
+        askFor: "Confirma recepción y estado actual.",
       };
   }
 }

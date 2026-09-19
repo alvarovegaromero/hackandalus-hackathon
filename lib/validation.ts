@@ -55,7 +55,7 @@ export interface ApiErrorBody {
 
 const NO_CACHE_HEADERS = {
   "cache-control": "no-store, no-cache, must-revalidate",
-  pragma: "no-cache"
+  pragma: "no-cache",
 } as const;
 
 /** Respuesta correcta con cabeceras de no-cache: el estado cambia cada segundo. */
@@ -69,7 +69,7 @@ export function apiError(
   error: string,
   status: number,
   detalles?: ApiErrorDetail[],
-  extraHeaders: Record<string, string> = {}
+  extraHeaders: Record<string, string> = {},
 ) {
   const body: ApiErrorBody = detalles?.length ? { error, code, detalles } : { error, code };
   return NextResponse.json(body, { status, headers: { ...NO_CACHE_HEADERS, ...extraHeaders } });
@@ -98,7 +98,7 @@ export function methodNotAllowed(permitidos: string[]) {
       `Método no permitido. Métodos válidos en esta ruta: ${permitidos.join(", ")}.`,
       405,
       undefined,
-      { allow: permitidos.join(", ") }
+      { allow: permitidos.join(", ") },
     );
 }
 
@@ -117,7 +117,9 @@ function contentTypeAceptable(request: Request): boolean {
   // la envían, y el cuerpo se valida igualmente al parsear.
   if (!raw) return true;
   const tipo = raw.split(";")[0]!.trim().toLowerCase();
-  return tipo === "application/json" || tipo.endsWith("+json") || tipo === "text/plain" || tipo === "";
+  return (
+    tipo === "application/json" || tipo.endsWith("+json") || tipo === "text/plain" || tipo === ""
+  );
 }
 
 function describeIssue(issue: z.core.$ZodIssue): ApiErrorDetail {
@@ -129,14 +131,20 @@ function describeIssue(issue: z.core.$ZodIssue): ApiErrorDetail {
     case "invalid_value":
       return {
         campo,
-        mensaje: `Valor no válido. Valores admitidos: ${issue.values.map((value) => String(value)).join(", ")}.`
+        mensaje: `Valor no válido. Valores admitidos: ${issue.values.map((value) => String(value)).join(", ")}.`,
       };
     case "unrecognized_keys":
       return { campo, mensaje: `Campos no reconocidos: ${issue.keys.join(", ")}.` };
     case "too_small":
-      return { campo, mensaje: `El valor es demasiado corto o pequeño (mínimo ${String(issue.minimum)}).` };
+      return {
+        campo,
+        mensaje: `El valor es demasiado corto o pequeño (mínimo ${String(issue.minimum)}).`,
+      };
     case "too_big":
-      return { campo, mensaje: `El valor es demasiado largo o grande (máximo ${String(issue.maximum)}).` };
+      return {
+        campo,
+        mensaje: `El valor es demasiado largo o grande (máximo ${String(issue.maximum)}).`,
+      };
     default:
       return { campo, mensaje: issue.message };
   }
@@ -150,14 +158,18 @@ function describeIssue(issue: z.core.$ZodIssue): ApiErrorDetail {
 export async function parseJsonBody<T>(
   request: Request,
   schema: z.ZodType<T>,
-  opciones: { permitirVacio?: boolean } = {}
+  opciones: { permitirVacio?: boolean } = {},
 ): Promise<ParsedBody<T>> {
   const { permitirVacio = true } = opciones;
 
   if (!contentTypeAceptable(request)) {
     return {
       ok: false,
-      response: apiError("tipo_contenido_no_soportado", "El cuerpo debe enviarse como application/json.", 415)
+      response: apiError(
+        "tipo_contenido_no_soportado",
+        "El cuerpo debe enviarse como application/json.",
+        415,
+      ),
     };
   }
 
@@ -168,8 +180,8 @@ export async function parseJsonBody<T>(
       response: apiError(
         "cuerpo_demasiado_grande",
         `El cuerpo supera el máximo admitido de ${MAX_BODY_BYTES} bytes.`,
-        413
-      )
+        413,
+      ),
     };
   }
 
@@ -179,7 +191,7 @@ export async function parseJsonBody<T>(
   } catch {
     return {
       ok: false,
-      response: apiError("cuerpo_invalido", "No se pudo leer el cuerpo de la petición.", 400)
+      response: apiError("cuerpo_invalido", "No se pudo leer el cuerpo de la petición.", 400),
     };
   }
 
@@ -189,8 +201,8 @@ export async function parseJsonBody<T>(
       response: apiError(
         "cuerpo_demasiado_grande",
         `El cuerpo supera el máximo admitido de ${MAX_BODY_BYTES} bytes.`,
-        413
-      )
+        413,
+      ),
     };
   }
 
@@ -199,7 +211,11 @@ export async function parseJsonBody<T>(
     if (!permitirVacio) {
       return {
         ok: false,
-        response: apiError("cuerpo_vacio", "Falta el cuerpo de la petición: se espera un objeto JSON.", 400)
+        response: apiError(
+          "cuerpo_vacio",
+          "Falta el cuerpo de la petición: se espera un objeto JSON.",
+          400,
+        ),
       };
     }
     // Un cuerpo vacío equivale a `{}`: el esquema decide si eso es suficiente.
@@ -210,7 +226,7 @@ export async function parseJsonBody<T>(
     } catch {
       return {
         ok: false,
-        response: apiError("json_invalido", "El cuerpo no es JSON válido.", 400)
+        response: apiError("json_invalido", "El cuerpo no es JSON válido.", 400),
       };
     }
   }
@@ -218,7 +234,7 @@ export async function parseJsonBody<T>(
   if (typeof valor !== "object" || valor === null || Array.isArray(valor)) {
     return {
       ok: false,
-      response: apiError("cuerpo_invalido", "El cuerpo debe ser un objeto JSON.", 400)
+      response: apiError("cuerpo_invalido", "El cuerpo debe ser un objeto JSON.", 400),
     };
   }
 
@@ -230,8 +246,8 @@ export async function parseJsonBody<T>(
         "cuerpo_invalido",
         "La petición no es válida: revisa los campos indicados.",
         400,
-        resultado.error.issues.map(describeIssue)
-      )
+        resultado.error.issues.map(describeIssue),
+      ),
     };
   }
 
@@ -244,9 +260,29 @@ export async function parseJsonBody<T>(
 
 export const severitySchema = z.enum(["low", "medium", "high", "critical"]);
 export const confidenceSchema = z.enum(["low", "medium", "high"]);
-export const eventSourceSchema = z.enum(["happyrobot", "sensor", "operator", "public", "demo", "scenario"]);
-export const actionChannelSchema = z.enum(["call", "sms", "email", "ticket", "webhook", "whatsapp", "slack"]);
-export const demoKindSchema = z.enum(["incident", "resource-down", "route-blocked", "integration-failure"]);
+export const eventSourceSchema = z.enum([
+  "happyrobot",
+  "sensor",
+  "operator",
+  "public",
+  "demo",
+  "scenario",
+]);
+export const actionChannelSchema = z.enum([
+  "call",
+  "sms",
+  "email",
+  "ticket",
+  "webhook",
+  "whatsapp",
+  "slack",
+]);
+export const demoKindSchema = z.enum([
+  "incident",
+  "resource-down",
+  "route-blocked",
+  "integration-failure",
+]);
 
 /** Estados que un operador puede fijar a mano desde la interfaz. */
 export const operatorActionStatusSchema = z.enum([
@@ -256,7 +292,7 @@ export const operatorActionStatusSchema = z.enum([
   "succeeded",
   "failed",
   "blocked",
-  "cancelled"
+  "cancelled",
 ]);
 
 const texto = (max: number) => z.string().trim().min(1).max(max);
@@ -278,10 +314,10 @@ export const incomingEventSchema = z
     category: texto(80).optional(),
     severity: severitySchema.optional(),
     confidence: confidenceSchema.optional(),
-    confirmed: z.boolean().nullable().optional()
+    confirmed: z.boolean().nullable().optional(),
   })
   .refine((valor) => Boolean(valor.zoneId ?? valor.category ?? valor.title ?? valor.description), {
-    message: "Indica al menos zoneId, category, title o description para crear una señal."
+    message: "Indica al menos zoneId, category, title o description para crear una señal.",
   });
 
 export type IncomingEventInput = z.infer<typeof incomingEventSchema>;
@@ -293,13 +329,13 @@ export const createActionSchema = z.strictObject({
   reason: texto(500),
   zoneId: identificador,
   resourceId: identificador.optional(),
-  contactId: identificador.optional()
+  contactId: identificador.optional(),
 });
 
 export type CreateActionInput = z.infer<typeof createActionSchema>;
 
 export const markEventSchema = z.strictObject({
-  confirmed: z.boolean()
+  confirmed: z.boolean(),
 });
 
 /**
@@ -313,16 +349,16 @@ export const actionStatusSchema = z
     status: operatorActionStatusSchema.optional(),
     externalActionId: identificador.optional(),
     localActionId: identificador.optional(),
-    error: texto(500).optional()
+    error: texto(500).optional(),
   })
   .refine((valor) => Boolean(valor.operation ?? valor.status), {
-    message: "Indica una operación (cancel, retry o set-status) o un status válido."
+    message: "Indica una operación (cancel, retry o set-status) o un status válido.",
   });
 
 export type ActionStatusInput = z.infer<typeof actionStatusSchema>;
 
 export const demoInjectSchema = z.strictObject({
-  kind: demoKindSchema.optional()
+  kind: demoKindSchema.optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -344,12 +380,15 @@ export function validarReferencias(referencias: ReferenciasAValidar): NextRespon
   const situacion = getSituation();
   const detalles: ApiErrorDetail[] = [];
 
-  if (referencias.zoneId !== undefined && !situacion.zones.some((zona) => zona.id === referencias.zoneId)) {
+  if (
+    referencias.zoneId !== undefined &&
+    !situacion.zones.some((zona) => zona.id === referencias.zoneId)
+  ) {
     detalles.push({
       campo: "zoneId",
       mensaje: `La zona "${referencias.zoneId}" no existe. Zonas válidas: ${situacion.zones
         .map((zona) => zona.id)
-        .join(", ")}.`
+        .join(", ")}.`,
     });
   }
 
@@ -357,18 +396,29 @@ export function validarReferencias(referencias: ReferenciasAValidar): NextRespon
     referencias.resourceId !== undefined &&
     !situacion.resources.some((recurso) => recurso.id === referencias.resourceId)
   ) {
-    detalles.push({ campo: "resourceId", mensaje: `El recurso "${referencias.resourceId}" no existe.` });
+    detalles.push({
+      campo: "resourceId",
+      mensaje: `El recurso "${referencias.resourceId}" no existe.`,
+    });
   }
 
   if (
     referencias.contactId !== undefined &&
     !situacion.contacts.some((contacto) => contacto.id === referencias.contactId)
   ) {
-    detalles.push({ campo: "contactId", mensaje: `El contacto "${referencias.contactId}" no existe.` });
+    detalles.push({
+      campo: "contactId",
+      mensaje: `El contacto "${referencias.contactId}" no existe.`,
+    });
   }
 
   if (!detalles.length) return null;
-  return apiError("referencia_desconocida", "La petición apunta a elementos que no existen.", 400, detalles);
+  return apiError(
+    "referencia_desconocida",
+    "La petición apunta a elementos que no existen.",
+    400,
+    detalles,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -398,7 +448,7 @@ export function autorizarRutaDemo(request: Request): NextResponse | null {
       return apiError(
         "no_autorizado",
         "Las rutas de demo están desactivadas en producción. Define DEMO_API_TOKEN para habilitarlas.",
-        401
+        401,
       );
     }
     return null;
@@ -422,6 +472,6 @@ export function autorizarRutaDemo(request: Request): NextResponse | null {
   return apiError(
     "no_autorizado",
     `Las rutas de demo exigen un token: envía la cabecera ${DEMO_TOKEN_HEADER} con el valor de DEMO_API_TOKEN.`,
-    401
+    401,
   );
 }

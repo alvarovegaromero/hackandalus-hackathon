@@ -127,7 +127,7 @@ Response — HTTP `202` (durable async execution):
 {
   "accepted": [{ "index": 0, "id": "…signal-uuid…" }], // new signal row
   "merged": [{ "index": 1, "id": "…original-uuid…", "occurrences": 2 }], // dedup layer 1
-  "rejected": [{ "index": 2, "issues": [/* zod issues */] }]
+  "rejected": [{ "index": 2, "issues": [/* zod issues */] }],
 }
 ```
 

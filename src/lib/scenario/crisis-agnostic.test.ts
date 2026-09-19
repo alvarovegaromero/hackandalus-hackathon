@@ -18,7 +18,7 @@ const flood = scenarioPackSchema.parse({
       location: spot,
       initial: 2,
       alternatives: [1, 4],
-      unit: "m"
+      unit: "m",
     },
     {
       id: "underpass",
@@ -26,8 +26,8 @@ const flood = scenarioPackSchema.parse({
       entityLabel: "el paso inferior",
       location: spot,
       initial: "abierto",
-      alternatives: ["inundado"]
-    }
+      alternatives: ["inundado"],
+    },
   ],
   sources: [
     {
@@ -36,7 +36,7 @@ const flood = scenarioPackSchema.parse({
       reliability: 0.99,
       delayMin: [0, 1],
       lossRate: 0,
-      accuracyM: 5
+      accuracyM: 5,
     },
     {
       id: "neighbours",
@@ -44,7 +44,7 @@ const flood = scenarioPackSchema.parse({
       reliability: 0.7,
       delayMin: [0, 2],
       lossRate: 0.1,
-      accuracyM: 200
+      accuracyM: 200,
     },
     {
       id: "civil-protection",
@@ -52,12 +52,12 @@ const flood = scenarioPackSchema.parse({
       reliability: 0.95,
       delayMin: [1, 2],
       lossRate: 0,
-      accuracyM: 10
-    }
+      accuracyM: 10,
+    },
   ],
   templates: {
     river_level: ["El rio lleva {value} metros en {place}"],
-    underpass_status: ["{entity} esta {value}"]
+    underpass_status: ["{entity} esta {value}"],
   },
   events: [
     {
@@ -69,10 +69,10 @@ const flood = scenarioPackSchema.parse({
         { type: "set_fact", factId: "river", value: 4 },
         { type: "set_fact", factId: "underpass", value: "inundado" },
         { type: "witness", factId: "underpass", count: 5, sourceIds: ["neighbours"] },
-        { type: "witness", factId: "river", count: 1, sourceIds: ["gauge"] }
-      ]
-    }
-  ]
+        { type: "witness", factId: "river", count: 1, sourceIds: ["gauge"] },
+      ],
+    },
+  ],
 });
 
 describe("second crisis pack", () => {
@@ -81,6 +81,8 @@ describe("second crisis pack", () => {
     expect(first.emitted).toEqual(advance(flood, createState(flood, 7), 40).emitted);
     for (const s of toFeed(first.emitted)) expect(signalSchema.safeParse(s).success).toBe(true);
     expect(factValue(first.state, "underpass", 10)).toBe("inundado");
-    expect(probe(flood, first.state, "river", "civil-protection", 20)?.signal.channel).toBe("verification");
+    expect(probe(flood, first.state, "river", "civil-protection", 20)?.signal.channel).toBe(
+      "verification",
+    );
   });
 });

@@ -6,7 +6,7 @@ import {
   consequencesOfBreak,
   deriveAssumptions,
   evaluatePlanAgainstWorld,
-  explainInvalidation
+  explainInvalidation,
 } from "@/lib/assumptions";
 import { seedResources, seedWorld, seedZones } from "@/lib/seed";
 import type { Action, ActionChannel, Assumption, CrisisEvent, Plan } from "@/lib/types";
@@ -41,7 +41,7 @@ function accion(overrides: Partial<Action> & Pick<Action, "id" | "zoneId" | "obj
     completedAt: null,
     createdAt: AHORA,
     updatedAt: AHORA,
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -57,22 +57,22 @@ function acciones(): Action[] {
       zoneId: "zone-north",
       resourceId: "res-transport-1",
       channel: "sms",
-      objective: "Coordinar evacuación de los núcleos de Sierra Morena hacia los refugios."
+      objective: "Coordinar evacuación de los núcleos de Sierra Morena hacia los refugios.",
     }),
     accion({
       id: "act-aviso-sevilla",
       zoneId: "zone-central",
       resourceId: "res-comms-1",
       channel: "call",
-      objective: "Avisar a la jefatura sanitaria de Sevilla Hub."
+      objective: "Avisar a la jefatura sanitaria de Sevilla Hub.",
     }),
     accion({
       id: "act-triaje-costa",
       zoneId: "zone-south",
       resourceId: "res-med-1",
       channel: "call",
-      objective: "Triaje sanitario y traslado de heridos en Costa del Sol."
-    })
+      objective: "Triaje sanitario y traslado de heridos en Costa del Sol.",
+    }),
   ];
 }
 
@@ -88,17 +88,17 @@ function plan(): Plan {
       { zoneId: "zone-south", score: 61, reason: "Refugios al límite.", factors: [] },
       { zoneId: "zone-central", score: 44, reason: "Demanda sanitaria.", factors: [] },
       { zoneId: "zone-east", score: 20, reason: "Sin novedad.", factors: [] },
-      { zoneId: "zone-islands", score: 12, reason: "Sin novedad.", factors: [] }
+      { zoneId: "zone-islands", score: 12, reason: "Sin novedad.", factors: [] },
     ],
     proposedActionIds: ["act-evac-norte", "act-aviso-sevilla", "act-triaje-costa"],
     invalidatedActionIds: [],
     changes: [],
-    trigger: "nueva señal"
+    trigger: "nueva señal",
   };
 }
 
 function senal(
-  overrides: Partial<CrisisEvent> & Pick<CrisisEvent, "id" | "zoneId" | "category">
+  overrides: Partial<CrisisEvent> & Pick<CrisisEvent, "id" | "zoneId" | "category">,
 ): CrisisEvent {
   return {
     source: "scenario",
@@ -113,7 +113,7 @@ function senal(
     appliedRiskDelta: 0,
     appliedNeed: null,
     previousZoneStatus: null,
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -141,7 +141,7 @@ describe("derivación de supuestos", () => {
       "road.A-375",
       "hospital.beds.hospital-costa-del-sol",
       "comms.sms",
-      "comms.voice"
+      "comms.voice",
     ]);
     expect(lista.length).toBeLessThanOrEqual(MAX_SUPUESTOS);
     expect(lista.every((assumption) => assumption.status === "ok")).toBe(true);
@@ -152,7 +152,9 @@ describe("derivación de supuestos", () => {
     const lista = supuestos();
     const carretera = lista.find((assumption) => assumption.variable === "road.A-397");
 
-    expect(carretera?.text).toBe("La A-397 sigue abierta para llevar Transporte Costa Uno a Sierra Morena.");
+    expect(carretera?.text).toBe(
+      "La A-397 sigue abierta para llevar Transporte Costa Uno a Sierra Morena.",
+    );
     expect(carretera?.condition).toContain("destino: Sierra Morena (zone-north)");
     expect(carretera?.condition).toContain("origen: Costa del Sol (zone-south)");
     expect(carretera?.id).toBe("sup-v3-road-a-397");
@@ -193,7 +195,7 @@ describe("roturas de supuestos", () => {
       zoneId: "zone-north",
       category: "wind-shift",
       title: "Cambio de viento hacia núcleos habitados",
-      description: "El frente gira al suroeste con rachas de 48 km/h."
+      description: "El frente gira al suroeste con rachas de 48 km/h.",
     });
 
     const antes = mundo();
@@ -216,7 +218,7 @@ describe("roturas de supuestos", () => {
       zoneId: "zone-north",
       category: "route-blocked",
       title: "Ruta de acceso bloqueada",
-      description: "La A-397 queda cortada por el frente y no hay paso hacia los núcleos."
+      description: "La A-397 queda cortada por el frente y no hay paso hacia los núcleos.",
     });
 
     const despues = applyEventToWorld(mundo(), evento);
@@ -238,7 +240,7 @@ describe("roturas de supuestos", () => {
       zoneId: "zone-east",
       category: "route-blocked",
       title: "Ruta de acceso bloqueada",
-      description: "La ruta principal entre Granada y Almería queda bloqueada."
+      description: "La ruta principal entre Granada y Almería queda bloqueada.",
     });
 
     expect(applyEventToWorld(mundo(), evento).blockedRoads).toEqual(["A-92"]);
@@ -250,7 +252,7 @@ describe("roturas de supuestos", () => {
       zoneId: "zone-north",
       category: "integration-failure",
       title: "Caída de la integración de mensajería",
-      description: "El envío de SMS queda fuera de servicio."
+      description: "El envío de SMS queda fuera de servicio.",
     });
 
     const despues = applyEventToWorld(mundo(), evento);
@@ -271,7 +273,7 @@ describe("roturas de supuestos", () => {
       zoneId: "zone-south",
       category: "hospital-beds",
       title: "Saturación hospitalaria en la costa",
-      description: "El Hospital Costa del Sol se queda con 4 camas libres."
+      description: "El Hospital Costa del Sol se queda con 4 camas libres.",
     });
 
     const despues = applyEventToWorld(mundo(), evento);
@@ -291,7 +293,7 @@ describe("roturas de supuestos", () => {
       zoneId: "zone-south",
       category: "hospital-beds",
       title: "Sin contacto con el hospital",
-      description: "El Hospital Costa del Sol queda incomunicado: no hay datos de camas."
+      description: "El Hospital Costa del Sol queda incomunicado: no hay datos de camas.",
     });
 
     const despues = applyEventToWorld(mundo(), evento);
@@ -309,7 +311,7 @@ describe("roturas de supuestos", () => {
       zoneId: "zone-south",
       category: "refugio",
       title: "Refugios de la Costa del Sol al límite",
-      description: "Llegan más desplazados de los previstos y la capacidad de refugio se agota."
+      description: "Llegan más desplazados de los previstos y la capacidad de refugio se agota.",
     });
 
     const antes = mundo();
@@ -328,7 +330,7 @@ describe("roturas de supuestos", () => {
       zoneId: "zone-north",
       category: "wind-shift",
       title: "El viento gira",
-      description: "El frente pasa a soplar del suroeste."
+      description: "El frente pasa a soplar del suroeste.",
     });
 
     const roto = checkAssumptions(supuestos(), applyEventToWorld(mundo(), giro), giro);
@@ -341,7 +343,9 @@ describe("roturas de supuestos", () => {
 
     expect(segunda.broken).toHaveLength(0);
     expect(variables(segunda.alreadyBroken)).toEqual(["wind.direction"]);
-    const viento = segunda.assumptions.find((assumption) => assumption.variable === "wind.direction");
+    const viento = segunda.assumptions.find(
+      (assumption) => assumption.variable === "wind.direction",
+    );
     expect(viento?.status).toBe("broken");
     expect(viento?.brokenByEventId).toBe("evt-giro");
   });
@@ -357,7 +361,7 @@ describe("explicación de la invalidación", () => {
     const texto = explainInvalidation([{ ...carretera, status: "broken" }], plan());
 
     expect(texto).toBe(
-      "El plan v3 ya no vale: contaba con que la A-397 siguiera abierta para llevar medios a Sierra Morena, y acaba de cortarse. Los equipos que iban hacia Sierra Morena se quedan sin ruta, así que hay que rehacer el plan."
+      "El plan v3 ya no vale: contaba con que la A-397 siguiera abierta para llevar medios a Sierra Morena, y acaba de cortarse. Los equipos que iban hacia Sierra Morena se quedan sin ruta, así que hay que rehacer el plan.",
     );
     expect(texto).not.toContain("road.");
     expect(texto).not.toContain("zone-north");
@@ -369,7 +373,9 @@ describe("explicación de la invalidación", () => {
     const camas = lista.find((assumption) => assumption.variable.startsWith("hospital.beds."))!;
 
     const textoViento = explainInvalidation([{ ...viento, status: "broken" }], plan());
-    expect(textoViento).toContain("daba por hecho que el viento seguiría del nordeste sobre Sierra Morena");
+    expect(textoViento).toContain(
+      "daba por hecho que el viento seguiría del nordeste sobre Sierra Morena",
+    );
     // La frase abre oración, así que llega en mayúscula: se compara sin distinguirla.
     expect(textoViento.toLowerCase()).toContain("el orden de prioridades ya no se sostiene");
 
@@ -388,7 +394,7 @@ describe("explicación de la invalidación", () => {
 
   it("dice que el plan sigue en pie cuando no hay nada roto", () => {
     expect(explainInvalidation([], plan())).toBe(
-      "El plan v3 sigue en pie: ninguno de sus supuestos se ha roto."
+      "El plan v3 sigue en pie: ninguno de sus supuestos se ha roto.",
     );
   });
 });
@@ -404,10 +410,15 @@ describe("evaluación del plan contra el mundo", () => {
       zoneId: "zone-north",
       category: "route-blocked",
       title: "Ruta cortada",
-      description: "La A-397 queda cortada."
+      description: "La A-397 queda cortada.",
     });
 
-    const conSupuestos = { ...plan(), assumptions: supuestos(), valid: true, invalidatedReason: null };
+    const conSupuestos = {
+      ...plan(),
+      assumptions: supuestos(),
+      valid: true,
+      invalidatedReason: null,
+    };
     const despues = applyEventToWorld(mundo(), evento);
     const resultado = evaluatePlanAgainstWorld(conSupuestos, despues, acciones(), evento);
 

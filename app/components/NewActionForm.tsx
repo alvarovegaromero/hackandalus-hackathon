@@ -5,7 +5,13 @@
 
 import { useState } from "react";
 import { Send, X } from "lucide-react";
-import type { ActionChannel, Contact, CreateActionPayload, CrisisZone, Resource } from "@/lib/types";
+import type {
+  ActionChannel,
+  Contact,
+  CreateActionPayload,
+  CrisisZone,
+  Resource,
+} from "@/lib/types";
 import { channelLabels, roleLabels } from "./shared";
 
 interface Props {
@@ -18,7 +24,15 @@ interface Props {
   onClose: () => void;
 }
 
-const channels: ActionChannel[] = ["call", "sms", "whatsapp", "email", "slack", "ticket", "webhook"];
+const channels: ActionChannel[] = [
+  "call",
+  "sms",
+  "whatsapp",
+  "email",
+  "slack",
+  "ticket",
+  "webhook",
+];
 
 export default function NewActionForm({
   zones,
@@ -27,7 +41,7 @@ export default function NewActionForm({
   prefillZoneId,
   busy,
   onSubmit,
-  onClose
+  onClose,
 }: Props) {
   const [zoneId, setZoneId] = useState(prefillZoneId ?? zones[0]?.id ?? "");
   const [channel, setChannel] = useState<ActionChannel>("call");
@@ -54,7 +68,7 @@ export default function NewActionForm({
           reason: reason.trim() || "Acción creada manualmente por el operador.",
           zoneId,
           resourceId: resourceId || undefined,
-          contactId: contactId || undefined
+          contactId: contactId || undefined,
         });
         setObjective("");
         setReason("");
@@ -101,7 +115,10 @@ export default function NewActionForm({
 
         <label>
           <span>Contacto</span>
-          <select value={contactId} onChange={(changeEvent) => setContactId(changeEvent.target.value)}>
+          <select
+            value={contactId}
+            onChange={(changeEvent) => setContactId(changeEvent.target.value)}
+          >
             <option value="">Sin contacto asignado</option>
             {contacts.map((contact) => (
               <option key={contact.id} value={contact.id}>
@@ -114,10 +131,17 @@ export default function NewActionForm({
 
         <label>
           <span>Recurso</span>
-          <select value={resourceId} onChange={(changeEvent) => setResourceId(changeEvent.target.value)}>
+          <select
+            value={resourceId}
+            onChange={(changeEvent) => setResourceId(changeEvent.target.value)}
+          >
             <option value="">Que lo elija el sistema</option>
             {resources.map((resource) => (
-              <option key={resource.id} value={resource.id} disabled={resource.status === "unavailable"}>
+              <option
+                key={resource.id}
+                value={resource.id}
+                disabled={resource.status === "unavailable"}
+              >
                 {resource.name}
                 {resource.status === "unavailable" ? " (fuera de servicio)" : ""}
               </option>
@@ -156,7 +180,8 @@ export default function NewActionForm({
 
       {selectedContact && !selectedContact.demoSafe ? (
         <p className="muted-note warn">
-          {selectedContact.name} no está aprobado para ejecución real: esta acción se quedará en simulación.
+          {selectedContact.name} no está aprobado para ejecución real: esta acción se quedará en
+          simulación.
         </p>
       ) : null}
 

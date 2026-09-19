@@ -6,7 +6,7 @@ export const crisisEventSchema = z
     incidentId: z.uuid(),
     summary: z.string().trim().min(1).max(2000),
     severity: z.enum(["low", "medium", "high", "critical"]),
-    source: z.enum(["operator", "sensor", "webhook"])
+    source: z.enum(["operator", "sensor", "webhook"]),
   })
   .strict();
 
@@ -17,11 +17,11 @@ export const planSchema = z.object({
     .array(
       z.object({
         kind: z.enum(["review", "notify", "allocate"]),
-        description: z.string().min(1).max(1000)
-      })
+        description: z.string().min(1).max(1000),
+      }),
     )
     .min(1)
-    .max(5)
+    .max(5),
 });
 
 export type CrisisEvent = z.infer<typeof crisisEventSchema>;
@@ -32,6 +32,6 @@ export function simulatePlan(event: CrisisEvent): Plan {
   return {
     priority: event.severity,
     rationale: `Simulación determinista: se revisa el plan con el nuevo evento (${event.severity}).`,
-    actions: [{ kind: "review", description: `Revisar situación: ${event.summary}` }]
+    actions: [{ kind: "review", description: `Revisar situación: ${event.summary}` }],
   };
 }

@@ -69,7 +69,13 @@ function filePath(name: string): string {
 // ---------------------------------------------------------------------------
 
 export type PersistenceIssue =
-  "none" | "missing" | "unreadable" | "invalid-json" | "schema-mismatch" | "invalid-shape" | "write-failed";
+  | "none"
+  | "missing"
+  | "unreadable"
+  | "invalid-json"
+  | "schema-mismatch"
+  | "invalid-shape"
+  | "write-failed";
 
 interface Diagnostics {
   lastLoadIssue: PersistenceIssue;
@@ -84,7 +90,7 @@ const diagnostics: Diagnostics = {
   lastLoadDetail: null,
   lastWriteError: null,
   writes: 0,
-  skippedWrites: 0
+  skippedWrites: 0,
 };
 
 /** Para poder ensenar en la UI o en el informe por que no se restauro nada. */
@@ -167,7 +173,7 @@ function writeEnvelope(name: string, payload: unknown): boolean {
   const envelope: Envelope<unknown> = {
     schemaVersion: SCHEMA_VERSION,
     savedAt: new Date().toISOString(),
-    payload
+    payload,
   };
 
   try {
@@ -179,7 +185,8 @@ function writeEnvelope(name: string, payload: unknown): boolean {
     return true;
   } catch (error) {
     diagnostics.lastWriteError = error instanceof Error ? error.message : String(error);
-    diagnostics.lastLoadIssue = diagnostics.lastLoadIssue === "none" ? "none" : diagnostics.lastLoadIssue;
+    diagnostics.lastLoadIssue =
+      diagnostics.lastLoadIssue === "none" ? "none" : diagnostics.lastLoadIssue;
     try {
       fs.rmSync(temporary, { force: true });
     } catch {
@@ -340,7 +347,16 @@ function isValidLearning(value: unknown): boolean {
 export function validateState(value: unknown): SituationState | null {
   if (!isRecord(value)) return null;
 
-  const required = ["events", "zones", "resources", "contacts", "chains", "actions", "planHistory", "audit"];
+  const required = [
+    "events",
+    "zones",
+    "resources",
+    "contacts",
+    "chains",
+    "actions",
+    "planHistory",
+    "audit",
+  ];
   if (!hasArrays(value, required)) return null;
   if (!isValidPlan(value.plan)) return null;
   if (!(value.planHistory as unknown[]).every((plan) => isValidPlan(plan))) return null;
@@ -473,7 +489,11 @@ function isValidRun(value: unknown): value is RunRecord {
   if (typeof value.startedAt !== "string") return false;
   if (value.endedAt !== null && typeof value.endedAt !== "string") return false;
   const counters = ["actionsTotal", "actionsSucceeded", "actionsFailed", "planVersions"];
-  if (!counters.every((key) => typeof value[key] === "number" && Number.isFinite(value[key] as number)))
+  if (
+    !counters.every(
+      (key) => typeof value[key] === "number" && Number.isFinite(value[key] as number),
+    )
+  )
     return false;
   return Array.isArray(value.notes) && value.notes.every((note) => typeof note === "string");
 }
@@ -516,7 +536,7 @@ export function loadWeights(): LearnedWeights | null {
       contactStats: weights.contactStats ?? {},
       unconfirmedPenalty: weights.unconfirmedPenalty,
       runsAnalyzed: weights.runsAnalyzed,
-      updatedAt: typeof weights.updatedAt === "string" ? weights.updatedAt : null
+      updatedAt: typeof weights.updatedAt === "string" ? weights.updatedAt : null,
     };
   } catch {
     return null;

@@ -16,12 +16,12 @@ const agents: { id: string; label: string; kinds: string[] }[] = [
   {
     id: "triage",
     label: "Triaje",
-    kinds: ["event-ingested", "event-deduplicated", "event-confirmed", "event-discarded"]
+    kinds: ["event-ingested", "event-deduplicated", "event-confirmed", "event-discarded"],
   },
   { id: "priority", label: "Prioridad", kinds: ["replan", "plan", "priority"] },
   { id: "resources", label: "Recursos", kinds: ["resource", "assign", "reassign"] },
   { id: "contacts", label: "Avisos", kinds: ["chain", "escalation", "contact"] },
-  { id: "executor", label: "Ejecución", kinds: ["action"] }
+  { id: "executor", label: "Ejecución", kinds: ["action"] },
 ];
 
 export default function AgentStrip({ audit, nowMs }: Props) {
@@ -32,7 +32,11 @@ export default function AgentStrip({ audit, nowMs }: Props) {
       {agents.map((agent) => {
         const hit = recent.find((entry) => agent.kinds.some((kind) => entry.kind.includes(kind)));
         return (
-          <span key={agent.id} className={hit ? "agent on" : "agent"} title={hit?.summary ?? "En espera"}>
+          <span
+            key={agent.id}
+            className={hit ? "agent on" : "agent"}
+            title={hit?.summary ?? "En espera"}
+          >
             <i aria-hidden="true" />
             {agent.label}
           </span>

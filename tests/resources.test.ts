@@ -5,7 +5,7 @@ import {
   rankResourcesForAction,
   releaseResource,
   resolveResourceConflicts,
-  selectResourceForAction
+  selectResourceForAction,
 } from "@/lib/resources";
 import { seedResources, seedZones } from "@/lib/seed";
 import type { Action, ActionChannel, Resource } from "@/lib/types";
@@ -40,7 +40,7 @@ function accion(overrides: Partial<Action> & Pick<Action, "zoneId" | "objective"
     completedAt: null,
     createdAt: at,
     updatedAt: at,
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -51,7 +51,7 @@ describe("seleccion de recurso", () => {
     const decision = selectResourceForAction(
       { zoneId: "zone-north", objective: "triaje sanitario", channel: "call" },
       recursos(),
-      zones
+      zones,
     );
 
     expect(decision).not.toBeNull();
@@ -65,7 +65,7 @@ describe("seleccion de recurso", () => {
     const decision = selectResourceForAction(
       { zoneId: "zone-east", objective: "triaje sanitario", channel: "call" },
       recursos(),
-      zones
+      zones,
     );
 
     expect(decision!.resourceId).toBe("res-med-2");
@@ -74,7 +74,7 @@ describe("seleccion de recurso", () => {
     const ranking = rankResourcesForAction(
       { zoneId: "zone-east", objective: "triaje sanitario", channel: "call" },
       recursos(),
-      zones
+      zones,
     );
     const granada = ranking.find((candidato) => candidato.resource.id === "res-med-2")!;
     const sevilla = ranking.find((candidato) => candidato.resource.id === "res-med-1")!;
@@ -88,7 +88,7 @@ describe("seleccion de recurso", () => {
     const decision = selectResourceForAction(
       { zoneId: "zone-north", objective: "incendio forestal activo", channel: "call" },
       sinBrigada,
-      zones
+      zones,
     );
 
     expect(decision).toBeNull();
@@ -103,7 +103,7 @@ describe("seleccion de recurso", () => {
     const decision = selectResourceForAction(
       { zoneId: "zone-central", objective: "triaje sanitario", channel: "call" },
       pool,
-      zones
+      zones,
     );
     expect(decision!.resourceId).toBe("res-med-2");
 
@@ -113,8 +113,8 @@ describe("seleccion de recurso", () => {
       selectResourceForAction(
         { zoneId: "zone-central", objective: "triaje sanitario", channel: "call" },
         pool,
-        zones
-      )
+        zones,
+      ),
     ).toBeNull();
   });
 
@@ -125,7 +125,7 @@ describe("seleccion de recurso", () => {
     const decision = selectResourceForAction(
       { zoneId: "zone-central", objective: "triaje sanitario", channel: "call" },
       pool,
-      zones
+      zones,
     );
 
     expect(decision!.resourceId).not.toBe("res-field-1");
@@ -169,8 +169,8 @@ describe("caida de un recurso", () => {
         zoneId: "zone-central",
         objective: "Coordinar respuesta de triaje sanitario en Sevilla Hub.",
         status: "blocked",
-        resourceId: "res-med-1"
-      })
+        resourceId: "res-med-1",
+      }),
     ];
 
     const movimientos = reassignAffectedActions(acciones, pool, zones, "res-med-1");
@@ -179,7 +179,7 @@ describe("caida de un recurso", () => {
     expect(movimientos[0]).toMatchObject({
       actionId: "act-triaje",
       fromResourceId: "res-med-1",
-      toResourceId: "res-med-2"
+      toResourceId: "res-med-2",
     });
     expect(movimientos[0].reason).toContain("Sustitución tras la caída de EPES Sevilla Alpha");
   });
@@ -196,8 +196,8 @@ describe("caida de un recurso", () => {
         zoneId: "zone-north",
         objective: "Coordinar respuesta de incendio en Sierra Morena.",
         status: "blocked",
-        resourceId: "res-field-1"
-      })
+        resourceId: "res-field-1",
+      }),
     ];
 
     const movimientos = reassignAffectedActions(acciones, pool, zones, "res-field-1");
@@ -220,15 +220,15 @@ describe("caida de un recurso", () => {
         zoneId: "zone-east",
         objective: "Coordinar respuesta de triaje sanitario en Granada y Almeria.",
         status: "blocked",
-        resourceId: "res-med-1"
+        resourceId: "res-med-1",
       }),
       accion({
         id: "act-centro",
         zoneId: "zone-central",
         objective: "Coordinar respuesta de triaje sanitario en Sevilla Hub.",
         status: "blocked",
-        resourceId: "res-med-1"
-      })
+        resourceId: "res-med-1",
+      }),
     ];
 
     const movimientos = reassignAffectedActions(acciones, pool, zones, "res-med-1");
@@ -252,8 +252,8 @@ describe("caida de un recurso", () => {
         zoneId: "zone-central",
         objective: "Coordinar respuesta de triaje sanitario en Sevilla Hub.",
         status: "succeeded",
-        resourceId: "res-med-1"
-      })
+        resourceId: "res-med-1",
+      }),
     ];
 
     expect(reassignAffectedActions(acciones, pool, zones, "res-med-1")).toHaveLength(0);
@@ -271,20 +271,23 @@ describe("competencia entre zonas por el mismo recurso", () => {
         id: "act-este",
         zoneId: "zone-east",
         objective: "Montar triaje sanitario en Granada y Almeria.",
-        status: "pending"
+        status: "pending",
       }),
       accion({
         id: "act-centro",
         zoneId: "zone-central",
         objective: "Montar triaje sanitario en Sevilla Hub.",
-        status: "pending"
-      })
+        status: "pending",
+      }),
     ];
 
     const reparto = resolveResourceConflicts(acciones, pool, zones);
 
     expect(reparto.allocations).toHaveLength(1);
-    expect(reparto.allocations[0]).toMatchObject({ actionId: "act-centro", resourceId: "res-med-2" });
+    expect(reparto.allocations[0]).toMatchObject({
+      actionId: "act-centro",
+      resourceId: "res-med-2",
+    });
     expect(reparto.waiting).toHaveLength(1);
     expect(reparto.waiting[0].actionId).toBe("act-este");
     expect(reparto.waiting[0].blockedByActionId).toBe("act-centro");
@@ -298,14 +301,18 @@ describe("competencia entre zonas por el mismo recurso", () => {
       accion({
         id: "act-fuego",
         zoneId: "zone-north",
-        objective: "Extinción del incendio en Sierra Morena."
+        objective: "Extinción del incendio en Sierra Morena.",
       }),
       accion({
         id: "act-triaje",
         zoneId: "zone-central",
-        objective: "Montar triaje sanitario en Sevilla Hub."
+        objective: "Montar triaje sanitario en Sevilla Hub.",
       }),
-      accion({ id: "act-refugio", zoneId: "zone-south", objective: "Abrir refugio en la Costa del Sol." })
+      accion({
+        id: "act-refugio",
+        zoneId: "zone-south",
+        objective: "Abrir refugio en la Costa del Sol.",
+      }),
     ];
 
     const reparto = resolveResourceConflicts(acciones, recursos(), zones);
@@ -314,7 +321,7 @@ describe("competencia entre zonas por el mismo recurso", () => {
     expect(reparto.allocations.map((item) => item.resourceId).sort()).toEqual([
       "res-field-1",
       "res-med-1",
-      "res-transport-1"
+      "res-transport-1",
     ]);
     expect(reparto.summary).toContain("nadie queda en espera");
   });
@@ -324,7 +331,7 @@ describe("competencia entre zonas por el mismo recurso", () => {
     pool.find((resource) => resource.id === "res-med-1")!.status = "unavailable";
 
     const acciones = ["zone-east", "zone-central", "zone-south"].map((zoneId, indice) =>
-      accion({ id: `act-${indice}`, zoneId, objective: "Montar triaje sanitario." })
+      accion({ id: `act-${indice}`, zoneId, objective: "Montar triaje sanitario." }),
     );
 
     const reparto = resolveResourceConflicts(acciones, pool, zones);

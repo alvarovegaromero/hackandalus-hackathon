@@ -23,10 +23,16 @@ import {
   configureScenario,
   ensureHeartbeat,
   findScript,
-  listScenarioScripts
+  listScenarioScripts,
 } from "@/lib/scenario";
 import { getSituation, pollSituation, startScenarioRun, tickScenario } from "@/lib/store";
-import { apiError, apiErrorFromThrown, apiOk, methodNotAllowed, parseJsonBody } from "@/lib/validation";
+import {
+  apiError,
+  apiErrorFromThrown,
+  apiOk,
+  methodNotAllowed,
+  parseJsonBody,
+} from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +42,7 @@ const HEARTBEAT_MS = 5000;
 const scenarioStartSchema = z.strictObject({
   scriptId: z.string().trim().min(1).max(80).optional(),
   speed: z.number().min(MIN_SPEED).max(MAX_SPEED).optional(),
-  restart: z.boolean().optional()
+  restart: z.boolean().optional(),
 });
 
 export async function POST(request: Request) {
@@ -51,8 +57,8 @@ export async function POST(request: Request) {
         campo: "scriptId",
         mensaje: `Guiones disponibles: ${listScenarioScripts()
           .map((script) => script.id)
-          .join(", ")}.`
-      }
+          .join(", ")}.`,
+      },
     ]);
   }
 

@@ -23,7 +23,7 @@ export const sierraBermeja = scenarioPackSchema.parse({
       entityLabel: "Los Pinares",
       location: pinares,
       initial: "activo",
-      alternatives: ["extinguido"]
+      alternatives: ["extinguido"],
     },
     {
       id: "fire-jubrique",
@@ -31,7 +31,7 @@ export const sierraBermeja = scenarioPackSchema.parse({
       entityLabel: "Jubrique",
       location: jubrique,
       initial: "activo",
-      alternatives: ["extinguido"]
+      alternatives: ["extinguido"],
     },
     {
       id: "fire-camping",
@@ -39,7 +39,7 @@ export const sierraBermeja = scenarioPackSchema.parse({
       entityLabel: "Camping Sierra Bermeja",
       location: camping,
       initial: "activo",
-      alternatives: ["extinguido"]
+      alternatives: ["extinguido"],
     },
     {
       id: "wind",
@@ -47,7 +47,7 @@ export const sierraBermeja = scenarioPackSchema.parse({
       entityLabel: "viento",
       location: sierra,
       initial: "NE",
-      alternatives: ["N", "E", "SO"]
+      alternatives: ["N", "E", "SO"],
     },
     {
       id: "road-a397",
@@ -55,7 +55,7 @@ export const sierraBermeja = scenarioPackSchema.parse({
       entityLabel: "A-397",
       location: a397,
       initial: "abierta",
-      alternatives: ["cortada"]
+      alternatives: ["cortada"],
     },
     {
       id: "road-ma8301",
@@ -63,7 +63,7 @@ export const sierraBermeja = scenarioPackSchema.parse({
       entityLabel: "MA-8301",
       location: ma8301,
       initial: "abierta",
-      alternatives: ["cortada"]
+      alternatives: ["cortada"],
     },
     {
       id: "sms-provider",
@@ -71,7 +71,7 @@ export const sierraBermeja = scenarioPackSchema.parse({
       entityLabel: "proveedor de SMS",
       location: sierra,
       initial: "operativo",
-      alternatives: ["caido"]
+      alternatives: ["caido"],
     },
     {
       id: "camping-headcount",
@@ -80,7 +80,7 @@ export const sierraBermeja = scenarioPackSchema.parse({
       location: camping,
       initial: 120,
       alternatives: [100, 150],
-      unit: "personas"
+      unit: "personas",
     },
     {
       id: "beds-costa-del-sol",
@@ -89,8 +89,8 @@ export const sierraBermeja = scenarioPackSchema.parse({
       location: hospital,
       initial: 12,
       alternatives: [4, 20],
-      unit: "camas"
-    }
+      unit: "camas",
+    },
   ],
   sources: [
     {
@@ -99,7 +99,7 @@ export const sierraBermeja = scenarioPackSchema.parse({
       reliability: 0.75,
       delayMin: [0, 3],
       lossRate: 0.05,
-      accuracyM: 300
+      accuracyM: 300,
     },
     {
       id: "citizens-sms",
@@ -107,7 +107,7 @@ export const sierraBermeja = scenarioPackSchema.parse({
       reliability: 0.7,
       delayMin: [1, 6],
       lossRate: 0.1,
-      accuracyM: 500
+      accuracyM: 500,
     },
     {
       id: "sensor-forest",
@@ -115,7 +115,7 @@ export const sierraBermeja = scenarioPackSchema.parse({
       reliability: 0.97,
       delayMin: [0, 1],
       lossRate: 0,
-      accuracyM: 50
+      accuracyM: 50,
     },
     {
       id: "road-api",
@@ -123,7 +123,7 @@ export const sierraBermeja = scenarioPackSchema.parse({
       reliability: 0.95,
       delayMin: [0, 2],
       lossRate: 0,
-      accuracyM: 20
+      accuracyM: 20,
     },
     {
       id: "comms-monitor",
@@ -131,7 +131,7 @@ export const sierraBermeja = scenarioPackSchema.parse({
       reliability: 0.95,
       delayMin: [0, 1],
       lossRate: 0,
-      accuracyM: 0
+      accuracyM: 0,
     },
     {
       id: "mayor",
@@ -139,7 +139,7 @@ export const sierraBermeja = scenarioPackSchema.parse({
       reliability: 0.9,
       delayMin: [2, 5],
       lossRate: 0.1,
-      accuracyM: 50
+      accuracyM: 50,
     },
     {
       id: "fire-chief",
@@ -147,7 +147,7 @@ export const sierraBermeja = scenarioPackSchema.parse({
       reliability: 0.95,
       delayMin: [1, 3],
       lossRate: 0.05,
-      accuracyM: 50
+      accuracyM: 50,
     },
     {
       id: "hospital-desk",
@@ -155,26 +155,29 @@ export const sierraBermeja = scenarioPackSchema.parse({
       reliability: 0.9,
       delayMin: [1, 4],
       lossRate: 0.05,
-      accuracyM: 20
-    }
+      accuracyM: 20,
+    },
   ],
   templates: {
     fire_activity: [
       "Veo llamas y mucho humo en {entity}, el fuego esta {value}",
       "Incendio {value} cerca de {entity}, se ve desde la carretera",
-      "Huele fuerte a humo por {entity}, creo que el fuego sigue {value}"
+      "Huele fuerte a humo por {entity}, creo que el fuego sigue {value}",
     ],
     wind_direction: [
       "El viento viene del {value} y sopla fuerte",
-      "Ahora mismo el viento es del {value}, el humo se mueve con el"
+      "Ahora mismo el viento es del {value}, el humo se mueve con el",
     ],
-    road_status: ["Carretera {entity}: {value}", "Acabamos de pasar por la {entity} y esta {value}"],
+    road_status: [
+      "Carretera {entity}: {value}",
+      "Acabamos de pasar por la {entity} y esta {value}",
+    ],
     comms_status: ["Monitor de comunicaciones: {entity} {value}"],
     headcount: [
       "Aqui en {entity} somos unas {value} personas y nadie nos ha dicho nada",
-      "Calculo {value} personas en {entity}"
+      "Calculo {value} personas en {entity}",
     ],
-    bed_availability: ["Tenemos {value} camas libres en {entity}"]
+    bed_availability: ["Tenemos {value} camas libres en {entity}"],
   },
   events: [
     {
@@ -187,19 +190,19 @@ export const sierraBermeja = scenarioPackSchema.parse({
           type: "witness",
           factId: "fire-pinares",
           count: 12,
-          sourceIds: ["citizens-call", "citizens-sms"]
+          sourceIds: ["citizens-call", "citizens-sms"],
         },
         {
           type: "witness",
           factId: "fire-jubrique",
           count: 10,
-          sourceIds: ["citizens-call", "citizens-sms"]
+          sourceIds: ["citizens-call", "citizens-sms"],
         },
         {
           type: "witness",
           factId: "fire-camping",
           count: 8,
-          sourceIds: ["citizens-call", "citizens-sms"]
+          sourceIds: ["citizens-call", "citizens-sms"],
         },
         { type: "witness", factId: "fire-pinares", count: 1, sourceIds: ["sensor-forest"] },
         { type: "witness", factId: "fire-jubrique", count: 1, sourceIds: ["sensor-forest"] },
@@ -213,9 +216,9 @@ export const sierraBermeja = scenarioPackSchema.parse({
           value: "activo",
           location: at(36.7426, -5.1672, "Ronda centro"),
           count: 3,
-          sourceIds: ["citizens-sms"]
-        }
-      ]
+          sourceIds: ["citizens-sms"],
+        },
+      ],
     },
     {
       id: "chaos-wind-sw",
@@ -225,8 +228,8 @@ export const sierraBermeja = scenarioPackSchema.parse({
       effects: [
         { type: "set_fact", factId: "wind", value: "SO" },
         { type: "witness", factId: "wind", count: 4, sourceIds: ["citizens-call"] },
-        { type: "witness", factId: "wind", count: 1, sourceIds: ["sensor-forest"] }
-      ]
+        { type: "witness", factId: "wind", count: 1, sourceIds: ["sensor-forest"] },
+      ],
     },
     {
       id: "chaos-a397-closed",
@@ -239,10 +242,10 @@ export const sierraBermeja = scenarioPackSchema.parse({
           type: "witness",
           factId: "road-a397",
           count: 3,
-          sourceIds: ["citizens-call", "citizens-sms"]
+          sourceIds: ["citizens-call", "citizens-sms"],
         },
-        { type: "witness", factId: "road-a397", count: 1, sourceIds: ["road-api"] }
-      ]
+        { type: "witness", factId: "road-a397", count: 1, sourceIds: ["road-api"] },
+      ],
     },
     {
       id: "chaos-sms-down",
@@ -251,8 +254,8 @@ export const sierraBermeja = scenarioPackSchema.parse({
       label: "Cae el proveedor de SMS",
       effects: [
         { type: "set_fact", factId: "sms-provider", value: "caido" },
-        { type: "witness", factId: "sms-provider", count: 1, sourceIds: ["comms-monitor"] }
-      ]
+        { type: "witness", factId: "sms-provider", count: 1, sourceIds: ["comms-monitor"] },
+      ],
     },
     {
       id: "camping-growth",
@@ -261,8 +264,8 @@ export const sierraBermeja = scenarioPackSchema.parse({
       label: "50 personas mas en el camping",
       effects: [
         { type: "set_fact", factId: "camping-headcount", value: 170 },
-        { type: "witness", factId: "camping-headcount", count: 3, sourceIds: ["citizens-call"] }
-      ]
-    }
-  ]
+        { type: "witness", factId: "camping-headcount", count: 3, sourceIds: ["citizens-call"] },
+      ],
+    },
+  ],
 });

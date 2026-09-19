@@ -18,7 +18,7 @@ import {
   apiErrorFromThrown,
   apiOk,
   methodNotAllowed,
-  parseJsonBody
+  parseJsonBody,
 } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +26,7 @@ export const dynamic = "force-dynamic";
 /** Busca por id local o por id externo, igual que hace el store. */
 function findAction(actionId: string): Action | undefined {
   return getSituation().actions.find(
-    (candidate) => candidate.id === actionId || candidate.externalActionId === actionId
+    (candidate) => candidate.id === actionId || candidate.externalActionId === actionId,
   );
 }
 
@@ -39,7 +39,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const actionId = payload.localActionId ?? id;
   const action = findAction(actionId);
   if (!action) {
-    return apiError("no_encontrado", `No existe ninguna acción con identificador "${actionId}".`, 404);
+    return apiError(
+      "no_encontrado",
+      `No existe ninguna acción con identificador "${actionId}".`,
+      404,
+    );
   }
 
   const operation = payload.operation ?? "set-status";
@@ -52,7 +56,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         return apiError(
           "conflicto",
           `La acción ya está en estado "${action.status}" y no se puede cancelar.`,
-          409
+          409,
         );
       }
       return apiOk({ action: cancelAction(action.id) });
@@ -60,18 +64,29 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     if (operation === "retry") {
       if (action.status === "running") {
-        return apiError("conflicto", "La acción está en curso: cancélala antes de reintentarla.", 409);
+        return apiError(
+          "conflicto",
+          "La acción está en curso: cancélala antes de reintentarla.",
+          409,
+        );
       }
       if (action.status === "succeeded") {
-        return apiError("conflicto", "La acción ya terminó con éxito: no tiene sentido reintentarla.", 409);
+        return apiError(
+          "conflicto",
+          "La acción ya terminó con éxito: no tiene sentido reintentarla.",
+          409,
+        );
       }
       return apiOk({ action: retryAction(action.id) });
     }
 
     if (!payload.status) {
-      return apiError("cuerpo_invalido", "Para fijar el estado hay que indicar el campo status.", 400, [
-        { campo: "status", mensaje: "Campo obligatorio con la operación set-status." }
-      ]);
+      return apiError(
+        "cuerpo_invalido",
+        "Para fijar el estado hay que indicar el campo status.",
+        400,
+        [{ campo: "status", mensaje: "Campo obligatorio con la operación set-status." }],
+      );
     }
 
     // Cambio de estado iniciado por el operador: el actor es "operator", no
@@ -82,7 +97,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       payload.status,
       payload.externalActionId,
       payload.error,
-      "operator"
+      "operator",
     );
     return apiOk({ action: updated });
   } catch (error) {
