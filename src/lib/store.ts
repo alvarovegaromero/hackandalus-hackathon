@@ -475,9 +475,19 @@ export function resetSituation() {
   return getSituation();
 }
 
-export function addEvent(payload: IncomingEventPayload, actor: Actor = "system") {
+/**
+ * Adds an already interpreted operational Event to the active FARO state.
+ * Source adapters must preserve their raw Signal before calling this seam.
+ */
+export function addCrisisEvent(event: CrisisEvent, actor: Actor = "system") {
   const current = state();
-  const event = normalizeIncomingEvent(payload);
+  // A Signal-derived Event uses a stable ID. If persistence failed after this
+  // event entered the process-local command center, retrying the same Signal
+  // must not repeat zone, action, or planning side effects.
+  const alreadyIngested = current.events.find((candidate) => candidate.id === event.id);
+  if (alreadyIngested) {
+    return { event: alreadyIngested, duplicate: true, situation: getSituation() };
+  }
   const duplicate = current.events.find(
     (candidate) =>
       candidate.dedupeKey === event.dedupeKey &&
@@ -516,6 +526,11 @@ export function addEvent(payload: IncomingEventPayload, actor: Actor = "system")
 
   replan(duplicate ? "señal repetida" : `nueva señal: ${event.title}`);
   return { event: duplicate ?? event, duplicate: Boolean(duplicate), situation: getSituation() };
+}
+
+/** Legacy/internal interpreted Event input used by /api/events and demo helpers. */
+export function addEvent(payload: IncomingEventPayload, actor: Actor = "system") {
+  return addCrisisEvent(normalizeIncomingEvent(payload), actor);
 }
 
 export function markEvent(eventId: string, confirmed: boolean, actor: Actor = "operator") {

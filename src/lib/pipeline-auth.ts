@@ -1,0 +1,19 @@
+// OWNER: event ingestion and telemetry pipeline.
+import { timingSafeEqual } from "node:crypto";
+
+/** Local demo is open. Configured tokens are always enforced; production fails closed. */
+export function authorizePipeline(request: Request): Response | undefined {
+  const token = process.env.CRISIS_API_TOKEN;
+  if (!token) {
+    if (process.env.NODE_ENV !== "production") return;
+    return Response.json(
+      { error: "Configure CRISIS_API_TOKEN before exposing the pipeline.", code: "no_autorizado" },
+      { status: 503 },
+    );
+  }
+  const expected = Buffer.from(`Bearer ${token}`);
+  const actual = Buffer.from(request.headers.get("authorization") ?? "");
+  if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
+    return Response.json({ error: "Unauthorized", code: "no_autorizado" }, { status: 401 });
+  }
+}
