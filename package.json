@@ -56,6 +56,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@nanonets/graft": "0.10.1",
     "@secretlint/secretlint-rule-preset-recommend": "13.0.5",
     "@tailwindcss/postcss": "^4.3.3",

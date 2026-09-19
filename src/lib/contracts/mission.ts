@@ -56,9 +56,9 @@ export const missionResultSchema = missionDecisionSchema.extend({
   missionId: z.uuid(),
   missionRevision: z.number().int().positive(),
   needsParentDecision: z.boolean(),
-  externalOperationIds: z.array(z.uuid()).max(2),
-  executionMode: z.literal("simulation"),
-  realActionsExecuted: z.literal(false),
+  externalOperationIds: z.array(z.uuid()).max(30),
+  executionMode: z.enum(["simulation", "happyrobot"]),
+  realActionsExecuted: z.boolean().nullable(),
 });
 export type MissionResult = z.infer<typeof missionResultSchema>;
 

@@ -1,11 +1,15 @@
 # POC module contracts v1
 
+P0/P4 extension: [Resource Dispatch](resource-dispatch.md) defines the implemented
+live mission communications, callback idempotency and resource-state additions.
+Existing coordinator and mission schemas are extended; intake remains compatible.
+
 Additive Person B boundary: [subagent execution](subagent-execution.md). Parent creation/reservations remain Person A-owned; child communication tools are mock only.
 
 Current implementation: [global coordinator state v2](coordinator-state-contract.md) uses
-one refreshed prompt, a dedicated worker, event/five-second triggers and individual
-ambulance commitments. Apply the v2 migration and run npm run coordinator:work
-alongside the app. Release is disabled; the v1 sections below are historical.
+one refreshed prompt and inline Next.js processing after intake or mission results.
+Run npm run dev; do not start the historical standalone coordinator worker.
+The v1 resource sections below are historical. General release remains disabled.
 
 The v1 resource sections below are historical. Current GET /api/state returns v2;
 POST /api/agent/plan is retired (410), and POST /api/state/release is disabled (501).

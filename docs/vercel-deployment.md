@@ -1,5 +1,10 @@
 # Vercel deployment and releases
 
+Resource Dispatch requires migration 016 and [its configuration](resource-dispatch.md).
+Stable callback: https://faro-lovat-iota.vercel.app/api/dispatch/results.
+Deploy this revision before configuring the workflow. Callback processing uses the
+existing 180-second Next.js lifetime and persists pending replanning.
+
 ## Current deployment
 
 Production was deployed from Git branch `production` on 2026-09-19 to project `faro` in team

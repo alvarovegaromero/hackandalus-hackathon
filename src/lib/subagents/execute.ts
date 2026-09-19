@@ -14,12 +14,17 @@ import {
 } from "../contracts/mission";
 import { missionRpc } from "./repository";
 import { createMissionTools } from "./tools";
+import { getExecutionMode } from "../happyrobot";
+import { dispatchMissionResources } from "../dispatch/service";
 
 export async function runSubagentCycle() {
   const token = randomUUID();
   const claim = await missionRpc("claim", token);
   if (claim.code !== "OK") return { outcome: claim.code, changed: false };
   const mission = missionInputSchema.parse(claim.mission);
+  // Live resource dispatch executes the parent's already committed instructions.
+  // It never enters the mock communication agent or marks its acknowledgements live.
+  if (getExecutionMode() === "happyrobot") return dispatchMissionResources(mission, token);
   try {
     const { decision } = await executeMissionAgent(
       mission,
