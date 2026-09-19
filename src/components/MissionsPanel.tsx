@@ -1,38 +1,40 @@
 "use client";
-import { Badge } from "./ui/badge";
+import { TriangleAlert } from "lucide-react";
+import { cva } from "class-variance-authority";
 import { resourceSummary } from "./resource-summary";
 import { TextSkeleton } from "./Skeleton";
 import { useEffect, useState, useRef, useLayoutEffect } from "react";
 import { z } from "zod";
 import { missionInputSchema, missionResultSchema } from "@/lib/contracts/mission";
 
+/** Attention first: problems, then work in flight, then history. */
+export const MISSION_STATUSES = [
+  "blocked",
+  "failed",
+  "running",
+  "waiting",
+  "queued",
+  "completed",
+  "cancelled",
+] as const;
+export type MissionStatus = (typeof MISSION_STATUSES)[number];
+export const NEEDS_ATTENTION: MissionStatus[] = ["blocked", "failed"];
+
 const missionListSchema = z.object({
   missions: z.array(
     z.object({
       mission_id: z.string(),
       created_at: z.string(),
-      status: z.enum([
-        "queued",
-        "running",
-        "waiting",
-        "blocked",
-        "completed",
-        "failed",
-        "cancelled",
-      ]),
+      status: z.enum(MISSION_STATUSES),
       input: missionInputSchema,
       result: missionResultSchema.nullable(),
     }),
   ),
 });
-type Mission = z.infer<typeof missionListSchema>["missions"][number];
-export default function MissionsPanel({
-  runId,
-  unavailable = false,
-}: {
-  runId?: string;
-  unavailable?: boolean;
-}) {
+export type Mission = z.infer<typeof missionListSchema>["missions"][number];
+
+/** Polls subagent missions for the current coordinator run. */
+export function useMissions(runId?: string) {
   const [snapshot, setSnapshot] = useState<{ runId: string; missions: Mission[] } | null>(null);
   const [error, setError] = useState(false);
   useEffect(() => {
@@ -60,28 +62,65 @@ export default function MissionsPanel({
       clearTimeout(timer);
     };
   }, [runId]);
-  const missions = snapshot && snapshot.runId === runId ? snapshot.missions : [];
-  const loading = (!snapshot || snapshot.runId !== runId) && !error && !unavailable;
-  const ordered = [...missions].sort(
-    (a, b) => b.created_at.localeCompare(a.created_at) || b.mission_id.localeCompare(a.mission_id),
+  const current = snapshot && snapshot.runId === runId ? snapshot.missions : [];
+  const rank = (status: MissionStatus) => MISSION_STATUSES.indexOf(status);
+  const missions = [...current].sort(
+    (a, b) =>
+      rank(a.status) - rank(b.status) ||
+      b.created_at.localeCompare(a.created_at) ||
+      b.mission_id.localeCompare(a.mission_id),
   );
+  return { missions, loading: !snapshot || snapshot.runId !== runId, error };
+}
+
+const statusText = cva("flex shrink-0 items-center gap-1 text-meta", {
+  variants: {
+    status: {
+      blocked: "font-medium text-ink",
+      failed: "font-medium text-ink",
+      running: "text-running",
+      waiting: "text-muted",
+      queued: "text-muted",
+      completed: "text-muted",
+      cancelled: "text-muted",
+    },
+  },
+});
+
+export function MissionStatusLabel({ status }: { status: MissionStatus }) {
   return (
-    <section className="subagents-panel text-sm" aria-label="Subagents">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="font-medium">
-          Subagents <span className="text-neutral-500">{loading ? "" : missions.length}</span>
-        </h2>
-      </div>
-      {(error || unavailable) && (
-        <p role="status" className="mt-2 text-amber-800">
-          Mission updates unavailable. Showing last known data.
+    <span className={statusText({ status })}>
+      {NEEDS_ATTENTION.includes(status) && <TriangleAlert size={12} aria-hidden="true" />}
+      {status}
+    </span>
+  );
+}
+
+export default function MissionsPanel({
+  missions,
+  loading,
+  unavailable,
+}: {
+  missions: Mission[];
+  loading: boolean;
+  unavailable: boolean;
+}) {
+  return (
+    <section className="flex min-h-0 flex-col gap-2" aria-labelledby="missions-title">
+      <h2 id="missions-title" className="text-body font-medium text-muted">
+        Subagent missions
+      </h2>
+      {unavailable && (
+        <p role="status" className="flex items-center gap-1 text-meta">
+          <TriangleAlert size={12} aria-hidden="true" /> Mission updates unavailable. Showing last
+          known data.
         </p>
       )}
-      {loading && <TextSkeleton />}
-      {!loading && !error && !unavailable && !missions.length && (
-        <p className="mt-3 text-neutral-500">No missions assigned yet.</p>
+      {loading && !unavailable && <TextSkeleton />}
+      {!loading && !missions.length && (
+        <p className="text-meta text-muted">No missions assigned yet.</p>
       )}
-      <MissionRows key={runId} missions={ordered} ready={!loading} />
+      <MissionRows missions={missions} ready={!loading} />
     </section>
   );
 }
@@ -90,6 +129,7 @@ function MissionRows({ missions, ready }: { missions: Mission[]; ready: boolean 
   const list = useRef<HTMLUListElement>(null);
   const previous = useRef(new Map<string, number>());
   const initialized = useRef(false);
+  // FLIP: a new or re-ranked mission slides into place so the change is traceable.
   useLayoutEffect(() => {
     if (!ready) return;
     const nodes = Array.from(list.current?.children ?? []) as HTMLElement[];
@@ -113,7 +153,7 @@ function MissionRows({ missions, ready }: { missions: Mission[]; ready: boolean 
                 { transform: `translateY(${oldTop - node.offsetTop}px)` },
                 { transform: "translateY(0)" },
               ],
-          { duration: 260, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+          { duration: 240, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
         );
       }
     }
@@ -121,34 +161,27 @@ function MissionRows({ missions, ready }: { missions: Mission[]; ready: boolean 
     initialized.current = true;
   }, [missions, ready]);
   return (
-    <ul ref={list} className="mission-feed">
+    <ul ref={list} className="dashboard-scroll divide-y divide-line">
       {missions.map((m) => (
-        <li key={m.mission_id} data-id={m.mission_id} data-status={m.status}>
-          <div className="mission-row py-3">
-            <div className="flex items-start justify-between gap-4">
-              <span className="font-medium">{m.input.objective}</span>
-              <Badge variant="outline" className="mission-status-badge">
-                {m.status}
-              </Badge>
-            </div>
-            <p className="mt-1 line-clamp-2 text-xs text-neutral-500">
-              {m.result?.summary ??
-                {
-                  queued: "Waiting to start",
-                  running: "Working on this mission",
-                  waiting: "Waiting for a response",
-                  blocked: "Needs attention",
-                  failed: "Execution failed",
-                  completed: "Completed",
-                  cancelled: "Cancelled",
-                }[m.status]}
-            </p>
-            {!!m.input.assignedResourceIds.length && (
-              <p className="mt-1 text-xs text-neutral-500">
-                {resourceSummary(m.input.assignedResourceIds)}
-              </p>
-            )}
+        <li key={m.mission_id} data-id={m.mission_id} className="py-2">
+          <div className="flex items-start justify-between gap-3">
+            <span className="text-body">{m.input.objective}</span>
+            <MissionStatusLabel status={m.status} />
           </div>
+          <p className="mt-1 line-clamp-2 text-meta text-muted">
+            {m.result?.summary ??
+              {
+                queued: "Waiting to start",
+                running: "Working on this mission",
+                waiting: "Waiting for a response",
+                blocked: "Needs attention",
+                failed: "Execution failed",
+                completed: "Completed",
+                cancelled: "Cancelled",
+              }[m.status]}
+            {!!m.input.assignedResourceIds.length &&
+              ` · ${resourceSummary(m.input.assignedResourceIds)}`}
+          </p>
         </li>
       ))}
     </ul>
