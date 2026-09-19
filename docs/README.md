@@ -10,7 +10,7 @@ implementation status; [CHALLENGE.md](../CHALLENGE.md) defines the requirements.
 and normal operation. The interface is exploratory, with partially connected
 controls; it does not define the approved product or target architecture.
 
-Next.js serves `app/`; `lib/` implements the command center and `tests/` covers
+Next.js serves `src/app/`; `src/lib/` implements the command center and `tests/` covers
 it. The dashboard polls the HTTP API. State lives in memory, with optional local
 JSON persistence. Outbound communications default to mock mode.
 
@@ -23,18 +23,18 @@ JSON persistence. Outbound communications default to mock mode.
 
 ## Contracts and integration work
 
-The reusable platform modules remain under `src/lib/` and `src/workflows/`.
-Endpoint candidates in `src/app/api/` are **not served** while root `app/` exists.
-Their contracts must be reconciled before moving them into the active API;
-the two `/api/events` implementations accept different payloads.
-The obsolete platform dashboard, layout and styles have been removed.
+The application now uses one `src/` tree. The active `/api/events` endpoint
+accepts a single command-center event. Reusable batch ingestion, scenario and
+Workflow modules remain in `src/lib/` and `src/workflows/`, but their old
+scaffold routes have been retired. They still need integration with the
+confirmed report contract.
 
-Root `lib/` remains necessary for the active API and sketch dashboard. Its
-unused `autonomy.ts` and `triage.ts` implementations and isolated tests were
-removed after checking imports. Calibrated triage and graduated autonomy remain
-future integration work; the active flow still uses deterministic zone scoring
-and human-approved actions. `lib/report.ts` remains the shared input envelope
-used by the platform scenario adapter.
+The former root library was consolidated into `src/lib/`, which is required by
+the API and sketch. Unused autonomy and triage implementations and their
+isolated tests were removed after checking imports. Calibrated triage and
+graduated autonomy remain future work; the active flow uses deterministic zone
+scoring and human-approved actions. `src/lib/report.ts` remains the shared
+input envelope used by the scenario adapter.
 
 | Document                                      | Status                                                                                       |
 | --------------------------------------------- | -------------------------------------------------------------------------------------------- |
@@ -50,8 +50,6 @@ used by the platform scenario adapter.
 - [Open decisions](../thoughts/open-questions.md): confirmed choices and blockers.
 - [Feature inventory](../thoughts/features.md): historical implementation and
   porting reference; use current source and TASKS.md for present status.
-- [Scenario engine design](superpowers/specs/2026-09-19-scenario-engine-design.md):
-  design rationale for the reusable engine, not proof of a served integration.
 
 The next architecture diagram should distinguish the served runtime, reusable
 modules awaiting integration, and external services awaiting configuration.

@@ -28,16 +28,12 @@ approved product design or an operational emergency response system. Preserve
 the visible prototype notice when editing the interface. Some controls are not
 connected; the sketch must not be treated as the target architecture.
 
-Status: two trees live in one Next.js project. The served application is the
-command center at the repository root (`app/`, `lib/`, `tests/`): operator panel,
+Status: the codebase is unified under the standard Next.js `src/` directory
+(`src/app/`, `src/components/`, `src/lib/`, and `tests/`): operator panel,
 HTTP API, self-advancing scenario scripts, action queue with human approval,
 HappyRobot adapter (contract unverified, `mock` mode by default) and the digital
-twin. The platform base under `src/` (Vercel Workflow, AI SDK coordinator,
-Supabase clients/schema, batch ingestion, Sierra Bermeja scenario engine) is
-exercised only by its tests: Next.js ignores `src/app` while a root `app/`
-exists. Unifying both trees is the first item in TASKS.md. Persistence is
-in-memory (optional JSON under `.data/`); Supabase, operator authentication and
-live HappyRobot communications are not connected. The seed and default script
+twin. Persistence is in-memory (optional JSON under `.data/`); Supabase, operator
+authentication and live HappyRobot communications are not connected. The seed and default script
 still name Sierra Morena; the confirmed scenario is Sierra Bermeja (see
 `thoughts/open-questions.md`, "Confirmed, do not reopen"). Model selection,
 credentials and live integrations remain open; do not resolve them with
@@ -58,7 +54,7 @@ invented values. Track follow-up work in TASKS.md.
 
 - `CHALLENGE.md`: authoritative challenge requirements and scoring criteria.
 - `HackSpain 2026 · Project Source of Truth.md`: product vision, scenario,
-  demo script, build phases and risks (in English).
+  demo script, build phases and risks.
 - `thoughts/`: design context: historical feature inventory to port,
   open and confirmed decisions.
 - `TASKS.md`: completed scaffolding checklist and deferred implementation tasks.
@@ -75,19 +71,16 @@ invented values. Track follow-up work in TASKS.md.
 - `.vscode`: shared formatting settings and recommended editor extensions.
 - `.gitignore`: local credentials, personal agent settings, and generated caches.
 
-- `app/`, `lib/`, `tests/`: the served command center. `app/` holds the operator
-  panel, HTTP API, shadcn/ui-inspired primitives (`app/components/ui/`), and the
-  tactical React Leaflet map (`app/components/LeafletMap.tsx`) with OpenStreetMap;
-  each `lib/` module states its owner in a `// OWNER:` line; `tests/` is its
+- `src/app/`, `src/components/`, `src/lib/`, `tests/`: the served command center. `src/app/` holds the operator
+  panel, HTTP API; `src/components/` holds shadcn/ui-inspired primitives (`src/components/ui/`) and the
+  tactical React Leaflet map (`src/components/LeafletMap.tsx`) with OpenStreetMap;
+  each `src/lib/` module states its owner in a `// OWNER:` line; `tests/` is its
   Vitest suite.
-- `src/app/api`: platform endpoint candidates, not served while root `app/`
-  exists. Their supporting modules remain covered by tests. The obsolete
-  platform dashboard, layout and styles have been removed.
 - `src/lib/domain.ts`: shared Zod schemas and domain types.
 - `src/lib/scenario`, `src/lib/signals`: scenario engine, signal model and the
   scenario adapter to the shared triage envelope (plus the legacy
   signal-to-event bridge used by the demo).
-- `lib/report.ts`: `NormalizedReport`, the envelope every channel adapter emits
+- `src/lib/report.ts`: `NormalizedReport`, the envelope every channel adapter emits
   before triage (see `docs/input-contract.md`).
 - `src/lib/ingest.ts`, `src/lib/ingest-server.ts`: batch event ingestion
   (validation, dedup, persistence, workflow start).
@@ -96,13 +89,12 @@ invented values. Track follow-up work in TASKS.md.
 - `src/lib/supabase`: server/browser clients and Realtime subscription helper.
 - `src/lib/integrations`: HappyRobot boundary, explicitly blocked until implemented.
 - `supabase/migrations`: initial PostgreSQL schema with deny-by-default RLS.
-- `docs/README.md`: documentation index, distinguishing implemented behavior
-  from proposals and historical context.
+- `docs/README.md`: documentation index and implementation status.
 - `docs/`: design and implementation guides. `docs/architecture.md` explains the
   command-center decisions, `docs/security.md` its credential and demo-recipient
   rules, `docs/happyDocumentation.md` the unverified HappyRobot contract,
   `docs/data-model.md` the Supabase model, `docs/input-architecture.md` batch
-  event ingestion (current route split and migration),
+  event ingestion (current endpoint and remaining backend integration),
   `docs/input-contract.md` the confirmed simple report/normalization contract
   (envelope and scenario adapter implemented; synchronous receipt, asynchronous Workflow processing),
   `docs/dashboard-design-guide.md`, `docs/code-index.md` and
@@ -114,7 +106,7 @@ invented values. Track follow-up work in TASKS.md.
 - `.husky`, `scripts`, `lint-staged.config.mjs`: local quality and branch/credential guards;
   `scripts/hooks.test.ts` covers the guards. `vitest.config.mts` runs every
   `*.test.ts` in `tests/`, `src/` and `scripts/` and resolves `@/` like tsconfig
-  (repository root first, then `src/`).
+  (`@/` resolves to `src/`).
 - `.secretlintrc.json`: Secretlint recommended rules; `.secretlintignore` excludes generated output.
 - `scripts/setup-env.mjs`: creates an ignored local environment template without overwriting files.
 

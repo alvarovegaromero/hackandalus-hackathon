@@ -7,8 +7,8 @@ decided, so nobody has to rediscover it.
 It is written against the platform base under `src/`: Next.js, Supabase with
 RLS, Vercel Workflow, AI SDK and Zod. Much of the content comes from the
 command center first built on `feat/crisis-command-center` with in-memory
-state and now merged at the repository root (`app/`, `lib/`, `tests/`); these
-documents transfer that work to the definitive base.
+state, now consolidated into `src/app/`, `src/components/`, `src/lib/` and
+`tests/`. These documents preserve historical design and integration context.
 
 ## What is here
 

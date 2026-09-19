@@ -6,8 +6,8 @@
 
 This document explains **why** the system is built this way. The _what_ is in the
 README; here are the decisions and their trade-offs. This document describes
-the served command center (`app/` and `lib/`). The separate platform modules in
-`src/` are not connected to that runtime; see [input-architecture.md](input-architecture.md)
+the served command center (`src/app/` and `src/lib/`). The reusable Workflow and batch ingestion modules are not connected to
+that runtime; see [input-architecture.md](input-architecture.md)
 and the [documentation index](README.md) before designing the combined architecture.
 
 Context that shapes everything else: this is a weekend hackathon project,
@@ -36,7 +36,7 @@ correct" and "demonstrable on Sunday without crashing."
                                       │
                          ┌────────────▼────────────┐
                          │ GET /api/situation      │
-                         │ app/page.tsx (polling)  │
+                         │ src/app/page.tsx (polling)  │
                          │ human approves/cancels  │
                          └─────────────────────────┘
 ```
@@ -47,7 +47,7 @@ A core rule underpins the design: **`store.ts` maintains state and orchestrates,
 
 ## Decision 1 — State lives in memory, with optional JSON persistence
 
-`lib/store.ts` stores the entire situation (signals, zones, resources, contacts,
+`src/lib/store.ts` stores the entire situation (signals, zones, resources, contacts,
 actions, plans, audit log) in an object attached to `globalThis`. There is no
 database.
 
@@ -75,7 +75,7 @@ database.
 - Tests share state within a process, which is why `tests/` calls
   `resetSituation()` in `beforeEach`.
 
-**Persistence is optional and disabled by default.** `lib/persistence.ts` writes
+**Persistence is optional and disabled by default.** `src/lib/persistence.ts` writes
 plain JSON under `.data/` and only activates if `CRISIS_PERSISTENCE=on`. It uses
 JSON files rather than SQLite to avoid native dependencies (compilation,
 platform-specific binaries) in a project that must run on any team member's
@@ -92,7 +92,7 @@ local storage, not durable shared storage for a multi-instance deployment.
 
 ## Decision 2 — Priority is deterministic, not decided by a language model
 
-`lib/priority.ts` scores each zone with an explicit formula: zone base risk,
+`src/lib/priority.ts` scores each zone with an explicit formula: zone base risk,
 severity and confidence of live signals, whether they are confirmed, population
 at risk, open needs, and unavailable resources. The output is a number and a
 factor breakdown (`PriorityFactor[]`) that the interface displays as-is.
@@ -169,7 +169,7 @@ This is also the exact design a real crisis command center would require.
 
 ## Decision 4 — Modules with a clear owner
 
-`lib/` is split by responsibility, and each file declares its owner on the first
+`src/lib/` is split by responsibility, and each file declares its owner on the first
 line:
 
 ```ts
@@ -216,7 +216,7 @@ is in charge.
 
 ## Decision 5 — Browser polling, not WebSockets
 
-`app/page.tsx` polls `GET /api/situation` periodically and re-renders. There is no
+`src/app/page.tsx` polls `GET /api/situation` periodically and re-renders. There is no
 real-time push channel.
 
 **Why.** State is small, the server is local, and a demo cannot tell the
@@ -239,7 +239,7 @@ clocks for the same engine, because the demo clock cannot fail.
 
 ## Decision 6 — The scenario is scripted, but can be triggered manually
 
-`lib/scenario.ts` plays scripts made of timestamped _beats_—there are three:
+`src/lib/scenario.ts` plays scripts made of timestamped _beats_—there are three:
 wildfire, blackout, and flood—the fire front advances, wind shifts, a road is cut,
 a resource goes down. They can be started, paused, and accelerated via
 `/api/scenario/*`. Additionally, UI buttons allow injecting any of these

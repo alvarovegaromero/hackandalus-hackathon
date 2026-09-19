@@ -18,19 +18,19 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CreateActionPayload, SituationState } from "@/lib/types";
-import { Button } from "./components/ui/button";
-import { Badge } from "./components/ui/badge";
-import ActionQueue from "./components/ActionQueue";
-import AuditPanel from "./components/AuditPanel";
-import ContactsPanel from "./components/ContactsPanel";
-import DigitalTwinPanel from "./components/DigitalTwinPanel";
-import HeroSummary from "./components/HeroSummary";
-import OperationsMap from "./components/OperationsMap";
-import PlanChanges from "./components/PlanChanges";
-import ResourcesPanel from "./components/ResourcesPanel";
-import ScenarioBar from "./components/ScenarioBar";
-import SignalsPanel from "./components/SignalsPanel";
-import ZoneDetail from "./components/ZoneDetail";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import ActionQueue from "@/components/ActionQueue";
+import AuditPanel from "@/components/AuditPanel";
+import ContactsPanel from "@/components/ContactsPanel";
+import DigitalTwinPanel from "@/components/DigitalTwinPanel";
+import HeroSummary from "@/components/HeroSummary";
+import OperationsMap from "@/components/OperationsMap";
+import PlanChanges from "@/components/PlanChanges";
+import ResourcesPanel from "@/components/ResourcesPanel";
+import ScenarioBar from "@/components/ScenarioBar";
+import SignalsPanel from "@/components/SignalsPanel";
+import ZoneDetail from "@/components/ZoneDetail";
 import {
   agoLabel,
   isOpenAction,
@@ -38,7 +38,7 @@ import {
   severityRank,
   troubledActionStatuses,
   zoneStatusLabels,
-} from "./components/shared";
+} from "@/components/shared";
 
 const POLL_MS = 4000;
 const FRESH_MS = 25000;

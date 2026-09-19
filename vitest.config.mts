@@ -3,9 +3,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
-// "@/x" resolves to ./x first and ./src/x second, mirroring "paths" in tsconfig.json.
+// "@/x" resolves to ./src/x, mirroring "paths" in tsconfig.json.
 const root = fileURLToPath(new URL(".", import.meta.url));
-const bases = [root, path.join(root, "src")];
+const bases = [path.join(root, "src")];
 const suffixes = ["", ".ts", ".tsx", ".mts", ".js", "/index.ts", "/index.tsx"];
 
 function resolveAlias(source: string): string | null {

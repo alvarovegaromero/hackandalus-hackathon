@@ -60,7 +60,7 @@ Scenario-agnostic: applies to wildfire, flood, blackout, or others, as long as t
   - **Type scale:** 12px (metadata/badges), 13px (compact body/buttons), 14px (standard text/subheadings), and 24px (key numbers/KPIs).
   - **Neutral hierarchy:** `#292929` (secondary panel background and dark borders), `#5D5D5D` (secondary text/neutral icons), and `#9E9E9E` (muted ink and subtitles).
   - **Icons:** 14px for navigation and buttons (`Button`), 20px for card headers (`CardHeader`).
-  - **UI primitives (shadcn style):** `Button`, `Badge`, `Card` in `app/components/ui/` with `cn` (`clsx` + `tailwind-merge`).
+  - **UI primitives (shadcn style):** `Button`, `Badge`, `Card` in `src/components/ui/` with `cn` (`clsx` + `tailwind-merge`).
 
 ## 4. Zones
 
@@ -105,7 +105,7 @@ Answers: "what information matters?"
 
 Answers: "what is happening and where?"
 
-- **Technical implementation:** Rendered via **React Leaflet** (`app/components/LeafletMap.tsx`) loaded dynamically (`next/dynamic` without SSR) alongside a selector to toggle with the SVG regional diagram (`app/components/OperationsMap.tsx`).
+- **Technical implementation:** Rendered via **React Leaflet** (`src/components/LeafletMap.tsx`) loaded dynamically (`next/dynamic` without SSR) alongside a selector to toggle with the SVG regional diagram (`src/components/OperationsMap.tsx`).
 - **Cartographic base layer:** **OpenStreetMap** (`https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png`), without external API key dependencies or restrictive quotas.
 - **Operational focus:** Centered on **Sierra Bermeja / Serranía de Ronda** (`[36.525, -5.185]`), with dynamic thermal focus and 2.2 km radius.
 - **Critical transit routes:** Explicit tracing of the **A-397 road** (critical closure) and alternative route **MA-8301**.
