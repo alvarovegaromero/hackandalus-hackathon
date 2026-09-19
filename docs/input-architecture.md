@@ -38,8 +38,8 @@ signals in one request** and processes them **concurrently**. Milestone B is the
 - **Milestone B (documented, deferred):** the **async / topic** evolution
   (Supabase Realtime fan-out to the dashboard). Section at the end. Do not
   implement B until A is merged and demoable.
-Ingestion is one stage, not the whole loop. Per the module map in
-`data-model.md` §3, three different modules touch a new signal in sequence:
+  Ingestion is one stage, not the whole loop. Per the module map in
+  `data-model.md` §3, three different modules touch a new signal in sequence:
 
 ```
 producer ──▶ [ingest] ──▶ [triage] ──▶ [incidents] ──▶ planning ──▶ execution
@@ -77,8 +77,8 @@ producer ──▶ [ingest] ──▶ [triage] ──▶ [incidents] ──▶ p
 - DB schema - `supabase/migrations/202609180001_initial_schema.sql`. Ingestion
   writes `incidents` (on demand) and `events`. `plans`, `actions` and `results`
   are not written yet.
-Everything hangs off a `run` (one per managed crisis; multi-tenant by `run_id`).
-A signal always carries the `runId` it belongs to.
+  Everything hangs off a `run` (one per managed crisis; multi-tenant by `run_id`).
+  A signal always carries the `runId` it belongs to.
 
 ---
 
@@ -237,6 +237,7 @@ curl -sS -X POST localhost:3000/api/events \
 
 # replay the same batch → expect all in "duplicates", zero new runs
 ```
+
 ### 3.7 Implementation checklist
 
 - [ ] `src/lib/domain/signal.ts` — `incomingSignalSchema` + a batch helper
@@ -347,6 +348,7 @@ Do not invent these; they gate the build:
 
 A is real, testable and handles many events at once without new
 infrastructure. B layers the live fan-out on top without changing the producer.
+
 ## 8. Current-code → target mapping
 
 | Scaffolding (in code today)                   | Confirmed target (`data-model.md`)                            |
