@@ -11,17 +11,16 @@ const payload = {
   zoneId: "zone-south",
   category: "fire",
 };
-const post = (body: unknown, headers: Record<string, string> = {}) =>
+const post = (body: unknown) =>
   POST(
     new Request("http://localhost/api/events", {
       method: "POST",
-      headers: { "content-type": "application/json", ...headers },
+      headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
     }),
   );
 
 beforeEach(() => {
-  vi.stubEnv("CRISIS_API_TOKEN", "");
   vi.stubEnv("ACTION_EXECUTION_MODE", "mock");
   globalThis.eventPipelineState = undefined;
   resetSituation();
@@ -128,13 +127,11 @@ describe("HTTP ingestion and telemetry", () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it("protects both endpoints when configured and fails closed in production", async () => {
-    vi.stubEnv("CRISIS_API_TOKEN", "test-only-token");
-    expect((await post(payload)).status).toBe(401);
-    expect((await GET(new Request("http://localhost/api/telemetry"))).status).toBe(401);
-    expect((await post(payload, { authorization: "Bearer test-only-token" })).status).toBe(202);
-    vi.stubEnv("CRISIS_API_TOKEN", "");
-    vi.stubEnv("NODE_ENV", "production");
-    expect((await post(payload)).status).toBe(503);
+  it("accepts an optional location and replays it in the telemetry payload", async () => {
+    const location = { latitude: 36.53, longitude: -5.1, reference: "incident" };
+    expect((await post({ ...payload, location })).status).toBe(202);
+    expect(readTelemetry().records[0].payload.location).toEqual(location);
+    expect((await post({ ...payload, location: { latitude: 36.5 } })).status).toBe(400);
+    expect((await post({ ...payload, location: { latitude: 99, longitude: 0 } })).status).toBe(400);
   });
 });

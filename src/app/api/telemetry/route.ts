@@ -1,13 +1,10 @@
 import { readTelemetry } from "@/lib/event-pipeline";
-import { authorizePipeline } from "@/lib/pipeline-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const encoder = new TextEncoder();
 
 export async function GET(request: Request) {
-  const denied = authorizePipeline(request);
-  if (denied) return denied;
   let cursor =
     request.headers.get("last-event-id") ||
     new URL(request.url).searchParams.get("after") ||

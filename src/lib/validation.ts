@@ -14,6 +14,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { reportLocationSchema } from "./report";
 import { getSituation } from "./store";
 
 // ---------------------------------------------------------------------------
@@ -307,6 +308,7 @@ export const incomingEventSchema = z
     title: texto(200).optional(),
     description: texto(2000).optional(),
     zoneId: identificador.optional(),
+    location: reportLocationSchema.optional(),
     category: texto(80).optional(),
     severity: severitySchema.optional(),
     confidence: confidenceSchema.optional(),

@@ -1,32 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import type { TelemetryRecord } from "@/lib/event-pipeline";
 
-const MAX_ROWS = 200;
-
-/** Live log of accepted events, streamed from GET /api/telemetry (read-only SSE). */
-export default function EventLog() {
-  const [records, setRecords] = useState<TelemetryRecord[]>([]);
-  const [status, setStatus] = useState("Connecting…");
-
-  useEffect(() => {
-    // EventSource reconnects on its own and resends the last event ID.
-    const source = new EventSource("/api/telemetry");
-    source.onopen = () => setStatus("Live");
-    source.onerror = () => setStatus("Reconnecting…");
-    source.onmessage = (message) => {
-      const record = JSON.parse(message.data) as TelemetryRecord;
-      setRecords((previous) =>
-        previous.some((item) => item.id === record.id)
-          ? previous
-          : [record, ...previous].slice(0, MAX_ROWS),
-      );
-    };
-    source.addEventListener("reset", () => setRecords([]));
-    return () => source.close();
-  }, []);
-
+/** Live log of accepted events, fed by the shared GET /api/telemetry subscription. */
+export default function EventLog({
+  records,
+  status,
+}: {
+  records: TelemetryRecord[];
+  status: string;
+}) {
   return (
     <section aria-label="Event log" className="flex flex-col gap-2 w-full">
       <div className="flex items-center justify-between px-1">

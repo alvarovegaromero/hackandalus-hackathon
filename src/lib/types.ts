@@ -536,6 +536,13 @@ export interface IncomingEventPayload {
   title?: string;
   description?: string;
   zoneId?: string;
+  /** Same shape as the report contract's location (docs/input-contract.md). */
+  location?: {
+    latitude?: number;
+    longitude?: number;
+    description?: string;
+    reference?: "incident" | "reporter" | "unknown";
+  };
   category?: string;
   severity?: Severity;
   confidence?: Confidence;

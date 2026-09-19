@@ -1,20 +1,32 @@
 "use client";
 
-// Mapa táctico de Sierra Bermeja. El trazado de las carreteras y el foco del
-// incendio son ilustrativos (demo): lo que sí es real es que reaccionan al
-// mundo simulado (carretera cortada, viento) y a la selección de zona.
+// Sierra Bermeja tactical map. Road paths and the fire origin are illustrative
+// (demo); they react to the simulated world (closed road, wind) and to zone
+// selection. Event pins come from the live SSE telemetry stream.
 
 import { useEffect, useMemo, useRef } from "react";
 import "leaflet/dist/leaflet.css";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMap } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  Polyline,
+  Circle,
+  CircleMarker,
+  useMap,
+} from "react-leaflet";
 import L from "leaflet";
-import type { CrisisZone, Plan, WorldState, ZoneStatus } from "@/lib/types";
+import type { TelemetryRecord } from "@/lib/event-pipeline";
+import type { CrisisZone, Plan, Severity, WorldState, ZoneStatus } from "@/lib/types";
 import { zoneStatusLabels } from "./shared";
 
 interface Props {
   zones: CrisisZone[];
   plan: Plan;
   world?: WorldState;
+  /** Telemetry records (SSE); `event.accepted` ones with coordinates are plotted. */
+  events?: TelemetryRecord[];
   selectedZoneId: string | null;
   onSelect: (zoneId: string) => void;
   /** Se avisa una vez si el mapa base no carga ningún tile (sin red). */
@@ -42,6 +54,54 @@ const ma8301Coordinates: [number, number][] = [
   [36.512, -5.187],
   [36.427, -5.145],
 ];
+
+const severityColors: Record<Severity, string> = {
+  low: colors.info,
+  medium: colors.warn,
+  high: colors.fire,
+  critical: colors.danger,
+};
+
+interface EventPin {
+  id: string;
+  position: [number, number];
+  title: string;
+  severity: Severity;
+  reference: string;
+  description?: string;
+}
+
+// Telemetry payloads are untyped JSON: keep only accepted events with a valid
+// coordinate pair. Events without coordinates are not drawn (none are invented).
+function eventPins(records: TelemetryRecord[]): EventPin[] {
+  const pins: EventPin[] = [];
+  for (const record of records) {
+    if (record.type !== "event.accepted") continue;
+    const { location, title, severity } = record.payload as {
+      location?: {
+        latitude?: unknown;
+        longitude?: unknown;
+        reference?: unknown;
+        description?: unknown;
+      };
+      title?: unknown;
+      severity?: unknown;
+    };
+    if (typeof location?.latitude !== "number" || typeof location.longitude !== "number") continue;
+    pins.push({
+      id: record.id,
+      position: [location.latitude, location.longitude],
+      title: typeof title === "string" ? title : "Event",
+      severity:
+        typeof severity === "string" && severity in severityColors
+          ? (severity as Severity)
+          : "medium",
+      reference: typeof location.reference === "string" ? location.reference : "unknown",
+      description: typeof location.description === "string" ? location.description : undefined,
+    });
+  }
+  return pins;
+}
 
 const defaultCenter: [number, number] = [36.525, -5.185];
 const fireOrigin: [number, number] = [36.52, -5.14];
@@ -167,6 +227,7 @@ export default function LeafletMap({
   zones,
   plan,
   world,
+  events = [],
   selectedZoneId,
   onSelect,
   onTilesUnavailable,
@@ -273,6 +334,35 @@ export default function LeafletMap({
             </div>
           </Popup>
         </Polyline>
+
+        {eventPins(events).map((pin) => (
+          <CircleMarker
+            key={pin.id}
+            center={pin.position}
+            radius={8}
+            pathOptions={{
+              color: "#ffffff",
+              weight: 2,
+              fillColor: severityColors[pin.severity],
+              fillOpacity: 0.95,
+              // Only an explicit incident pin is solid; reporter/unknown positions are dashed.
+              dashArray: pin.reference === "incident" ? undefined : "3, 3",
+            }}
+          >
+            <Popup>
+              <div className="p-1 text-[12px] font-sans">
+                <b className="text-ink">{pin.title}</b>
+                <p className="text-neutral-700 mt-1">
+                  Severity {pin.severity} · location {pin.reference}
+                </p>
+                {pin.description ? (
+                  <p className="text-neutral-500 mt-1">{pin.description}</p>
+                ) : null}
+                <p className="text-neutral-500 mt-1">Live event (SSE)</p>
+              </div>
+            </Popup>
+          </CircleMarker>
+        ))}
 
         {zones.map((zone) => {
           const priority = plan.priorities.find((candidate) => candidate.zoneId === zone.id);
