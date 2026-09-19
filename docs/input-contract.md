@@ -3,7 +3,8 @@
 Confirmed on 2026-09-19. This is the target contract for report intake and the
 normalization boundary before triage. It supersedes the earlier requirement
 that a reporter supply `title`, `body`, `category`, `severity`, or confidence.
-It is not yet implemented or exposed by the running application.
+The envelope schema (`lib/report.ts`) and the scenario adapter are implemented;
+public validation, intake and the route are not yet exposed by the running application.
 
 ## Reporter experience
 
@@ -152,11 +153,15 @@ retry identity and existing tests while migrating the contracts.
 
 - `src/lib/signals/schema.ts` remains the simulator's producer contract. Its
   text and reading variants do not need to become the public form contract.
-- Adapt `src/lib/signals/to-event.ts` to the common envelope: preserve the stable
-  identity based on crisis and signal ID; carry the signal ID as `externalRef`;
-  map `lat/lon/placeName` to `latitude/longitude/description`. Preserve `accuracyM`
-  in the original evidence. Location reference remains unknown unless the
-  producer explicitly defines its meaning.
+- Done: `signalToReport` in `src/lib/signals/to-event.ts` returns
+  `{ report, evidence }`, where `report` is a `NormalizedReport` validated by
+  `normalizedReportSchema` (`lib/report.ts`) and `evidence` is the original
+  signal. It keeps the stable identity based on crisis and signal ID (the same
+  `id` the legacy `signalToEvent` produces), sets `source: "scenario"`, the
+  signal channel as `channel` and the signal ID as `externalRef`, maps
+  `lat/lon/placeName` to `latitude/longitude/description` with reference
+  `unknown`, and renders readings as text while the evidence keeps them
+  structured, together with `accuracyM`. `extracted` starts empty.
 - Keep `receivedAtMin` as simulation-relative metadata; do not interpret it as
   a wall-clock timestamp without the scenario clock origin.
 - Replace the hard-coded `medium` severity with triage assessment when migrating
@@ -175,10 +180,11 @@ contract decision.
 
 ## First implementation slice
 
-- [ ] Add pure report/envelope validators and channel adapters under root `lib/`.
+- [x] Add the envelope schema (`lib/report.ts`) and the scenario adapter.
+- [ ] Add the public report validator and the remaining channel adapters.
 - [ ] Test text-only reports, textual/GPS locations, coordinate pairing/ranges,
       reporter vs incident semantics, unknown fields and missing extraction.
-- [ ] Test scenario retry identity, structured readings and no ground-truth leak.
+- [x] Test scenario retry identity, structured readings and no ground-truth leak.
 - [ ] Resolve durable persistence and scheduling recovery; migrate the workflow
       input and expose the new route under root `app/`.
 - [ ] Test mixed batches, duplicate deliveries, scheduling failure and recovery.
