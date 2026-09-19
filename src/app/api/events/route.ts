@@ -1,3 +1,5 @@
+import { after } from "next/server";
+import { processCoordinatorInBackground } from "@/lib/coordinator/background";
 // OWNER: API hardening and input validation agent.
 // Signal ingestion into the command center.
 
@@ -16,7 +18,7 @@ import {
 } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 180;
 
 export async function POST(request: Request) {
   const denied = authorizePipeline(request);
@@ -32,6 +34,7 @@ export async function POST(request: Request) {
   try {
     const { id, ...payload } = parsed.data;
     const durable = await enqueueLegacyEvent(payload as IncomingEventPayload, id);
+    after(processCoordinatorInBackground);
     const accepted = acceptIncomingEvent(payload as IncomingEventPayload, durable.eventId);
     // The durable coordinator owns processing; telemetry remains a receipt projection.
     return apiOk({ ...accepted, ...durable }, durable.duplicate ? 200 : 202);

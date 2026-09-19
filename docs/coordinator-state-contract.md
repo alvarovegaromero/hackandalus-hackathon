@@ -213,3 +213,24 @@ Frontend handoff: [input/output examples and integration](coordinator-frontend-i
 Migration filenames were renumbered to 202609190004/202609190005 when integrating
 main to avoid colliding with the signals reconciliation migration. Their SQL was
 already applied manually to the shared development database; do not reapply it.
+
+## Live intake scheduling update (migration 007)
+
+The worker filters up to eight reports concurrently per cycle and plans without
+waiting for an empty queue. Enqueue-only revision changes do not invalidate a plan:
+the exclusive worker lease prevents another worker from changing active events or
+assignments during generation. Commit still requires full active-event coverage and
+preserves assignments; reset revokes the lease. This supersedes the earlier rule
+that every arrival invalidates an in-flight proposal. New pending reports are
+assessed in the next cycle, after the current model call completes.
+
+## In-process POC execution (migration 008)
+
+HTTP intake schedules filtering and planning with Next.js after(). No standalone
+worker is required. Filtering uses a separate run-checked, idempotent RPC and can
+continue during model generation. Claim records the model's active event IDs;
+commit requires exact priority coverage of those IDs and preserves newer active
+events with their existing priorities. The next call incorporates those events.
+This supersedes the exclusive filtering/planning behavior above. Reset still
+revokes the model lease. Restart recovery needs another intake request; there is
+no durable scheduling guarantee or timer-only replanning in this local POC.

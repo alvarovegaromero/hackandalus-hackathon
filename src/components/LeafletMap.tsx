@@ -1,59 +1,31 @@
 "use client";
 
-// Sierra Bermeja tactical map. Road paths and the fire origin are illustrative
-// (demo); they react to the simulated world (closed road, wind) and to zone
-// selection. Event pins come from the live SSE telemetry stream.
+// Sierra Bermeja tactical map. Event pins come from the live SSE telemetry stream.
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import "leaflet/dist/leaflet.css";
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-  Polyline,
-  Circle,
-  CircleMarker,
-  useMap,
-} from "react-leaflet";
-import L from "leaflet";
+import { MapContainer, TileLayer, Popup, CircleMarker, Marker, useMap } from "react-leaflet";
+import { divIcon, type Marker as LeafletMarker } from "leaflet";
+import { assignedEventLocations } from "./AmbulanceCard";
+import type { CoordinatorState } from "@/lib/contracts/coordinator";
 import type { TelemetryRecord } from "@/lib/event-pipeline";
-import type { CrisisZone, Plan, Severity, WorldState, ZoneStatus } from "@/lib/types";
-import { zoneStatusLabels } from "./shared";
+import type { CrisisZone, Severity } from "@/lib/types";
 
 interface Props {
   zones: CrisisZone[];
-  plan: Plan;
-  world?: WorldState;
+  ambulances?: CoordinatorState["ambulances"]["units"];
+  ambulanceFocus?: { id: string; request: number } | null;
+  onSelectAmbulance?: (id: string) => void;
   /** Telemetry records (SSE); `event.accepted` ones with coordinates are plotted. */
   events?: TelemetryRecord[];
   selectedZoneId: string | null;
   onSelect: (zoneId: string) => void;
-  /** Se avisa una vez si el mapa base no carga ningún tile (sin red). */
+  /** Called once if the base map cannot load any tiles. */
   onTilesUnavailable?: () => void;
 }
 
-// Los trazados de Leaflet (SVG) necesitan colores literales: reflejan --red,
-// --amber y --blue de globals.css.
+// Leaflet SVG paths require literal colors matching the CSS palette.
 const colors = { danger: "#a11b12", warn: "#96490f", info: "#17527f", fire: "#e05638" };
-
-// Carretera A-397 (Ronda - Costa del Sol). Trazado aproximado.
-const a397Coordinates: [number, number][] = [
-  [36.742, -5.165],
-  [36.671, -5.112],
-  [36.601, -5.087],
-  [36.535, -5.032],
-  [36.488, -4.985],
-];
-
-// Carretera alternativa MA-8301 (Jubrique - Peñas Blancas - Estepona). Trazado
-// ilustrativo: une los núcleos de la demo, no sigue la geometría real.
-const ma8301Coordinates: [number, number][] = [
-  [36.565, -5.215],
-  [36.544, -5.234],
-  [36.512, -5.187],
-  [36.427, -5.145],
-];
 
 const severityColors: Record<Severity, string> = {
   low: colors.info,
@@ -104,64 +76,9 @@ function eventPins(records: TelemetryRecord[]): EventPin[] {
 }
 
 const defaultCenter: [number, number] = [36.525, -5.185];
-const fireOrigin: [number, number] = [36.52, -5.14];
 const tilesFailedThreshold = 6;
 
-// Con 22 km/h (viento inicial) el foco mide 2,2 km; cada km/h añade 40 m.
-function fireRadiusMeters(windSpeedKmh: number) {
-  return 1320 + 40 * windSpeedKmh;
-}
-
-function isRoadBlocked(world: WorldState | undefined, road: string) {
-  const wanted = road.toLowerCase();
-  return (world?.blockedRoads ?? []).some((blocked) => blocked.trim().toLowerCase() === wanted);
-}
-
-const statusClasses: Record<ZoneStatus, { badge: string; border: string }> = {
-  critical: { badge: "bg-danger", border: "border-danger" },
-  active: { badge: "bg-fire", border: "border-fire" },
-  watch: { badge: "bg-warn", border: "border-warn" },
-  stable: { badge: "bg-ok", border: "border-ok" },
-};
-
-// El marcador se construye con nodos DOM y textContent: el nombre de la zona
-// viene de la API y no debe interpretarse como HTML.
-function createTacticalIcon(
-  name: string,
-  score: number,
-  rank: number | undefined,
-  status: ZoneStatus,
-  selected: boolean,
-) {
-  const { badge, border } = statusClasses[status];
-  const pill = document.createElement("div");
-  pill.className = [
-    "inline-flex items-center gap-1.5 rounded-full border-[1.5px] bg-ink px-2 py-0.5",
-    "text-[11px] text-white whitespace-nowrap shadow-lg cursor-pointer",
-    "-translate-x-1/2 -translate-y-1/2",
-    selected ? "border-white" : border,
-    status === "critical" || status === "active" ? "animate-pulse" : "",
-  ].join(" ");
-
-  if (rank) {
-    const rankBadge = document.createElement("span");
-    rankBadge.className = `${badge} inline-flex h-[15px] w-[15px] items-center justify-center rounded-full text-[10px] font-bold text-white`;
-    rankBadge.textContent = String(rank);
-    pill.appendChild(rankBadge);
-  }
-  const label = document.createElement("span");
-  label.className = "font-semibold";
-  label.textContent = name;
-  const value = document.createElement("span");
-  value.className = "text-[10px] opacity-80";
-  value.textContent = String(score);
-  pill.append(label, value);
-
-  return L.divIcon({ html: pill, className: "", iconSize: [0, 0], iconAnchor: [0, 0] });
-}
-
-// Sólo se vuelve a centrar al elegir otra zona, no en cada sondeo del estado:
-// si dependiera del objeto zona, el mapa saltaría mientras la persona lo mueve.
+// Recenter only when the selected coordinates change.
 function FlyToSelected({ lat, lng }: { lat: number | undefined; lng: number | undefined }) {
   const map = useMap();
   useEffect(() => {
@@ -171,86 +88,33 @@ function FlyToSelected({ lat, lng }: { lat: number | undefined; lng: number | un
   return null;
 }
 
-interface ZoneMarkerProps {
-  zone: CrisisZone;
-  score: number;
-  rank: number | undefined;
-  selected: boolean;
-  onSelect: (zoneId: string) => void;
-}
-
-function ZoneMarker({ zone, score, rank, selected, onSelect }: ZoneMarkerProps) {
-  const icon = useMemo(
-    () => createTacticalIcon(zone.name, score, rank, zone.status, selected),
-    [zone.name, score, rank, zone.status, selected],
-  );
-  const title = `${zone.name}. Status ${zoneStatusLabels[zone.status]}. Score ${score}${
-    rank ? `. Priority number ${rank}` : ""
-  }`;
-
-  return (
-    <Marker
-      position={[zone.coordinates.lat, zone.coordinates.lng]}
-      icon={icon}
-      title={title}
-      eventHandlers={{ click: () => onSelect(zone.id) }}
-    >
-      <Popup>
-        <div className="p-1 min-w-[170px] text-[12px] font-sans">
-          <div className="flex items-center justify-between gap-2 border-b border-neutral-200 pb-1 mb-1">
-            <b className="text-ink text-[13px]">{zone.name}</b>
-            <span className="text-[11px] font-semibold text-blueprint-mid">
-              {zoneStatusLabels[zone.status]}
-            </span>
-          </div>
-          <p className="text-neutral-600 mb-1">
-            Population at risk: <b>{zone.populationAtRisk.toLocaleString("en-US")}</b>
-          </p>
-          <p className="text-neutral-600 mb-1">
-            Risk score: <b>{score}</b>
-            {rank ? ` (Priority #${rank})` : ""}
-          </p>
-          <button
-            type="button"
-            className="mt-2 w-full bg-blueprint-dark text-white py-1 rounded-[6px] text-[11px] font-semibold hover:bg-blueprint-dark/90 transition-colors"
-            onClick={() => onSelect(zone.id)}
-          >
-            View zone details
-          </button>
-        </div>
-      </Popup>
-    </Marker>
-  );
-}
-
 export default function LeafletMap({
   zones,
-  plan,
-  world,
   events = [],
+  ambulances = [],
+  ambulanceFocus,
+  onSelectAmbulance,
   selectedZoneId,
-  onSelect,
   onTilesUnavailable,
 }: Props) {
   const tiles = useRef({ loaded: 0, failed: 0, reported: false });
-  const rankByZone = new Map(
-    plan.priorities.map((priority, index) => [priority.zoneId, index + 1]),
-  );
+  const locations = assignedEventLocations(events);
+  const groups = new Map<
+    string,
+    { position: [number, number]; units: { id: string; title: string }[] }
+  >();
+  for (const unit of ambulances) {
+    const location = unit.eventId ? locations.get(unit.eventId) : undefined;
+    if (unit.status !== "assigned" || !location) continue;
+    const key = location.position.join(",");
+    const group = groups.get(key) ?? { position: location.position, units: [] };
+    group.units.push({ id: unit.id, title: location.title });
+    groups.set(key, group);
+  }
   const selectedZone = zones.find((zone) => zone.id === selectedZoneId);
-  const a397Blocked = isRoadBlocked(world, "A-397");
-  const ma8301Blocked = isRoadBlocked(world, "MA-8301");
 
   return (
     <div className="relative w-full h-[480px] rounded-[16px] overflow-hidden border border-line shadow-xs">
-      <div className="absolute top-3 left-3 z-[1000] flex items-center gap-2 bg-ink/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-neutral-700 text-white text-[12px] font-medium pointer-events-none">
-        <span className="w-2 h-2 rounded-full bg-danger animate-ping inline-block" />
-        <span>Sierra Bermeja · Tactical Map</span>
-      </div>
-      <div className="absolute bottom-6 left-3 z-[1000] rounded-full bg-ink/80 px-2.5 py-1 text-[11px] text-neutral-200 pointer-events-none">
-        {world ? `Wind ${world.windDirection} · ${world.windSpeedKmh} km/h · ` : ""}
-        fire origin and routes illustrative (demo)
-      </div>
-
       <MapContainer
         center={defaultCenter}
         zoom={11}
@@ -278,63 +142,6 @@ export default function LeafletMap({
 
         <FlyToSelected lat={selectedZone?.coordinates.lat} lng={selectedZone?.coordinates.lng} />
 
-        {/* Fire origin: radius grows with wind speed. */}
-        <Circle
-          center={fireOrigin}
-          radius={fireRadiusMeters(world?.windSpeedKmh ?? 22)}
-          pathOptions={{
-            color: colors.danger,
-            fillColor: colors.fire,
-            fillOpacity: 0.22,
-            weight: 1.5,
-            dashArray: "4, 6",
-          }}
-        />
-
-        <Polyline
-          positions={a397Coordinates}
-          pathOptions={
-            a397Blocked
-              ? { color: colors.danger, weight: 5, opacity: 0.95 }
-              : { color: colors.warn, weight: 3, dashArray: "6, 8", opacity: 0.9 }
-          }
-        >
-          <Popup>
-            <div className="p-1 text-[12px] font-sans">
-              <b className="text-danger">Road A-397 (Ronda - Coast)</b>
-              <p className="text-neutral-700 mt-1">
-                {a397Blocked
-                  ? "CLOSED. The plan cannot rely on this route."
-                  : "Open. Priority evacuation corridor, monitored for smoke risk."}
-              </p>
-              <p className="text-neutral-500 mt-1">Approximate route.</p>
-            </div>
-          </Popup>
-        </Polyline>
-
-        <Polyline
-          positions={ma8301Coordinates}
-          pathOptions={
-            ma8301Blocked
-              ? { color: colors.danger, weight: 4, opacity: 0.9 }
-              : { color: colors.info, weight: a397Blocked ? 4 : 2, opacity: a397Blocked ? 1 : 0.7 }
-          }
-        >
-          <Popup>
-            <div className="p-1 text-[12px] font-sans">
-              <b className="text-info">Road MA-8301</b>
-              <p className="text-neutral-700 mt-1">
-                {ma8301Blocked
-                  ? "CLOSED."
-                  : a397Blocked
-                    ? "Active alternate route via Jubrique and Peñas Blancas."
-                    : "Alternate route via Jubrique and Peñas Blancas."}
-              </p>
-              <p className="text-neutral-500 mt-1">Illustrative route.</p>
-            </div>
-          </Popup>
-        </Polyline>
-
         {eventPins(events).map((pin) => (
           <CircleMarker
             key={pin.id}
@@ -358,26 +165,70 @@ export default function LeafletMap({
                 {pin.description ? (
                   <p className="text-neutral-500 mt-1">{pin.description}</p>
                 ) : null}
-                <p className="text-neutral-500 mt-1">Live event (SSE)</p>
               </div>
             </Popup>
           </CircleMarker>
         ))}
-
-        {zones.map((zone) => {
-          const priority = plan.priorities.find((candidate) => candidate.zoneId === zone.id);
-          return (
-            <ZoneMarker
-              key={zone.id}
-              zone={zone}
-              score={priority?.score ?? zone.riskScore}
-              rank={rankByZone.get(zone.id)}
-              selected={selectedZoneId === zone.id}
-              onSelect={onSelect}
-            />
-          );
-        })}
+        {[...groups.entries()].map(([key, group]) => (
+          <AmbulanceMarker
+            key={key}
+            group={group}
+            focus={ambulanceFocus}
+            onSelect={onSelectAmbulance}
+          />
+        ))}
       </MapContainer>
     </div>
+  );
+}
+
+function AmbulanceMarker({
+  group,
+  focus,
+  onSelect,
+}: {
+  group: { position: [number, number]; units: { id: string; title: string }[] };
+  focus?: { id: string; request: number } | null;
+  onSelect?: (id: string) => void;
+}) {
+  const map = useMap();
+  const marker = useRef<LeafletMarker>(null);
+  const selected = group.units.some((unit) => unit.id === focus?.id);
+  const [lat, lng] = group.position;
+  useEffect(() => {
+    if (!selected) return;
+    map.stop();
+    map.setView([lat, lng], Math.max(map.getZoom(), 15), { animate: false });
+    marker.current?.openPopup();
+  }, [selected, focus?.request, lat, lng, map]);
+  const icon = divIcon({
+    className: "",
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+    popupAnchor: [0, -40],
+    html: `<div style="position:relative;display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:${selected ? "#1d4ed8" : "#fff"};color:${selected ? "#fff" : "#1d4ed8"};border:2px solid #1d4ed8;border-radius:12px;box-shadow:0 2px 8px #0003"><svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 10H6m2-2v4M3 17V5h11v12M14 9h4l3 4v4h-3M7 17h7M17 10v3h4"/><circle cx="5" cy="17" r="2"/><circle cx="16" cy="17" r="2"/></svg>${group.units.length > 1 ? `<span style="position:absolute;right:-6px;top:-6px;background:#1d4ed8;color:white;border-radius:99px;padding:1px 5px;font-size:11px">${group.units.length}</span>` : ""}</div>`,
+  });
+  return (
+    <Marker
+      ref={marker}
+      position={group.position}
+      icon={icon}
+      zIndexOffset={selected ? 1100 : 1000}
+      title={group.units.map((unit) => unit.id).join(", ")}
+      alt="Assigned ambulance"
+      eventHandlers={{ click: () => onSelect?.(group.units[0].id) }}
+    >
+      <Popup autoPan={false}>
+        <div className="text-xs">
+          {group.units.map((unit) => (
+            <div key={unit.id} className="mb-2">
+              <strong>{unit.id}</strong>
+              <p>{unit.title}</p>
+            </div>
+          ))}
+          <p className="text-neutral-500">Assigned report location · not vehicle GPS</p>
+        </div>
+      </Popup>
+    </Marker>
   );
 }

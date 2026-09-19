@@ -17,3 +17,13 @@ export function authorizePipeline(request: Request): Response | undefined {
     return Response.json({ error: "Unauthorized", code: "no_autorizado" }, { status: 401 });
   }
 }
+
+/** Local dashboard reads may use the browser's same-origin context, never a client token. */
+export function authorizeDashboardRead(request: Request): Response | undefined {
+  if (
+    process.env.NODE_ENV === "development" &&
+    request.headers.get("sec-fetch-site") === "same-origin"
+  )
+    return;
+  return authorizePipeline(request);
+}

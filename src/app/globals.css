@@ -2131,3 +2131,16 @@ button.active {
   align-items: start;
   gap: 1rem;
 }
+
+/* Summary cards stay independent of the legacy dashboard grid rules. */
+.coordinator-cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 1rem;
+  align-items: start;
+}
+@media (max-width: 700px) {
+  .coordinator-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

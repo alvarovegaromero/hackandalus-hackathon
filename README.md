@@ -8,7 +8,7 @@ These are mandatory implementation references under [PROJECT.md](PROJECT.md).
 
 The backend implements [global coordinator state v2](docs/coordinator-state-contract.md):
 GET /api/state exposes the plan, priorities and ten individual ambulances. Run
-npm run coordinator:work alongside the app. Allocations persist in Supabase;
+npm run dev alongside the app. Allocations persist in Supabase;
 release and reassignment are disabled. Frontend integration is assigned separately:
 [input/output examples and handoff](docs/coordinator-frontend-integration.md).
 
@@ -387,8 +387,13 @@ MIT. See [LICENSE](LICENSE).
 ## Global coordinator v2
 
 Apply supabase/migrations/202609190005_global_coordinator.sql after the inventory migration.
-Run npm run dev and npm run coordinator:work in separate terminals (Node 24).
-The worker consumes persisted events and updates the global plan every five seconds
-when active. GET /api/state is read-only; release is disabled.
+Apply migrations 006–008 next, then run `npm run dev` (Node 24).
+Next.js processes persisted reports after intake and groups accepted reports for
+two seconds before planning. GET /api/state is read-only; release is disabled.
 See [the v2 contract](docs/coordinator-state-contract.md).
 Manual scenarios: npm run coordinator:try.
+
+The coordinator now runs inside Next.js after report intake; no separate worker
+terminal is needed. Stop any old coordinator worker before trying this version.
+Jev continues filtering during LLM calls. See
+[frontend integration](docs/coordinator-frontend-integration.md) for current limits.
