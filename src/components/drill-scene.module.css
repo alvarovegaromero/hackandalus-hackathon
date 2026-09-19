@@ -2,7 +2,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   height: auto;
-  background: var(--ink);
+  background: var(--deep);
 }
 
 .stage {

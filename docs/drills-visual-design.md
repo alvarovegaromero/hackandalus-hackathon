@@ -50,14 +50,21 @@ Numerals and timeline marks express actual recorded states, never new claims.
 
 ## Tokens and hierarchy
 
-| Token      | Value     | Role                                                   |
-| ---------- | --------- | ------------------------------------------------------ |
-| Ink        | `#131720` | Navigation, viewport frame, primary text               |
-| Paper      | `#f4f2ec` | Working surface                                        |
-| Panel      | `#fdfcf8` | Form, replay and table surfaces                        |
-| Emerald    | `#07b37c` | Primary actions with ink text                          |
-| Mint       | `#a7f3d0` | Dark-surface focus, running state and camera selection |
-| Deep green | `#006747` | Links, decision marks and light-surface emphasis       |
+The drills page inherits the dashboard tokens from
+`src/app/(console)/dashboard-theme.css`, so both console routes share one dark theme.
+`drills.css` only defines aliases on `.drills-shell`:
+
+| Alias                         | Value                                  | Role                                       |
+| ----------------------------- | -------------------------------------- | ------------------------------------------ |
+| `--deep`                      | `#0e1219`                              | Viewport frame and 3D stage surround       |
+| `--green`, `--drills-emerald` | `--focus`                              | Primary actions, selection, decision marks |
+| `--drills-mint`               | `#a7f3d0`                              | Running state and camera selection         |
+| `--red`, `--amber`, `--blue`  | `--critical`, `--high`, `--running`    | Errors, warnings, earthquake choice        |
+| `*-soft`                      | 14-16% `color-mix` of the matching hue | Tinted callout backgrounds                 |
+
+Scoped `:where()` element defaults restore button, input and select styling
+that the console's Tailwind preflight resets. Both routes share the
+`ConsoleNav` tabs (Live operations / Drills) in their header.
 
 The landing's monospace stack (`IBM Plex Mono`, `JetBrains Mono`,
 `SFMono-Regular`, Consolas, `Liberation Mono`, monospace) supplies medium-weight
@@ -78,8 +85,7 @@ unchanged.
 
 ## Accessibility and preserved behavior
 
-- Light-surface focus uses a 3px deep-green outline; ink navigation and cinema
-  controls use mint. Sector focus is inset to avoid viewport clipping.
+- Focus uses a 3px brand-green outline; cinema controls use mint. Sector focus is inset to avoid viewport clipping.
 - Form borders use a stronger neutral than decorative separators. Buttons have
   explicit hover and disabled states. Inputs and textareas retain native behavior.
 - Timeline decisions have solid marks and events have hollow marks/dashed rules.

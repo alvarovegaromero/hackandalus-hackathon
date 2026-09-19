@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import Link from "next/link";
+import ConsoleNav from "@/components/console-nav";
+import { FaroIcon, FaroWordmark } from "@/components/landing/logo";
 import {
-  ArrowLeft,
   ArrowRight,
-  Box,
   Download,
   Flame,
   Pause,
@@ -303,12 +302,12 @@ export default function EmergencyDrills() {
   return (
     <main className="drills-shell">
       <header className="drills-nav">
-        <Link href="/dashboard" prefetch={false}>
-          <ArrowLeft size={16} /> Far0 command centre
-        </Link>
-        <span>
-          <Box size={16} /> Training workspace
+        <span className="drills-brand">
+          <FaroIcon className="h-6 w-6" gradientId="drills-brand" />
+          <FaroWordmark className="h-4 w-auto" />
+          <span className="sr-only">FARO</span>
         </span>
+        <ConsoleNav current="drills" />
         <span className="drills-simulation">Simulation only · no live dispatch</span>
       </header>
       <div className="drills-heading">

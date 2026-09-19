@@ -1,6 +1,6 @@
 # Wildfire drills
 
-Open **Wildfire drills** in the dashboard header, or visit `/dashboard/drills`.
+Open the **Drills** tab in the console header, or visit `/dashboard/drills`.
 This standalone training workspace rehearses wildfire decisions
 without contacting operational APIs or triggering HappyRobot, calls or alerts.
 No credentials or backend worker are required for drills.
