@@ -1,4 +1,4 @@
-// OWNER: input pipeline and telemetry.
+// OWNER: event ingestion and telemetry pipeline.
 import { randomUUID } from "node:crypto";
 import type { IncomingEventPayload } from "./types";
 
