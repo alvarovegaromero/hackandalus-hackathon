@@ -76,7 +76,10 @@ invented values. Track follow-up work in TASKS.md.
   while the root `app/` exists; covered by tests).
 - `src/lib/domain.ts`: shared Zod schemas and domain types.
 - `src/lib/scenario`, `src/lib/signals`: scenario engine, signal model and the
-  signal-to-event bridge used by the demo.
+  scenario adapter to the shared triage envelope (plus the legacy
+  signal-to-event bridge used by the demo).
+- `lib/report.ts`: `NormalizedReport`, the envelope every channel adapter emits
+  before triage (see `docs/input-contract.md`).
 - `src/lib/ingest.ts`, `src/lib/ingest-server.ts`: batch event ingestion
   (validation, dedup, persistence, workflow start).
 - `src/lib/agents`: AI SDK coordinator (model configured through environment).
@@ -90,7 +93,7 @@ invented values. Track follow-up work in TASKS.md.
   `docs/data-model.md` the Supabase model, `docs/input-architecture.md` batch
   event ingestion (current route split and migration),
   `docs/input-contract.md` the confirmed simple report/normalization contract
-  (implementation pending; synchronous receipt, asynchronous Workflow processing),
+  (envelope and scenario adapter implemented; synchronous receipt, asynchronous Workflow processing),
   `docs/dashboard-design-guide.md`, `docs/code-index.md` and
   `docs/agent-skills.md` the presentation, Graft and skills guides.
 - `.github/`: pull request and issue templates. No GitHub Actions workflows:

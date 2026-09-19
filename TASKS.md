@@ -138,7 +138,9 @@ ejecución robusta, aprendizaje y ensayo) están en el documento fuente.
       [docs/input-contract.md](docs/input-contract.md): text, optional location,
       trusted metadata, synchronous receipt and asynchronous interpretation.
 - [x] Identify compatibility work for Luis's scenario bridge and batch ingestion.
-- [ ] Implement validators and adapters, preserving scenario evidence and retry IDs.
+- [x] Envelope schema (`lib/report.ts`) and scenario adapter (`signalToReport`),
+      preserving scenario evidence and retry IDs.
+- [ ] Public report validator and remaining channel adapters.
 - [ ] Reconcile persistence and scheduling recovery, migrate the workflow consumer,
       and expose intake in root `app/` as part of route-tree consolidation.
 - [ ] Add a reporting form with optional GPS, incident pin or textual location.
@@ -157,4 +159,4 @@ ejecución robusta, aprendizaje y ensayo) están en el documento fuente.
 - [docs/input-architecture.md](docs/input-architecture.md): current ingestion,
   route-tree limitations and migration milestones.
 - [docs/input-contract.md](docs/input-contract.md): confirmed report payload and
-  normalization contract; implementation remains pending.
+  normalization contract; envelope and scenario adapter implemented.

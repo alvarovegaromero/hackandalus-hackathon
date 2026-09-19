@@ -20,9 +20,11 @@ function resolveAlias(source: string): string | null {
 
 export default defineConfig({
   test: { environment: "node" },
-  resolve: {
-    alias: [
-      { find: /^@\/(.*)$/, replacement: "$1", customResolver: (source) => resolveAlias(source) },
-    ],
-  },
+  plugins: [
+    {
+      name: "root-then-src-alias",
+      enforce: "pre",
+      resolveId: (source) => (source.startsWith("@/") ? resolveAlias(source.slice(2)) : null),
+    },
+  ],
 });

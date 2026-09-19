@@ -32,15 +32,15 @@ part of the confirmed stack.
 
 Two application trees coexist. Next.js serves root `app/` and ignores `src/app/`.
 
-| Path                                    | Current behavior                                                                                                                                     |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/api/events/route.ts`               | Active single-event endpoint using `lib/validation.ts`. Calls `addEvent` synchronously; responds 201 for new events or 200 for duplicates.           |
-| `lib/store.ts`                          | In-memory state, optional local persistence, five-minute duplicate lookup, occurrence increments and synchronous replanning.                         |
-| `src/app/api/events/route.ts`           | Unserved batch endpoint, bearer `CRISIS_API_TOKEN`, single event / array / `{ events }`, maximum 50.                                                 |
-| `src/lib/ingest.ts`                     | Validation, event-ID deduplication and bounded workflow starts; reports accepted, duplicates, rejected and errors.                                   |
-| `src/lib/ingest-server.ts`              | Supabase persistence when configured, otherwise process-local deduplication; `?wait=1` waits for workflow results.                                   |
-| `src/app/api/scenario/signals/route.ts` | Unserved demo bridge; validates simulator signals and calls batch ingestion with waiting enabled. Production requires `SCENARIO_AGENT_ENABLED=true`. |
-| `src/lib/signals/to-event.ts`           | Simulator adapter with stable event IDs, flattened text/reading summaries and a fixed medium severity.                                               |
+| Path                                    | Current behavior                                                                                                                                       |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `app/api/events/route.ts`               | Active single-event endpoint using `lib/validation.ts`. Calls `addEvent` synchronously; responds 201 for new events or 200 for duplicates.             |
+| `lib/store.ts`                          | In-memory state, optional local persistence, five-minute duplicate lookup, occurrence increments and synchronous replanning.                           |
+| `src/app/api/events/route.ts`           | Unserved batch endpoint, bearer `CRISIS_API_TOKEN`, single event / array / `{ events }`, maximum 50.                                                   |
+| `src/lib/ingest.ts`                     | Validation, event-ID deduplication and bounded workflow starts; reports accepted, duplicates, rejected and errors.                                     |
+| `src/lib/ingest-server.ts`              | Supabase persistence when configured, otherwise process-local deduplication; `?wait=1` waits for workflow results.                                     |
+| `src/app/api/scenario/signals/route.ts` | Unserved demo bridge; validates simulator signals and calls batch ingestion with waiting enabled. Production requires `SCENARIO_AGENT_ENABLED=true`.   |
+| `src/lib/signals/to-event.ts`           | Simulator adapter: `signalToReport` emits the `NormalizedReport` envelope plus the original signal; legacy `signalToEvent` (same ID) feeds the bridge. |
 
 Luis's batch implementation is reusable orchestration, but is not the served
 endpoint or the final report schema. The exact adaptation plan is in
@@ -63,7 +63,8 @@ implementation. A stored report alone is not proof of scheduled work.
 ## Delivery milestones
 
 1. **Contract and normalization:** the decision is fixed in
-   [input-contract.md](input-contract.md); validators and adapters are next.
+   [input-contract.md](input-contract.md); the envelope schema and scenario
+   adapter exist, the public validator and other adapters are next.
 2. **Durable ingestion:** reconcile the target data model, migrate the workflow
    input and expose the route under root `app/`. Preserve existing callers until
    migrated. Do not describe in-memory acceptance as durable.
