@@ -3,7 +3,7 @@
 Confirmed on 2026-09-19. This is the target contract for report intake and the
 normalization boundary before triage. It supersedes the earlier requirement
 that a reporter supply `title`, `body`, `category`, `severity`, or confidence.
-The envelope schema (`lib/report.ts`) and the scenario adapter are implemented;
+The envelope schema (`src/lib/report.ts`) and the scenario adapter are implemented;
 public validation, intake and the route are not yet exposed by the running application.
 
 ## Reporter experience
@@ -155,7 +155,7 @@ retry identity and existing tests while migrating the contracts.
   text and reading variants do not need to become the public form contract.
 - Done: `signalToReport` in `src/lib/signals/to-event.ts` returns
   `{ report, evidence }`, where `report` is a `NormalizedReport` validated by
-  `normalizedReportSchema` (`lib/report.ts`) and `evidence` is the original
+  `normalizedReportSchema` (`src/lib/report.ts`) and `evidence` is the original
   signal. It keeps the stable identity based on crisis and signal ID (the same
   `id` the legacy `signalToEvent` produces), sets `source: "scenario"`, the
   signal channel as `channel` and the signal ID as `externalRef`, maps
@@ -173,20 +173,19 @@ retry identity and existing tests while migrating the contracts.
   `/api/events` contract until its callers have migrated; do not silently change
   its meaning or route public reports through the development-only demo bridge.
 
-The running application serves root `app/`. The routes in `src/app/`, including
-Luis's batch endpoint and scenario bridge, are currently not served. Route-tree
-consolidation is required to make this path available; it is not caused by this
-contract decision.
+The running application now serves `src/app/`. The old batch endpoint and
+scenario bridge routes were retired during consolidation; their reusable modules
+remain. Integrate them into the served API after reconciling the report contract.
 
 ## First implementation slice
 
-- [x] Add the envelope schema (`lib/report.ts`) and the scenario adapter.
+- [x] Add the envelope schema (`src/lib/report.ts`) and the scenario adapter.
 - [ ] Add the public report validator and the remaining channel adapters.
 - [ ] Test text-only reports, textual/GPS locations, coordinate pairing/ranges,
       reporter vs incident semantics, unknown fields and missing extraction.
 - [x] Test scenario retry identity, structured readings and no ground-truth leak.
 - [ ] Resolve durable persistence and scheduling recovery; migrate the workflow
-      input and expose the new route under root `app/`.
+      input and expose the new route under `src/app/`.
 - [ ] Test mixed batches, duplicate deliveries, scheduling failure and recovery.
 - [ ] Add the reporting form: text, optional device location or incident pin,
       textual place alternative, and a receipt distinct from triage results.

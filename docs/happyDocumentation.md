@@ -109,7 +109,7 @@ HappyRobot public docs describe the platform as programmable through:
 - Workflows as code.
 - Context REST API and MCP access for reading/writing the Context layer.
 
-The exact API surface is not available without the restricted docs, so the current local integration in `lib/happyrobot.ts` should be treated as a provisional adapter until private docs confirm the real endpoint and payload.
+The exact API surface is not available without the restricted docs, so the current local integration in `src/lib/happyrobot.ts` should be treated as a provisional adapter until private docs confirm the real endpoint and payload.
 
 ## Recommended Architecture For This Repo
 
@@ -143,7 +143,7 @@ Recommended webhook-first flow:
 2. The app updates situation state and recomputes priorities.
 3. The app creates one or more proposed actions.
 4. A human approves a high-impact action in the UI.
-5. `lib/happyrobot.ts` sends the approved action to HappyRobot.
+5. `src/lib/happyrobot.ts` sends the approved action to HappyRobot.
 6. HappyRobot executes the channel-specific workflow.
 7. HappyRobot posts status callbacks or newly gathered information back to this app.
 8. The app records the result and replans if the new data changes priorities.

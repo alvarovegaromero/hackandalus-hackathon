@@ -88,7 +88,7 @@ it degrades to simulation** and records the reason, which is displayed in the UI
 The resulting external ID carries the prefix `mock-no-aprobado-`, ensuring
 neither the UI nor logs can present it as a live execution.
 
-**Current seed state:** all contacts in `lib/seed.ts` are marked with `demoSafe: false`.
+**Current seed state:** all contacts in `src/lib/seed.ts` are marked with `demoSafe: false`.
 This is the correct default: in `happyrobot` mode, the system will not call anyone
 until someone explicitly marks whom to contact.
 

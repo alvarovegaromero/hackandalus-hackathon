@@ -19,8 +19,14 @@ sees is in English; proper geographic and agency names such as Sierra Bermeja
 and 112 Andalucía remain as proper nouns.
 The product vision, scenario, demo script and build phases live in
 `HackSpain 2026 · Project Source of Truth.md` at the repository root; `thoughts/`
-holds the data model proposal, the inventory of features built on the
-`feat/crisis-command-center` branch, and the open decisions.
+holds the inventory of features built on the
+`feat/crisis-command-center` branch and the open decisions. The canonical data
+model proposal is in `docs/data-model.md`.
+
+Dashboard status: **SKETCH**. The served UI is an exploratory prototype, not an
+approved product design or an operational emergency response system. Preserve
+the visible prototype notice when editing the interface. Some controls are not
+connected; the sketch must not be treated as the target architecture.
 
 Status: the codebase is unified under the standard Next.js `src/` directory
 (`src/app/`, `src/components/`, `src/lib/`, and `tests/`): operator panel,
@@ -49,7 +55,7 @@ invented values. Track follow-up work in TASKS.md.
 - `CHALLENGE.md`: authoritative challenge requirements and scoring criteria.
 - `HackSpain 2026 · Project Source of Truth.md`: product vision, scenario,
   demo script, build phases and risks.
-- `thoughts/`: design context: data model proposal, feature inventory to port,
+- `thoughts/`: design context: historical feature inventory to port,
   open and confirmed decisions.
 - `TASKS.md`: completed scaffolding checklist and deferred implementation tasks.
 - `PROJECT.md`: authoritative project context and shared development instructions.
@@ -83,11 +89,12 @@ invented values. Track follow-up work in TASKS.md.
 - `src/lib/supabase`: server/browser clients and Realtime subscription helper.
 - `src/lib/integrations`: HappyRobot boundary, explicitly blocked until implemented.
 - `supabase/migrations`: initial PostgreSQL schema with deny-by-default RLS.
+- `docs/README.md`: documentation index and implementation status.
 - `docs/`: design and implementation guides. `docs/architecture.md` explains the
   command-center decisions, `docs/security.md` its credential and demo-recipient
   rules, `docs/happyDocumentation.md` the unverified HappyRobot contract,
   `docs/data-model.md` the Supabase model, `docs/input-architecture.md` batch
-  event ingestion (current route split and migration),
+  event ingestion (current endpoint and remaining backend integration),
   `docs/input-contract.md` the confirmed simple report/normalization contract
   (envelope and scenario adapter implemented; synchronous receipt, asynchronous Workflow processing),
   `docs/dashboard-design-guide.md`, `docs/code-index.md` and
@@ -99,7 +106,7 @@ invented values. Track follow-up work in TASKS.md.
 - `.husky`, `scripts`, `lint-staged.config.mjs`: local quality and branch/credential guards;
   `scripts/hooks.test.ts` covers the guards. `vitest.config.mts` runs every
   `*.test.ts` in `tests/`, `src/` and `scripts/` and resolves `@/` like tsconfig
-  (repository root first, then `src/`).
+  (`@/` resolves to `src/`).
 - `.secretlintrc.json`: Secretlint recommended rules; `.secretlintignore` excludes generated output.
 - `scripts/setup-env.mjs`: creates an ignored local environment template without overwriting files.
 
