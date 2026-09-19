@@ -1,5 +1,10 @@
 # Integration contracts v0 · review draft
 
+> Runtime update: Vercel Workflow and its unused execution scaffold have been
+> removed. Workflow-based execution below is an earlier proposal, not an installed
+> dependency or an agreed requirement. Background scheduling is TBD. HappyRobot
+> workflows are separate and remain in scope.
+
 The agreed [initial POC](poc.md) defines the first delivery scope and P0 contract
 work. Use [POC module contracts v1](poc-contracts.md) for the initial package
 interfaces and existing input/SSE reuse. This broader draft is reference

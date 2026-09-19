@@ -105,7 +105,7 @@ In the definitions below, application IDs are UUIDs and timestamps are ISO UTC.
 `eventId` is the canonical ingress/report ID. `runId` is the scenario/crisis
 session; `executionId` identifies one logical processing execution for a report.
 Transport retries preserve execution identity; an explicit reassessment creates
-a new execution. Provider attempt IDs and Workflow runtime IDs are separate.
+a new execution. Provider attempt IDs and scheduler runtime IDs are separate.
 
 ```ts
 type Context = {

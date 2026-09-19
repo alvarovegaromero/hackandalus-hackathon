@@ -1,5 +1,10 @@
 # Architecture review · FARO
 
+> Runtime update: Vercel Workflow and its unused execution scaffold have been
+> removed. Workflow-based execution below is an earlier proposal, not an installed
+> dependency or an agreed requirement. Background scheduling is TBD. HappyRobot
+> workflows are separate and remain in scope.
+
 **Initial delivery update, 2026-09-19:** follow the agreed [POC](poc.md) and its
 P0–P5 packages. The diagrams, A1–A7 review and larger work packages below are
 broader product proposals, not mandatory POC scope. In particular, the POC uses
@@ -66,8 +71,8 @@ flowchart LR
 ```
 
 Source checkpoints: [event route](../src/app/api/events/route.ts),
-[store](../src/lib/store.ts), [batch ingest](../src/lib/ingest-server.ts),
-[workflow](../src/workflows/crisis.ts), [blocked integration](../src/lib/integrations/happyrobot.ts),
+[store](../src/lib/store.ts), [batch ingest](../src/lib/ingest.ts),
+[blocked integration](../src/lib/integrations/happyrobot.ts),
 [report schema](../src/lib/report.ts). `CrisisEvent.incidentId`, sketch zone IDs
 and `NormalizedReport.runId` are different contracts; do not alias them silently.
 
@@ -205,7 +210,7 @@ Suggested team roles follow the product vision; confirm availability separately.
 | Data / state                        | Durable repository, audit, revisions, scheduling recovery, authorization         | Report/Twin/plan/action ports                 | Restart recovery; concurrent writers; unauthorized run; no double reservation                      |
 | Triage / planning                   | Assessment, correlation, perceived Twin updates, priority/allocation/assumptions | NormalizedReport and snapshot fixtures        | Five outcomes; unknown data; impact separate from confidence; stale-plan rejection                 |
 | HappyRobot / execution              | Provider adapter, callback validation, action waits and result mapping           | Dispatch and outcome fixtures                 | Duplicate/late callback; uncertain timeout; real provider contract proof with authorized recipient |
-| Frontend                            | Receipt, perceived snapshot, action feed and revision-bound commands             | Snapshot/command fixtures                     | Receipt differs from completion; unknowns visible; paused/stale command behavior; SKETCH notice    |
+| Frontend                            | Receipt, perceived snapshot, action feed and revision-bound commands             | Snapshot/command fixtures                     | Receipt differs from completion; unknowns visible; paused/stale command behavior                   |
 
 The shared schema owner integrates changes to `src/lib/contracts/` (proposed
 folder), repository interfaces and route wiring. Other work packages use those

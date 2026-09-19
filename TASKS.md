@@ -1,5 +1,11 @@
 # Project Tasks
 
+## Runtime cleanup
+
+- [x] Remove Vercel Workflow, the Next.js plugin, unused execution scaffold and
+      dependency overrides. Keep the legacy generated-route cleanup for existing
+      checkouts. AI SDK and HappyRobot remain; background scheduling is TBD.
+
 ## 24-hour hackathon workflow
 
 - [x] Disable pre-commit and remove tests from automatic check/push/PR validation.
@@ -74,7 +80,7 @@ alternatives, not a requirement to implement both transports.
 - [x] npm, lockfile, and commands for dev, build, lint, typecheck, and tests.
 - [x] Shared event and plan schemas with Zod.
 - [x] Coordinator prepared with Vercel AI SDK and configurable model.
-- [x] Example workflow with persistent steps and token-protected API.
+- [x] Initial durable execution scaffold (subsequently removed; scheduler TBD).
 - [x] Zero-credential command center with event intake and action review;
       obsolete standalone scaffolding dashboard retired.
 - [x] Supabase server and browser clients; Realtime subscription helper.
@@ -84,11 +90,10 @@ alternatives, not a requirement to implement both transports.
 - [x] `.env.example`, README, and agent instructions updated.
 - [x] Initial scaffold validated locally; current checks cover command-center,
       platform and hook suites via `npm run check`.
-- [x] Tested local workflow to completion in simulation, validating 401/400 errors.
+- [x] Historical simulation validation of the now-removed execution scaffold.
 - [x] Reviewed dependencies: clean vulnerability audit after adjustments.
 
-The served dashboard uses the in-memory command-center backend, separate from
-the platform Workflow. Local JSON persistence is optional.
+The served dashboard uses the in-memory command-center backend, without an integrated background agent scheduler. Local JSON persistence is optional.
 The migration is written but unapplied; Supabase clients and the Realtime helper
 are prepared but not connected to the dashboard. Live model calls and real external
 communications have not been tested.
@@ -149,8 +154,7 @@ are in the source document.
 ## Phase 3 · First Connected Vertical
 
 - [x] Batch ingestion with event deduplication (Milestone A in `docs/input-architecture.md`), optional persistence in Supabase.
-- [x] Implement scenario-to-workflow bridge in the platform base; exposing it
-      in the served application remains part of consolidation.
+- [ ] Connect the scenario report adapter to the future agent processor.
 - [ ] Persist plans, actions, and outcomes in Supabase.
 - [x] Prevent duplicate external actions during retries: `src/lib/happyrobot.ts` adapter sends idempotency key per dispatch/attempt and webhook caches processed deliveries.
 - [ ] Integrate history and live resource availability into decisioning.
@@ -166,7 +170,7 @@ are in the source document.
 - [ ] Poll `GET /runs/{run_id}` as a fallback when no callback arrives; today a live action stays `running` until the webhook fires.
 - [ ] Decide the SMS provider for Public Alert and Inbound SMS (Telnyx number is not toll-free; no Twilio credentials).
 - [ ] Run one live dispatch against an approved demo recipient and record the result.
-- [ ] Add waits, retries, and failure recovery to workflow.
+- [ ] Select and implement background execution, waits, retries and recovery.
 - [x] Demonstrate replanning when situation changes mid-execution:
       self-advancing scripts, chaos fault injection, and plan version diffs in command center.
 - [x] Digital twin, initial release: `src/lib/digitalTwin.ts` reconstructs perceived world from signals and measures accuracy against simulated ground truth; displayed in `src/components/DigitalTwinPanel.tsx`.
@@ -196,8 +200,8 @@ Contract and limits: [docs/event-telemetry.md](docs/event-telemetry.md).
 
 ## Repository organization
 
-- [x] Mark the dashboard as SKETCH in its persistent notice, page metadata,
-      developer guidance and design documentation.
+- [x] Document the dashboard prototype status in developer guidance.
+- [x] Remove the visible prototype banner and SKETCH page title at the team's request.
 - [x] Remove unused `src/lib/autonomy.ts`, `src/lib/triage.ts` and their isolated tests;
       preserve the library modules used by the API, UI and report adapter.
 - [ ] Implement and connect calibrated triage and graduated autonomy in the
@@ -229,7 +233,7 @@ Contract and limits: [docs/event-telemetry.md](docs/event-telemetry.md).
 - [x] Envelope schema (`src/lib/report.ts`) and scenario adapter (`signalToReport`),
       preserving scenario evidence and retry IDs.
 - [ ] Public report validator and remaining channel adapters.
-- [ ] Reconcile persistence and scheduling recovery, migrate the workflow consumer,
+- [ ] Reconcile persistence and scheduling recovery, connect the processing consumer,
       and expose report intake in `src/app/`.
 - [ ] Add a reporting form with optional GPS, incident pin or textual location.
 

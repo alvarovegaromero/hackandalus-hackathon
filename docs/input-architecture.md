@@ -46,8 +46,7 @@ were retired; backend module consolidation does not imply integration.
 | `src/lib/signals/process.ts`    | Explicit deterministic interpretation into active `src/lib/types.ts::CrisisEvent`.                                                  |
 | `src/app/api/events/route.ts`   | Legacy interpreted-event input; process-local receipt, telemetry publication and command-center projection.                         |
 | `src/lib/store.ts`              | `addCrisisEvent` is the shared interpreted-Event seam; it updates state, Twin, actions, plan and audit.                             |
-| `src/lib/ingest.ts`             | Reusable batch validation, event-ID deduplication and bounded workflow starts; not called by the active route.                      |
-| `src/lib/ingest-server.ts`      | Reusable Supabase or process-local persistence and optional workflow-result waiting; not called by the active route.                |
+| `src/lib/ingest.ts`             | Reusable batch validation, event-ID deduplication and bounded processing starts; not called by the active route.                    |
 | `src/lib/signals/to-event.ts`   | `signalToReport` emits the shared envelope and preserves scenario evidence; legacy `signalToEvent` remains available for migration. |
 
 Luis's batch implementation is reusable orchestration, but is not the served

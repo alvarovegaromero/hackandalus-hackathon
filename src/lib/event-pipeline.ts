@@ -5,7 +5,7 @@ import type { IncomingEventPayload } from "./types";
 export interface TelemetryRecord {
   id: string;
   eventId: string;
-  type: "event.accepted" | "filtering.pending";
+  type: "event.accepted" | "filtering.pending" | "filtering.completed" | "filtering.failed";
   at: string;
   payload: Record<string, unknown>;
 }
@@ -92,11 +92,10 @@ export function acceptIncomingEvent(payload: IncomingEventPayload, id: string = 
   }
 
   const current = state();
-  // TODO: dispatch to the filtering module; its output feeds triage, then LLM.
-  // Pending means no filtering/triage/LLM execution has been claimed or started.
+  // The legacy demo route schedules Jev after the receipt; P3/P4 wiring is separate.
   publish(current, id, "filtering.pending", {
     status: "awaiting_filtering",
-    reason: "Filtering module not connected",
+    reason: "Waiting for Jev relevance filtering",
   });
   console.info(
     JSON.stringify({
@@ -120,4 +119,31 @@ export function readTelemetry(after?: string): { records: TelemetryRecord[]; res
   const index = current.records.findIndex((record) => record.id === after);
   if (index < 0) return { records: structuredClone(current.records.slice(-100)), reset: true };
   return { records: structuredClone(current.records.slice(index + 1, index + 101)), reset: false };
+}
+
+/** Server-owned context for this single-process demo session, not a zone-derived crisis. */
+export function demoRunId() {
+  return state().epoch;
+}
+
+export function publishTelemetry(
+  eventId: string,
+  type: TelemetryRecord["type"],
+  payload: Record<string, unknown>,
+) {
+  const current = state();
+  current.records.push({
+    id: `${current.epoch}:${++current.sequence}`,
+    eventId,
+    type,
+    at: new Date().toISOString(),
+    payload: structuredClone(payload),
+  });
+  current.records = current.records.slice(-TELEMETRY_LIMIT);
+}
+
+/** Reset retained demo events and invalidate old SSE cursors and filter results. */
+export function resetEventPipeline() {
+  globalThis.eventPipelineState = undefined;
+  return demoRunId();
 }

@@ -1,0 +1,288 @@
+[
+  {
+    "title": "Hello, good morning!",
+    "description": "Just saying hello. Have a nice day!"
+  },
+  {
+    "title": "Special offer: buy shoes today",
+    "description": "Visit our shop for a discount on sneakers."
+  },
+  {
+    "title": "Smoke column reported",
+    "category": "fire",
+    "severity": "medium",
+    "confidence": "low",
+    "zoneId": "zone-east",
+    "location": {
+      "latitude": 36.52,
+      "longitude": -5.16,
+      "reference": "reporter"
+    }
+  },
+  {
+    "title": "Pizza recipe request",
+    "description": "Can you share a recipe for homemade pizza dough?"
+  },
+  {
+    "title": "Fire ignition confirmed",
+    "category": "fire",
+    "severity": "high",
+    "zoneId": "zone-east",
+    "location": {
+      "latitude": 36.52,
+      "longitude": -5.14,
+      "description": "Ridge above Genalguacil track",
+      "reference": "incident"
+    }
+  },
+  {
+    "title": "Fire crew dispatched",
+    "category": "operations",
+    "severity": "low",
+    "zoneId": "zone-east",
+    "location": {
+      "latitude": 36.53,
+      "longitude": -5.12,
+      "description": "Forest station staging point",
+      "reference": "incident"
+    }
+  },
+  {
+    "title": "Weekend playlist",
+    "description": "Recommend some jazz songs for my weekend playlist."
+  },
+  {
+    "title": "Wind shift to west",
+    "category": "wind",
+    "severity": "high",
+    "zoneId": "zone-central",
+    "location": {
+      "latitude": 36.5,
+      "longitude": -5.1,
+      "reference": "unknown"
+    }
+  },
+  {
+    "title": "Spot fire ahead of the front",
+    "category": "fire",
+    "severity": "high",
+    "zoneId": "zone-central",
+    "location": {
+      "latitude": 36.548,
+      "longitude": -5.2,
+      "description": "Pine plantation near Jubrique",
+      "reference": "incident"
+    }
+  },
+  {
+    "title": "What is your favorite movie?",
+    "description": "I want to watch a comedy tonight."
+  },
+  {
+    "title": "Heavy smoke on A-397",
+    "category": "smoke",
+    "severity": "medium",
+    "confidence": "medium",
+    "zoneId": "zone-north",
+    "location": {
+      "latitude": 36.601,
+      "longitude": -5.087,
+      "reference": "reporter"
+    }
+  },
+  {
+    "title": "Win a free smartphone",
+    "description": "Enter our giveaway and subscribe to our promotional newsletter."
+  },
+  {
+    "title": "Campsite evacuation started",
+    "category": "evacuation",
+    "severity": "high",
+    "zoneId": "zone-north",
+    "location": {
+      "latitude": 36.567,
+      "longitude": -5.21,
+      "description": "Campsite north entrance",
+      "reference": "incident"
+    }
+  },
+  {
+    "title": "A-397 closed by fire",
+    "category": "road-blocked",
+    "severity": "critical",
+    "zoneId": "zone-north",
+    "location": {
+      "latitude": 36.535,
+      "longitude": -5.032,
+      "description": "A-397 near the Benahavís junction",
+      "reference": "incident"
+    }
+  },
+  {
+    "title": "Football chat",
+    "description": "Who is your favorite football player of all time?"
+  },
+  {
+    "title": "Alternate route MA-8301 open",
+    "category": "road-open",
+    "severity": "low",
+    "zoneId": "zone-central",
+    "location": {
+      "latitude": 36.544,
+      "longitude": -5.234,
+      "description": "MA-8301 at Peñas Blancas",
+      "reference": "incident"
+    }
+  },
+  {
+    "title": "Elderly residents need transport",
+    "category": "medical",
+    "severity": "high",
+    "confidence": "medium",
+    "zoneId": "zone-central",
+    "location": {
+      "latitude": 36.55,
+      "longitude": -5.225,
+      "description": "Care home, Jubrique",
+      "reference": "incident"
+    }
+  },
+  {
+    "title": "Tell me a joke",
+    "description": "Tell me a funny joke about a cat and a keyboard."
+  },
+  {
+    "title": "Power line down",
+    "category": "power-outage",
+    "severity": "high",
+    "zoneId": "zone-east",
+    "location": {
+      "latitude": 36.512,
+      "longitude": -5.187,
+      "description": "Lines along the east slope",
+      "reference": "incident"
+    }
+  },
+  {
+    "title": "Fire front crossing the ridge",
+    "category": "fire",
+    "severity": "critical",
+    "zoneId": "zone-east",
+    "location": {
+      "latitude": 36.505,
+      "longitude": -5.165,
+      "description": "Main ridge, east side",
+      "reference": "incident"
+    }
+  },
+  {
+    "title": "Discount subscription",
+    "description": "Subscribe today for 50% off our movie streaming service."
+  },
+  {
+    "title": "Water tanker running low",
+    "category": "resources",
+    "severity": "medium",
+    "zoneId": "zone-east",
+    "location": {
+      "latitude": 36.528,
+      "longitude": -5.13,
+      "reference": "reporter"
+    }
+  },
+  {
+    "title": "Random typing",
+    "description": "asdf qwerty zxcv blablabla"
+  },
+  {
+    "title": "Houses threatened",
+    "category": "evacuation",
+    "severity": "critical",
+    "zoneId": "zone-south",
+    "location": {
+      "latitude": 36.46,
+      "longitude": -5.15,
+      "description": "Hillside houses above the coast",
+      "reference": "incident"
+    }
+  },
+  {
+    "title": "Ember spotting over the coast road",
+    "category": "fire",
+    "severity": "high",
+    "confidence": "medium",
+    "zoneId": "zone-south",
+    "location": {
+      "latitude": 36.427,
+      "longitude": -5.145,
+      "reference": "unknown"
+    }
+  },
+  {
+    "title": "Shelter capacity 80% full",
+    "category": "shelter",
+    "severity": "medium",
+    "zoneId": "zone-south",
+    "location": {
+      "latitude": 36.44,
+      "longitude": -5.12,
+      "description": "Sports hall shelter",
+      "reference": "incident"
+    }
+  },
+  {
+    "title": "Birthday wishes",
+    "description": "Happy birthday, Alex! Hope you enjoy your cake."
+  },
+  {
+    "title": "Helicopter drop requested",
+    "category": "operations",
+    "severity": "high",
+    "zoneId": "zone-islands",
+    "location": {
+      "latitude": 36.444,
+      "longitude": -5.273,
+      "description": "Reservoir pickup point",
+      "reference": "incident"
+    }
+  },
+  {
+    "title": "Wind gusting to 45 km/h",
+    "category": "wind",
+    "severity": "critical",
+    "zoneId": "zone-islands",
+    "location": {
+      "latitude": 36.45,
+      "longitude": -5.26,
+      "reference": "unknown"
+    }
+  },
+  {
+    "title": "Translate a sentence",
+    "description": "How do you say good afternoon in Italian?"
+  },
+  {
+    "title": "Second smoke column south",
+    "category": "fire",
+    "severity": "high",
+    "confidence": "low",
+    "zoneId": "zone-south",
+    "location": {
+      "latitude": 36.43,
+      "longitude": -5.2,
+      "reference": "reporter"
+    }
+  },
+  {
+    "title": "MA-8301 closed by debris",
+    "category": "road-blocked",
+    "severity": "high",
+    "zoneId": "zone-central",
+    "location": {
+      "latitude": 36.512,
+      "longitude": -5.187,
+      "description": "MA-8301 rockfall",
+      "reference": "incident"
+    }
+  }
+]

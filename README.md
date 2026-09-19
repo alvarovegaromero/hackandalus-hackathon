@@ -22,7 +22,7 @@ scenarios, human-approved actions and the digital twin. Operational state lives
 in server memory with optional local JSON persistence. Authenticated HappyRobot
 inbound reports are durably stored in Supabase before synchronous interpretation.
 
-Reusable Workflow, AI SDK, Supabase, batch ingestion and Sierra Bermeja
+Reusable AI SDK, Supabase, batch ingestion and Sierra Bermeja
 scenario modules also live under `src/`, but are not connected to the served
 command-center flow. The obsolete scaffold UI and duplicate route files have
 been removed. Integrating these modules remains tracked in [TASKS.md](TASKS.md).
@@ -112,9 +112,8 @@ instance without build directory conflicts:
 | `npm run env:setup`                 | Creates `.env.local` from `.env.example` if missing.                |
 | `npm run index:build` / `index:map` | Builds and queries the Graft code index.                            |
 
-`package.json` pins two indirect dependencies of Workflow via `overrides`
-(`nanoid` and `undici`) to patched versions. Check if these remain necessary
-when updating Workflow.
+Vercel Workflow and its Next.js plugin have been removed. Background processing
+and recovery are still pending; AI SDK and SSE do not provide a scheduler.
 
 ## Formatting and Local Hooks
 
@@ -196,20 +195,19 @@ The rationale behind these decisions is detailed in [docs/architecture.md](docs/
 
 ### Platform Base (`src/`)
 
-| Route                                     | Responsibility                                                         |
-| ----------------------------------------- | ---------------------------------------------------------------------- |
-| `src/lib/domain.ts`                       | Zod-validated events and plans                                         |
-| `src/lib/ingest.ts`, `ingest-server.ts`   | Batch event ingestion with deduplication and optional Supabase storage |
-| `src/lib/scenario`, `src/lib/signals`     | Sierra Bermeja scenario engine and signal schemas                      |
-| `src/lib/agents/coordinator.ts`           | Structured planning with Vercel AI SDK                                 |
-| `src/workflows/crisis.ts`                 | Persistent crisis planning workflow                                    |
-| `src/lib/supabase`, `supabase/migrations` | Clients, Realtime subscription, and default-deny RLS schema            |
+| Route                                     | Responsibility                                                     |
+| ----------------------------------------- | ------------------------------------------------------------------ |
+| `src/lib/domain.ts`                       | Zod-validated events and plans                                     |
+| `src/lib/ingest.ts`                       | Batch orchestration with injected storage and processing callbacks |
+| `src/lib/scenario`, `src/lib/signals`     | Sierra Bermeja scenario engine and signal schemas                  |
+| `src/lib/agents/coordinator.ts`           | Structured planning with Vercel AI SDK                             |
+| `src/lib/supabase`, `supabase/migrations` | Clients, Realtime subscription, and default-deny RLS schema        |
 
 The `@/` alias resolves to `src/` in both
 TypeScript and Vitest. Ingestion design is in
 [docs/input-architecture.md](docs/input-architecture.md) and the proposed data
 model in [docs/data-model.md](docs/data-model.md). The obsolete platform
-dashboard has been removed; its scenario engine, ingestion modules and Workflow
+dashboard has been removed; its scenario engine, ingestion helpers and AI SDK coordinator
 remain available for integration. See the [documentation index](docs/README.md)
 for the distinction between current behavior and proposals.
 
@@ -281,7 +279,7 @@ repository; see [CONTRIBUTING.md](CONTRIBUTING.md) for sharing guidance.
 | `HAPPYROBOT_WEBHOOK_SECRET`                                                                                                                              | Shared `x-happyrobot-secret` for inbound Signal intake and callback webhook.                                                               |
 | `DEMO_API_TOKEN`                                                                                                                                         | Protects `/api/demo/*`.                                                                                                                    |
 | `CRISIS_PERSISTENCE`                                                                                                                                     | `on` persists state as JSON under `.data/`. Disabled by default.                                                                           |
-| `CRISIS_API_TOKEN`, `AI_GATEWAY_API_KEY`, `AI_MODEL`, `NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SECRET_KEY`, `SCENARIO_AGENT_ENABLED`                          | Platform base (`src/`): workflows API, AI Gateway, Supabase, and scenario→agent bridge. Only active in tests until trees are unified.      |
+| `CRISIS_API_TOKEN`, `AI_GATEWAY_API_KEY`, `AI_MODEL`, `NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SECRET_KEY`, `SCENARIO_AGENT_ENABLED`                          | Optional scaffolding configuration; see the current intake and agent integration docs.                                                     |
 | `SUPABASE_DIRECT_DB_URL`, `SUPABASE_POOLER_DB_URL`                                                                                                       | Server-side Supabase CLI connection URIs for migrations. Encode special characters in passwords; never expose or use them in browser code. |
 
 Without model or key, the coordinator under `src/` uses a deterministic decision
@@ -320,14 +318,15 @@ the dashboard, operator authentication and per-incident policies are needed.
 The full model is documented in [docs/data-model.md](docs/data-model.md).
 
 To deploy, import the repository into Vercel as a Next.js project with
-Node.js 24.x and `npm ci` / `npm run build`; `withWorkflow` is configured in
-`next.config.ts`. Add required environment variables in Vercel and deploy when
+Node.js 24.x and `npm ci` / `npm run build`. Add required environment variables in Vercel and deploy when
 authorized by the team.
 
-The build cleans stale Workflow-generated routes from `app/.well-known/` before
-Next.js runs. The command center lives in `src/app/`; Next.js otherwise gives a
+`npm run dev` automatically runs `predev`; builds run `prebuild`. These hooks
+remove legacy Workflow-generated routes from `app/.well-known/` before Next.js
+runs. Workflow is no longer installed and will not generate new routes. The command center lives in `src/app/`; Next.js otherwise gives a
 stale root `app/` directory precedence and serves no dashboard route. Vercel
-also excludes that generated directory from manual CLI uploads.
+also excludes that legacy directory from manual CLI uploads. If an older dev
+server is still running, stop it before restarting with `npm run dev`.
 
 ## Tests
 

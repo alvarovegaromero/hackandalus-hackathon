@@ -23,6 +23,24 @@ export default function Home() {
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const telemetry = useTelemetry();
+  const [startingDemo, setStartingDemo] = useState(false);
+  const [demoMessage, setDemoMessage] = useState<string | null>(null);
+
+  const restartEvents = async () => {
+    if (startingDemo) return;
+    setStartingDemo(true);
+    setDemoMessage(null);
+    try {
+      const response = await fetch("/api/demo/events", { method: "POST" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "Could not start demo events.");
+      setDemoMessage(`Started ${result.count} events, one every 3 seconds.`);
+    } catch (caught) {
+      setDemoMessage(caught instanceof Error ? caught.message : "Could not start demo events.");
+    } finally {
+      setStartingDemo(false);
+    }
+  };
 
   // GET /api/situation also advances the scenario script.
   useEffect(() => {
@@ -50,23 +68,46 @@ export default function Home() {
 
   return (
     <main className="shell flex flex-col gap-4">
-      <h1 className="text-[16px] font-medium">FARO · Sierra Bermeja</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-[16px] font-medium">Faro</h1>
+        {process.env.NODE_ENV === "development" ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <span role="status" className="text-xs text-blueprint-light">
+              {demoMessage}
+            </span>
+            <button
+              type="button"
+              onClick={restartEvents}
+              disabled={startingDemo}
+              className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
+            >
+              {startingDemo ? "Starting…" : "Reset & run events"}
+            </button>
+          </div>
+        ) : null}
+      </div>
       {error ? <p role="alert">{error}</p> : null}
-      {situation ? (
-        <LeafletMap
-          zones={situation.zones}
-          plan={situation.plan}
-          world={maybe(situation, "world")}
-          events={telemetry.records}
-          selectedZoneId={selectedZoneId}
-          onSelect={(zoneId) => setSelectedZoneId(zoneId === selectedZoneId ? null : zoneId)}
-        />
-      ) : (
-        <p className="flex items-center gap-2">
-          <Loader2 className="spin" size={16} aria-hidden="true" /> Loading map…
-        </p>
-      )}
-      <EventLog records={telemetry.records} status={telemetry.status} />
+      <div className="event-map-layout">
+        <div className="min-w-0">
+          <EventLog records={telemetry.records} status={telemetry.status} />
+        </div>
+        <div className="min-w-0">
+          {situation ? (
+            <LeafletMap
+              zones={situation.zones}
+              plan={situation.plan}
+              world={maybe(situation, "world")}
+              events={telemetry.records}
+              selectedZoneId={selectedZoneId}
+              onSelect={(zoneId) => setSelectedZoneId(zoneId === selectedZoneId ? null : zoneId)}
+            />
+          ) : (
+            <p className="flex items-center gap-2">
+              <Loader2 className="spin" size={16} aria-hidden="true" /> Loading map…
+            </p>
+          )}
+        </div>
+      </div>
     </main>
   );
 }

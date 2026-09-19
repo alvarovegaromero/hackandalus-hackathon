@@ -44,7 +44,7 @@ export function signalToReport(
   };
 }
 
-// Legacy CrisisEvent for /api/scenario/signals until the workflow consumer migrates to
+// Legacy CrisisEvent for /api/scenario/signals until the processing consumer migrates to
 // NormalizedReport. Same id as signalToReport, so deduplication survives the migration.
 export function signalToEvent(incidentId: string, signal: Signal): CrisisEvent {
   return {

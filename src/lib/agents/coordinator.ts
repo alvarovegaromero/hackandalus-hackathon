@@ -1,7 +1,8 @@
 import { generateText, Output } from "ai";
 import { crisisEventSchema, planSchema, simulatePlan, type CrisisEvent } from "../domain";
 
-// Runs on the server, inside a Workflow step. No external actions are exposed yet.
+// OWNER: AI SDK coordinator scaffolding.
+// Runs on the server. No external actions are exposed yet.
 export async function coordinate(input: CrisisEvent) {
   const event = crisisEventSchema.parse(input);
   const model = process.env.AI_MODEL;
