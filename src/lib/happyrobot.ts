@@ -201,7 +201,14 @@ export function runEndpoint(workflowId: string, config = happyRobotConfig()): st
 export const WEBHOOK_SECRET_HEADER = "x-happyrobot-secret";
 
 export function isWebhookSecretConfigured(): boolean {
-  return Boolean(process.env.HAPPYROBOT_WEBHOOK_SECRET);
+  return webhookSecrets().length > 0;
+}
+
+// Both names remain valid during migration; use the same value in both workflows.
+function webhookSecrets(): string[] {
+  return [process.env.HAPPYROBOT_WEBHOOK_SECRET, process.env.FARO_WEBHOOK_SECRET].filter(
+    (value): value is string => Boolean(value),
+  );
 }
 
 /** Constant-time comparison to avoid timing leaks. */
@@ -222,8 +229,8 @@ function safeEqual(received: string, expected: string): boolean {
  * into the command center.
  */
 export function verifyWebhookSecret(request: Request): { ok: boolean; reason?: string } {
-  const expected = process.env.HAPPYROBOT_WEBHOOK_SECRET;
-  if (!expected) {
+  const expected = webhookSecrets();
+  if (!expected.length) {
     return {
       ok: false,
       reason:
@@ -234,7 +241,7 @@ export function verifyWebhookSecret(request: Request): { ok: boolean; reason?: s
   if (!received) {
     return { ok: false, reason: `Missing header ${WEBHOOK_SECRET_HEADER}.` };
   }
-  if (!safeEqual(received, expected)) {
+  if (!expected.map((secret) => safeEqual(received, secret)).some(Boolean)) {
     return { ok: false, reason: "Webhook secret does not match." };
   }
   return { ok: true };

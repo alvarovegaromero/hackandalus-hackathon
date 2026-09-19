@@ -14,6 +14,8 @@ import {
 } from "../contracts/mission";
 import { missionRpc } from "./repository";
 import { createMissionTools } from "./tools";
+import { getExecutionMode } from "../happyrobot";
+import { dispatchMissionResources } from "../dispatch/service";
 
 export async function runSubagentCycle(
   runId?: string,
@@ -32,6 +34,9 @@ export async function runSubagentCycle(
   const mission = parsed.data;
   if (signal?.aborted || (runId && mission.runId !== runId))
     return { outcome: "CANCELLED", changed: false };
+  // Live resource dispatch executes the parent's already committed instructions.
+  // It never enters the mock communication agent or marks its acknowledgements live.
+  if (getExecutionMode() === "happyrobot") return dispatchMissionResources(mission, token);
   try {
     const { decision } = await execute(
       mission,

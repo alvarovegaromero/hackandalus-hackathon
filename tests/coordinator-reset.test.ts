@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   dispatch: vi.fn(),
   missions: vi.fn(),
   pending: vi.fn(),
+  pendingDispatch: vi.fn(),
 }));
 vi.mock("server-only", () => ({}));
 vi.mock("node:timers/promises", () => ({ setTimeout: async () => undefined }));
@@ -30,6 +31,7 @@ vi.mock("../src/lib/supabase/server", () => ({
       eq: () => query,
       order: () => query,
       limit: mocks.pending,
+      maybeSingle: mocks.pendingDispatch,
     };
     return query;
   },
@@ -52,6 +54,10 @@ beforeEach(() => {
   resetCoordinatorBackground("old-run");
   mocks.read.mockResolvedValue({ runId: "old-run", events: [] });
   mocks.pending.mockResolvedValue({ data: [], error: null });
+  mocks.pendingDispatch.mockResolvedValue({
+    data: { dispatch_replan_pending: false },
+    error: null,
+  });
   mocks.prepare.mockResolvedValue(true);
   mocks.cycle.mockResolvedValue({ outcome: "NO_ACTIVE_EVENTS" });
   mocks.missions.mockResolvedValue(undefined);
@@ -109,4 +115,10 @@ it("later intake recovers queued missions without requiring a new accepted repor
   oldCallback();
   await Promise.resolve();
   expect(mocks.cycle).not.toHaveBeenCalled();
+});
+
+it("dispatch callbacks replan through the current run scheduler", async () => {
+  mocks.pendingDispatch.mockResolvedValue({ data: { dispatch_replan_pending: true }, error: null });
+  await processCoordinatorInBackground();
+  expect(mocks.cycle).toHaveBeenCalledWith("dispatch.result", "old-run", expect.any(AbortSignal));
 });

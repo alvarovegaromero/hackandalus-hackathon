@@ -1,5 +1,10 @@
 # Vercel deployment and releases
 
+Resource Dispatch requires migration 016 and [its configuration](resource-dispatch.md).
+Stable callback: https://faro-lovat-iota.vercel.app/api/dispatch/results.
+Deploy this revision before configuring the workflow. Callback processing uses the
+existing 180-second Next.js lifetime and persists pending replanning.
+
 ## Current deployment
 
 Production was deployed from Git branch `production` on 2026-09-19 to project `faro` in team
@@ -85,14 +90,14 @@ verified by release PR #64: its deployment is READY and serves the existing doma
 - Hosted dashboard access is public for one fixed twenty-six-hour window, with
   no login, code, popup or cookie. At activation, set `DEMO_PUBLIC_STARTED_AT` to
   the current UTC timestamp produced by `new Date().toISOString()` and keep
-  `ACTION_EXECUTION_MODE=mock`. Every server instance computes the same expiry
+  `ACTION_EXECUTION_MODE=mock` or `happyrobot`. Every server instance computes the same expiry
   as activation plus 26 hours; reloads, new visitors and redeployments do not extend it.
   State, mission and telemetry reads are public within that window. Reset and
-  fixture-event controls additionally require a same-origin request.
+  fixture-event controls additionally require a same-origin request and are disabled in live mode.
   General intake, legacy action APIs and webhooks retain their existing credentials.
   No server token or provider key is sent to the browser. Missing, invalid, future
-  or expired activation timestamps keep access closed; live action mode also
-  disables public demo access. Expiry is checked on each request and SSE poll/send;
+  or expired activation timestamps keep access closed. Live mode permits the same
+  read-only server-side APIs without exposing credentials. Expiry is checked on each request and SSE poll/send;
   the dashboard reloads to a closed page at expiry. No redeployment is needed to
   close access. Already accepted background work can finish. All visitors share one demo run;
   Reset & run events resets that shared simulation and invokes the configured models.
@@ -119,7 +124,7 @@ upload local credential files or put secrets in `NEXT_PUBLIC_*` variables.
 | AI Gateway model                      | `AI_PROVIDER=gateway`, `AI_MODEL`, `AI_GATEWAY_API_KEY`                           |
 | Alternative existing OpenCode adapter | `AI_PROVIDER=opencode-go` or `opencode-zen`, `OPENCODE_MODEL`, `OPENCODE_API_KEY` |
 | Protected APIs                        | `CRISIS_API_TOKEN`, `DEMO_API_TOKEN` as required by the selected routes           |
-| Public demo window                    | `DEMO_PUBLIC_STARTED_AT` (canonical UTC ISO timestamp); requires mock action mode |
+| Public demo window                    | `DEMO_PUBLIC_STARTED_AT` (canonical UTC ISO timestamp); mock or happyrobot mode   |
 | Inbound HappyRobot reports/callbacks  | `HAPPYROBOT_WEBHOOK_SECRET`                                                       |
 | Initial simulated actions             | `ACTION_EXECUTION_MODE=mock`                                                      |
 

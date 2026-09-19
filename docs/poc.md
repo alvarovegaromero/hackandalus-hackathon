@@ -1,9 +1,14 @@
 # Initial POC · scope and work packages
 
+Current P0/P4 delivery adds [Resource Dispatch](resource-dispatch.md): persistent
+mission calls and callback-driven replanning. Live workflow configuration and an
+operator-run real interaction remain acceptance work. Local integration tests use
+isolated PostgreSQL and loopback HTTP.
+
 Current implementation: [global coordinator state v2](coordinator-state-contract.md) uses
-one refreshed prompt, a dedicated worker, event/five-second triggers and individual
-ambulance commitments. Apply the v2 migration and run npm run coordinator:work
-alongside the app. Release is disabled; the v1 sections below are historical.
+one refreshed prompt and inline Next.js processing after intake or mission results.
+Run npm run dev; do not start the historical standalone coordinator worker.
+The v1 resource sections below are historical. General release remains disabled.
 
 The v1 resource sections below are historical. Current GET /api/state returns v2;
 POST /api/agent/plan is retired (410), and POST /api/state/release is disabled (501).

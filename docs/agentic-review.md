@@ -4,7 +4,13 @@ Scope: P0/P4 orchestration, mission execution, P1 fixture delivery and the dashb
 reset handoff. Local review of the September 19 implementation; no live calls,
 production deployment or production migration performed.
 
-## Current flow
+Merge note: main now includes Resource Dispatch (migration 016) and authenticated
+callbacks. Its [contract](resource-dispatch.md) supersedes the historical mock-only
+findings below. The reset fence is renumbered to 017 and wraps the dispatch-aware
+reset; the merged scheduler preserves dispatch-result replanning. The SQL checks
+below describe the pre-merge isolated verification, not a deployment of either migration.
+
+## Flow at review time
 
 1. Intake persists a report and schedules Next.js `after()` work.
 2. Jev filters independently of the coordinator model. Persisted receipts and
@@ -23,10 +29,10 @@ production deployment or production migration performed.
 - Background callbacks and model requests are tied to a run and abort controller.
   Reset aborts local model calls and fences late filter/model/mission callbacks.
   A delayed state read cannot replace a freshly reset local run.
-- Migration 016 serializes subagent database actions with reset, rejects actions
+- Migration 017 serializes subagent database actions with reset, rejects actions
   from old runs and cancels/revokes unfinished old missions. It preserves contact
   operations and history; reset restores all thirty units. Locks cover short SQL
-  operations only, not model calls. Apply 016 after 015 before relying on these
+  operations only, not model calls. Apply 017 after 016 before relying on these
   guarantees across server processes.
 - Reset returns `{ runId, state }`, retaining the original `runId` field. The UI
   applies the returned snapshot immediately, invalidates earlier polling replies,
@@ -77,7 +83,7 @@ production deployment or production migration performed.
 - Twelve focused deterministic checks: reset during filtering/generation, late
   state reads and callbacks, queued-mission recovery, exhausted claims, stale
   commits, stable handoff identity, conflict continuation and aggregate priority.
-- Migration 016 executed against private empty table/function copies in a unique
+- Migration 017 executed against private empty table/function copies in a unique
   Supabase schema inside a rolled-back transaction. Verified stale action/claim
   rejection, mission cancellation, operation preservation, reset inventory and
   exhausted-lease result shape. The live demo tables were not reset or mutated.

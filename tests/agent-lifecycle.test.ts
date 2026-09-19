@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
+vi.mock("../src/lib/happyrobot", () => ({ getExecutionMode: () => "mock" }));
 import { runSubagentCycle, type executeMissionAgent } from "../src/lib/subagents/execute";
 import { dispatchPlanMissions } from "../src/lib/subagents/dispatch";
 import type { missionRpc } from "../src/lib/subagents/repository";

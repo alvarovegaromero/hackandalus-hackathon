@@ -123,6 +123,15 @@ export async function processCoordinatorInBackground() {
       ? globalThis.coordinatorBackground
       : resetCoordinatorBackground(runId);
   if (snapshot.events.some((event) => event.priority === null)) current.dirty = true;
+  const pendingDispatch = await createServerSupabase()
+    .from("coordinator_runtime")
+    .select("dispatch_replan_pending")
+    .eq("singleton", true)
+    .eq("state->>runId", runId)
+    .maybeSingle();
+  if (current.abort.signal.aborted) return;
+  if (pendingDispatch.error) throw new Error("Dispatch recovery state unavailable.");
+  if (pendingDispatch.data?.dispatch_replan_pending) void requestPlan(current, "dispatch.result");
   current.filterAgain = true;
   current.filtering ??= (async () => {
     while (!current.abort.signal.aborted) {
@@ -167,4 +176,9 @@ export async function processCoordinatorInBackground() {
     if (current.missions) await current.missions;
     // Dirty after a failure is retried on later intake, never in a hot loop.
   } while (current.planning && !current.abort.signal.aborted && Date.now() < deadline);
+}
+
+/** Uses the same serialized coordinator; durable flag survives callback retries. */
+export async function processDispatchReplanning() {
+  await processCoordinatorInBackground();
 }

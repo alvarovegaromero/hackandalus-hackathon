@@ -67,25 +67,33 @@ export default function ResourcesCard({
                   Array.from({ length: 10 }, (_, index) => (
                     <Skeleton key={index} className="h-4 min-w-0 flex-1 rounded-[2px]" />
                   ))}
-                {inventory?.units.map((unit) => {
-                  const assigned = unit.status === "assigned";
-                  const target = unit.eventId ? summaries.get(unit.eventId) : undefined;
-                  return (
-                    <button
-                      key={unit.id}
-                      type="button"
-                      disabled={!assigned}
-                      onClick={() => onSelect(unit.id)}
-                      title={assigned ? `${unit.id}: ${target ?? "assigned"}` : `${unit.id}: free`}
-                      aria-label={
-                        assigned
-                          ? `${unit.id}, assigned to ${target ?? "an event"}`
-                          : `${unit.id}, free`
-                      }
-                      className={cell({ assigned, selected: unit.id === selectedId })}
-                    />
-                  );
-                })}
+                {inventory?.units
+                  .toSorted(
+                    (a, b) =>
+                      Number(b.status === "assigned") - Number(a.status === "assigned") ||
+                      a.id.localeCompare(b.id, undefined, { numeric: true }),
+                  )
+                  .map((unit) => {
+                    const assigned = unit.status === "assigned";
+                    const target = unit.eventId ? summaries.get(unit.eventId) : undefined;
+                    return (
+                      <button
+                        key={unit.id}
+                        type="button"
+                        disabled={!assigned}
+                        onClick={() => onSelect(unit.id)}
+                        title={
+                          assigned ? `${unit.id}: ${target ?? "assigned"}` : `${unit.id}: free`
+                        }
+                        aria-label={
+                          assigned
+                            ? `${unit.id}, assigned to ${target ?? "an event"}`
+                            : `${unit.id}, free`
+                        }
+                        className={cell({ assigned, selected: unit.id === selectedId })}
+                      />
+                    );
+                  })}
               </div>
             </div>
           );
@@ -95,7 +103,7 @@ export default function ResourcesCard({
         {state ? (
           <>
             <span className="text-ink tabular-nums">{free}</span> of 30 units free · filled cell =
-            assigned, select to locate
+            assigned (grouped first), select to locate
           </>
         ) : (
           "Waiting for resource state"

@@ -19,11 +19,12 @@ const patrolInventorySchema = (ids: typeof policeIdSchema) =>
     total: z.literal(10),
     available: z.number().int().min(0).max(10),
     allocated: z.number().int().min(0).max(10),
+    unavailable: z.number().int().min(0).max(10).optional(),
     units: z
       .array(
         z.strictObject({
           id: ids,
-          status: z.enum(["available", "assigned"]),
+          status: z.enum(["available", "assigned", "unavailable"]),
           eventId: z.uuid().nullable(),
         }),
       )
@@ -96,11 +97,12 @@ export const coordinatorStateSchema = z
       total: z.literal(10),
       available: z.number().int().min(0).max(10),
       allocated: z.number().int().min(0).max(10),
+      unavailable: z.number().int().min(0).max(10).optional(),
       units: z
         .array(
           z.strictObject({
             id: ambulanceIdSchema,
-            status: z.enum(["available", "assigned"]),
+            status: z.enum(["available", "assigned", "unavailable"]),
             eventId: z.uuid().nullable(),
           }),
         )
@@ -113,10 +115,12 @@ export const coordinatorStateSchema = z
       if (
         new Set(inventory.units.map((u) => u.id)).size !== 10 ||
         inventory.units.some((u) =>
-          u.status === "available" ? u.eventId !== null : !u.eventId || !eventIds.has(u.eventId),
+          u.status !== "assigned" ? u.eventId !== null : !u.eventId || !eventIds.has(u.eventId),
         ) ||
         inventory.allocated !== inventory.units.filter((u) => u.status === "assigned").length ||
-        inventory.available + inventory.allocated !== 10
+        (inventory.unavailable ?? 0) !==
+          inventory.units.filter((u) => u.status === "unavailable").length ||
+        inventory.available + inventory.allocated + (inventory.unavailable ?? 0) !== 10
       )
         ctx.addIssue({ code: "custom", message: "Invalid patrol inventory" });
     }
@@ -125,10 +129,15 @@ export const coordinatorStateSchema = z
       eventIds.size !== state.events.length ||
       new Set(units.map((u) => u.id)).size !== 10 ||
       units.some((u) =>
-        u.status === "available" ? u.eventId !== null : !u.eventId || !eventIds.has(u.eventId),
+        u.status !== "assigned" ? u.eventId !== null : !u.eventId || !eventIds.has(u.eventId),
       ) ||
       state.ambulances.allocated !== units.filter((u) => u.status === "assigned").length ||
-      state.ambulances.available + state.ambulances.allocated !== 10
+      (state.ambulances.unavailable ?? 0) !==
+        units.filter((u) => u.status === "unavailable").length ||
+      state.ambulances.available +
+        state.ambulances.allocated +
+        (state.ambulances.unavailable ?? 0) !==
+        10
     )
       ctx.addIssue({
         code: "custom",
@@ -154,6 +163,7 @@ export function validateCoordinatorProposal(
     [...priorities].some((id) => !events.has(id)) ||
     assignments.size !== proposal.assignments.length ||
     [...assignments.values()].some((id) => !events.has(id)) ||
+    state.ambulances.units.some((u) => u.status === "unavailable" && assignments.has(u.id)) ||
     state.ambulances.units.some(
       (u) => u.status === "assigned" && assignments.get(u.id) !== u.eventId,
     )
@@ -167,6 +177,7 @@ export function validateCoordinatorProposal(
     if (
       assigned.size !== allocations.length ||
       allocations.some((a) => !events.has(a.eventId)) ||
+      inventory.units.some((u) => u.status === "unavailable" && assigned.has(u.id)) ||
       inventory.units.some((u) => u.status === "assigned" && assigned.get(u.id) !== u.eventId)
     )
       throw new Error("Invalid patrol assignments");

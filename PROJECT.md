@@ -1,9 +1,14 @@
 # PROJECT.md
 
+Resource Dispatch now connects persistent missions to HappyRobot and the existing
+coordinator. Apply migration 016; configure approved recipients and the workflow
+callback. See [the implemented contract](docs/resource-dispatch.md). This supersedes
+historical missing-callback/mock-only notes below; inline Next.js execution is current.
+
 Current implementation: [global coordinator state v2](docs/coordinator-state-contract.md)
 and subagents run inside Next.js after intake and mission results, with durable
 state in Supabase. Do not start a second standalone coordinator worker for the
-dashboard. Resource release is disabled; older worker/v1 sections are historical.
+dashboard. General resource release is disabled; older worker/v1 sections are historical.
 
 The v1 resource sections below are historical. Current GET /api/state returns v2;
 POST /api/agent/plan is retired (410), and POST /api/state/release is disabled (501).
@@ -479,8 +484,9 @@ Graft remains the required tool for navigating this repository.
 
 The owner selected public demo access without login, code or cookies. Production
 `/dashboard` opens for one fixed 26-hour window from server-only
-`DEMO_PUBLIC_STARTED_AT` in canonical UTC ISO format, with `ACTION_EXECUTION_MODE=mock`.
-Dashboard reads and same-origin reset/fixture controls are public within that window;
+`DEMO_PUBLIC_STARTED_AT` in canonical UTC ISO format, with `ACTION_EXECUTION_MODE=mock`
+or `happyrobot`. Dashboard reads use the existing server-side APIs in both modes.
+Same-origin reset/fixture controls are public only in mock mode within that window;
 general intake and live-action APIs retain their credentials. Expiry is checked at
 runtime and cannot be extended by visiting or refreshing. Landing stays public and
 development remains open. See [deployment configuration](docs/vercel-deployment.md).
@@ -528,7 +534,7 @@ not durable across server restarts; the next intake resumes pending reports.
 ### Resource and mission integration
 
 The coordinator now manages ten ambulances, ten Policía patrols and ten Guardia
-Civil patrols. Apply migrations 009–015 after the existing coordinator migrations. Migration 016
+Civil patrols. Apply migrations 009–015 after the existing coordinator migrations. Migration 017
 is prepared and isolated-schema verified; shared deployment is pending.
 State v2 adds police and civilGuard inventories; proposals add policeAssignments,
 civilGuardAssignments and missions. Existing ambulance IDs and assignments remain.
@@ -540,7 +546,7 @@ The dashboard uses the landing's dark/green palette and polls mission results.
 
 The [agentic review](docs/agentic-review.md) records the current lifecycle and known
 recovery boundaries. Local reset aborts run-scoped model execution and updates the
-client from its returned state. Migration 016 additionally fences stale mission
+client from its returned state. Migration 017 additionally fences stale mission
 actions and cancels unfinished old missions across processes. It is prepared and
 verified in an isolated rolled-back schema, not yet applied to the shared demo.
 Live HappyRobot requires callback/waiting-state integration and idempotency across

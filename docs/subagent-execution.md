@@ -221,7 +221,7 @@ remaining changes are still submitted, then a mission.conflict cycle reloads the
 current state and mission results. A completed mission is never reopened by an
 outdated parent decision. Other handoff errors are logged per change.
 
-## Reset and recovery fencing (migration 016)
+## Reset and recovery fencing (migration 017)
 
 Subagent RPC actions acquire a shared runtime lock before touching missions; reset
 uses the same lock order and revokes unfinished old missions. Old-run claims and
