@@ -1026,7 +1026,8 @@
   border-color: var(--drills-dark-muted);
 }
 
-.drill-twin-webgl .drill-camera-controls button[aria-pressed="true"] {
+.drill-twin-webgl .drill-camera-controls button[aria-pressed="true"],
+.drill-twin-webgl .drill-camera-controls button[aria-pressed="true"]:hover:not(:disabled) {
   background: var(--drills-mint);
   color: var(--ink);
   border-color: var(--drills-mint);
