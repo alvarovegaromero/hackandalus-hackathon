@@ -1,0 +1,190 @@
+# Report input contract
+
+Confirmed on 2026-09-19. This is the target contract for report intake and the
+normalization boundary before triage. It supersedes the earlier requirement
+that a reporter supply `title`, `body`, `category`, `severity`, or confidence.
+It is not yet implemented or exposed by the running application.
+
+## Reporter experience
+
+Only the report text is required. A person can optionally share their current
+location, select the incident location, or describe a place. Failure or refusal
+to share GPS must not prevent reporting. The interface supplies the technical
+fields; the person does not need to know the crisis UUID or classify the event.
+
+```json
+{
+  "text": "Veo humo cerca del camping, hay gente dentro",
+  "location": {
+    "latitude": 36.537,
+    "longitude": -5.046,
+    "description": "Entrada norte del camping",
+    "reference": "incident"
+  }
+}
+```
+
+These are also valid:
+
+```json
+{ "text": "Veo humo desde mi casa" }
+```
+
+```json
+{
+  "text": "La carretera está cortada",
+  "location": {
+    "description": "A-397, cerca del cruce de Benahavís",
+    "reference": "incident"
+  }
+}
+```
+
+## Public report fields
+
+| Field                  | Contract                                                                                                               |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `text`                 | Required trimmed string, 1–4000 characters.                                                                            |
+| `location`             | Optional object; if supplied, requires a coordinate pair, a nonempty description, or both. An empty object is invalid. |
+| `location.latitude`    | Finite number in [-90, 90], WGS84 decimal degrees; requires longitude.                                                 |
+| `location.longitude`   | Finite number in [-180, 180], WGS84 decimal degrees; requires latitude.                                                |
+| `location.description` | Optional trimmed string, 1–500 characters.                                                                             |
+| `location.reference`   | `incident`, `reporter`, or `unknown`; defaults to `unknown`.                                                           |
+
+Reject unknown fields and invalid coordinates; do not silently coerce strings
+into numbers. Zero is a valid coordinate. Missing location remains unknown.
+Coordinates supplied by device GPS describe the **reporter**. A pin explicitly
+identifying the reported event describes the **incident**. Do not turn reporter
+or unknown coordinates into a confirmed incident location.
+
+Geocoding happens later. Keep the original description and treat an inferred
+position as a candidate requiring evidence; do not overwrite supplied coordinates
+when text and coordinates disagree. This first contract carries one location;
+simultaneously reporting two positions is a future additive extension.
+
+## Common input to triage
+
+All channel adapters produce the same internal envelope. This is an application
+contract, not a database migration:
+
+```ts
+type NormalizedReport = {
+  id: string; // Server-assigned UUID; stable across retries of the same delivery.
+  runId: string; // Existing crisis UUID, resolved from trusted request context.
+  source: "operator" | "sensor" | "happyrobot" | "public" | "scenario" | "webhook";
+  channel?: string; // Channel supplied by the adapter, not the public form.
+  externalRef?: string; // Provider message/delivery ID, scoped to source and run.
+  receivedAt: string; // Server timestamp, ISO 8601 UTC.
+  occurredAt?: string; // Only when actually known; never inferred from receipt.
+  text: string;
+  location?: {
+    latitude?: number; // Both coordinates or neither, as validated above.
+    longitude?: number;
+    description?: string;
+    reference: "incident" | "reporter" | "unknown";
+  };
+  extracted: {
+    category?: string; // Candidate category, not a confirmed fact.
+    peopleReportedPresent?: boolean; // Omit when unknown; unknown is not false.
+  };
+};
+```
+
+Keep the original report/provider payload associated with the signal for
+traceability. Structured sensor readings must remain available as structured
+evidence, even when the adapter also generates readable text. Never expose
+simulator ground truth to normalization or triage.
+
+The server resolves and validates `runId` through the reporting session or
+authenticated integration context. If that context is absent or ambiguous,
+reject the request; do not guess a crisis. An integration adapter supplies source,
+channel and external references. A public caller cannot impersonate a sensor or
+set confidence by adding fields to the body.
+
+Normalization preserves claims and provenance. Code handles the envelope and
+coordinates; language interpretation may use a model. Missing or failed
+extraction leaves `extracted` empty and does not discard the original report.
+Triage evaluates relevance, urgency, confidence and the required response.
+It does not require a severity invented by the intake adapter. Downstream
+incident correlation groups distinct reports of the same real-world problem.
+
+## Synchronous receipt, asynchronous interpretation
+
+Target endpoint: `POST /api/signals`, accepting a report, an array, or
+`{ "signals": [...] }`, up to 50 reports. The reporting UI normally sends one.
+
+1. Validate request context and each report; deduplicate transport retries.
+2. Persist the original report and server metadata.
+3. Confirm a durable Workflow start for each new report.
+4. Return `202` with IDs, without waiting for interpretation or triage.
+5. In the Workflow, normalize/enrich, triage, correlate incidents and replan.
+
+Response arrays are `accepted`, `merged`, `rejected`, and `errors`, each keyed by
+input `index`. Accepted and merged entries include the signal `id`; merged
+entries also include `occurrences`. Rejections carry validation issues; errors
+carry a stable error code and whether retry is possible. A `202` acknowledges
+receipt and scheduled processing, not completed triage or executed actions.
+
+Use `202` when at least one new report is scheduled, `200` for duplicate-only
+success, `400` for malformed/empty/all-invalid input, `413` above the batch limit,
+and `503` when no report succeeds because required persistence or scheduling is
+unavailable. Mixed batches retain per-item outcomes. Authentication follows the
+trusted context and is separate from the public report fields. A demo-only
+`?wait=1` may wait for triage and return `200`; it is not the default.
+
+Do not mark a persisted-but-unscheduled report accepted or treat its retry as
+already processed. Implementation must track scheduling and resume it using the
+same signal identity. Keep in-memory demo operation explicitly labeled; it does
+not provide durable acceptance. Realtime is later dashboard delivery, not the
+mechanism that starts processing.
+
+Deduplication must distinguish the same **message** from the same **incident**.
+Use a provider delivery ID when available. Without one, a shared area/category
+is insufficient to merge reports from different people. The fallback key/window,
+browser retry identity and atomic persistence/scheduling recovery remain
+implementation decisions to resolve before exposing this endpoint.
+
+## Compatibility with Luis's work
+
+Luis Sánchez Travesí's `da1cc21` introduced batch ingestion and the scenario-to-agent
+bridge. Preserve the scenario engine, bounded workflow starts, per-item results,
+retry identity and existing tests while migrating the contracts.
+
+- `src/lib/signals/schema.ts` remains the simulator's producer contract. Its
+  text and reading variants do not need to become the public form contract.
+- Adapt `src/lib/signals/to-event.ts` to the common envelope: preserve the stable
+  identity based on crisis and signal ID; carry the signal ID as `externalRef`;
+  map `lat/lon/placeName` to `latitude/longitude/description`. Preserve `accuracyM`
+  in the original evidence. Location reference remains unknown unless the
+  producer explicitly defines its meaning.
+- Keep `receivedAtMin` as simulation-relative metadata; do not interpret it as
+  a wall-clock timestamp without the scenario clock origin.
+- Replace the hard-coded `medium` severity with triage assessment when migrating
+  the consumer. Preserve structured readings, channel and source provenance.
+- Port batch orchestration from `src/lib/ingest.ts` and `ingest-server.ts` while
+  adapting their old `CrisisEvent` input and persistence model. Their current
+  event-ID deduplication is not yet the target deduplication contract.
+- Migrate the workflow consumer and scenario bridge together. Keep the current
+  `/api/events` contract until its callers have migrated; do not silently change
+  its meaning or route public reports through the development-only demo bridge.
+
+The running application serves root `app/`. The routes in `src/app/`, including
+Luis's batch endpoint and scenario bridge, are currently not served. Route-tree
+consolidation is required to make this path available; it is not caused by this
+contract decision.
+
+## First implementation slice
+
+- [ ] Add pure report/envelope validators and channel adapters under root `lib/`.
+- [ ] Test text-only reports, textual/GPS locations, coordinate pairing/ranges,
+      reporter vs incident semantics, unknown fields and missing extraction.
+- [ ] Test scenario retry identity, structured readings and no ground-truth leak.
+- [ ] Resolve durable persistence and scheduling recovery; migrate the workflow
+      input and expose the new route under root `app/`.
+- [ ] Test mixed batches, duplicate deliveries, scheduling failure and recovery.
+- [ ] Add the reporting form: text, optional device location or incident pin,
+      textual place alternative, and a receipt distinct from triage results.
+
+The existing SQL proposal still needs reconciliation for an unassessed report
+with unknown category, severity and location. Do not fabricate those values to
+satisfy the old model. No schema or runtime behavior changes with this decision.

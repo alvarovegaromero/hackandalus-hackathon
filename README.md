@@ -300,3 +300,13 @@ mando comparten proceso y llaman a `resetSituation()` en `beforeEach`.
 ## Licencia
 
 MIT. Ver [LICENSE](LICENSE).
+
+## Planned report intake
+
+The [confirmed input contract](docs/input-contract.md) accepts text and optional
+GPS or textual location, distinguishes reporter from incident location, and
+normalizes all channels before triage. The server supplies crisis identity and
+provenance. Receipt waits for persistence and durable scheduling; interpretation
+runs asynchronously. This contract is not implemented yet; the current API and
+route-tree limitations above still apply. Luis's scenario engine and batch
+orchestration are retained through adapter migration.

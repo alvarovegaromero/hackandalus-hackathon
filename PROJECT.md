@@ -88,7 +88,9 @@ invented values. Track follow-up work in TASKS.md.
   command-center decisions, `docs/security.md` its credential and demo-recipient
   rules, `docs/happyDocumentation.md` the unverified HappyRobot contract,
   `docs/data-model.md` the Supabase model, `docs/input-architecture.md` batch
-  event ingestion (synchronous now; async/topic fan-out deferred),
+  event ingestion (current route split and migration),
+  `docs/input-contract.md` the confirmed simple report/normalization contract
+  (implementation pending; synchronous receipt, asynchronous Workflow processing),
   `docs/dashboard-design-guide.md`, `docs/code-index.md` and
   `docs/agent-skills.md` the presentation, Graft and skills guides.
 - `.github/`: pull request and issue templates. No GitHub Actions workflows:

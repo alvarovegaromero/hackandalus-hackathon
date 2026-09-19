@@ -121,7 +121,23 @@ the end so nobody reopens them.
 
 ---
 
+## Report intake implementation follow-up
+
+- [ ] Reconcile persistence for raw, unassessed reports and implement recovery
+      when storage succeeds but Workflow scheduling fails.
+- [ ] Define fallback deduplication and browser retry identity; category/area
+      alone must not merge distinct reports.
+- [ ] Port Luis's scenario adapter and batch orchestration to the normalized
+      envelope while consolidating the served routes.
+
 ## Confirmed, do not reopen
+
+- **Report input**: text is required; geographic or textual location is optional.
+  Distinguish reporter, incident and unknown location. Server context supplies
+  crisis identity and provenance. Preserve originals, normalize before triage,
+  and let triage assess urgency/confidence. Receipt waits for persistence and
+  durable scheduling; interpretation runs asynchronously. See
+  [the contract](../docs/input-contract.md). Implementation is pending.
 
 - **Scenario**: wildfire in the wildland-urban interface of Sierra Bermeja.
   Estepona, Jubrique, Genalguacil, Benahavís and the Los Pinares development.
