@@ -7,9 +7,12 @@ export default defineConfig([
   ...nextTs,
   globalIgnores([
     ".next/**",
+    ".next-dev/**",
+    ".next.broken-*/**",
     ".vercel/**",
     ".workflow-data/**",
     "src/app/.well-known/workflow/**",
+    "app/.well-known/workflow/**",
     "next-env.d.ts",
   ]),
 ]);

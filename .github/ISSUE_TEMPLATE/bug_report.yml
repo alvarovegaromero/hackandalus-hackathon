@@ -1,0 +1,72 @@
+name: Fallo
+description: Algo no funciona como debería en el centro de mando.
+title: "fix: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Antes de abrir el fallo: comprueba que estás en la rama correcta y que
+        has reiniciado `npm run dev` (el estado vive en memoria y se pierde al
+        reiniciar el servidor).
+
+  - type: textarea
+    id: que-pasa
+    attributes:
+      label: Qué pasa
+      description: Qué has visto, y qué esperabas ver en su lugar.
+      placeholder: |
+        Al aprobar una acción la cola la deja en "running" y nunca cambia.
+        Esperaba que pasara a "succeeded" en modo mock.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproducir
+    attributes:
+      label: Cómo reproducirlo
+      description: Pasos exactos desde el arranque, incluyendo botones de demo o llamadas a la API.
+      placeholder: |
+        1. `npm run dev`
+        2. Pulsar "Nuevo incidente"
+        3. Aprobar la primera acción de la cola
+        4. ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: zona
+    attributes:
+      label: Dónde ocurre
+      options:
+        - Interfaz (app/)
+        - Rutas de API (app/api/)
+        - Lógica de dominio (lib/)
+        - Integración HappyRobot
+        - Tooling / CI / documentación
+        - No lo sé
+    validations:
+      required: true
+
+  - type: input
+    id: modo
+    attributes:
+      label: Modo de ejecución
+      description: Valor de `ACTION_EXECUTION_MODE`.
+      placeholder: mock
+    validations:
+      required: true
+
+  - type: textarea
+    id: entorno
+    attributes:
+      label: Entorno
+      description: Salida de `node -v` y `npm -v`, sistema operativo y rama.
+      render: shell
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs o error
+      description: Pega la traza relevante. **No incluyas claves, teléfonos, correos ni contenido de interacciones reales.**
+      render: shell

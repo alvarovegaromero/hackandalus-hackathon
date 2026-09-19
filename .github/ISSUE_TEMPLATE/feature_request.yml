@@ -1,0 +1,56 @@
+name: Funcionalidad
+description: Propón algo nuevo para el sistema o la demo.
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Esto es un hackathon: prioriza lo que se pueda enseñar en la demo sobre
+        lo que quede bonito por dentro. Lee `CHALLENGE.md` antes de proponer.
+
+  - type: textarea
+    id: problema
+    attributes:
+      label: Qué problema resuelve
+      description: El hueco que hay hoy, no la solución todavía.
+    validations:
+      required: true
+
+  - type: textarea
+    id: propuesta
+    attributes:
+      label: Propuesta
+      description: Qué construirías y cómo encaja con lo que ya existe.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: criterio
+    attributes:
+      label: Criterio del reto que refuerza
+      description: Ver `CHALLENGE.md` → *Evaluation*.
+      multiple: true
+      options:
+        - Decisión (decide sin datos completos)
+        - Prioridad (sabe qué va primero)
+        - Adaptación (replanifica al cambiar la situación)
+        - Coordinación (personas, información y recursos a la vez)
+        - Ejecución (actúa fuera del sistema, no solo propone)
+        - Control (se ve lo que hace y se puede intervenir)
+        - Creatividad
+        - Aprendizaje entre ejecuciones (bonus)
+    validations:
+      required: true
+
+  - type: textarea
+    id: modulos
+    attributes:
+      label: Módulos afectados
+      description: Qué ficheros de `lib/`, `app/` o `tests/` habría que tocar, y de quién son (ver cabecera `// PROPIETARIO:`).
+
+  - type: textarea
+    id: demo
+    attributes:
+      label: Cómo se enseña en la demo
+      description: Qué vería el jurado en pantalla. Si no se puede enseñar, probablemente no toca ahora.

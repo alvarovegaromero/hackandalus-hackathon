@@ -8,6 +8,9 @@
 **/.claude/settings.local.json
 **/CLAUDE.local.md
 
+# Local persisted demo state.
+.data/
+
 # Regenerable code graph and OS metadata.
 graft/
 .DS_Store
@@ -16,11 +19,14 @@ Thumbs.db
 # Next.js, npm, Workflow and local tooling.
 /node_modules/
 /.next/
+/.next-dev/
+/.next.broken-*/
 /out/
 /.vercel/
 /.workflow-data/
 /src/app/.well-known/workflow/
+/app/.well-known/workflow/
 /coverage/
 *.tsbuildinfo
 npm-debug.log*
-/.swc
+/.swc/

@@ -69,30 +69,54 @@ ejecución robusta, aprendizaje y ensayo) están en el documento fuente.
 - [x] Enviar los avisos del motor de escenarios al workflow del agente y mostrar
       sus planes en el panel.
 - [ ] Persistir planes, acciones y resultados en Supabase.
-- [ ] Evitar acciones externas duplicadas durante reintentos.
+- [x] Evitar acciones externas duplicadas durante reintentos: el adaptador de
+      `lib/happyrobot.ts` envía una clave de idempotencia por despacho e intento y
+      el webhook recuerda las entregas ya procesadas.
 - [ ] Incorporar historial y disponibilidad real de recursos a las decisiones.
 - [ ] Añadir autenticación de operadores y políticas RLS por incidente.
 - [ ] Conectar el panel al backend y a Realtime.
 - [ ] Persistir pausa, cancelación e intervención humana y respetarlas en la ejecución.
 - [ ] Añadir herramientas y subagentes de AI SDK según las operaciones acordadas.
-- [ ] Implementar llamadas reales a HappyRobot y procesar resultados autenticados.
+- [x] Adaptador HappyRobot con timeout, reintentos y webhook autenticado por
+      secreto compartido (`lib/happyrobot.ts`, `app/api/webhooks/happyrobot`).
+      El contrato real sigue sin verificar: ver `docs/happyDocumentation.md`.
+- [ ] Verificar el contrato real de HappyRobot y validar una acción con
+      destinatarios de demo aprobados.
 - [ ] Incorporar esperas, reintentos y recuperación de fallos al workflow.
-- [ ] Demostrar replanificación al cambiar la situación durante la ejecución.
-- [ ] Gemelo digital de la incidencia (ver Ideas): ejecutar el motor de
-      escenarios sobre una copia del estado actual, simular variantes (viento,
-      accesos cortados, pérdida de recursos), comparar alternativas por resultado
-      y mostrar en el panel la recomendada antes de actuar.
-- [ ] Probar restricciones de recursos, fallos y control humano.
+- [x] Demostrar replanificación al cambiar la situación durante la ejecución:
+      guiones que avanzan solos, inyección de averías y diff entre versiones del
+      plan en el centro de mando.
+- [x] Gemelo digital, primera entrega: `lib/digitalTwin.ts` reconstruye el
+      mundo percibido a partir de las señales y mide su precisión contra la
+      verdad simulada; `app/components/DigitalTwinPanel.tsx` lo muestra.
+- [ ] Gemelo digital, segunda entrega: simular variantes (viento, accesos
+      cortados, pérdida de recursos) sobre una copia del estado, comparar
+      alternativas por resultado y mostrar la recomendada antes de actuar.
+- [x] Probar restricciones de recursos, fallos y control humano (`tests/`).
 - [ ] Configurar y desplegar en Vercel cuando se autorice.
-- [ ] Validar una interacción real con destinatarios de demo aprobados.
+
+## Fase 4 · Consolidación tras fusionar el centro de mando
+
+- [ ] Unificar los dos árboles. Next sirve `app/` y por tanto ignora `src/app`:
+      la ingesta por lotes (`/api/events` con deduplicación y Supabase),
+      `/api/runs/<runId>`, `/api/scenario/signals`, el workflow de
+      `src/workflows/crisis.ts` y el panel de `src/components` solo se
+      ejercitan en tests. Decidir qué se porta a `app/`/`lib/` y qué se retira.
+- [ ] Renombrar la semilla y el guion por defecto a Sierra Bermeja
+      (`lib/seed.ts`, `lib/scenario.ts` usan "Sierra Morena" y
+      `wildfire-andalucia`) y el título de `app/layout.tsx` a FARO.
+- [ ] Explicar los cambios de zonas y recursos entre planes: el helper
+      `capturePlanContext` de `lib/store.ts` nunca se llegó a llamar y se retiró
+      en la limpieza; `diffPlans` compara hoy el estado actual consigo mismo.
+      Hay que capturar la foto antes de cada mutación que replanifica.
+- [ ] Acotar la ruta de `.data/` en `lib/persistence.ts` para que Turbopack no
+      trace todo el proyecto (aviso en `npm run build`).
+- [ ] Conectar el centro de mando a Supabase siguiendo `docs/data-model.md`.
 
 ## Ideas
 
-- [ ] Gemelo digital de la incidencia: además del mapa base, representar la
-      incidencia en un gemelo digital que sirva como campo de pruebas. Permitiría
-      simular escenarios de forma proactiva (p. ej. cambios de viento, cortes de
-      acceso, pérdida de recursos) y comparar alternativas para proponer la mejor
-      antes de ejecutar acciones reales.
+- [ ] Ampliar el gemelo digital como campo de pruebas para comparar alternativas
+      antes de ejecutar acciones reales (ver Fase 3 y 4).
 
 ## Referencias
 
@@ -103,6 +127,8 @@ ejecución robusta, aprendizaje y ensayo) están en el documento fuente.
 - [thoughts/](thoughts/README.md): modelo de datos, inventario de
   funcionalidades por portar y decisiones abiertas.
 - [CHALLENGE.md](CHALLENGE.md): requisitos originales del reto.
+- [docs/architecture.md](docs/architecture.md) y [docs/security.md](docs/security.md):
+  decisiones y reglas de seguridad del centro de mando.
 - [docs/input-architecture.md](docs/input-architecture.md): diseño y guía de
   implementación de la ingesta de eventos (Hito A síncrono con procesamiento de
   lotes concurrente; Hito B async/topic aplazado). Empezar por el Hito A para

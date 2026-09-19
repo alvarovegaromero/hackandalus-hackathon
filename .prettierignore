@@ -1,16 +1,26 @@
 node_modules/
 .next/
+.next-dev/
+.next.broken-*/
 out/
 .vercel/
 .workflow-data/
 .swc/
 coverage/
+.data/
 graft/
 src/app/.well-known/workflow/
+app/.well-known/workflow/
 next-env.d.ts
 package-lock.json
+*.tsbuildinfo
 .env*
 **/.claude/settings.local.json
 **/CLAUDE.local.md
+
 # Preserve upstream skill snapshots and their recorded hashes.
 .agents/skills/
+
+# Documents with hand-maintained formatting.
+CHALLENGE.md
+docs/happyDocumentation.md
