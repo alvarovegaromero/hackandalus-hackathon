@@ -135,6 +135,31 @@ empty subagent queue, an existing active incident and stopped workers. It checks
 pre-reserved resources, mission deduplication, lease exclusion, contact idempotency,
 completion evidence, waiting/resume, unchanged inventory and persisted activity.
 All eight passed on local PostgreSQL 18. No automated tests were added or run.
-Live LLM tool selection, shared Supabase deployment, parent handoff/replanning and
+Shared Supabase deployment, parent handoff/replanning and
 frontend integration remain unverified/unconnected. Real HappyRobot calls and
 incoming callbacks require a separate adapter; do not enable them by setting a key.
+
+## Live model tool-selection script
+
+Run npm run subagents:try (or append -- --limit 1 through 5). This is on-demand,
+not part of check/CI. It uses the configured real LLM, the same executeMissionAgent
+and createMissionTools as the worker, and an isolated in-memory persistence adapter.
+It neither writes to Supabase nor performs real communications. The SQL harness
+above independently covers durable storage; this is not a full production E2E.
+
+Five live cases passed on Windows with Node 24:
+
+| Mission                            | Required tool sequence                                   | Observed result                               |
+| ---------------------------------- | -------------------------------------------------------- | --------------------------------------------- |
+| Medical coordination               | contactService(medical_coordination), getContactResult   | completed                                     |
+| Emergency coordination             | contactService(emergency_coordination), getContactResult | completed                                     |
+| Resume pending contact             | getContactResult only                                    | completed, no repeat contact                  |
+| No permitted tools                 | none                                                     | blocked                                       |
+| Need two ambulances, none assigned | none                                                     | blocked, resourceRequest.additionalQuantity=2 |
+
+The script checks exact tool sequence, service selection, result status, resource
+request and unchanged assigned resource IDs. It exits nonzero on a failure and
+writes per-case input, tool arguments, operation results and decisions to
+.data/subagent-tool-results.json. Provider errors are redacted. No private chain
+of thought is exported. A passing run is evidence for these scenarios, not a
+guarantee of future model behavior; runtime and database validation remain mandatory.

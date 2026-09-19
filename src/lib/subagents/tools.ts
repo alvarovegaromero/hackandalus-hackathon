@@ -8,7 +8,11 @@ import {
 } from "../contracts/mission";
 import { missionRpc } from "./repository";
 
-export function createMissionTools(mission: MissionInput, token: string) {
+export function createMissionTools(
+  mission: MissionInput,
+  token: string,
+  persistence: typeof missionRpc = missionRpc,
+) {
   return {
     contactService: tool({
       description:
@@ -17,7 +21,7 @@ export function createMissionTools(mission: MissionInput, token: string) {
       execute: async (input) => {
         if (!mission.allowedTools.includes("contactService"))
           throw new Error("Tool not permitted.");
-        const result = await missionRpc("contact", token, {
+        const result = await persistence("contact", token, {
           missionId: mission.missionId,
           ...input,
         });
@@ -32,7 +36,7 @@ export function createMissionTools(mission: MissionInput, token: string) {
       execute: async ({ operationId }) => {
         if (!mission.allowedTools.includes("getContactResult"))
           throw new Error("Tool not permitted.");
-        const result = await missionRpc("contact_result", token, {
+        const result = await persistence("contact_result", token, {
           missionId: mission.missionId,
           operationId,
         });
