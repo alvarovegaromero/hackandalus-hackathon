@@ -2,10 +2,11 @@
 
 // Sierra Bermeja tactical map. Event pins come from the live SSE telemetry stream.
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
-import { MapContainer, TileLayer, Popup, CircleMarker, Marker, useMap } from "react-leaflet";
-import { divIcon, type Marker as LeafletMarker } from "leaflet";
+import { MapContainer, TileLayer, CircleMarker, Marker, useMap } from "react-leaflet";
+import { divIcon } from "leaflet";
+import { resourceSummary } from "./resource-summary";
 import { assignedEventLocations } from "./AmbulanceCard";
 import type { CoordinatorState } from "@/lib/contracts/coordinator";
 import type { TelemetryRecord } from "@/lib/event-pipeline";
@@ -92,20 +93,36 @@ function FlyToSelected({ lat, lng }: { lat: number | undefined; lng: number | un
 function FollowEvents({ pins }: { pins: EventPin[] }) {
   const map = useMap();
   const seen = useRef(new Set<string>());
+  const interacting = useRef(false);
+  useEffect(() => {
+    const container = map.getContainer();
+    const stopFollowing = () => {
+      interacting.current = true;
+    };
+    container.addEventListener("pointerdown", stopFollowing);
+    container.addEventListener("wheel", stopFollowing, { passive: true });
+    container.addEventListener("keydown", stopFollowing);
+    return () => {
+      container.removeEventListener("pointerdown", stopFollowing);
+      container.removeEventListener("wheel", stopFollowing);
+      container.removeEventListener("keydown", stopFollowing);
+    };
+  }, [map]);
   useEffect(() => {
     if (!pins.length) {
       seen.current.clear();
+      interacting.current = false;
       return;
     }
     const fresh = pins.filter((pin) => !seen.current.has(pin.id));
     seen.current = new Set(pins.map((pin) => pin.id));
-    if (!fresh.length) return;
+    if (!fresh.length || interacting.current) return;
     map.stop();
     map.fitBounds(
-      pins.slice(-8).map((pin) => pin.position),
+      pins.slice(0, 8).map((pin) => pin.position),
       {
         padding: [60, 60],
-        maxZoom: 15,
+        maxZoom: 14,
         animate: false,
       },
     );
@@ -122,6 +139,7 @@ export default function LeafletMap({
   selectedZoneId,
   onTilesUnavailable,
 }: Props) {
+  const [selection, setSelection] = useState<{ title: string; resources?: string[] } | null>(null);
   const tiles = useRef({ loaded: 0, failed: 0, reported: false });
   const pins = eventPins(events);
   const locations = assignedEventLocations(events);
@@ -175,6 +193,7 @@ export default function LeafletMap({
             key={pin.id}
             center={pin.position}
             radius={8}
+            eventHandlers={{ click: () => setSelection({ title: pin.title }) }}
             pathOptions={{
               color: "#ffffff",
               weight: 2,
@@ -183,29 +202,38 @@ export default function LeafletMap({
               // Only an explicit incident pin is solid; reporter/unknown positions are dashed.
               dashArray: pin.reference === "incident" ? undefined : "3, 3",
             }}
-          >
-            <Popup>
-              <div className="p-1 text-[12px] font-sans">
-                <b className="text-ink">{pin.title}</b>
-                <p className="text-neutral-700 mt-1">
-                  Severity {pin.severity} · location {pin.reference}
-                </p>
-                {pin.description ? (
-                  <p className="text-neutral-500 mt-1">{pin.description}</p>
-                ) : null}
-              </div>
-            </Popup>
-          </CircleMarker>
+          ></CircleMarker>
         ))}
         {[...groups.entries()].map(([key, group]) => (
           <AmbulanceMarker
             key={key}
             group={group}
             focus={ambulanceFocus}
-            onSelect={onSelectAmbulance}
+            onSelect={(id) => {
+              onSelectAmbulance?.(id);
+              setSelection({
+                title: [...new Set(group.units.map((unit) => unit.title))].join(" · "),
+                resources: group.units.map((unit) => unit.id),
+              });
+            }}
           />
         ))}
       </MapContainer>
+      {selection && (
+        <div className="map-selection" role="region" aria-label="Selected location">
+          <button
+            type="button"
+            aria-label="Close location details"
+            onClick={() => setSelection(null)}
+          >
+            ×
+          </button>
+          <p>{selection.title}</p>
+          {selection.resources && (
+            <p className="mt-2 text-xs text-neutral-500">{resourceSummary(selection.resources)}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -219,16 +247,7 @@ function AmbulanceMarker({
   focus?: { id: string; request: number } | null;
   onSelect?: (id: string) => void;
 }) {
-  const map = useMap();
-  const marker = useRef<LeafletMarker>(null);
   const selected = group.units.some((unit) => unit.id === focus?.id);
-  const [lat, lng] = group.position;
-  useEffect(() => {
-    if (!selected) return;
-    map.stop();
-    map.setView([lat, lng], Math.max(map.getZoom(), 15), { animate: false });
-    marker.current?.openPopup();
-  }, [selected, focus?.request, lat, lng, map]);
   const unitId = (group.units.find((unit) => unit.id === focus?.id) ?? group.units[0]).id;
   const medical = unitId.startsWith("ambulance-");
   const civilGuard = unitId.startsWith("civil-guard-");
@@ -241,7 +260,6 @@ function AmbulanceMarker({
   });
   return (
     <Marker
-      ref={marker}
       position={group.position}
       icon={icon}
       zIndexOffset={selected ? 1100 : 1000}
@@ -250,18 +268,6 @@ function AmbulanceMarker({
         medical ? "Assigned ambulance" : civilGuard ? "Assigned Guardia Civil" : "Assigned Policía"
       }
       eventHandlers={{ click: () => onSelect?.(group.units[0].id) }}
-    >
-      <Popup autoPan={false}>
-        <div className="text-xs">
-          {group.units.map((unit) => (
-            <div key={unit.id} className="mb-2">
-              <strong>{unit.id}</strong>
-              <p>{unit.title}</p>
-            </div>
-          ))}
-          <p className="text-neutral-500">Assigned report location · not vehicle GPS</p>
-        </div>
-      </Popup>
-    </Marker>
+    ></Marker>
   );
 }

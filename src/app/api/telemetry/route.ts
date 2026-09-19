@@ -28,6 +28,10 @@ export async function GET(request: Request) {
       let sequence = 0;
       const seen = new Map<string, string>();
       const send = (text: string) => {
+        if (authorizeDashboardRead(request)) {
+          stop();
+          return;
+        }
         if (!stopped) controller.enqueue(encoder.encode(text));
       };
       const emit = (
@@ -47,6 +51,10 @@ export async function GET(request: Request) {
       };
       const poll = async () => {
         if (stopped) return;
+        if (authorizeDashboardRead(request)) {
+          stop();
+          return;
+        }
         try {
           const before = await readCoordinatorState();
           const { data, error } = await createServerSupabase()
