@@ -137,7 +137,7 @@ Webhook node posting to FARO (see TASKS.md).
 
 ### Integration flow
 
-1. A report enters via `POST /api/signals` (citizen or HappyRobot), the UI or
+1. A report enters via `POST /api/signals` (HappyRobot Inbound Reporter), the UI or
    `POST /api/events`; state and priorities update.
 2. The app proposes actions; the operator approves a high-impact one.
 3. `src/lib/happyrobot.ts` picks the workflow by channel (`call` → dispatch,
@@ -228,15 +228,20 @@ Generic shape, still accepted:
 
 ### Inbound reports (`POST /api/signals`)
 
-The Inbound Reporter workflows post their `normalized_report` (or
-`normalized_report_json`) with `x-happyrobot-secret`. The route resolves the
-producer from the credential, validates the report, builds the
-`NormalizedReport` envelope (`docs/input-contract.md`) and projects it as an
-unconfirmed command-center event. Intake rules, not triage: `people.immediate_danger`
-raises severity to `high`; a reporter at the scene raises confidence to `high`.
-A zone is only a candidate matched by name. Acceptance is in memory
-(`storage: "memory"`); the same `native_interaction_id` within 15 minutes is
-merged, not duplicated.
+The Inbound Reporter workflows post the `normalized_report` object itself (not
+the `normalized_report_json` string) with `x-happyrobot-secret`. The route
+validates it against the exact schema in `src/lib/signals/happyrobot.ts`
+(unknown keys are rejected), stores the raw report durably in the Supabase table
+`public.signals` (`src/lib/signals/repository.ts`, migration
+`supabase/migrations/202609190001_happyrobot_signals.sql`) and only then
+interprets it in FARO (`src/lib/signals/process.ts`): zone, category, severity
+and confidence are derived here and cannot be set by the caller. The signal
+identity is `happyrobot:<channel>:<native_interaction_id>` (or a payload hash
+when the id is null), so a redelivered report returns the same `signalId` and
+`eventId` with `duplicate: true` instead of creating a second event. The
+response is `{ signalId, eventId, duplicate, status }`; without Supabase
+credentials the route answers `503 persistencia_no_disponible` and nothing is
+accepted. Public (citizen) reports are not accepted on this route yet.
 
 ### Remaining gaps
 

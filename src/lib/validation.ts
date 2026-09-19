@@ -35,6 +35,7 @@ export type ApiErrorCode =
   | "no_autorizado"
   | "no_encontrado"
   | "conflicto"
+  | "persistencia_no_disponible"
   | "metodo_no_permitido"
   | "error_interno";
 

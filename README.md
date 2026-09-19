@@ -18,8 +18,9 @@ open decisions) in [thoughts/](thoughts/README.md).
 **Status.** The application is unified under `src/`. Next.js serves
 `src/app/`, with sketch UI components in `src/components/` and the active
 command-center backend in `src/lib/`. It includes the HTTP API, scripted
-scenarios, human-approved actions and the digital twin. State lives in server
-memory with optional local JSON persistence.
+scenarios, human-approved actions and the digital twin. Operational state lives
+in server memory with optional local JSON persistence. Authenticated HappyRobot
+inbound reports are durably stored in Supabase before synchronous interpretation.
 
 Reusable Workflow, AI SDK, Supabase, batch ingestion and Sierra Bermeja
 scenario modules also live under `src/`, but are not connected to the served
@@ -50,8 +51,22 @@ not connected to this flow. See [contract, authentication, replay and limits](do
 
 ## Local Startup
 
-Prerequisites: Node.js **26+** with its bundled npm;
-`.nvmrc` pins `26`. `package.json` pins `npm@11.6.1` in `packageManager`
+To manually exercise Jev with 10 synthetic reports, run `npm run jev:try` after
+configuring `TYPESAFE_API_KEY`. Add `-- --limit 5` for fewer cases or `-- --dry-run`
+to inspect inputs without live calls. See [Jev filter](docs/jev-filter.md).
+
+P2's server-only [Jev relevance filter](docs/jev-filter.md) is available for P1
+integration, with shared input/output validators and backend decision logs.
+Configure `TYPESAFE_API_KEY` and optional `JEV_*` policy settings in `.env.local`
+for real evaluation. Missing credentials return unavailable. The served intake
+does not yet invoke it; persistence and frontend filter notifications are pending.
+
+The agreed initial delivery is documented in [Initial POC](docs/poc.md), with
+P0–P5 work packages, dependencies and demo acceptance. Follow that scope before
+the broader architecture proposals; progress is tracked in [TASKS.md](TASKS.md).
+
+Prerequisites: Node.js **24.x** with its bundled npm;
+`.nvmrc` pins `24`. `package.json` pins `npm@11.6.1` in `packageManager`
 for Corepack users (`corepack enable`); it is optional. We use npm and
 `package-lock.json`.
 
@@ -67,17 +82,17 @@ restarts; `POST /api/demo/reset` returns to initial state. For a second
 instance without build directory conflicts:
 `NEXT_DIST_DIR=.next-dev npm run dev -- -p 3001`.
 
-| Command                             | Description                                                      |
-| ----------------------------------- | ---------------------------------------------------------------- |
-| `npm run dev`                       | Development server on port 3000.                                 |
-| `npm run build` / `npm start`       | Production build and server.                                     |
-| `npm run lint`                      | ESLint across the entire repository.                             |
-| `npm run typecheck`                 | Next route types and `tsc --noEmit`.                             |
-| `npm test`                          | Single-pass Vitest: `tests/`, `src/`, and `scripts/`.            |
-| `npm run format` / `format:check`   | Prettier: format or check only.                                  |
-| `npm run check`                     | Secrets, formatting, lint, types, tests, build, and Graft index. |
-| `npm run env:setup`                 | Creates `.env.local` from `.env.example` if missing.             |
-| `npm run index:build` / `index:map` | Builds and queries the Graft code index.                         |
+| Command                             | Description                                                         |
+| ----------------------------------- | ------------------------------------------------------------------- |
+| `npm run dev`                       | Development server on port 3000.                                    |
+| `npm run build` / `npm start`       | Production build and server.                                        |
+| `npm run lint`                      | ESLint across the entire repository.                                |
+| `npm run typecheck`                 | Next route types and `tsc --noEmit`.                                |
+| `npm test`                          | Optional manual Vitest run; not part of hackathon validation.       |
+| `npm run format` / `format:check`   | Prettier: format or check only.                                     |
+| `npm run check`                     | Secrets, formatting, lint, types, build, and Graft index; no tests. |
+| `npm run env:setup`                 | Creates `.env.local` from `.env.example` if missing.                |
+| `npm run index:build` / `index:map` | Builds and queries the Graft code index.                            |
 
 `package.json` pins two indirect dependencies of Workflow via `overrides`
 (`nanoid` and `undici`) to patched versions. Check if these remain necessary
@@ -88,12 +103,10 @@ when updating Workflow.
 `npm ci` installs Husky hooks via `prepare`. Git and Node/npm must be on PATH;
 on Windows, Git for Windows provides the shell.
 
-- **Pre-commit:** blocks commits on protected branches and private files like
-  `.env.local` or private keys. `lint-staged` checks secrets, applies Prettier,
-  and runs ESLint (warnings treated as errors) on staged files. Then it runs
-  TypeScript, tests, and `npm run index:verify`.
+- **Pre-commit:** intentionally disabled for the 24-hour hackathon. Do not add
+  or run automated tests by default; existing tests remain available on request.
 - **Pre-push:** blocks updates to `main`, `master`, and `develop`, and runs
-  `npm run check`, including the full build.
+  `npm run check`, including the full build but excluding tests.
 - **Before creating a PR:** use `npm run pr:create -- --title "..." --body-file <file>`.
   Its local `pr:check` prehook runs `npm run check` and blocks creation on
   failure. Requires authenticated GitHub CLI (`gh`), a clean working tree, and
@@ -120,9 +133,9 @@ are permitted. No scanner detects every secret.
 ```
       signals                    decision                    execution
   ┌───────────────┐        ┌───────────────────┐        ┌────────────────┐
-  │ POST /events  │        │ priority.ts       │        │ happyrobot.ts  │
-  │ webhook       │ ─────► │ resources.ts      │ ─────► │  (single exit  │
-  │ demo/inject   │        │ contacts.ts       │        │     point)     │
+  │ POST /signals │        │ priority.ts       │        │ happyrobot.ts  │
+  │ POST /events  │        │ resources.ts      │        │  (single exit  │
+  │ webhook/demo  │ ─────► │ contacts.ts       │ ─────► │     point)     │
   │ scenario.ts   │        │ escalation.ts     │        └───────┬────────┘
   └───────────────┘        └─────────┬─────────┘                │
                                      │                          │ callback
@@ -155,6 +168,7 @@ model.
 | `src/lib/assumptions.ts`                                              | Plan assumptions and world-state updates.                                      |
 | `src/lib/digitalTwin.ts`                                              | Digital twin: perceived world from signals vs simulated ground truth accuracy. |
 | `src/lib/happyrobot.ts`                                               | HappyRobot adapter; the single outbound communication point.                   |
+| `src/lib/signals/happyrobot.ts`, `process.ts`, `repository.ts`        | Exact inbound contract, FARO interpretation, and durable Signal storage.       |
 | `src/lib/scenario.ts`, `src/lib/seed.ts`                              | Scenario scripts driving crisis progression and initial state.                 |
 | `src/lib/history.ts`, `src/lib/learning.ts`, `src/lib/persistence.ts` | History and plan diffs, learned statistics, optional JSON storage.             |
 | `src/app/page.tsx`, `src/components/`                                 | Operator dashboard.                                                            |
@@ -195,7 +209,7 @@ for the distinction between current behavior and proposals.
 6. Close the loop by simulating a callback via `POST /api/webhooks/happyrobot`
    (a `dispatch_result`, a `public_alert_result` or the generic shape): the action
    status updates and what the responder said enters as a new signal triggering
-   replanning. Citizen reports enter through `POST /api/signals`.
+   replanning. HappyRobot inbound reports enter through `POST /api/signals`.
 7. Reset with `POST /api/demo/reset` before the next demonstration run.
 
 The default script is `wildfire-andalucia` and its seed names Sierra Morena;
@@ -206,25 +220,26 @@ updating this to Sierra Bermeja is tracked in [TASKS.md](TASKS.md).
 JSON responses without caching. Errors always follow the format
 `{ "error", "code", "detalles": [{ "campo", "mensaje" }] }` with stable
 codes (`cuerpo_invalido`, `referencia_desconocida`, `no_encontrado`,
-`conflicto`, `no_autorizado`, `metodo_no_permitido`, `error_interno`).
+`conflicto`, `no_autorizado`, `persistencia_no_disponible`,
+`metodo_no_permitido`, `error_interno`).
 Unsupported methods return `405` with the `Allow` header.
 
-| Endpoint                          | Body                                                                                             | Description                                                                                                                                                   |
-| --------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /api/situation`              | —                                                                                                | Complete state: signals, zones, resources, plan, history                                                                                                      |
-| `POST /api/events`                | `{ id?, source?, title?, description?, zoneId?, category?, severity?, confidence?, confirmed? }` | 202: accepts in memory, publishes telemetry and updates the command center                                                                                    |
-| `GET /api/telemetry`              | —                                                                                                | Read-only SSE; recent history and cursor reconnection                                                                                                         |
-| `POST /api/events/:id/mark`       | `{ confirmed }`                                                                                  | Confirms or discards a signal                                                                                                                                 |
-| `POST /api/actions`               | `{ channel, target, objective, reason, zoneId, resourceId?, contactId? }`                        | Creates a pending action awaiting approval                                                                                                                    |
-| `POST /api/actions/:id/approve`   | —                                                                                                | Human approval; only then does execution occur                                                                                                                |
-| `POST /api/actions/:id/status`    | `{ operation?: "cancel" \| "retry", status?, externalActionId?, error? }`                        | Cancels, retries, or updates action status                                                                                                                    |
-| `POST /api/signals`               | report, array, or `{ signals: [...] }` (max 50)                                                  | Report intake: public form (Bearer `CRISIS_API_TOKEN`, open locally) or HappyRobot `normalized_report` (`x-happyrobot-secret`); 202/200 with per-item results |
-| `POST /api/webhooks/happyrobot`   | `dispatch_result`, `public_alert_result` or generic callback                                     | Requires `x-happyrobot-secret`; `503` if unconfigured, `401` on mismatch                                                                                      |
-| `POST /api/scenario/start`        | `{ scriptId?, speed?, restart? }`                                                                | Starts or resumes scenario script (`speed` between 0.25 and 10)                                                                                               |
-| `POST /api/scenario/stop`         | —                                                                                                | Pauses scenario preserving elapsed time                                                                                                                       |
-| `POST` / `GET /api/scenario/tick` | —                                                                                                | Manual scenario advancement / read-only status poll                                                                                                           |
-| `POST /api/demo/inject`           | `{ kind?: "incident" \| "resource-down" \| "route-blocked" \| "integration-failure" }`           | Injects a simulated fault                                                                                                                                     |
-| `POST /api/demo/reset`            | —                                                                                                | Resets to initial baseline state                                                                                                                              |
+| Endpoint                          | Body                                                                                             | Description                                                                |
+| --------------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| `GET /api/situation`              | —                                                                                                | Complete operational state: events, zones, resources, plan, history        |
+| `POST /api/events`                | `{ id?, source?, title?, description?, zoneId?, category?, severity?, confidence?, confirmed? }` | 202: accepts in memory, publishes telemetry and updates the command center |
+| `GET /api/telemetry`              | —                                                                                                | Read-only SSE; recent history and cursor reconnection                      |
+| `POST /api/events/:id/mark`       | `{ confirmed }`                                                                                  | Confirms or discards a signal                                              |
+| `POST /api/actions`               | `{ channel, target, objective, reason, zoneId, resourceId?, contactId? }`                        | Creates a pending action awaiting approval                                 |
+| `POST /api/actions/:id/approve`   | —                                                                                                | Human approval; only then does execution occur                             |
+| `POST /api/actions/:id/status`    | `{ operation?: "cancel" \| "retry", status?, externalActionId?, error? }`                        | Cancels, retries, or updates action status                                 |
+| `POST /api/signals`               | HappyRobot `normalized_report`                                                                   | Durably stores a Signal, interprets an Event, and replans                  |
+| `POST /api/webhooks/happyrobot`   | `dispatch_result`, `public_alert_result` or generic callback                                     | Requires `x-happyrobot-secret`; `503` if unconfigured, `401` on mismatch   |
+| `POST /api/scenario/start`        | `{ scriptId?, speed?, restart? }`                                                                | Starts or resumes scenario script (`speed` between 0.25 and 10)            |
+| `POST /api/scenario/stop`         | —                                                                                                | Pauses scenario preserving elapsed time                                    |
+| `POST` / `GET /api/scenario/tick` | —                                                                                                | Manual scenario advancement / read-only status poll                        |
+| `POST /api/demo/inject`           | `{ kind?: "incident" \| "resource-down" \| "route-blocked" \| "integration-failure" }`           | Injects a simulated fault                                                  |
+| `POST /api/demo/reset`            | —                                                                                                | Resets to initial baseline state                                           |
 
 Channels: `call`, `sms`, `email`, `ticket`, `webhook`, `whatsapp`, `slack`.
 Action statuses: `pending`, `approved`, `running`, `succeeded`, `failed`,
@@ -245,7 +260,7 @@ repository; see [CONTRIBUTING.md](CONTRIBUTING.md) for sharing guidance.
 | `HAPPYROBOT_DISPATCH_WORKFLOW_ID`, `HAPPYROBOT_PUBLIC_ALERT_WORKFLOW_ID`, `HAPPYROBOT_WORKFLOW_ID`, `HAPPYROBOT_CHANNEL_WORKFLOWS`, `CRISIS_INCIDENT_ID` | FARO workflows triggered per channel (`call=dispatch,sms=public-alert`, generic fallback) and the incident id sent with each run.          |
 | `HAPPYROBOT_RUNS_PATH`, `_AUTH_HEADER`, `_AUTH_SCHEME`, `_IDEMPOTENCY_HEADER`, `_RESPONSE_ID_PATH`                                                       | Adapter knobs; defaults follow the public SDK contract ([docs/happyDocumentation.md](docs/happyDocumentation.md)).                         |
 | `HAPPYROBOT_TIMEOUT_MS`, `HAPPYROBOT_MAX_ATTEMPTS`, `HAPPYROBOT_RETRY_BASE_MS`                                                                           | Per-attempt timeout, retry attempts (5xx, network, and timeout only), and backoff.                                                         |
-| `HAPPYROBOT_WEBHOOK_SECRET`                                                                                                                              | Shared secret for callback webhook.                                                                                                        |
+| `HAPPYROBOT_WEBHOOK_SECRET`                                                                                                                              | Shared `x-happyrobot-secret` for inbound Signal intake and callback webhook.                                                               |
 | `DEMO_API_TOKEN`                                                                                                                                         | Protects `/api/demo/*`.                                                                                                                    |
 | `CRISIS_PERSISTENCE`                                                                                                                                     | `on` persists state as JSON under `.data/`. Disabled by default.                                                                           |
 | `CRISIS_API_TOKEN`, `AI_GATEWAY_API_KEY`, `AI_MODEL`, `NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SECRET_KEY`, `SCENARIO_AGENT_ENABLED`                          | Platform base (`src/`): workflows API, AI Gateway, Supabase, and scenario→agent bridge. Only active in tests until trees are unified.      |

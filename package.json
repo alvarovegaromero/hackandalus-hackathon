@@ -18,7 +18,7 @@
     "prepare": "node scripts/install-hooks.mjs",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
-    "check": "npm run secrets:check && npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && npm run index:verify",
+    "check": "npm run secrets:check && npm run format:check && npm run lint && npm run typecheck && npm run build && npm run index:verify",
     "pr:check": "node scripts/guard-protected-branches.mjs commit && npm run check",
     "pr:create": "npm run pr:check && node scripts/create-pr.mjs",
     "lint:staged": "lint-staged --concurrent false",
@@ -29,6 +29,7 @@
     "index:map": "graft map",
     "index:check": "graft check",
     "index:verify": "npm run index:build && npm run index:check",
+    "jev:try": "node --conditions=react-server scripts/try-jev.mjs",
     "mock:events": "node --env-file-if-exists=.env.local scripts/mock-events.mjs"
   },
   "dependencies": {

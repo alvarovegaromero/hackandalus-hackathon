@@ -23,6 +23,10 @@ JSON persistence. Outbound communications default to mock mode.
 
 ## Contracts and integration work
 
+[Jev filter integration](jev-filter.md) documents the implemented P2 module,
+P1 request, validated P3 handoff, backend logging and provisional configuration.
+Runtime wiring/persistence and frontend filtering notifications remain pending.
+
 **Start implementation with the agreed [Initial POC](poc.md).** It defines the
 active scope, P0–P5 work packages, handoffs and demo acceptance. Its persisted
 activity/SSE path and bounded filter/triage/agent scope take precedence for the
@@ -48,12 +52,12 @@ graduated autonomy remain future work; the active flow uses deterministic zone
 scoring and human-approved actions. `src/lib/report.ts` remains the shared
 input envelope used by the scenario adapter.
 
-| Document                                      | Status                                                                                                               |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| [Report intake contract](input-contract.md)   | Confirmed contract; `POST /api/signals` serves public and HappyRobot reports in memory; durable persistence pending. |
-| [Input architecture](input-architecture.md)   | Current ingestion behavior and migration boundaries.                                                                 |
-| [Data model](data-model.md)                   | Canonical proposal, not the deployed schema; replaces the duplicate in `thoughts/`.                                  |
-| [Database migration](../supabase/migrations/) | Implemented SQL files; application to a development database remains pending.                                        |
+| Document                                      | Status                                                                                                                                                       |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [Report intake contract](input-contract.md)   | Confirmed contract; `POST /api/signals` durably stores HappyRobot `normalized_report` Signals in Supabase before interpretation; public form intake pending. |
+| [Input architecture](input-architecture.md)   | Current ingestion behavior and migration boundaries.                                                                                                         |
+| [Data model](data-model.md)                   | Canonical proposal, not the deployed schema; replaces the duplicate in `thoughts/`.                                                                          |
+| [Database migration](../supabase/migrations/) | Implemented SQL files; application to a development database remains pending.                                                                                |
 
 ## Product and design context
 

@@ -1,5 +1,11 @@
 # Project Tasks
 
+## 24-hour hackathon workflow
+
+- [x] Disable pre-commit and remove tests from automatic check/push/PR validation.
+      Existing tests remain available manually. Do not add or run more by default.
+      Historical hook/test milestones below describe the earlier setup.
+
 ## Initial POC · active delivery scope
 
 Scope agreed on 2026-09-19: [POC plan and package acceptance](docs/poc.md).
@@ -18,8 +24,19 @@ All package owners are unassigned; no implementation completion is implied.
       legacy projection from executing alongside the new agent for the same input.
 - [ ] **P1 — Input/scenarios:** expose confirmed report intake, deduplicate
       deliveries, persist and schedule processing; publish demo scenario fixtures.
-- [ ] **P2 — Jev filter:** relevant/irrelevant/uncertain decisions, explicit
-      unavailable state and review path; preserve all original reports.
+- [x] **P2 — Jev filter module:** shared request/result/P3 handoff validators,
+      Jev HTTP evaluation, relevant/irrelevant/uncertain/unavailable results,
+      backend outcome logs and contract/failure fixtures. See [integration](docs/jev-filter.md).
+- [ ] **P0/P1/P2 — Connect filtering:** invoke P2 from persisted report processing,
+      persist decisions and route relevant and uncertain reports to P3/agent;
+      retain irrelevant reports and log unavailable results without forwarding them.
+- [x] **P2 — Manual live smoke run:** `npm run jev:try`, 10 synthetic cases,
+      10 expected routes and valid output contracts on Windows (2026-09-19).
+      This is on demand only; no hooks or automatic test integration.
+- [ ] **P2 — Calibration:** broader labeled evaluation and threshold calibration;
+      the small live sample does not establish accuracy or operational readiness.
+- [ ] **P0/P5 — TBD filtering notifications:** after persistence, publish existing
+      filtering telemetry to the frontend; P2 currently logs in the backend only.
 - [ ] **P3 — Triage:** agree factors/weights; implement the central versioned
       deterministic priority function and auditable factor breakdown.
 - [ ] **P4 — Agent/execution:** one agent and one HappyRobot operation;
@@ -102,6 +119,9 @@ communications have not been tested.
 - [ ] Select AI provider/model and configure AI Gateway credentials.
 - [ ] Set up Supabase project and apply migration in development.
 - [ ] Finalize HappyRobot operations, authentication, and callbacks.
+- [x] First inbound HappyRobot slice: authenticated `/api/signals`, durable raw
+      `normalized_report`, transport idempotency, FARO-owned Event interpretation,
+      and reuse of the active planning/Digital Twin/dashboard flow.
 - [ ] Agree on demo recipients and test resources for external validations.
 
 Open decisions do not block the foundational scaffolding and must not be resolved with invented values.
@@ -123,7 +143,7 @@ are in the source document.
 - [ ] Persist pause, cancellation, and human overrides, honoring them during execution.
 - [ ] Add AI SDK tools and subagents based on agreed operations.
 - [x] HappyRobot adapter with timeout, retries, and shared-secret authenticated webhook (`src/lib/happyrobot.ts`, `src/app/api/webhooks/happyrobot`), aligned with the public SDK contract (`POST /workflows/{id}/runs`, `run_id`) and the FARO workflow trigger params. See `docs/happyDocumentation.md`.
-- [x] Webhook accepts the `dispatch_result` and `public_alert_result` payloads produced by the FARO workflows; `POST /api/signals` accepts public reports and the Inbound Reporter `normalized_report` (in memory).
+- [x] Webhook accepts the `dispatch_result` and `public_alert_result` payloads produced by the FARO workflows; the Inbound Reporter `normalized_report` enters through the durable `POST /api/signals` slice.
 - [ ] Replace the `BLOCKED` terminal nodes of the five FARO workflows with Webhook nodes posting to a public FARO URL (`/api/signals`, `/api/webhooks/happyrobot`) with the shared secret; publish to `development` first.
 - [ ] Enable `enhanced_security` (API key) on the Dispatch and Public Alert webhook triggers.
 - [ ] Poll `GET /runs/{run_id}` as a fallback when no callback arrives; today a live action stays `running` until the webhook fires.
