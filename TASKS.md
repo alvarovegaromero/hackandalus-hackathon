@@ -227,6 +227,7 @@ are in the source document.
 - [x] Demonstrate replanning when situation changes mid-execution:
       self-advancing scripts, chaos fault injection, and plan version diffs in command center.
 - [x] Digital twin, initial release: `src/lib/digitalTwin.ts` reconstructs perceived world from signals and measures accuracy against simulated ground truth; displayed in `src/components/DigitalTwinPanel.tsx`.
+- [x] Isolated emergency-drill workspace at `/dashboard/drills`: configurable earthquake/wildfire rehearsals, interactive schematic 3D sectors, decision history, local notebook, JSON export and evidence-based lessons reused by matching exercises. See [model and storage limits](docs/emergency-drills.md); no operational state clones or live actions.
 - [ ] Digital twin, second release: simulate variants (wind, road cuts, resource loss) on state clones, compare alternative outcomes, and present recommendations before acting.
 - [ ] Test resource constraints, failures, and human oversight.
 - [ ] Configure and deploy to Vercel upon authorization.

@@ -2,7 +2,7 @@
 
 // Operator screen: tactical map plus the live event log.
 
-import { Loader2 } from "lucide-react";
+import { Box, Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -84,6 +84,14 @@ export default function DashboardPage() {
           <h1 className="text-[16px] font-medium">Faro</h1>
           <Link href="/" prefetch={false} className="text-sm underline underline-offset-4">
             Back to home
+          </Link>
+          <Link
+            href="/dashboard/drills"
+            prefetch={false}
+            className="inline-flex items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium"
+          >
+            <Box size={16} aria-hidden="true" />
+            Emergency drills
           </Link>
         </div>
         {process.env.NODE_ENV === "development" ? (

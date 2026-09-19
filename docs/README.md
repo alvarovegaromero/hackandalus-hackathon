@@ -17,6 +17,10 @@ for routing, imported assets and maintenance.
 **Dashboard status: SKETCH.** The visible prototype banner has been removed. The interface is exploratory, with partially connected
 controls; it does not define the approved product or target architecture.
 
+[Emergency drills](emergency-drills.md) documents the isolated
+`/dashboard/drills` training workspace: schematic 3D earthquake/wildfire
+exercises, a browser notebook and evidence-based lessons from prior drills.
+
 Next.js serves `src/app/`; `src/lib/` implements the command center and `tests/` covers
 it. The dashboard polls the HTTP API. State lives in memory, with optional local
 JSON persistence. Outbound communications default to mock mode.
