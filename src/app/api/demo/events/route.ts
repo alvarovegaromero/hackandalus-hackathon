@@ -1,3 +1,4 @@
+import { processCoordinatorInBackground } from "@/lib/coordinator/background";
 import { after } from "next/server";
 import { setTimeout } from "node:timers/promises";
 import fixtures from "@/lib/demo/mock-events.json";
@@ -18,15 +19,18 @@ export async function POST(request: Request) {
   const events = fixtures.map((fixture) => incomingEventSchema.parse(fixture));
   const { runId } = await readCoordinatorState();
   after(async () => {
+    const processing: Promise<void>[] = [];
     for (const [index, event] of events.entries()) {
       try {
         await enqueueLegacyEvent(event, undefined, runId);
+        processing.push(processCoordinatorInBackground());
       } catch {
         console.warn("Demo event sequence stopped: run changed or enqueue failed.");
         break;
       }
       if (index < events.length - 1) await setTimeout(3000);
     }
+    await Promise.allSettled(processing);
   });
   return Response.json({ count: events.length }, { status: 202 });
 }

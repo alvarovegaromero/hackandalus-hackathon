@@ -4,12 +4,18 @@
 
 import { useEffect, useRef } from "react";
 import "leaflet/dist/leaflet.css";
-import { MapContainer, TileLayer, Popup, CircleMarker, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Popup, CircleMarker, Marker, useMap } from "react-leaflet";
+import { divIcon, type Marker as LeafletMarker } from "leaflet";
+import { assignedEventLocations } from "./AmbulanceCard";
+import type { CoordinatorState } from "@/lib/contracts/coordinator";
 import type { TelemetryRecord } from "@/lib/event-pipeline";
 import type { CrisisZone, Severity } from "@/lib/types";
 
 interface Props {
   zones: CrisisZone[];
+  ambulances?: CoordinatorState["ambulances"]["units"];
+  ambulanceFocus?: { id: string; request: number } | null;
+  onSelectAmbulance?: (id: string) => void;
   /** Telemetry records (SSE); `event.accepted` ones with coordinates are plotted. */
   events?: TelemetryRecord[];
   selectedZoneId: string | null;
@@ -18,8 +24,7 @@ interface Props {
   onTilesUnavailable?: () => void;
 }
 
-// Los trazados de Leaflet (SVG) necesitan colores literales: reflejan --red,
-// --amber y --blue de globals.css.
+// Leaflet SVG paths require literal colors matching the CSS palette.
 const colors = { danger: "#a11b12", warn: "#96490f", info: "#17527f", fire: "#e05638" };
 
 const severityColors: Record<Severity, string> = {
@@ -86,10 +91,26 @@ function FlyToSelected({ lat, lng }: { lat: number | undefined; lng: number | un
 export default function LeafletMap({
   zones,
   events = [],
+  ambulances = [],
+  ambulanceFocus,
+  onSelectAmbulance,
   selectedZoneId,
   onTilesUnavailable,
 }: Props) {
   const tiles = useRef({ loaded: 0, failed: 0, reported: false });
+  const locations = assignedEventLocations(events);
+  const groups = new Map<
+    string,
+    { position: [number, number]; units: { id: string; title: string }[] }
+  >();
+  for (const unit of ambulances) {
+    const location = unit.eventId ? locations.get(unit.eventId) : undefined;
+    if (unit.status !== "assigned" || !location) continue;
+    const key = location.position.join(",");
+    const group = groups.get(key) ?? { position: location.position, units: [] };
+    group.units.push({ id: unit.id, title: location.title });
+    groups.set(key, group);
+  }
   const selectedZone = zones.find((zone) => zone.id === selectedZoneId);
 
   return (
@@ -148,7 +169,66 @@ export default function LeafletMap({
             </Popup>
           </CircleMarker>
         ))}
+        {[...groups.entries()].map(([key, group]) => (
+          <AmbulanceMarker
+            key={key}
+            group={group}
+            focus={ambulanceFocus}
+            onSelect={onSelectAmbulance}
+          />
+        ))}
       </MapContainer>
     </div>
+  );
+}
+
+function AmbulanceMarker({
+  group,
+  focus,
+  onSelect,
+}: {
+  group: { position: [number, number]; units: { id: string; title: string }[] };
+  focus?: { id: string; request: number } | null;
+  onSelect?: (id: string) => void;
+}) {
+  const map = useMap();
+  const marker = useRef<LeafletMarker>(null);
+  const selected = group.units.some((unit) => unit.id === focus?.id);
+  const [lat, lng] = group.position;
+  useEffect(() => {
+    if (!selected) return;
+    map.stop();
+    map.setView([lat, lng], Math.max(map.getZoom(), 15), { animate: false });
+    marker.current?.openPopup();
+  }, [selected, focus?.request, lat, lng, map]);
+  const icon = divIcon({
+    className: "",
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+    popupAnchor: [0, -40],
+    html: `<div style="position:relative;display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:${selected ? "#1d4ed8" : "#fff"};color:${selected ? "#fff" : "#1d4ed8"};border:2px solid #1d4ed8;border-radius:12px;box-shadow:0 2px 8px #0003"><svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 10H6m2-2v4M3 17V5h11v12M14 9h4l3 4v4h-3M7 17h7M17 10v3h4"/><circle cx="5" cy="17" r="2"/><circle cx="16" cy="17" r="2"/></svg>${group.units.length > 1 ? `<span style="position:absolute;right:-6px;top:-6px;background:#1d4ed8;color:white;border-radius:99px;padding:1px 5px;font-size:11px">${group.units.length}</span>` : ""}</div>`,
+  });
+  return (
+    <Marker
+      ref={marker}
+      position={group.position}
+      icon={icon}
+      zIndexOffset={selected ? 1100 : 1000}
+      title={group.units.map((unit) => unit.id).join(", ")}
+      alt="Assigned ambulance"
+      eventHandlers={{ click: () => onSelect?.(group.units[0].id) }}
+    >
+      <Popup autoPan={false}>
+        <div className="text-xs">
+          {group.units.map((unit) => (
+            <div key={unit.id} className="mb-2">
+              <strong>{unit.id}</strong>
+              <p>{unit.title}</p>
+            </div>
+          ))}
+          <p className="text-neutral-500">Assigned report location · not vehicle GPS</p>
+        </div>
+      </Popup>
+    </Marker>
   );
 }

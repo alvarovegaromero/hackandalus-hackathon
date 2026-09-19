@@ -106,72 +106,63 @@ export async function proposeCoordinatorState(
   return validateCoordinatorProposal(state, result.output);
 }
 
-/** Dedicated worker only: GET requests never schedule model work. */
+/** Filtering is independent of the model lease and never waits for a plan. */
+export async function prepareCoordinatorReport(rawInput: unknown) {
+  const input = coordinatorInputSchema.parse(rawInput);
+  const context = {
+    schemaVersion: 1 as const,
+    runId: input.report.runId,
+    eventId: input.report.id,
+    executionId: randomUUID(),
+  };
+  const filtered = await filterForTriage({
+    ...context,
+    report: input.report,
+    evidence: [{ id: input.report.id }],
+  });
+  const factors =
+    input.factors ??
+    impactFactorsSchema.parse(
+      Object.fromEntries(
+        ["gravity", "peopleExposed", "vulnerabilityGroup", "minutesToHarm"].map((key) => [
+          key,
+          { value: null, evidence: [], method: "Not supplied by input" },
+        ]),
+      ),
+    );
+  const impact = filtered.priorityRequest
+    ? calculateImpact(filtered.priorityRequest, {
+        ...context,
+        assessedAt: input.report.receivedAt,
+        factors,
+      })
+    : null;
+  const { data, error } = await createServerSupabase().rpc("prepare_coordinator_report", {
+    p_run_id: input.report.runId,
+    p_event_id: input.report.id,
+    p_data: {
+      status: filtered.priorityRequest
+        ? "accepted"
+        : filtered.result.status === "unavailable"
+          ? "error"
+          : "filtered",
+      summary: input.report.text,
+      evidence: { report: input.report, filter: filtered.result, impact },
+    },
+  });
+  if (error || !data) throw new Error("Could not persist filtering result.");
+  return data.code === "OK" && data.status === "accepted";
+}
+
+/** One serialized model call; filtering can continue while this snapshot is planned. */
 export async function runCoordinatorCycle() {
   const token = randomUUID();
   const claim = await rpc("claim", token);
   if (claim.code !== "OK") return { outcome: claim.code };
-  let trigger = "timer.tick";
+  const trigger = "event.received";
   try {
     const db = createServerSupabase();
-    // Filter a bounded batch concurrently; one slow report must not hold up the rest.
-    const pending = await db
-      .from("coordinator_events")
-      .select("input")
-      .eq("status", "pending")
-      .order("created_at")
-      .limit(8);
-    if (pending.error) throw new Error("Cannot read pending events.");
-    if (pending.data?.length) {
-      trigger = "event.received";
-      const preparedBatch = await Promise.allSettled(
-        pending.data.map(async (row) => {
-          const input = coordinatorInputSchema.parse(row.input);
-          const context = {
-            schemaVersion: 1 as const,
-            runId: input.report.runId,
-            eventId: input.report.id,
-            executionId: token,
-          };
-          const filtered = await filterForTriage({
-            ...context,
-            report: input.report,
-            evidence: [{ id: input.report.id }],
-          });
-          const factors =
-            input.factors ??
-            impactFactorsSchema.parse(
-              Object.fromEntries(
-                ["gravity", "peopleExposed", "vulnerabilityGroup", "minutesToHarm"].map((key) => [
-                  key,
-                  { value: null, evidence: [], method: "Not supplied by input" },
-                ]),
-              ),
-            );
-          const impact = filtered.priorityRequest
-            ? calculateImpact(filtered.priorityRequest, {
-                ...context,
-                assessedAt: input.report.receivedAt,
-                factors,
-              })
-            : null;
-          const prepared = await rpc("prepared", token, {
-            eventId: input.report.id,
-            status: filtered.priorityRequest
-              ? "accepted"
-              : filtered.result.status === "unavailable"
-                ? "error"
-                : "filtered",
-            summary: input.report.text,
-            evidence: { report: input.report, filter: filtered.result, impact },
-          });
-          if (prepared.code !== "OK") throw new Error("Event preparation lost its lease.");
-        }),
-      );
-      if (preparedBatch.some((result) => result.status === "rejected"))
-        throw new Error("Could not prepare the entire input batch.");
-    }
-    const state = await readCoordinatorState();
+    const state = coordinatorStateSchema.parse(claim.state);
     if (!state.events.length) {
       await rpc("finish", token);
       return { outcome: "NO_ACTIVE_EVENTS" };
@@ -180,6 +171,10 @@ export async function runCoordinatorCycle() {
       .from("coordinator_events")
       .select("event_id,evidence")
       .eq("status", "accepted")
+      .in(
+        "event_id",
+        state.events.map((event) => event.eventId),
+      )
       .order("created_at");
     if (observations.error) throw new Error("Cannot read accepted observations.");
     const proposal = await proposeCoordinatorState(state, observations.data ?? [], trigger);

@@ -6,9 +6,19 @@ The numbers below are observed synthetic model scenarios, not fixed allocation r
 
 ## Run and read
 
-Run `npm run dev` and `npm run coordinator:work` in separate terminals on Node 24.
-The v1 and v2 migrations are already applied to the shared development Supabase.
-Other databases need both resource migrations in order. Do not reapply them blindly.
+Run `npm run dev` on Node 24. Intake endpoints schedule processing with Next.js
+`after()`; do not start the old standalone worker. Migrations 004–008 are applied
+to the shared development Supabase. Other databases need them in order.
+
+Jev processes up to eight pending reports concurrently, independently of model
+execution. The first accepted report starts a two-second grouping window. A single
+coordinator call receives all accepted events in its claimed snapshot. Reports
+accepted during that call retain their initial null priorities and trigger a later
+plan; the first result cannot erase them. Polling never triggers processing.
+
+This is an in-process POC, not a durable scheduler: after a restart, the next intake
+resumes stored pending reports. Background work remains subject to hosting duration
+limits. Model failures keep the previous plan and retry on a subsequent intake.
 
 `GET /api/state` returns direct JSON with `schemaVersion: 2` and `pollAfterMs: 3000`.
 Fetch immediately, then poll without overlapping requests. GET never runs the LLM.
@@ -44,7 +54,7 @@ it clears coordinator reports, resets the plan and ten units, rotates stateId/ru
 and revokes the worker lease atomically. Audit history is retained. This affects the
 shared database, not just one browser. Routes require development mode and same-origin
 POSTs. The previous legacy `/api/demo/reset` situation-reset behavior is replaced.
-Old demo sequences stop on runId mismatch. The worker must run separately.
+Old demo sequences stop on runId mismatch. Next.js performs background processing after intake.
 
 To install only the reset function (no reset is performed during installation), run
 `node scripts/apply-resource-migration.mjs --apply --reset` with psql available and
@@ -114,19 +124,15 @@ Report POST -> 202             Durable queue                   Existing state wh
                                                               overview + plan + priorities
                                                               complete ambulance inventory
 
-5-second backend tick         Reconsider active events         Updated state only if changed
+New accepted reports          Two-second grouping window       Updated state after model response
 New event during LLM call     Queue for next assessment        Commit plan for processed events
 Future resource-release input Not implemented                  Assigned vehicles stay assigned
 ```
 
-Five seconds is the scheduling interval, not a response-time guarantee. One model
-call runs at a time. Calls may exceed five seconds. Up to eight reports are filtered concurrently per
-cycle, then the coordinator plans from the processed events even if more reports
-are pending. Migration 007 allows intake-only revision advances during the LLM
-call; reset still revokes the lease, and commit still validates full active-event
-coverage and preserves assignments. Jev in the next batch waits for the current
-model call to finish. Restart the worker after changing its code. The worker must be running;
-opening the FE alone does not start it.
+The model sees a snapshot of accepted reports. Migration 008 records its event IDs
+under the database lease and merges priorities only for that snapshot. Concurrent
+filtering remains visible immediately; new events are included in the next plan.
+Reset revokes the model lease and rejects late filtering results from previous runs.
 
 ## Verification and limits
 
@@ -137,3 +143,11 @@ and stale-result rejection. HTTP state/auth and retired/disabled routes were als
 checked. The complete live HTTP input -> Jev -> global LLM -> persisted plan path
 has not yet been exercised as one E2E scenario. Resource-sizing quality is not
 established by these contract checks. All dispatch remains simulated.
+
+## Ambulance map controls
+
+The top resource card shows total, assigned and available counts from `/api/state`.
+Assigned units join SSE receipt coordinates by eventId; selecting a unit centers
+and opens its map marker. Units at the same coordinates share an ambulance marker
+with a count. These positions represent assigned reports, not live vehicle GPS.
+Missing coordinates disable map navigation rather than inventing a position.

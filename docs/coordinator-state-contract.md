@@ -223,3 +223,14 @@ assignments during generation. Commit still requires full active-event coverage 
 preserves assignments; reset revokes the lease. This supersedes the earlier rule
 that every arrival invalidates an in-flight proposal. New pending reports are
 assessed in the next cycle, after the current model call completes.
+
+## In-process POC execution (migration 008)
+
+HTTP intake schedules filtering and planning with Next.js after(). No standalone
+worker is required. Filtering uses a separate run-checked, idempotent RPC and can
+continue during model generation. Claim records the model's active event IDs;
+commit requires exact priority coverage of those IDs and preserves newer active
+events with their existing priorities. The next call incorporates those events.
+This supersedes the exclusive filtering/planning behavior above. Reset still
+revokes the model lease. Restart recovery needs another intake request; there is
+no durable scheduling guarantee or timer-only replanning in this local POC.

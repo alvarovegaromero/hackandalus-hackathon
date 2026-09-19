@@ -1,3 +1,5 @@
+import { after } from "next/server";
+import { processCoordinatorInBackground } from "@/lib/coordinator/background";
 import { authorizePipeline } from "@/lib/pipeline-auth";
 import { coordinatorInputSchema } from "@/lib/contracts/coordinator";
 import { enqueueCoordinatorEvent, CoordinatorConflict } from "@/lib/coordinator/runtime";
@@ -8,6 +10,7 @@ export async function POST(request: Request) {
   if (!input.success) return Response.json({ code: "INVALID_REPORT" }, { status: 400 });
   try {
     const result = await enqueueCoordinatorEvent(input.data);
+    after(processCoordinatorInBackground);
     return Response.json(result, { status: result.duplicate ? 200 : 202 });
   } catch (error) {
     return Response.json(
@@ -16,3 +19,5 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export const maxDuration = 180;

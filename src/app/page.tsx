@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import type { CrisisZone } from "@/lib/types";
+import AmbulanceCard from "@/components/AmbulanceCard";
 import EventLog from "@/components/EventLog";
 import CoordinatorPanel, { useCoordinator } from "@/components/CoordinatorPanel";
 import { useTelemetry } from "@/components/use-telemetry";
@@ -22,12 +23,19 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const telemetry = useTelemetry();
   const coordinator = useCoordinator();
+  const [ambulanceFocus, setAmbulanceFocus] = useState<{ id: string; request: number } | null>(
+    null,
+  );
+  const selectAmbulance = (id: string) => {
+    setAmbulanceFocus((previous) => ({ id, request: (previous?.request ?? 0) + 1 }));
+  };
   const [startingDemo, setStartingDemo] = useState(false);
   const [demoMessage, setDemoMessage] = useState<string | null>(null);
 
   const restartEvents = async () => {
     if (startingDemo) return;
     setStartingDemo(true);
+    setAmbulanceFocus(null);
     setDemoMessage(null);
     try {
       const reset = await fetch("/api/demo/reset", { method: "POST" });
@@ -89,6 +97,18 @@ export default function Home() {
         ) : null}
       </div>
       {error ? <p role="alert">{error}</p> : null}
+      <CoordinatorPanel
+        key={coordinator.state?.stateId ?? "loading"}
+        state={coordinator.state}
+        error={coordinator.error}
+      />
+      <AmbulanceCard
+        state={coordinator.state}
+        records={telemetry.records}
+        selectedId={ambulanceFocus?.id}
+        stale={!!coordinator.error}
+        onSelect={selectAmbulance}
+      />
       <div className="event-map-layout">
         <div className="min-w-0">
           <EventLog
@@ -102,6 +122,9 @@ export default function Home() {
             <LeafletMap
               zones={situation.zones}
               events={telemetry.records}
+              ambulances={coordinator.state?.ambulances.units}
+              ambulanceFocus={ambulanceFocus}
+              onSelectAmbulance={selectAmbulance}
               selectedZoneId={selectedZoneId}
               onSelect={(zoneId) => setSelectedZoneId(zoneId === selectedZoneId ? null : zoneId)}
             />
@@ -110,7 +133,6 @@ export default function Home() {
               <Loader2 className="spin" size={16} aria-hidden="true" /> Loading map…
             </p>
           )}
-          <CoordinatorPanel state={coordinator.state} error={coordinator.error} />
         </div>
       </div>
     </main>

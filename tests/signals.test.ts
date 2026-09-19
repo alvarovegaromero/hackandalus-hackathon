@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-import { handleSignalPost } from "@/app/api/signals/route";
+import { handleSignalPost } from "@/app/api/signals/handler";
 import { GET as getSituationRoute } from "@/app/api/situation/route";
 import { GET as getTelemetryRoute } from "@/app/api/telemetry/route";
 import { readTelemetry } from "@/lib/event-pipeline";

@@ -46,78 +46,86 @@ export default function CoordinatorPanel({
   state: CoordinatorState | null;
   error: string | null;
 }) {
+  const [overviewExpanded, setOverviewExpanded] = useState(false);
+  const [planExpanded, setPlanExpanded] = useState(false);
+  const plan = state?.plan;
+  const buttonClass =
+    "mt-3 text-xs font-medium text-blue-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2";
+
   return (
-    <section
-      className="mt-4 rounded-[16px] border border-line bg-white p-4 text-sm"
-      aria-label="Coordinator"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-medium">Coordinator</h2>
-        <span className="text-xs text-neutral-500">
-          Simulation
-          {state
-            ? ` · Revision ${state.revision} · ${new Date(state.updatedAt).toLocaleTimeString()}`
-            : ""}
-        </span>
+    <section aria-label="Situation and plan" className="flex flex-col gap-2">
+      <div className="flex justify-end text-xs text-neutral-500">
+        Simulation
+        {state
+          ? ` · Revision ${state.revision} · Updated ${new Date(state.updatedAt).toLocaleTimeString()}`
+          : ""}
       </div>
       {error ? (
-        <p role="alert" className="mt-2 text-amber-800">
+        <p role="alert" className="text-sm text-amber-800">
           {error} {state ? "Showing the last available state." : ""}
         </p>
       ) : null}
-      {!state ? (
-        <p className="mt-3 text-neutral-500">
-          {error ? "State could not be loaded." : "Loading coordinator…"}
-        </p>
-      ) : (
-        <>
-          <p className="mt-3">
-            {state.situationOverview || "Waiting for the coordinator's first assessment."}
+      <div className="coordinator-cards">
+        <section
+          className="min-w-0 rounded-[16px] border border-line bg-white p-4 text-sm"
+          aria-labelledby="overview-heading"
+        >
+          <h2 id="overview-heading" className="font-medium">
+            Overview
+          </h2>
+          <p
+            id="overview-content"
+            className={`mt-3 leading-relaxed ${overviewExpanded ? "" : "line-clamp-6"}`}
+          >
+            {state?.situationOverview ||
+              (error && !state
+                ? "State could not be loaded."
+                : "Waiting for the first assessment.")}
           </p>
-          <h3 className="mt-4 font-medium">Plan</h3>
-          {state.plan ? (
+          {state?.situationOverview ? (
+            <button
+              type="button"
+              className={buttonClass}
+              aria-expanded={overviewExpanded}
+              aria-controls="overview-content"
+              onClick={() => setOverviewExpanded(!overviewExpanded)}
+            >
+              {overviewExpanded ? "Show less" : "Show more"}
+            </button>
+          ) : null}
+        </section>
+        <section
+          className="min-w-0 rounded-[16px] border border-line bg-white p-4 text-sm"
+          aria-labelledby="plan-heading"
+        >
+          <h2 id="plan-heading" className="font-medium">
+            Plan
+          </h2>
+          {plan ? (
             <>
-              <p className="mt-1">{state.plan.objective}</p>
-              <ol className="mt-2 list-decimal space-y-1 pl-5">
-                {state.plan.steps.map((step, index) => (
+              <p className="mt-3 font-medium leading-relaxed">{plan.objective}</p>
+              <ol id="plan-steps" className="mt-3 list-decimal space-y-2 pl-5 text-neutral-700">
+                {(planExpanded ? plan.steps : plan.steps.slice(0, 3)).map((step, index) => (
                   <li key={index}>{step}</li>
                 ))}
               </ol>
+              {plan.steps.length > 3 ? (
+                <button
+                  type="button"
+                  className={buttonClass}
+                  aria-expanded={planExpanded}
+                  aria-controls="plan-steps"
+                  onClick={() => setPlanExpanded(!planExpanded)}
+                >
+                  {planExpanded ? "Show less" : `Show more (${plan.steps.length - 3} more steps)`}
+                </button>
+              ) : null}
             </>
           ) : (
-            <p className="mt-1 text-neutral-500">
-              No plan yet. Reports must be processed by the coordinator worker.
-            </p>
+            <p className="mt-3 text-neutral-500">No plan yet. Waiting for report assessment.</p>
           )}
-          <h3 className="mt-4 font-medium">
-            Ambulances{" "}
-            <span className="font-normal text-neutral-500">
-              {state.ambulances.available}/{state.ambulances.total} available ·{" "}
-              {state.ambulances.allocated} assigned
-            </span>
-          </h3>
-          <ul className="mt-2 flex flex-wrap gap-2">
-            {state.ambulances.units.map((unit) => {
-              const event = state.events.find((item) => item.eventId === unit.eventId);
-              return (
-                <li
-                  key={unit.id}
-                  className={`rounded-lg border px-3 py-2 ${unit.status === "assigned" ? "border-blue-200 bg-blue-50" : "border-neutral-200 bg-neutral-50"}`}
-                >
-                  <p className="text-xs font-medium">
-                    {unit.id} · {unit.status}
-                  </p>
-                  {unit.eventId ? (
-                    <p className="mt-1 max-w-64 text-xs">
-                      {event?.summary.split("\n")[0] ?? unit.eventId}
-                    </p>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
-        </>
-      )}
+        </section>
+      </div>
     </section>
   );
 }

@@ -475,3 +475,11 @@ Graft remains the required tool for navigating this repository.
   one-off exceptions once implemented, remove "not yet connected" caveats that
   the change resolved). Docs describe what the code _is_, not what it was; do
   not let stale scaffolding notes outlive the change that made them obsolete.
+
+### Coordinator POC execution update
+
+Report intake now schedules the coordinator in Next.js `after()`; `npm run dev`
+is sufficient locally. Jev filtering runs independently of serialized model calls.
+Migration 008 enables snapshot commits that retain concurrently accepted reports.
+Do not run the old standalone worker with this version. Background processing is
+not durable across server restarts; the next intake resumes pending reports.
