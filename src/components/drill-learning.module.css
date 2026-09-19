@@ -1,0 +1,84 @@
+.configuration {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 14px;
+  background: var(--bg);
+}
+
+.configuration summary {
+  cursor: pointer;
+  font-family: var(--drills-mono);
+  font-weight: 500;
+  line-height: 1.6;
+  min-height: 44px;
+  align-content: center;
+}
+
+.configuration label {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.configuration p,
+.exports p {
+  margin: 12px 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.exports {
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--green);
+  border-radius: 4px;
+  padding: 24px;
+  margin: 32px 0;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.buttons button {
+  background: var(--panel);
+  border: 1px solid var(--drills-control-line);
+  border-radius: 4px;
+  color: var(--ink);
+  cursor: pointer;
+  min-height: 44px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.buttons button:hover:not(:disabled) {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+.buttons button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.buttons button:focus-visible,
+.configuration summary:focus-visible {
+  outline: 3px solid var(--drills-focus);
+  outline-offset: 3px;
+}
+
+@media (max-width: 600px) {
+  .exports {
+    padding: 18px;
+  }
+
+  .buttons button {
+    width: 100%;
+  }
+}

@@ -55,6 +55,13 @@ The illustration sends no messages. Media is pre-rendered; Blender and FFmpeg ar
 not required to run the integrated app. Render sources and the detailed visual
 history remain in the source repository.
 
+The **Learning** section (`#learn`) is local to this repository, not the source.
+It links to `/dashboard/drills` and plays `public/media/faro-drills.mp4`, a clip
+recorded from the drills simulator (headless Chrome screencast encoded with FFmpeg).
+Its example lesson is one the drills engine generates for a missed road closure.
+Under reduced motion the video is hidden and its poster remains.
+Re-record the clip when the drills scene changes visibly.
+
 This is a source import, not a runtime dependency, submodule or automatic sync.
 Future landing changes require a reviewed port. Do not merge the standalone
 package configuration or lockfile into this app: use the destination's existing
