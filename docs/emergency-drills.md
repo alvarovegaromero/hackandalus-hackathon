@@ -17,8 +17,8 @@ No credentials or backend worker are required for drills.
 3. Twenty simulated minutes take 80 seconds at 1× speed; 2× and 4× are available.
    **Next phase** processes the intervening simulation immediately. Running
    and replay both pause when the tab becomes hidden. The training allocation
-   budget resets every five simulated minutes, even if an evacuation is still
-   in transit; this is not a model of real team scheduling.
+   model keeps teams occupied until service completion or evacuation arrival.
+   Keep capacity available for reopening access; blocked missions keep their teams.
 4. Conditions change: access closes at T+5, communications fail at T+10, and an
    aftershock or wind shift occurs at T+15. Earthquake evacuation requires an
    assessment, which becomes invalid after the aftershock. The drill ends at
@@ -31,7 +31,8 @@ No credentials or backend worker are required for drills.
 6. **Compare without intervention** replays an otherwise identical scenario
    with no operator decisions. The debrief compares risk-weighted exposure,
    identifies people who never arrived, and supplies evidence-based lessons.
-   Add facilitator observations and export the JSON report.
+   Add facilitator observations and export JSON, Markdown or decision JSONL.
+   Review individual lessons before exporting offline context.
 7. Rehearse again. A matching completed exercise supplies its evidence-based
    checklist and facilitator observations. The debrief compares assembly-point
    coverage with the preceding matching exercise.
@@ -59,10 +60,13 @@ evacuation capacity. The schematic has residential, care/school and town-centre
 sectors with an assembly point. Human markers represent population groups;
 vehicle markers represent deployments rather than individual vehicles.
 
-The v2 engine advances in deterministic 0.125-minute increments. Evacuation
+The v3 engine advances in deterministic 0.125-minute increments. Evacuation
 orders reserve people immediately but count them as safe only upon arrival.
-Main-route travel takes two simulated minutes; alternative-route travel takes
-three, multiplied by 1.25 for the care sector. A closure stops all in-flight
+Travel duration, care-sector vulnerability, service occupation, seeded variation,
+milestone effects and objectives can be configured under **Ad hoc conditions &
+objectives**. Defaults are two minutes on the main route and four on the
+alternative route, with care travel multiplied by 1.25 plus seeded delay.
+A closure stops all in-flight
 evacuations. Rerouting restarts remaining travel on the longer route from the
 recorded diversion point. Evacuations can remain unfinished at T+20.
 Assessment, warning and protection policies take effect immediately; their
@@ -79,7 +83,7 @@ alternative access, radio fallback, assembly-point coverage, and earthquake
 reassessment or wildfire perimeters. Every lesson includes supporting evidence
 and a suggested rehearsal action. No model training takes place. Matching
 requires the same hazard, locality (case-insensitive), coordinates, severity,
-population, team count and model version, so comparisons do not mix
+population, team count, model version and (for v3) the complete scenario/seed, so comparisons do not mix
 configurations or instant-arrival and delayed-arrival models.
 An archived run is compared only with a run that started earlier.
 
@@ -87,7 +91,9 @@ This workspace is isolated from `src/lib/digitalTwin.ts`, the operational
 coordinator, Supabase and `src/lib/learning.ts`. It does not complete the planned
 operational twin feature that branches live state into alternative plans.
 Facilitator notes and checklists inform human practice; they do not update
-operational policies.
+operational policies. The [offline learning extension](drills-agent-learning.md)
+adds reviewed retrieval context and a schema-validated coordinator demonstration,
+without calling that coordinator.
 
 ## Notebook and exports
 
@@ -117,10 +123,12 @@ at any time. Importing or merging reports is not implemented.
 
 The existing notebook key and envelope remain version 1. Runs without
 `modelVersion` are read as model 1 with no missions and keep their original
-instant-arrival semantics, including when resumed. New runs use model 2.
-Export envelopes use schema version 2, identify the run's model, and include
-no-intervention metrics for model 2. Old runs remain viewable but are excluded
-from model 2 comparisons; no storage reset is needed.
+instant-arrival semantics, including when resumed. Model 2 retains its original
+travel durations and phase team budget. New runs use model 3 with audited
+observations and occupied-team accounting. Old export envelopes retain schema 2;
+model 3 uses schema 3. Models 2 and 3 include no-intervention metrics.
+Old runs remain viewable but are excluded from model 3 comparisons; no storage
+reset is needed. See [schemas, commands and evaluation](drills-agent-learning.md).
 
 ## Implementation and local verification
 

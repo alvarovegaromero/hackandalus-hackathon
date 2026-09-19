@@ -16,6 +16,9 @@ import {
   Waves,
 } from "lucide-react";
 import DrillTwin from "./drill-twin";
+import DrillScenarioFields from "./drill-scenario-fields";
+import DrillLearningExports from "./drill-learning-exports";
+import { drillLearningReport } from "@/lib/drill-learning";
 import {
   ACTIONS,
   actionIds,
@@ -31,7 +34,6 @@ import {
   formatDrillTime,
   replayDrill,
   tickDrill,
-  drillReport,
   LOCALITIES,
   PHASE_NAMES,
   type DrillConfig,
@@ -48,7 +50,7 @@ import {
 
 function exportReport(run: DrillRun) {
   const url = URL.createObjectURL(
-    new Blob([JSON.stringify(drillReport(run), null, 2)], { type: "application/json" }),
+    new Blob([JSON.stringify(drillLearningReport(run), null, 2)], { type: "application/json" }),
   );
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -186,7 +188,7 @@ export default function EmergencyDrills() {
   );
   const baseline = useMemo(
     () =>
-      run?.status === "completed" && run.modelVersion === 2 ? replayDrill(run, 20, false) : null,
+      run?.status === "completed" && run.modelVersion >= 2 ? replayDrill(run, 20, false) : null,
     [run],
   );
   const displayed = replayState ?? run ?? preview;
@@ -195,7 +197,7 @@ export default function EmergencyDrills() {
   const previous = comparableDrills(
     run?.config ?? config,
     notebook.history,
-    run?.modelVersion ?? 2,
+    run?.modelVersion ?? 3,
   ).find((item) => !run || item.startedAt < run.startedAt);
   const priorLessons = useMemo(() => (previous ? drillLessons(previous) : []), [previous]);
   const sector = displayed.sectors.find((item) => item.id === selected)!;
@@ -457,9 +459,13 @@ export default function EmergencyDrills() {
                   />
                 </label>
               </div>
+              <DrillScenarioFields
+                value={config.scenario}
+                onChange={(scenario) => setConfig({ ...config, scenario })}
+              />
               <p className="drills-help">
-                20 simulated minutes in 80 seconds at 1×. Pause to plan; teams return every five
-                simulated minutes. People need time and an open route to reach safety.
+                20 simulated minutes in 80 seconds at 1×. Pause to plan. Teams return after service
+                completion or evacuation arrival. Keep capacity available to reopen blocked access.
               </p>
               {notebook.active ? (
                 <label className="drills-confirm">
@@ -528,7 +534,11 @@ export default function EmergencyDrills() {
                 type="button"
                 disabled={!run}
                 onClick={() => {
-                  if (run) exportReport(run);
+                  try {
+                    if (run) exportReport(run);
+                  } catch (caught) {
+                    setError(caught instanceof Error ? caught.message : "Export failed.");
+                  }
                 }}
                 aria-label="Export exercise report"
               >
@@ -789,6 +799,7 @@ export default function EmergencyDrills() {
               )}
             </section>
           </div>
+          {run ? <DrillLearningExports key={`learning-${run.id}`} run={run} /> : null}
           <section className="drills-learning">
             <div className="drills-section-title">
               <h2>
@@ -834,8 +845,7 @@ export default function EmergencyDrills() {
                 ) : null}
                 {previous ? (
                   <p className="drills-comparison">
-                    Compared with the preceding drill with the same location, hazard, severity,
-                    population and teams:{" "}
+                    Compared with the preceding drill with the same configuration, seed and model:{" "}
                     <strong>
                       {outcome.coverage - drillMetrics(previous).coverage >= 0 ? "+" : ""}
                       {outcome.coverage - drillMetrics(previous).coverage} percentage points
@@ -858,6 +868,43 @@ export default function EmergencyDrills() {
                         <ArrowRight size={15} />
                         <p>{lesson.recommendation}</p>
                       </div>
+                      {run.modelVersion === 3 ? (
+                        <label>
+                          Review for offline context
+                          <select
+                            aria-label={`Review: ${lesson.title}`}
+                            value={
+                              run.learningReview?.find((review) => review.lessonId === lesson.id)
+                                ?.verdict ?? "unreviewed"
+                            }
+                            onChange={(event) => {
+                              const verdict = event.target.value;
+                              const reviews = (run.learningReview ?? []).filter(
+                                (review) => review.lessonId !== lesson.id,
+                              );
+                              persist({
+                                ...run,
+                                learningReview:
+                                  verdict === "approved" || verdict === "rejected"
+                                    ? [
+                                        ...reviews,
+                                        {
+                                          lessonId: lesson.id,
+                                          verdict,
+                                          reviewedAt: new Date().toISOString(),
+                                          reviewer: "local-facilitator",
+                                        },
+                                      ]
+                                    : reviews,
+                              });
+                            }}
+                          >
+                            <option value="unreviewed">Unreviewed</option>
+                            <option value="approved">Approve this lesson</option>
+                            <option value="rejected">Reject this lesson</option>
+                          </select>
+                        </label>
+                      ) : null}
                     </article>
                   ))}
                 </div>
@@ -962,7 +1009,7 @@ export default function EmergencyDrills() {
         )}
       </section>
       <footer className="drills-footer">
-        Synthetic training model v{run?.modelVersion ?? 2}. Visual effects illustrate the exercise;
+        Synthetic training model v{run?.modelVersion ?? 3}. Visual effects illustrate the exercise;
         no surveyed terrain, structural engineering or fire-spread physics. Lessons support
         facilitated practice and do not update the operational coordinator. Export reports to keep
         them beyond this browser.

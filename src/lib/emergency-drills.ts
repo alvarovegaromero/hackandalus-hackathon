@@ -1,6 +1,7 @@
 // OWNER: emergency drill sandbox.
 
 import { z } from "zod";
+import { DEFAULT_SCENARIO, drillScenarioSchema, scenarioVariation } from "./drill-scenario";
 
 export const drillConfigSchema = z.object({
   hazard: z.enum(["earthquake", "wildfire"]),
@@ -10,6 +11,7 @@ export const drillConfigSchema = z.object({
   severity: z.enum(["moderate", "severe", "extreme"]),
   population: z.number().int().min(50).max(10000),
   teams: z.number().int().min(2).max(20),
+  scenario: drillScenarioSchema.optional(),
 });
 
 export type DrillConfig = z.infer<typeof drillConfigSchema>;
@@ -84,6 +86,20 @@ const entrySchema = z.object({
   sectorId: z.enum(sectorIds).optional(),
   teams: count.max(20).optional(),
   moved: count.max(10000).optional(),
+  observation: z
+    .object({
+      minute: z.number().min(0).max(20),
+      hazard: z.enum(["earthquake", "wildfire"]),
+      severity: z.enum(["moderate", "severe", "extreme"]),
+      teamsAvailable: count.max(20),
+      routeOpen: z.boolean(),
+      communicationsDown: z.boolean(),
+      warned: z.boolean(),
+      sectors: z.array(sectorSchema.extend({ waiting: count })).length(3),
+      inTransit: count,
+      eventIds: z.array(z.string()),
+    })
+    .optional(),
 });
 
 const missionSchema = z.object({
@@ -95,6 +111,8 @@ const missionSchema = z.object({
   arrivedAt: z.number().min(0).max(20).nullable(),
   route: z.enum(["main", "alternative"]),
   reroutedFrom: z.number().min(0).max(1).optional(),
+  teamsReserved: count.max(20).optional(),
+  travelMinutes: z.number().positive().optional(),
 });
 export type DrillMission = z.infer<typeof missionSchema>;
 
@@ -105,9 +123,32 @@ export const drillRunSchema = z
     completedAt: z.iso.datetime().nullable(),
     config: drillConfigSchema,
     phase: count.max(4),
-    modelVersion: z.union([z.literal(1), z.literal(2)]).default(1),
+    modelVersion: z.union([z.literal(1), z.literal(2), z.literal(3)]).default(1),
+    policyVersion: z.string().max(100).optional(),
+    learningReview: z
+      .array(
+        z.strictObject({
+          lessonId: z.string().max(80),
+          verdict: z.enum(["approved", "rejected"]),
+          reviewedAt: z.iso.datetime(),
+          reviewer: z.enum(["local-facilitator", "synthetic-review-fixture"]),
+        }),
+      )
+      .max(20)
+      .optional(),
+    teamBusyMinutes: z.number().nonnegative().optional(),
+    reservations: z
+      .array(
+        z.object({
+          decisionId: z.string(),
+          teams: count.max(20),
+          until: z.number().min(0).max(22),
+        }),
+      )
+      .max(200)
+      .optional(),
     minute: z.number().min(0).max(20).optional(),
-    missions: z.array(missionSchema).max(100).default([]),
+    missions: z.array(missionSchema).max(200).default([]),
     exposure: z.number().nonnegative().default(0),
     status: z.enum(["running", "completed"]),
     teamsAvailable: count.max(20),
@@ -115,7 +156,7 @@ export const drillRunSchema = z
     communicationsDown: z.boolean(),
     warned: z.boolean(),
     sectors: z.array(sectorSchema).length(3),
-    log: z.array(entrySchema).max(200),
+    log: z.array(entrySchema).max(1000),
     notes: z.string().max(2000),
   })
   .refine(
@@ -143,12 +184,56 @@ export const drillRunSchema = z
               mission.progress === 1)),
       ) &&
       run.teamsAvailable <= run.config.teams &&
+      (run.modelVersion !== 3 ||
+        (run.config.scenario !== undefined &&
+          run.policyVersion !== undefined &&
+          run.teamBusyMinutes !== undefined &&
+          run.reservations !== undefined &&
+          run.teamsAvailable +
+            run.reservations.reduce((sum, reservation) => sum + reservation.teams, 0) +
+            run.missions
+              .filter((mission) => mission.arrivedAt === null)
+              .reduce((sum, mission) => sum + (mission.teamsReserved ?? 0), 0) ===
+            run.config.teams &&
+          run.reservations.every((reservation) => reservation.until > (run.minute ?? 0)) &&
+          run.missions.every(
+            (mission) => mission.teamsReserved === 2 && mission.travelMinutes !== undefined,
+          ) &&
+          run.log.every(
+            (entry) => entry.kind !== "decision" || entry.observation !== undefined,
+          ))) &&
       (run.status === "completed"
         ? run.phase === 4 && run.completedAt !== null
         : run.phase < 4 && run.completedAt === null),
   );
 
 export type DrillRun = z.infer<typeof drillRunSchema>;
+export type DrillObservation = NonNullable<DrillRun["log"][number]["observation"]>;
+
+export function observeDrill(run: DrillRun): DrillObservation {
+  return {
+    minute: drillMinute(run),
+    hazard: run.config.hazard,
+    severity: run.config.severity,
+    teamsAvailable: run.teamsAvailable,
+    routeOpen: run.routeOpen,
+    communicationsDown: run.communicationsDown,
+    warned: run.warned,
+    sectors: run.sectors.map((sector) => ({
+      ...sector,
+      waiting:
+        sector.population -
+        sector.evacuated -
+        run.missions
+          .filter((mission) => mission.sectorId === sector.id && mission.arrivedAt === null)
+          .reduce((sum, mission) => sum + mission.people, 0),
+    })),
+    inTransit: run.missions
+      .filter((mission) => mission.arrivedAt === null)
+      .reduce((sum, mission) => sum + mission.people, 0),
+    eventIds: run.log.filter((entry) => entry.kind === "event").map((entry) => entry.id),
+  };
+}
 export interface DrillLesson {
   id: string;
   title: string;
@@ -186,11 +271,15 @@ export function createDrill(
   config: DrillConfig,
   id: string,
   now: string,
-  modelVersion: 1 | 2 = 2,
+  modelVersion: 1 | 2 | 3 = 3,
 ): DrillRun {
-  const validated = drillConfigSchema.parse(config);
-  const residential = Math.floor(validated.population * 0.55);
-  const care = Math.floor(validated.population * 0.2);
+  const validated = drillConfigSchema.parse(
+    modelVersion === 3 ? { ...config, scenario: config.scenario ?? DEFAULT_SCENARIO } : config,
+  );
+  const scenario = validated.scenario ?? DEFAULT_SCENARIO;
+  const careShare = modelVersion === 3 ? scenario.careShare : 0.2;
+  const residential = Math.floor(validated.population * (0.75 - careShare));
+  const care = Math.floor(validated.population * careShare);
   const populations = [residential, care, validated.population - residential - care];
   const names = ["Residential quarter", "Care & school quarter", "Town centre"];
   const run: DrillRun = {
@@ -200,6 +289,9 @@ export function createDrill(
     config: validated,
     phase: 0,
     modelVersion,
+    ...(modelVersion === 3
+      ? { policyVersion: "manual-v1", reservations: [], teamBusyMinutes: 0 }
+      : {}),
     minute: 0,
     missions: [],
     exposure: 0,
@@ -213,7 +305,12 @@ export function createDrill(
       name: names[index],
       population: populations[index],
       evacuated: 0,
-      risk: Math.min(100, severityRisk[validated.severity] + (index === 1 ? 12 : index * 4)),
+      risk: Math.min(
+        100,
+        severityRisk[validated.severity] +
+          (index === 1 ? 12 : index * 4) +
+          (modelVersion === 3 ? Math.floor(scenarioVariation(scenario.seed, index) * 9) - 4 : 0),
+      ),
       assessed: false,
       protected: false,
     })),
@@ -240,7 +337,9 @@ export function actionUnavailable(
   const sector = run.sectors.find((item) => item.id === sectorId);
   if (!sector) return "Select a sector.";
   if (run.teamsAvailable < ACTIONS[action].teams)
-    return "Not enough available teams in this phase.";
+    return run.modelVersion === 3
+      ? "Teams are occupied. Wait for an arrival or service completion."
+      : "Not enough available teams in this phase.";
   const repeated = run.log.some(
     (entry) =>
       entry.kind === "decision" &&
@@ -248,7 +347,8 @@ export function actionUnavailable(
       Math.floor(entry.minute / 5) === run.phase &&
       (action === "notify" || action === "reroute" || entry.sectorId === sectorId),
   );
-  if (repeated) return "Already practiced in this phase.";
+  if (repeated && !(run.modelVersion === 3 && action === "evacuate"))
+    return "Already practiced in this phase.";
   if (action === "assess" && sector.assessed) return "Sector already assessed.";
   if (action === "protect" && sector.protected) return "Safety perimeter already established.";
   if (action === "reroute" && run.routeOpen) return "The exercise route is open.";
@@ -272,6 +372,11 @@ export function applyDrillAction(run: DrillRun, action: DrillAction, sectorId: S
   if (reason) throw new Error(reason);
   const capacity =
     run.config.severity === "extreme" ? 50 : run.config.severity === "severe" ? 70 : 90;
+  const scenario = run.config.scenario ?? DEFAULT_SCENARIO;
+  const capacityMultiplier =
+    run.modelVersion === 3 && run.communicationsDown && !run.warned
+      ? scenario.events.unbriefedCapacityMultiplier
+      : 1;
   let moved = 0;
   const traveling = run.missions
     .filter((mission) => mission.sectorId === sectorId && mission.arrivedAt === null)
@@ -282,7 +387,7 @@ export function applyDrillAction(run: DrillRun, action: DrillAction, sectorId: S
       action === "evacuate"
         ? Math.min(
             sector.population - sector.evacuated - traveling,
-            capacity + (run.warned ? 20 : 0),
+            Math.floor((capacity + (run.warned ? 20 : 0)) * capacityMultiplier),
           )
         : 0;
     return {
@@ -311,10 +416,26 @@ export function applyDrillAction(run: DrillRun, action: DrillAction, sectorId: S
       ...run,
       sectors,
       teamsAvailable: run.teamsAvailable - ACTIONS[action].teams,
+      ...(run.modelVersion === 3
+        ? {
+            reservations: [
+              ...(run.reservations ?? []),
+              ...(action !== "evacuate" && ACTIONS[action].teams > 0
+                ? [
+                    {
+                      decisionId: `${run.id}-${run.log.length}`,
+                      teams: ACTIONS[action].teams,
+                      until: drillMinute(run) + scenario.serviceMinutes,
+                    },
+                  ]
+                : []),
+            ],
+          }
+        : {}),
       routeOpen: run.routeOpen || action === "reroute",
       warned: run.warned || action === "notify",
       missions:
-        action === "evacuate" && run.modelVersion === 2
+        action === "evacuate" && run.modelVersion >= 2
           ? [
               ...run.missions,
               {
@@ -325,6 +446,18 @@ export function applyDrillAction(run: DrillRun, action: DrillAction, sectorId: S
                 startedAt: drillMinute(run),
                 arrivedAt: null,
                 route: run.phase >= 1 ? "alternative" : "main",
+                ...(run.modelVersion === 3
+                  ? {
+                      teamsReserved: ACTIONS.evacuate.teams,
+                      travelMinutes:
+                        (run.phase >= 1
+                          ? scenario.alternativeTravelMinutes
+                          : scenario.mainTravelMinutes) *
+                          (sectorId === "care" ? scenario.careTravelMultiplier : 1) +
+                        Math.floor(scenarioVariation(scenario.seed, run.missions.length + 3) * 5) *
+                          0.125,
+                    }
+                  : {}),
               },
             ]
           : action === "reroute"
@@ -335,6 +468,13 @@ export function applyDrillAction(run: DrillRun, action: DrillAction, sectorId: S
                       route: "alternative" as const,
                       reroutedFrom: mission.progress,
                       progress: 0,
+                      ...(run.modelVersion === 3
+                        ? {
+                            travelMinutes:
+                              scenario.alternativeTravelMinutes *
+                              (mission.sectorId === "care" ? scenario.careTravelMultiplier : 1),
+                          }
+                        : {}),
                     }
                   : mission,
               )
@@ -347,6 +487,7 @@ export function applyDrillAction(run: DrillRun, action: DrillAction, sectorId: S
       teams: ACTIONS[action].teams,
       moved,
       text: `${ACTIONS[action].label}: ${detail}`,
+      ...(run.modelVersion === 3 ? { observation: observeDrill(run) } : {}),
     },
   );
 }
@@ -378,7 +519,7 @@ function advancePhase(run: DrillRun, now: string): DrillRun {
       ...run,
       phase,
       minute: phase * 5,
-      teamsAvailable: run.config.teams,
+      teamsAvailable: run.modelVersion === 3 ? run.teamsAvailable : run.config.teams,
       routeOpen: phase === 1 ? false : run.routeOpen,
       communicationsDown: phase >= 2,
       warned: phase === 2 ? false : run.warned,
@@ -387,7 +528,15 @@ function advancePhase(run: DrillRun, now: string): DrillRun {
         assessed: phase === 3 && run.config.hazard === "earthquake" ? false : sector.assessed,
         risk: Math.min(
           100,
-          sector.risk + (sector.protected ? 3 : 10) + (run.config.severity === "extreme" ? 5 : 0),
+          sector.risk +
+            (phase === 3 && run.modelVersion === 3
+              ? Math.round(
+                  (run.config.scenario?.events.escalationRisk ?? 10) * (sector.protected ? 0.3 : 1),
+                )
+              : sector.protected
+                ? 3
+                : 10) +
+            (run.config.severity === "extreme" ? 5 : 0),
         ),
       })),
     },
@@ -397,7 +546,8 @@ function advancePhase(run: DrillRun, now: string): DrillRun {
 
 export function tickDrill(run: DrillRun, minutes: number, now: string): DrillRun {
   if (run.status !== "running" || minutes <= 0) return run;
-  const target = Math.min(20, drillMinute(run) + minutes);
+  const requested = Math.min(20, drillMinute(run) + minutes);
+  const target = run.modelVersion === 3 ? Math.floor(requested * 8 + 1e-9) / 8 : requested;
   let current = run;
   while (drillMinute(current) < target && current.status === "running") {
     const before = drillMinute(current);
@@ -406,6 +556,7 @@ export function tickDrill(run: DrillRun, minutes: number, now: string): DrillRun
     const missions = current.missions.map((mission) => {
       if (mission.arrivedAt !== null || !current.routeOpen) return mission;
       const duration =
+        mission.travelMinutes ??
         (mission.route === "alternative" ? 3 : 2) * (mission.sectorId === "care" ? 1.25 : 1);
       const progress = Math.min(1, mission.progress + delta / duration);
       const arrived = progress >= 1 - 1e-9;
@@ -420,11 +571,30 @@ export function tickDrill(run: DrillRun, minutes: number, now: string): DrillRun
         .reduce((count, mission) => count + mission.people, 0);
       return sum + ((sector.population - sector.evacuated - inTransit) * sector.risk) / 100;
     }, 0);
+    const released = (current.reservations ?? []).filter(
+      (reservation) => reservation.until <= minute,
+    );
     current = {
       ...current,
       minute,
       missions,
-      exposure: current.exposure + (current.modelVersion === 2 ? exposure * delta : 0),
+      exposure: current.exposure + (current.modelVersion >= 2 ? exposure * delta : 0),
+      ...(current.modelVersion === 3
+        ? {
+            teamBusyMinutes:
+              (current.teamBusyMinutes ?? 0) +
+              (current.config.teams - current.teamsAvailable) * delta,
+            teamsAvailable:
+              current.teamsAvailable +
+              arrivals.reduce((sum, mission) => sum + (mission.teamsReserved ?? 0), 0) +
+              (current.reservations ?? [])
+                .filter((reservation) => reservation.until <= minute)
+                .reduce((sum, reservation) => sum + reservation.teams, 0),
+            reservations: (current.reservations ?? []).filter(
+              (reservation) => reservation.until > minute,
+            ),
+          }
+        : {}),
       sectors: current.sectors.map((sector) => ({
         ...sector,
         evacuated:
@@ -434,6 +604,13 @@ export function tickDrill(run: DrillRun, minutes: number, now: string): DrillRun
             .reduce((sum, mission) => sum + mission.people, 0),
       })),
     };
+    for (const reservation of released) {
+      current = addEntry(current, {
+        kind: "event",
+        teams: reservation.teams,
+        text: `${reservation.teams} team(s) released after service for decision ${reservation.decisionId}.`,
+      });
+    }
     for (const mission of arrivals) {
       current = addEntry(current, {
         kind: "event",
@@ -459,6 +636,7 @@ export function replayDrill(
 ): DrillRun {
   const target = Math.max(0, Math.min(drillMinute(run), minute));
   let replay = createDrill(run.config, run.id, run.startedAt, run.modelVersion);
+  if (run.policyVersion) replay = { ...replay, policyVersion: run.policyVersion };
   for (const [index, entry] of run.log.entries()) {
     if (
       !decisions ||
@@ -556,7 +734,7 @@ export function drillLessons(run: DrillRun): DrillLesson[] {
       action: "protect",
     });
   }
-  if (run.modelVersion === 2) {
+  if (run.modelVersion >= 2) {
     const baseline = replayDrill(run, 20, false);
     lessons.push({
       id: "consequences",
@@ -582,8 +760,10 @@ export function drillLessons(run: DrillRun): DrillLesson[] {
 export function comparableDrills(
   config: DrillConfig,
   history: DrillRun[],
-  modelVersion: 1 | 2 = 2,
+  modelVersion: 1 | 2 | 3 = 3,
 ): DrillRun[] {
+  const scenario = drillScenarioSchema.safeParse(config.scenario ?? DEFAULT_SCENARIO);
+  if (modelVersion === 3 && !scenario.success) return [];
   return history.filter(
     (run) =>
       run.status === "completed" &&
@@ -594,13 +774,16 @@ export function comparableDrills(
       run.config.longitude === config.longitude &&
       run.config.severity === config.severity &&
       run.config.population === config.population &&
-      run.config.teams === config.teams,
+      run.config.teams === config.teams &&
+      (modelVersion !== 3 ||
+        JSON.stringify(drillScenarioSchema.parse(run.config.scenario)) ===
+          JSON.stringify(scenario.data)),
   );
 }
 
 export function drillReport(run: DrillRun) {
   return {
-    schemaVersion: 2,
+    schemaVersion: run.modelVersion === 3 ? 3 : 2,
     model: `faro-training-v${run.modelVersion}`,
     mode: "simulation",
     geography:
@@ -611,6 +794,6 @@ export function drillReport(run: DrillRun) {
     metrics: drillMetrics(run),
     lessons: run.status === "completed" ? drillLessons(run) : [],
     withoutIntervention:
-      run.modelVersion === 2 ? drillMetrics(replayDrill(run, drillMinute(run), false)) : null,
+      run.modelVersion >= 2 ? drillMetrics(replayDrill(run, drillMinute(run), false)) : null,
   };
 }
