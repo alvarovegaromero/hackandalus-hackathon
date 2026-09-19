@@ -24,8 +24,8 @@ changes while the system runs. See `CHALLENGE.md` for the full brief and
 scoring criteria.
 
 Product: FARO, an agentic command center for a wildfire in Sierra Bermeja
-(Málaga), operated by the 112 Andalucía control room. Everything the operator
-sees is in English; proper geographic and agency names such as Sierra Bermeja
+(Málaga), operated by the 112 Andalucía control room. Model-generated operator content is in Spanish (Spain), per the team decision.
+Code, JSON identifiers and the remaining UI labels stay in English; proper geographic and agency names such as Sierra Bermeja
 and 112 Andalucía remain as proper nouns.
 The product vision, scenario, demo script and build phases live in
 `HackSpain 2026 · Project Source of Truth.md` at the repository root; `thoughts/`
@@ -491,3 +491,13 @@ is sufficient locally. Jev filtering runs independently of serialized model call
 Migration 008 enables snapshot commits that retain concurrently accepted reports.
 Do not run the old standalone worker with this version. Background processing is
 not durable across server restarts; the next intake resumes pending reports.
+
+### Resource and mission integration
+
+The coordinator now manages ten ambulances, ten Policía patrols and ten Guardia
+Civil patrols. Apply migrations 009–012 after the existing coordinator migrations.
+State v2 adds police and civilGuard inventories; proposals add policeAssignments,
+civilGuardAssignments and missions. Existing ambulance IDs and assignments remain.
+Jev and parent planning stay in Next.js. Subagent missions execute after parent
+commits, with no communication tools granted; HappyRobot integration is deferred.
+The dashboard uses the landing's dark/green palette and polls mission results.

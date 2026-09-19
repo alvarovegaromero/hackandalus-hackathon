@@ -165,3 +165,58 @@ of thought is exported. A passing run is evidence for these scenarios, not a
 guarantee of future model behavior; runtime and database validation remain mandatory.
 
 Parent plan updates are available as a separate integration module: [updateGlobalPlan](parent-plan-tool.md).
+
+## Inline dashboard integration
+
+The parent now proposes missions alongside the global plan. After a successful
+commit, missions are submitted with their reserved ambulance/patrol IDs and executed
+in Next.js, three at a time. Parent context includes current-run mission results.
+Dashboard mission polling is read-only and scoped to the active run.
+
+New missions allow contactService and getContactResult. contactService persists an
+idempotent operation and uses src/lib/subagents/communication.ts to acknowledge it
+immediately: this is a no-op, with no external communications. Completion means the
+request was acknowledged, never that field conditions were verified. The dashboard
+labels this execution mode. Existing missions retain their original permissions;
+use Reset & run events for new missions. Model-readable output is Spanish.
+
+The communication adapter is the replacement boundary for HappyRobot execution.
+A real asynchronous integration will also need callback handling and an updated
+persistence contract (the current provider and completion metadata are mock-only).
+The historical tool-selection harness above expects a separate result lookup;
+its exact-sequence expectations predate immediate no-op acknowledgement.
+Migration 012 validates patrol reservations and excludes previous-run missions
+from claims. Reset hides old missions through run identity; history is retained.
+
+## Evolving missions (migration 013)
+
+Mission inputs retain eventId as the primary event for older consumers and add
+optional eventIds (new missions always supply it). revision/missionRevision are
+positive integers. The parent emits explicit create/update/cancel changes;
+omission means keep. Terminal completed/cancelled missions cannot be updated.
+Cancellation adds the cancelled status and invalidates any active lease. Updates
+archive the previous input/result in activity, queue the same mission ID with a
+new revision, and invalidate the previous activation. No-op operation history
+remains in activity; new revisions start with no current operations.
+
+Mission result writes trigger parent planning, even without new reports. Agents
+run only for queued work and exit after returning a result. Waiting missions are
+not polled by an LLM; a future real callback adapter must explicitly resume them.
+No external callback integration or durable recovery scheduler is introduced.
+Dashboard polling includes cancelled and displays mission revision. Existing
+stored missions remain readable; Reset & run events starts with the new prompts.
+
+## Resources remain assigned after communication (migration 015)
+
+Migration 015 supersedes automatic release from migration 014. Completing a
+subagent mission ends its communication task only. Ambulances and patrols remain
+assigned, with unchanged counters and map associations. Cancellation also does
+not release resources. A future explicit operational confirmation must identify
+when field work is finished; successful calls are not that confirmation.
+Previously released resources are not automatically reconstructed. Reset and run
+the demo to start a clean scenario with this behavior.
+
+Parent handoff handles stale update/cancel and reservation conflicts per mission:
+remaining changes are still submitted, then a mission.conflict cycle reloads the
+current state and mission results. A completed mission is never reopened by an
+outdated parent decision. Other handoff errors are logged per change.

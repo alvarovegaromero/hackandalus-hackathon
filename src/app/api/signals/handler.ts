@@ -1,5 +1,6 @@
 // OWNER: authenticated inbound HappyRobot signal intake.
 
+import { after } from "next/server";
 import { apiError, parseJsonBody } from "@/lib/validation";
 import {
   WEBHOOK_SECRET_HEADER,
@@ -13,6 +14,8 @@ import {
 } from "@/lib/signals/happyrobot";
 import { processSignal } from "@/lib/signals/process";
 import { createSignalRepository, type SignalRepository } from "@/lib/signals/repository";
+import { enqueueLegacyEvent } from "@/lib/coordinator/runtime";
+import { processCoordinatorInBackground } from "@/lib/coordinator/background";
 
 export interface SignalRouteDependencies {
   repository?: SignalRepository;
@@ -89,6 +92,35 @@ export async function handleSignalPost(
     try {
       const result = (dependencies.process ?? processSignal)(claimed);
       await repository.markProcessed(signalId, result.event.id);
+      // Additive coordinator bridge: the proven processSignal path above is the
+      // source of truth for the HappyRobot response and store.ts state. This
+      // enqueues the already-interpreted event (real title/description/category/
+      // zone, never a generic placeholder) so the new coordinator dashboard also
+      // reflects it. A failure here must never affect the signal response.
+      try {
+        // The coordinator's report.id must be a plain UUID (Zod-enforced); the
+        // Signal's own id already is one, and evt-signal-<that id> is how
+        // processSignal derives the CrisisEvent id, so this stays correlatable.
+        await enqueueLegacyEvent(
+          {
+            source: "happyrobot",
+            title: result.event.title,
+            description: result.event.description,
+            category: result.event.category,
+            zoneId: result.event.zoneId,
+          },
+          claimed.id,
+        );
+        after(processCoordinatorInBackground);
+      } catch (bridgeError) {
+        console.warn(
+          JSON.stringify({
+            type: "coordinator.bridge_failed",
+            eventId: result.event.id,
+            error: bridgeError instanceof Error ? bridgeError.message : String(bridgeError),
+          }),
+        );
+      }
       return response(signalId, result.event.id, !stored.inserted, "processed", 201);
     } catch (error) {
       const safeError = error instanceof Error ? error.message : String(error);

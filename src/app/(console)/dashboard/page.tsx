@@ -1,12 +1,15 @@
 "use client";
 
+import { FaroIcon, FaroWordmark } from "@/components/landing/logo";
+
 // Operator screen: tactical map plus the live event log.
 
-import { Loader2 } from "lucide-react";
+import { MapSkeleton } from "@/components/Skeleton";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { CrisisZone } from "@/lib/types";
+import MissionsPanel from "@/components/MissionsPanel";
 import AmbulanceCard from "@/components/AmbulanceCard";
 import EventLog from "@/components/EventLog";
 import CoordinatorPanel, { useCoordinator } from "@/components/CoordinatorPanel";
@@ -15,7 +18,7 @@ import { useTelemetry } from "@/components/use-telemetry";
 // Leaflet touches `window`, so the map only renders in the browser.
 const LeafletMap = dynamic(() => import("@/components/LeafletMap"), {
   ssr: false,
-  loading: () => <p>Loading Sierra Bermeja map…</p>,
+  loading: () => <MapSkeleton />,
 });
 
 export default function DashboardPage() {
@@ -78,10 +81,14 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <main className="shell flex flex-col gap-4">
+    <main className="shell faro-dashboard flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-4">
-          <h1 className="text-[16px] font-medium">Faro</h1>
+          <h1 className="flex items-center gap-2">
+            <FaroIcon className="h-8 w-8" gradientId="dashboard-brand" />
+            <FaroWordmark className="h-5 w-auto" />
+            <span className="sr-only">Far0</span>
+          </h1>
           <Link href="/" prefetch={false} className="text-sm underline underline-offset-4">
             Back to home
           </Link>
@@ -108,13 +115,19 @@ export default function DashboardPage() {
         state={coordinator.state}
         error={coordinator.error}
       />
-      <AmbulanceCard
-        state={coordinator.state}
-        records={telemetry.records}
-        selectedId={ambulanceFocus?.id}
-        stale={!!coordinator.error}
-        onSelect={selectAmbulance}
-      />
+      <div className="resource-cards">
+        {(["ambulances", "police", "civilGuard"] as const).map((kind) => (
+          <AmbulanceCard
+            key={kind}
+            kind={kind}
+            state={coordinator.state}
+            records={telemetry.records}
+            selectedId={ambulanceFocus?.id}
+            stale={!!coordinator.error}
+            onSelect={selectAmbulance}
+          />
+        ))}
+      </div>
       <div className="event-map-layout">
         <div className="min-w-0">
           <EventLog
@@ -128,19 +141,31 @@ export default function DashboardPage() {
             <LeafletMap
               zones={situation.zones}
               events={telemetry.records}
-              ambulances={coordinator.state?.ambulances.units}
+              ambulances={
+                coordinator.state
+                  ? [
+                      ...coordinator.state.ambulances.units,
+                      ...coordinator.state.police.units,
+                      ...coordinator.state.civilGuard.units,
+                    ]
+                  : []
+              }
               ambulanceFocus={ambulanceFocus}
               onSelectAmbulance={selectAmbulance}
               selectedZoneId={selectedZoneId}
               onSelect={(zoneId) => setSelectedZoneId(zoneId === selectedZoneId ? null : zoneId)}
             />
+          ) : error ? (
+            <p role="status">Map could not be loaded.</p>
           ) : (
-            <p className="flex items-center gap-2">
-              <Loader2 className="spin" size={16} aria-hidden="true" /> Loading map…
-            </p>
+            <MapSkeleton />
           )}
         </div>
       </div>
+      <MissionsPanel
+        runId={coordinator.state?.runId}
+        unavailable={!coordinator.state && !!coordinator.error}
+      />
     </main>
   );
 }

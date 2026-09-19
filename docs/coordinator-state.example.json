@@ -81,5 +81,119 @@
         "eventId": null
       }
     ]
+  },
+  "police": {
+    "total": 10,
+    "available": 10,
+    "allocated": 0,
+    "units": [
+      {
+        "id": "police-1",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "police-2",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "police-3",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "police-4",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "police-5",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "police-6",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "police-7",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "police-8",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "police-9",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "police-10",
+        "status": "available",
+        "eventId": null
+      }
+    ]
+  },
+  "civilGuard": {
+    "total": 10,
+    "available": 10,
+    "allocated": 0,
+    "units": [
+      {
+        "id": "civil-guard-1",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "civil-guard-2",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "civil-guard-3",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "civil-guard-4",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "civil-guard-5",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "civil-guard-6",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "civil-guard-7",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "civil-guard-8",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "civil-guard-9",
+        "status": "available",
+        "eventId": null
+      },
+      {
+        "id": "civil-guard-10",
+        "status": "available",
+        "eventId": null
+      }
+    ]
   }
 }

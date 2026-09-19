@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { authorizePipeline } from "@/lib/pipeline-auth";
+import { authorizeDashboardRead } from "@/lib/pipeline-auth";
 import { readSubagents } from "@/lib/subagents/repository";
 export const dynamic = "force-dynamic";
 export async function GET(request: Request, context: { params: Promise<{ missionId: string }> }) {
-  const denied = authorizePipeline(request);
+  const denied = authorizeDashboardRead(request);
   if (denied) return denied;
   const id = z.uuid().safeParse((await context.params).missionId);
   if (!id.success) return Response.json({ code: "INVALID_MISSION_ID" }, { status: 400 });

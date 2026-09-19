@@ -234,3 +234,36 @@ events with their existing priorities. The next call incorporates those events.
 This supersedes the exclusive filtering/planning behavior above. Reset still
 revokes the model lease. Restart recovery needs another intake request; there is
 no durable scheduling guarantee or timer-only replanning in this local POC.
+
+## Patrols and missions (migrations 011–012)
+
+State v2 adds police and civilGuard inventories, each with total=10, available,
+allocated and ten units. IDs are police-1..10 and civil-guard-1..10. Existing
+ambulance fields remain unchanged. Consumers must upgrade to accept these fields;
+apply migration 011 with this code release. Reset restores all thirty units.
+
+Proposals require policeAssignments and civilGuardAssignments arrays with unitId
+and eventId. Mission changes contain action (create/update/cancel), missionId and
+expectedRevision (null on create), eventIds, objective and instructions. Existing
+ambulance assignments still use ambulanceId. Validation forbids unknown IDs,
+duplicates, release and reassignment across all inventories. Allocation is simulated.
+Mission handoff happens after commit and validates reserved resources; failed handoff
+does not roll back the global plan. Migration 013 permits multiple missions per event,
+multiple events per mission, revisions and cancellation. Omitted missions are unchanged.
+Updating an open mission queues a new activation; completed/cancelled missions remain
+terminal. Old execution leases cannot commit after an update or cancellation.
+No-op communication tools acknowledge requests without external actions.
+Persisted execution results schedule a new coordinator cycle (mission.result).
+The current process keeps running until planning and mission activations settle;
+restart recovery and real HappyRobot callbacks remain deferred.
+
+All model-generated human text is requested in Spanish (Spain); IDs, enum values
+and JSON field names retain their technical spelling. Existing stored English text
+is not translated until a new model decision replaces it.
+
+## Communication completion does not release resources (migration 015)
+
+Migration 015 supersedes the automatic release introduced in 014. Mission
+completion preserves all resource assignments and counters. Subagents coordinate
+communications; they cannot infer when a patrol or ambulance finishes field work.
+Explicit operational release remains deferred. Prior releases are not reversed.
