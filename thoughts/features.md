@@ -1,8 +1,9 @@
 # Features built and how they work
 
 Inventory of what was built in the `feat/crisis-command-center` branch
-(Next 15, state in memory) and that must be transferred on the scaffolding of
-`main` (Next 16, Supabase, Vercel Workflow, AI SDK). Each section says what the module does, what functions it exports, how it is verified and what is still missing. It is
+(state in memory), now merged at the repository root (`app/`, `lib/`,
+`tests/`), and that must be transferred on the platform base under `src/`
+(Supabase, Vercel Workflow, AI SDK). Each section says what the module does, what functions it exports, how it is verified and what is still missing. It is
 written for those who have to reimplement it without having seen it.
 Reference figures when freezing the branch: 266 tests in 10 files, typecheck and
 clean lint, zero vulnerabilities in production, 16 domain modules, 12

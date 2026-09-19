@@ -12,7 +12,7 @@
 .data/
 
 # Regenerable code graph and OS metadata.
-/graft/
+graft/
 .DS_Store
 Thumbs.db
 

@@ -4,11 +4,11 @@ Design context for the people and agents working on FARO. There is no code
 here: this is what was thought through, what was measured and what was
 decided, so nobody has to rediscover it.
 
-It is written against the base in `main`: Next.js, Supabase with RLS, Vercel
-Workflow, AI SDK and Zod. Much of the content comes from a parallel branch
-(`feat/crisis-command-center`) where the full domain was built and verified
-with in-memory state; these documents transfer that work to the definitive
-base.
+It is written against the platform base under `src/`: Next.js, Supabase with
+RLS, Vercel Workflow, AI SDK and Zod. Much of the content comes from the
+command center first built on `feat/crisis-command-center` with in-memory
+state and now merged at the repository root (`app/`, `lib/`, `tests/`); these
+documents transfer that work to the definitive base.
 
 ## What is here
 

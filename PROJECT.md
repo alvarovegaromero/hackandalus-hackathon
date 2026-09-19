@@ -20,16 +20,20 @@ live in `HackSpain 2026 · Source of Truth del proyecto.md` at the repository
 root; `thoughts/` holds the data model proposal, the inventory of features
 built on the `feat/crisis-command-center` branch, and the open decisions.
 
-Status: runnable TypeScript scaffolding with Next.js/React, Vercel AI SDK,
-Vercel Workflow, Supabase clients/schema, and Zod. The dashboard runs the
-Sierra Bermeja scenario engine in the browser and sends its simulated signals
-to the agent workflow through batch ingestion with event dedup (Supabase when
-configured, in memory otherwise). Operator authentication, Realtime, and actual
-HappyRobot communications are not connected yet; see README.md.
-The base scaffolding milestone is complete. Scenario and product name are
-confirmed (see `thoughts/open-questions.md`, "Confirmed, do not reopen").
-Model selection, credentials, and live integrations are still open; do not
-resolve them with invented values. Track follow-up work in TASKS.md.
+Status: two trees live in one Next.js project. The served application is the
+command center at the repository root (`app/`, `lib/`, `tests/`): operator panel,
+HTTP API, self-advancing scenario scripts, action queue with human approval,
+HappyRobot adapter (contract unverified, `mock` mode by default) and the digital
+twin. The platform base under `src/` (Vercel Workflow, AI SDK coordinator,
+Supabase clients/schema, batch ingestion, Sierra Bermeja scenario engine) is
+exercised only by its tests: Next.js ignores `src/app` while a root `app/`
+exists. Unifying both trees is the first item in TASKS.md. Persistence is
+in-memory (optional JSON under `.data/`); Supabase, operator authentication and
+live HappyRobot communications are not connected. The seed and default script
+still name Sierra Morena; the confirmed scenario is Sierra Bermeja (see
+`thoughts/open-questions.md`, "Confirmed, do not reopen"). Model selection,
+credentials and live integrations remain open; do not resolve them with
+invented values. Track follow-up work in TASKS.md.
 
 ## Start here
 
@@ -63,7 +67,11 @@ resolve them with invented values. Track follow-up work in TASKS.md.
 - `.vscode`: shared formatting settings and recommended editor extensions.
 - `.gitignore`: local credentials, personal agent settings, and generated caches.
 
-- `src/app`, `src/components`: Next.js endpoints and local demo dashboard.
+- `app/`, `lib/`, `tests/`: the served command center. `app/` holds the operator
+  panel and HTTP API; each `lib/` module states its owner in a
+  `// PROPIETARIO:` line; `tests/` is its Vitest suite.
+- `src/app`, `src/components`: platform-base endpoints and dashboard (not served
+  while the root `app/` exists; covered by tests).
 - `src/lib/domain.ts`: shared Zod schemas and domain types.
 - `src/lib/scenario`, `src/lib/signals`: scenario engine, signal model and the
   signal-to-event bridge used by the demo.
@@ -74,11 +82,22 @@ resolve them with invented values. Track follow-up work in TASKS.md.
 - `src/lib/supabase`: server/browser clients and Realtime subscription helper.
 - `src/lib/integrations`: HappyRobot boundary, explicitly blocked until implemented.
 - `supabase/migrations`: initial PostgreSQL schema with deny-by-default RLS.
-- `docs/`: design and implementation guides; `docs/input-architecture.md` covers
-  event ingestion (synchronous batch intake now; async/topic fan-out deferred).
+- `docs/`: design and implementation guides. `docs/architecture.md` explains the
+  command-center decisions, `docs/security.md` its credential and demo-recipient
+  rules, `docs/happyDocumentation.md` the unverified HappyRobot contract,
+  `docs/data-model.md` the Supabase model, `docs/input-architecture.md` batch
+  event ingestion (synchronous now; async/topic fan-out deferred),
+  `docs/dashboard-design-guide.md`, `docs/code-index.md` and
+  `docs/agent-skills.md` the presentation, Graft and skills guides.
+- `.github/`: pull request template, issue templates and the CI workflow that
+  repeats the pre-push checks on every push and pull request (informational;
+  branch protection does not require it).
+- `LICENSE`: MIT.
 - `README.md`, `.env.example`: local setup, credentials and integration limitations.
 - `.husky`, `scripts`, `lint-staged.config.mjs`: local quality and branch/credential guards;
-  `scripts/hooks.test.ts` covers the guards, `src/lib/domain.test.ts` the domain boundaries.
+  `scripts/hooks.test.ts` covers the guards. `vitest.config.mts` runs every
+  `*.test.ts` in `tests/`, `src/` and `scripts/` and resolves `@/` like tsconfig
+  (repository root first, then `src/`).
 - `.secretlintrc.json`: Secretlint recommended rules; `.secretlintignore` excludes generated output.
 - `scripts/setup-env.mjs`: creates an ignored local environment template without overwriting files.
 
