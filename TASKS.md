@@ -229,16 +229,17 @@ are in the source document.
 - [x] Digital twin, initial release: `src/lib/digitalTwin.ts` reconstructs perceived world from signals and measures accuracy against simulated ground truth; displayed in `src/components/DigitalTwinPanel.tsx`.
 - [ ] Digital twin, second release: simulate variants (wind, road cuts, resource loss) on state clones, compare alternative outcomes, and present recommendations before acting.
 - [ ] Test resource constraints, failures, and human oversight.
-- [x] Publish the UI manually to Vercel: https://faro-lovat-iota.vercel.app/dashboard (2026-09-19). Landing, dashboard and map HTTP checks passed; `/api/state` remains 503.
-- [ ] Configure remote application credentials, database access and agent execution before claiming a working hosted agent demo.
+- [x] Deploy UI and backend to https://faro-lovat-iota.vercel.app/dashboard (2026-09-19). Public landing, dashboard, map, state, subagents and telemetry returned 200 after release #64.
+- [x] Configure Production application credentials and verify Supabase read access: revision 66, 20 events and seven stored completed missions at verification time.
+- [ ] Verify a new report-to-plan-to-mission model execution on Vercel; existing stored results do not prove a fresh remote run. No reset or new model call was made during deployment checks.
 - [x] Prepare Vercel build settings and document environment prerequisites and agent hosting limits in `docs/vercel-deployment.md`.
 - [x] Prepare `production`-only Git deployments, local branch protection and the `main` to `production` release PR command.
 - [x] Add the project-owned `faro-deploy` skill for release PRs and Vercel verification.
 - [x] Merge delivery configuration and skill through PR #61; bootstrap remote `production` at `a8f697d` and require PRs, including administrators, with force-push/deletion disabled.
-- [x] Connect GitHub and its repository-scoped Vercel App, link the repository and set Production branch tracking to `production`. Initial Git deployment `dpl_819DFD5UHZqkLsr82dSUcvQhcaMQ` is READY at `a8f697d`; landing, dashboard and map return 200, protected state/subagents return 401 without authentication.
-- [ ] Verify automatic deployment on the next release merge; the first Git deployment was started through Vercel's Create Deployment UI.
-- [ ] Add durable remote scheduling for coordinator recovery and subagent execution; web deployment alone does not run the subagent worker.
-- [x] Implement a fixed 26-hour public demo window without accounts, codes or cookies: dashboard reads and same-origin mock reset/fixture controls expire from `DEMO_PUBLIC_STARTED_AT`. Activate and deploy before remote verification.
+- [x] Connect GitHub and its repository-scoped Vercel App, link the repository and set Production branch tracking to `production`.
+- [x] Verify automatic deployment from release PR #64: production commit `ce3afe1`, deployment `dpl_7WMT5tqgnc9CbvnpWGVvzy8gEmt5`, READY and assigned to the public domain.
+- [ ] Add durable scheduling/recovery for interrupted coordinator and subagent work; current execution runs inside Next.js after intake, not as a continuous remote worker.
+- [x] Deploy the fixed 26-hour public demo window without accounts, codes or cookies. It expires on 2026-09-20 at 21:02:13.807 UTC (23:02 CEST, Madrid); refreshes and ordinary redeployments do not extend it. See `docs/vercel-deployment.md`.
 
 ## Vertical HTTP → backend → SSE
 

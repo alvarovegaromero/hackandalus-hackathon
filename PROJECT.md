@@ -1,14 +1,20 @@
 # PROJECT.md
 
-Current implementation: [global coordinator state v2](docs/coordinator-state-contract.md) uses
-one refreshed prompt, a dedicated worker, event/five-second triggers and individual
-ambulance commitments. Apply the v2 migration and run npm run coordinator:work
-alongside the app. Release is disabled; the v1 sections below are historical.
+Current implementation: [global coordinator state v2](docs/coordinator-state-contract.md)
+and subagents run inside Next.js after intake and mission results, with durable
+state in Supabase. Do not start a second standalone coordinator worker for the
+dashboard. Resource release is disabled; older worker/v1 sections are historical.
 
 The v1 resource sections below are historical. Current GET /api/state returns v2;
 POST /api/agent/plan is retired (410), and POST /api/state/release is disabled (501).
-HTTP intake queues durable coordinator input. Frontend integration is assigned to
-its engineer; see [the handoff](docs/coordinator-frontend-integration.md).
+HTTP intake queues durable coordinator input; the dashboard reads state and missions.
+See [the handoff](docs/coordinator-frontend-integration.md).
+
+Vercel production release #64 is READY at commit `ce3afe1`. Public dashboard,
+backend, Supabase reads and SSE access were verified on 2026-09-19. The account-free
+demo closes on 2026-09-20 at 21:02:13.807 UTC (23:02 CEST, Madrid). A new remote
+model-backed run remains unverified; stored completed missions are not evidence
+of one. See [deployment status](docs/vercel-deployment.md) before operating the demo.
 
 Single source of truth for project context and shared development conventions.
 All coding agents must read this file. AGENTS.md and tool-specific files point
@@ -47,20 +53,21 @@ Status: the codebase is unified under the standard Next.js `src/` directory
 HTTP API, self-advancing scenario scripts, action queue with human approval,
 HappyRobot adapter (aligned with the public SDK contract, `mock` mode by default,
 live runs not yet exercised), report intake at `POST /api/signals`, and the digital
-twin. Operational state is in-memory (optional JSON under `.data/`); Supabase is
-used only for durable inbound HappyRobot signals (`public.signals`); operator
-authentication and live HappyRobot communications are not connected. The seed and default script
+twin. Active coordinator state, pending input, resource assignments and subagent
+missions persist in Supabase; legacy scaffold state remains in memory with optional
+JSON under `.data/`. Individual operator accounts and live HappyRobot communications
+are not connected. The seed and default script
 still name Sierra Morena; the confirmed scenario is Sierra Bermeja (see
-`thoughts/open-questions.md`, "Confirmed, do not reopen"). Model selection,
-credentials and live integrations remain open; do not resolve them with
-invented values. Track follow-up work in TASKS.md.
+`thoughts/open-questions.md`, "Confirmed, do not reopen"). Production model/provider
+credentials are configured, while a fresh remote model run and live communications
+remain unverified. Track follow-up work in TASKS.md.
 
 The served ingestion slice also includes `src/lib/event-pipeline.ts`,
 `POST /api/events`, `GET /api/telemetry`, the event log on `/dashboard` and `npm run mock:events`.
-It accepts events in bounded process memory, logs acceptance, and streams
-`event.accepted` / `filtering.pending`. Supabase saving is a TODO, as are
-filtering/triage/LLM dispatch; no database adapter is implemented for this slice.
-See `docs/event-telemetry.md` for contracts, auth and single-process limits.
+It queues durable coordinator input in Supabase and schedules processing after
+intake. Telemetry bridges stored receipts/filter results; dashboard polling reads
+the durable plan and assignments. See `docs/event-telemetry.md` for contracts and
+auth, and `docs/vercel-deployment.md` for hosting and recovery limits.
 
 ## Start here
 
