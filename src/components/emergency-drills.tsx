@@ -1037,6 +1037,17 @@ export default function EmergencyDrills() {
                       <strong>{lesson.proposal}</strong>
                       <span>{lesson.fact}</span>
                       <small>Source exercise: {lesson.sourceRunId}</small>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const source = notebook.history.find(
+                            (item) => item.id === lesson.sourceRunId,
+                          );
+                          if (source) review(source);
+                        }}
+                      >
+                        Review source exercise
+                      </button>
                     </li>
                   ))}
                 </ul>
