@@ -468,6 +468,17 @@ Graft remains the required tool for navigating this repository.
   editing the same files concurrently without coordination. A choice of tool
   never grants permission to push, merge, deploy or execute live communications.
 
+### Public hosted demo window
+
+The owner selected public demo access without login, code or cookies. Production
+`/dashboard` opens for one fixed 26-hour window from server-only
+`DEMO_PUBLIC_STARTED_AT` in canonical UTC ISO format, with `ACTION_EXECUTION_MODE=mock`.
+Dashboard reads and same-origin reset/fixture controls are public within that window;
+general intake and live-action APIs retain their credentials. Expiry is checked at
+runtime and cannot be extended by visiting or refreshing. Landing stays public and
+development remains open. See [deployment configuration](docs/vercel-deployment.md).
+Individual accounts and roles remain deferred. Never put server credentials in client code.
+
 ## Implementation and verification
 
 - Build a working vertical slice: incoming event, updated situation, priority
