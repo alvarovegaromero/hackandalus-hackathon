@@ -124,7 +124,7 @@ upload local credential files or put secrets in `NEXT_PUBLIC_*` variables.
 | AI Gateway model                      | `AI_PROVIDER=gateway`, `AI_MODEL`, `AI_GATEWAY_API_KEY`                           |
 | Alternative existing OpenCode adapter | `AI_PROVIDER=opencode-go` or `opencode-zen`, `OPENCODE_MODEL`, `OPENCODE_API_KEY` |
 | Protected APIs                        | `CRISIS_API_TOKEN`, `DEMO_API_TOKEN` as required by the selected routes           |
-| Public demo window                    | `DEMO_PUBLIC_STARTED_AT` (canonical UTC ISO timestamp); mock or happyrobot mode |
+| Public demo window                    | `DEMO_PUBLIC_STARTED_AT` (canonical UTC ISO timestamp); mock or happyrobot mode   |
 | Inbound HappyRobot reports/callbacks  | `HAPPYROBOT_WEBHOOK_SECRET`                                                       |
 | Initial simulated actions             | `ACTION_EXECUTION_MODE=mock`                                                      |
 
