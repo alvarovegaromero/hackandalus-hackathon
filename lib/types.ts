@@ -1,6 +1,6 @@
-// Tipos compartidos del centro de mando de crisis.
-// Este fichero es la frontera entre modulos: cada agente implementa su modulo
-// contra estos tipos. No lo edites sin avisar al resto de modulos afectados.
+// Shared crisis command center types.
+// This file is the boundary between modules: each agent implements its module
+// against these types. Do not edit without notifying all affected modules.
 
 export type EventSource = "happyrobot" | "sensor" | "operator" | "public" | "demo" | "scenario";
 export type Severity = "low" | "medium" | "high" | "critical";
@@ -14,7 +14,7 @@ export type ExecutionMode = "happyrobot" | "mock";
 export type Actor = "system" | "operator" | "happyrobot" | "scenario";
 
 // ---------------------------------------------------------------------------
-// Senales
+// Signals
 // ---------------------------------------------------------------------------
 
 export interface CrisisEvent {
@@ -27,20 +27,20 @@ export interface CrisisEvent {
   severity: Severity;
   confidence: Confidence;
   createdAt: string;
-  /** null = sin verificar, true = confirmada, false = descartada. */
+  /** null = unverified, true = confirmed, false = discarded. */
   confirmed: boolean | null;
   dedupeKey: string;
-  /** Cuantas senales equivalentes se han fusionado en esta. */
+  /** How many equivalent signals have been merged into this one. */
   occurrences: number;
-  /** Efecto que esta senal aplico a su zona, para poder revertirlo al descartarla. */
+  /** Effect that this signal applied to its zone, to be able to revert it when discarded. */
   appliedRiskDelta: number;
-  /** Necesidad que esta senal anadio a la zona, o null si no anadio ninguna. */
+  /** Need that this signal added to the zone, or null if none was added. */
   appliedNeed: string | null;
-  /** Estado de la zona antes de que esta señal la modificase. */
+  /** Zone status before this signal modified it. */
   previousZoneStatus: ZoneStatus | null;
-  /** Triaje calibrado. Opcional: las señales antiguas no lo llevan. */
+  /** Calibrated triage. Optional: older signals do not have it. */
   assessment?: SignalAssessment;
-  /** Acción de verificación abierta para resolver la duda sobre esta señal. */
+  /** Open verification action to resolve uncertainty about this signal. */
   verificationActionId?: string;
 }
 
@@ -49,20 +49,20 @@ export interface CrisisZone {
   name: string;
   status: ZoneStatus;
   populationAtRisk: number;
-  /** Riesgo base de la zona, sin contar senales vivas. */
+  /** Base risk of the zone, without counting active signals. */
   riskScore: number;
   needs: string[];
-  /** x/y (0-100) sitúan la zona en el esquema regional; lat/lng en el mapa táctico. */
+  /** x/y (0-100) locate the zone in the regional scheme; lat/lng on the tactical map. */
   coordinates: { x: number; y: number; lat: number; lng: number };
   lastUpdatedAt: string;
-  /** Puntos vulnerables de la zona: residencias, colegios, campings. */
+  /** Vulnerable sites in the zone: nursing homes, schools, campsites. */
   vulnerableSites?: VulnerableSite[];
-  /** Minutos estimados hasta que el daño alcance la zona. null = desconocido. */
+  /** Estimated minutes until damage reaches the zone. null = unknown. */
   minutesToImpact?: number | null;
 }
 
 // ---------------------------------------------------------------------------
-// Recursos
+// Resources
 // ---------------------------------------------------------------------------
 
 export interface Resource {
@@ -73,15 +73,15 @@ export interface Resource {
   status: ResourceStatus;
   zoneId: string | null;
   assignedActionId: string | null;
-  /** Necesidades que este recurso sabe cubrir, p. ej. ["triaje", "evacuacion"]. */
+  /** Needs that this resource can cover, e.g. ["triage", "evacuation"]. */
   capabilities: string[];
-  /** Base desde la que se despliega, para calcular distancia a una zona. */
+  /** Base from which it deploys, to calculate distance to a zone. */
   homeZoneId: string | null;
   assignedAt: string | null;
 }
 
 // ---------------------------------------------------------------------------
-// Contactos y escalado
+// Contacts and escalation
 // ---------------------------------------------------------------------------
 
 export type ContactRole =
@@ -97,14 +97,14 @@ export interface Contact {
   name: string;
   role: ContactRole;
   zoneId: string | null;
-  /** Canales por orden de preferencia. */
+  /** Channels in order of preference. */
   channels: ActionChannel[];
   phone: string | null;
   email: string | null;
-  /** Solo los contactos marcados como seguros pueden recibir acciones reales. */
+  /** Only contacts marked as safe can receive real actions. */
   demoSafe: boolean;
   lastContactedAt: string | null;
-  /** 0..1, tasa de respuesta observada. Se actualiza con el historial. */
+  /** 0..1, observed response rate. Updated with history. */
   responsiveness: number;
 }
 
@@ -112,7 +112,7 @@ export interface EscalationStep {
   order: number;
   contactId: string;
   channel: ActionChannel;
-  /** Segundos a esperar sin respuesta antes de pasar al siguiente escalon. */
+  /** Seconds to wait without response before proceeding to the next step. */
   waitSeconds: number;
   reason: string;
   actionId: string | null;
@@ -130,13 +130,13 @@ export interface EscalationChain {
 }
 
 // ---------------------------------------------------------------------------
-// Acciones
+// Actions
 // ---------------------------------------------------------------------------
 
 export interface Action {
   id: string;
   channel: ActionChannel;
-  /** Descripcion legible del destinatario. */
+  /** Human-readable description of the recipient. */
   target: string;
   objective: string;
   status: ActionStatus;
@@ -148,23 +148,23 @@ export interface Action {
   externalActionId?: string;
   executionMode: ExecutionMode;
   error?: string;
-  /** Resumen devuelto por el ejecutor externo. */
+  /** Summary returned by the external executor. */
   result?: string;
-  /** Numero de intento, empieza en 1. Forma parte de la clave de idempotencia. */
+  /** Attempt number, starts at 1. Part of the idempotency key. */
   attempt: number;
   idempotencyKey: string;
-  /** Momento a partir del cual una accion en curso se considera atascada. */
+  /** Time after which an in-progress action is considered stalled. */
   stalledAfter: string | null;
   approvedBy: Actor | null;
   approvedAt: string | null;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
-  /** Tipo de acción a efectos de autonomía, p. ej. "verificar" o "evacuar". */
+  /** Action type for autonomy purposes, e.g. "verify" or "evacuate". */
   actionKind?: ActionKind;
-  /** Nivel de autonomía con el que se despachó o se despachará. */
+  /** Autonomy level with which it was dispatched or will be dispatched. */
   autonomy?: AutonomyLevel;
-  /** Señal cuya duda pretende resolver esta acción de verificación. */
+  /** Signal whose uncertainty this verification action aims to resolve. */
   verifiesEventId?: string;
 }
 
@@ -176,7 +176,7 @@ export interface PlanPriority {
   zoneId: string;
   score: number;
   reason: string;
-  /** Desglose de la puntuacion, para poder explicar la decision en la UI. */
+  /** Score breakdown, to explain the decision in the UI. */
   factors: PriorityFactor[];
 }
 
@@ -209,20 +209,20 @@ export interface Plan {
   priorities: PlanPriority[];
   proposedActionIds: string[];
   invalidatedActionIds: string[];
-  /** Diferencias respecto a la version anterior del plan. */
+  /** Differences compared to the previous version of the plan. */
   changes: PlanChange[];
-  /** Por qué se replanificó. */
+  /** Reason why it was replanned. */
   trigger: string;
-  /** De qué depende este plan para seguir siendo válido. */
+  /** What this plan depends on to remain valid. */
   assumptions?: Assumption[];
-  /** false cuando un supuesto se ha roto y el plan aún no se ha rehecho. */
+  /** false when an assumption is broken and the plan has not yet been remade. */
   valid?: boolean;
-  /** Qué supuesto lo invalidó. */
+  /** Which assumption invalidated it. */
   invalidatedReason?: string | null;
 }
 
 // ---------------------------------------------------------------------------
-// Auditoria e historial
+// Audit and history
 // ---------------------------------------------------------------------------
 
 export interface AuditEntry {
@@ -236,7 +236,7 @@ export interface AuditEntry {
 }
 
 // ---------------------------------------------------------------------------
-// Escenario
+// Scenario
 // ---------------------------------------------------------------------------
 
 export type DemoKind = "incident" | "resource-down" | "route-blocked" | "integration-failure";
@@ -245,7 +245,7 @@ export interface ScenarioBeat {
   id: string;
   atSeconds: number;
   label: string;
-  /** Un beat inyecta una senal o dispara una de las averias de demo. */
+  /** A beat injects a signal or triggers one of the demo breakdowns. */
   event?: IncomingEventPayload;
   demoKind?: DemoKind;
 }
@@ -262,7 +262,7 @@ export interface ScenarioState {
 }
 
 // ---------------------------------------------------------------------------
-// Aprendizaje entre ejecuciones
+// Cross-run learning
 // ---------------------------------------------------------------------------
 
 export interface ChannelStat {
@@ -271,11 +271,11 @@ export interface ChannelStat {
 }
 
 export interface LearnedWeights {
-  /** Tasa de exito observada por canal, usada para elegir canal. */
+  /** Observed success rate by channel, used to select channel. */
   channelStats: Partial<Record<ActionChannel, ChannelStat>>;
-  /** Tasa de respuesta observada por contacto. */
+  /** Observed response rate by contact. */
   contactStats: Record<string, ChannelStat>;
-  /** Ajuste aprendido al peso de las senales sin confirmar. */
+  /** Learned adjustment to the weight of unconfirmed signals. */
   unconfirmedPenalty: number;
   runsAnalyzed: number;
   updatedAt: string | null;
@@ -294,50 +294,50 @@ export interface RunRecord {
 }
 
 // ---------------------------------------------------------------------------
-// Integracion
+// Integration
 // ---------------------------------------------------------------------------
 
 export interface IntegrationState {
   mode: ExecutionMode;
   happyRobotConfigured: boolean;
   lastExternalError: string | null;
-  /** Acciones reales ejecutadas en esta sesion, para que la UI no mienta. */
+  /** Real actions executed in this session, so the UI does not lie. */
   liveActionsExecuted: number;
   mockActionsExecuted: number;
 }
 
 // ---------------------------------------------------------------------------
-// Triaje calibrado
+// Calibrated triage
 //
-// El reto premia decidir sin tener todos los datos. En vez de una etiqueta de
-// confianza, cada señal sale del triaje con probabilidades y una decisión de
-// tres salidas. La banda intermedia no se queda esperando: genera una acción
-// de verificación, porque comprobar también es actuar.
+// The challenge rewards deciding without having all data. Instead of a confidence
+// label, each signal emerges from triage with probabilities and a three-way
+// decision. The middle band does not wait: it generates a verification action,
+// because verifying is also acting.
 // ---------------------------------------------------------------------------
 
 export type TriageDecision = "act" | "verify" | "discard";
 export type Assessor = "deterministic" | "jev" | "llm" | "operator";
 
 export interface SignalAssessment {
-  /** Probabilidad de que la señal sea relevante para la crisis. */
+  /** Probability that the signal is relevant to the crisis. */
   pRelevant: number;
-  /** Probabilidad de que lo que cuenta sea cierto. */
+  /** Probability that what it reports is true. */
   pTruthful: number;
-  /** Urgencia estimada, 0 a 1. */
+  /** Estimated urgency, 0 to 1. */
   urgency: number;
-  /** Confianza fusionada, ya combinando fuentes independientes. */
+  /** Fused confidence, already combining independent sources. */
   confidence: number;
   decision: TriageDecision;
-  /** Por qué se decidió así, en una línea legible. */
+  /** Reason for the decision, in a human-readable line. */
   rationale: string;
-  /** Quién evaluó. El motor determinista es el respaldo siempre disponible. */
+  /** Who evaluated. The deterministic engine is the always-available fallback. */
   assessedBy: Assessor;
-  /** Fiabilidad de la fuente aplicada al evaluar, 0 a 1. */
+  /** Source reliability applied during assessment, 0 to 1. */
   sourceReliability: number;
   assessedAt: string;
 }
 
-/** Fiabilidad aprendida por fuente, base de la fusión de confianza. */
+/** Learned reliability by source, basis for confidence fusion. */
 export interface SourceReliability {
   source: EventSource;
   reliability: number;
@@ -346,7 +346,7 @@ export interface SourceReliability {
 }
 
 // ---------------------------------------------------------------------------
-// Vulnerabilidad
+// Vulnerability
 // ---------------------------------------------------------------------------
 
 export type VulnerabilityKind =
@@ -357,39 +357,39 @@ export interface VulnerableSite {
   name: string;
   kind: VulnerabilityKind;
   people: number;
-  /** Multiplicador de prioridad: una residencia pesa más que una urbanización. */
+  /** Priority multiplier: a nursing home weighs more than a residential area. */
   multiplier: number;
   evacuated: boolean;
 }
 
 // ---------------------------------------------------------------------------
-// Supuestos vivos
+// Live assumptions
 //
-// Cada plan declara de qué depende. Cuando el mundo cambia y rompe un supuesto,
-// el plan deja de ser válido y hay que rehacerlo. Esta es la respuesta directa
-// a la pregunta del reto sobre cuándo tirar el plan.
+// Each plan declares what it depends on. When the world changes and breaks an
+// assumption, the plan ceases to be valid and must be remade. This is the direct
+// answer to the challenge question about when to discard the plan.
 // ---------------------------------------------------------------------------
 
 export type AssumptionStatus = "ok" | "broken" | "unknown";
 
 export interface Assumption {
   id: string;
-  /** Texto legible: "El viento sigue soplando del nordeste". */
+  /** Human-readable text: "The wind continues blowing from the northeast". */
   text: string;
-  /** Variable del mundo que vigila, p. ej. "wind.direction". */
+  /** World variable being monitored, e.g. "wind.direction". */
   variable: string;
-  /** Condición que debe cumplirse para que el supuesto se sostenga. */
+  /** Condition that must be met for the assumption to hold. */
   condition: string;
   status: AssumptionStatus;
   brokenByEventId: string | null;
   brokenAt: string | null;
-  /** Versión del plan que lo declaró. */
+  /** Version of the plan that declared it. */
   planVersion: number;
 }
 
 /**
- * Estado del mundo simulado contra el que se contrastan los supuestos.
- * Es lo que el motor de escenario mueve y lo que rompe los planes.
+ * Simulated world state against which assumptions are verified.
+ * This is what the scenario engine moves and what breaks plans.
  */
 export interface WorldState {
   windDirection: string;
@@ -402,12 +402,12 @@ export interface WorldState {
 }
 
 // ---------------------------------------------------------------------------
-// Gemelo digital
+// Digital twin
 //
-// El escenario mantiene una verdad simulada, pero FARO no debe actuar como si
-// la conociera por magia. El gemelo digital es la foto que FARO reconstruye a
-// partir de señales y evidencia, más métricas de cuánto se parece a la verdad
-// oculta de la demo.
+// The scenario maintains a simulated truth, but FARO must not act as if
+// it knew it by magic. The digital twin is the snapshot that FARO reconstructs
+// from signals and evidence, plus metrics on how closely it matches the demo's
+// hidden truth.
 // ---------------------------------------------------------------------------
 
 export type DigitalTwinFactStatus = "confirmed" | "inferred" | "unknown" | "stale" | "mismatch";
@@ -438,11 +438,11 @@ export interface DigitalTwinState {
 }
 
 // ---------------------------------------------------------------------------
-// Autonomía graduada
+// Graduated autonomy
 //
-// Un sistema que pide permiso para todo no es agéntico, y uno que no lo pide
-// para nada no es supervisable. El nivel depende de si la acción se puede
-// deshacer.
+// A system that asks permission for everything is not agentic, and one that asks
+// for nothing is not supervisable. The level depends on whether the action can be
+// undone.
 // ---------------------------------------------------------------------------
 
 export type AutonomyLevel = "auto" | "auto-notify" | "approval";
@@ -454,16 +454,16 @@ export interface AutonomyRule {
   actionKind: ActionKind;
   reversibility: Reversibility;
   level: AutonomyLevel;
-  /** Confianza mínima para automatizar. Por debajo, pide aprobación. */
+  /** Minimum confidence to automate. Below this, requests approval. */
   confidenceThreshold?: number;
   rationale: string;
 }
 
 // ---------------------------------------------------------------------------
-// Coste de oportunidad
+// Opportunity cost
 //
-// Repartir recursos escasos deja a alguien esperando. Enseñar a quién, cuánto
-// y por qué es lo que convierte una asignación en una decisión defendible.
+// Distributing scarce resources leaves someone waiting. Showing who, how long,
+// and why is what turns an allocation into a defensible decision.
 // ---------------------------------------------------------------------------
 
 export interface WaitingDemand {
@@ -476,25 +476,25 @@ export interface WaitingDemand {
 }
 
 // ---------------------------------------------------------------------------
-// Lecciones entre ejecuciones
+// Cross-run lessons
 // ---------------------------------------------------------------------------
 
 export interface Lesson {
   id: string;
   runId: string;
-  /** Patrón observado en la ejecución anterior. */
+  /** Pattern observed in the previous run. */
   pattern: string;
-  /** Cambio de comportamiento que propone. */
+  /** Proposed behavior change. */
   change: string;
-  /** Métrica que lo justifica. Sin métrica no hay lección. */
+  /** Justifying metric. Without a metric there is no lesson. */
   metric: string;
-  /** Las lecciones las valida una persona antes de aplicarse. */
+  /** Lessons are validated by a human before being applied. */
   status: "proposed" | "accepted" | "rejected";
   createdAt: string;
 }
 
 // ---------------------------------------------------------------------------
-// Estado completo
+// Complete situation state
 // ---------------------------------------------------------------------------
 
 export interface SituationState {
@@ -505,30 +505,30 @@ export interface SituationState {
   chains: EscalationChain[];
   actions: Action[];
   plan: Plan;
-  /** Versiones anteriores del plan, de mas reciente a mas antigua. */
+  /** Previous plan versions, from newest to oldest. */
   planHistory: Plan[];
   audit: AuditEntry[];
   scenario: ScenarioState;
   learning: LearnedWeights;
   integration: IntegrationState;
-  /** Estado del mundo simulado que rompe los supuestos del plan. */
+  /** Simulated world state that breaks plan assumptions. */
   world: WorldState;
-  /** Gemelo digital reconstruido desde señales y comparado con el mundo simulado. */
+  /** Digital twin reconstructed from signals and compared against simulated world. */
   digitalTwin: DigitalTwinState;
-  /** Reglas de autonomía vigentes. */
+  /** Active autonomy rules. */
   autonomyRules: AutonomyRule[];
-  /** Interruptor general: una persona puede parar la autonomía en caliente. */
+  /** Master switch: a human can pause autonomy live. */
   autonomyPaused: boolean;
-  /** Quién se queda esperando un recurso y por qué. */
+  /** Who is left waiting for a resource and why. */
   waiting: WaitingDemand[];
-  /** Fiabilidad aprendida por fuente de información. */
+  /** Learned reliability by information source. */
   sourceReliability: SourceReliability[];
-  /** Lecciones propuestas por ejecuciones anteriores, pendientes de validar. */
+  /** Lessons proposed by previous runs, pending validation. */
   lessons: Lesson[];
 }
 
 // ---------------------------------------------------------------------------
-// Payloads de entrada
+// Inbound payloads
 // ---------------------------------------------------------------------------
 
 export interface IncomingEventPayload {

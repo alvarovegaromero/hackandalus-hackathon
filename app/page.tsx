@@ -47,24 +47,24 @@ const FRESH_MS = 25000;
 type TabId = "actions" | "signals" | "resources" | "contacts" | "audit";
 
 const tabLabels: Record<TabId, string> = {
-  actions: "Acciones",
-  signals: "Señales",
-  resources: "Recursos",
-  contacts: "Contactos y escalado",
-  audit: "Auditoría",
+  actions: "Actions",
+  signals: "Signals",
+  resources: "Resources",
+  contacts: "Contacts & Escalation",
+  audit: "Audit",
 };
 
-/** Traduce una respuesta de error de la API a una frase para el operador. */
+/** Formats an API error response for the operator. */
 async function describeFailure(response: Response, path: string) {
   const body = await response.text();
   try {
     const parsed = JSON.parse(body) as { error?: string; mensaje?: string };
     const message = parsed.error ?? parsed.mensaje;
-    if (message) return `${message} (${response.status} en ${path})`;
+    if (message) return `${message} (${response.status} on ${path})`;
   } catch {
-    // La respuesta no era JSON: se muestra tal cual, recortada.
+    // Response was not JSON: show as is, truncated.
   }
-  return `${response.status} en ${path}: ${body.slice(0, 160)}`;
+  return `${response.status} on ${path}: ${body.slice(0, 160)}`;
 }
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
@@ -129,7 +129,7 @@ export default function Home() {
         await operation();
         await refresh();
       } catch (caught) {
-        setError(caught instanceof Error ? caught.message : "Error inesperado");
+        setError(caught instanceof Error ? caught.message : "Unexpected error");
       } finally {
         setBusy(null);
       }
@@ -146,7 +146,7 @@ export default function Home() {
         await refresh();
       } catch (caught) {
         if (!cancelled)
-          setError(caught instanceof Error ? caught.message : "No se pudo leer la situación");
+          setError(caught instanceof Error ? caught.message : "Could not load situation");
       }
     };
     poll();
@@ -196,7 +196,7 @@ export default function Home() {
         });
         if (response.status === 404 || response.status === 405) {
           setNotice(
-            `El endpoint POST /api/scenario/${operation} todavía no existe en este servidor. El control queda listo en la interfaz y funcionará en cuanto la ruta esté publicada.`,
+            `The POST /api/scenario/${operation} endpoint does not exist on this server yet. The control is ready in the interface and will work once the route is published.`,
           );
           return;
         }
@@ -219,7 +219,7 @@ export default function Home() {
         });
         if (response.status === 404 || response.status === 405) {
           setNotice(
-            "Para parar o reanudar la autonomía hace falta POST /api/autonomy con { paused }. La ruta todavía no responde, así que el sistema sigue como estaba.",
+            "Pausing or resuming autonomy requires POST /api/autonomy with { paused }. The route is not responding yet, so the system remains unchanged.",
           );
           return;
         }
@@ -247,7 +247,7 @@ export default function Home() {
         });
         if (fallback.ok) return;
         setNotice(
-          "La reasignación de recursos necesita POST /api/actions/:id/assign con { resourceId }. La ruta aún no responde, así que el recurso no se ha cambiado.",
+          "Resource reassignment requires POST /api/actions/:id/assign with { resourceId }. The route is not responding yet, so the resource was not changed.",
         );
       }),
     [run],
@@ -276,7 +276,7 @@ export default function Home() {
     return (
       <main className="shell center">
         <Loader2 className="spin" size={24} aria-hidden="true" />
-        <span>{error ?? "Cargando el centro de mando…"}</span>
+        <span>{error ?? "Loading command center…"}</span>
       </main>
     );
   }
@@ -304,20 +304,20 @@ export default function Home() {
       <header className="topbar">
         <div>
           <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-blueprint-mid">
-            FARO · Centro de Mando 112 Andalucía
+            FARO · Command Center 112 Andalucía
           </p>
           <div className="flex items-center gap-2.5 mt-0.5">
             <h1 className="text-[24px] font-bold text-blueprint-dark tracking-[-0.15px] leading-tight flex items-center gap-2">
-              Plan vivo de respuesta v{situation.plan.version}
+              Live Response Plan v{situation.plan.version}
             </h1>
             <Badge variant={situation.integration.mode === "happyrobot" ? "info" : "outline"}>
               {situation.integration.mode === "happyrobot"
-                ? "Ejecución real"
-                : "Ejecución simulada"}
+                ? "Live execution"
+                : "Simulated execution"}
             </Badge>
           </div>
           <p className="text-[13px] text-blueprint-mid tracking-[-0.15px] mt-1">
-            {situation.plan.summary} · actualizado {agoLabel(situation.plan.generatedAt, nowMs)}
+            {situation.plan.summary} · updated {agoLabel(situation.plan.generatedAt, nowMs)}
           </p>
         </div>
         <div className="top-actions flex items-center gap-2">
@@ -332,24 +332,24 @@ export default function Home() {
             aria-pressed={autonomyPaused}
             aria-label={
               autonomyPaused
-                ? "Reanudar la autonomía del sistema"
-                : "Parar la autonomía: nada saldrá sin que lo apruebe una persona"
+                ? "Resume system autonomy"
+                : "Pause autonomy: nothing will execute without human approval"
             }
           >
             {autonomyPaused ? (
               <>
-                <Play size={14} aria-hidden="true" /> Reanudar autonomía
+                <Play size={14} aria-hidden="true" /> Resume autonomy
               </>
             ) : (
               <>
-                <PauseCircle size={14} aria-hidden="true" /> Parar autonomía
+                <PauseCircle size={14} aria-hidden="true" /> Pause autonomy
               </>
             )}
           </Button>
           <Button
             variant="outline"
             size="icon"
-            aria-label="Actualizar la situación ahora"
+            aria-label="Refresh situation now"
             onClick={() => run("refresh", refresh)}
             disabled={busy !== null}
           >
@@ -358,7 +358,7 @@ export default function Home() {
           <Button
             variant="pillDestructive"
             size="icon"
-            aria-label="Reiniciar la demo al estado inicial"
+            aria-label="Reset demo to initial state"
             onClick={() =>
               run("reset", () => requestJson("/api/demo/reset", { method: "POST", body: "{}" }))
             }
@@ -374,33 +374,33 @@ export default function Home() {
         {notice ? <div className="banner warning">{notice}</div> : null}
         {autonomyPaused ? (
           <div className="banner warning">
-            Autonomía parada por una persona: el sistema sigue analizando y proponiendo, pero no
-            ejecuta nada por su cuenta hasta que se reanude.
+            Autonomy paused by operator: the system continues analyzing and proposing, but will not
+            execute anything on its own until resumed.
           </div>
         ) : null}
         {situation.plan.valid === false ? (
           <div className="banner error">
-            El plan v{situation.plan.version} ya no es válido
-            {situation.plan.invalidatedReason ? `: ${situation.plan.invalidatedReason}` : "."} Hay
-            que rehacerlo.
+            Plan v{situation.plan.version} is no longer valid
+            {situation.plan.invalidatedReason ? `: ${situation.plan.invalidatedReason}` : "."}{" "}
+            Replan needed.
           </div>
         ) : null}
         {situation.integration.lastExternalError ? (
           <div className="banner warning">
-            Integración: {situation.integration.lastExternalError}
+            Integration: {situation.integration.lastExternalError}
           </div>
         ) : null}
         <div
           className={situation.integration.mode === "happyrobot" ? "banner live" : "banner mock"}
         >
           {situation.integration.mode === "happyrobot"
-            ? "Modo de ejecución real: las acciones aprobadas salen a HappyRobot."
-            : "Modo simulación: ninguna acción sale al exterior, todo lo que ves aquí es simulado."}{" "}
-          Acciones reales ejecutadas: {situation.integration.liveActionsExecuted} · simuladas:{" "}
+            ? "Live execution mode: approved actions are dispatched to HappyRobot."
+            : "Simulation mode: no actions are sent externally, everything shown here is simulated."}{" "}
+          Live actions executed: {situation.integration.liveActionsExecuted} · simulated:{" "}
           {situation.integration.mockActionsExecuted}.
           {situation.integration.mode === "happyrobot" &&
           !situation.integration.happyRobotConfigured
-            ? " Faltan credenciales de HappyRobot, así que las acciones fallarán."
+            ? " Missing HappyRobot credentials, actions will fail."
             : ""}
         </div>
       </div>
@@ -425,19 +425,19 @@ export default function Home() {
 
       <DigitalTwinPanel twin={maybe(situation, "digitalTwin")} nowMs={nowMs} />
 
-      <section className="demo-strip" aria-label="Inyectar cambios a mano">
-        <span className="strip-label">Inyectar un cambio</span>
+      <section className="demo-strip" aria-label="Inject changes manually">
+        <span className="strip-label">Inject a change</span>
         <button onClick={() => injectDemo("incident")} disabled={busy !== null}>
-          <Siren size={16} aria-hidden="true" /> Nuevo incidente
+          <Siren size={16} aria-hidden="true" /> New incident
         </button>
         <button onClick={() => injectDemo("resource-down")} disabled={busy !== null}>
-          <ShieldAlert size={16} aria-hidden="true" /> Recurso caído
+          <ShieldAlert size={16} aria-hidden="true" /> Resource down
         </button>
         <button onClick={() => injectDemo("route-blocked")} disabled={busy !== null}>
-          <Route size={16} aria-hidden="true" /> Ruta bloqueada
+          <Route size={16} aria-hidden="true" /> Route blocked
         </button>
         <button onClick={() => injectDemo("integration-failure")} disabled={busy !== null}>
-          <AlertTriangle size={16} aria-hidden="true" /> Fallo de integración
+          <AlertTriangle size={16} aria-hidden="true" /> Integration failure
         </button>
       </section>
 
@@ -445,8 +445,8 @@ export default function Home() {
         <section className="panel map-panel">
           <div className="panel-title">
             <Crosshair size={18} aria-hidden="true" />
-            <h2>Mapa operativo</h2>
-            <span className="hint">Pulsa una zona para ver por qué puntúa así</span>
+            <h2>Operational map</h2>
+            <span className="hint">Click a zone to view score breakdown</span>
           </div>
           <OperationsMap
             zones={situation.zones}
@@ -471,10 +471,10 @@ export default function Home() {
             }}
           />
         ) : (
-          <section className="panel" aria-label="Prioridades del plan">
+          <section className="panel" aria-label="Plan priorities">
             <div className="panel-title">
               <Flame size={18} aria-hidden="true" />
-              <h2>Qué va primero</h2>
+              <h2>Priority ranking</h2>
             </div>
             <div className="priority-list">
               {situation.plan.priorities.map((priority, index) => {
@@ -485,7 +485,7 @@ export default function Home() {
                     key={priority.zoneId}
                     className={`priority-row ${index === 0 ? "top" : ""}`}
                     onClick={() => setSelectedZoneId(zone.id)}
-                    aria-label={`Ver el detalle de ${zone.name}, prioridad número ${index + 1}`}
+                    aria-label={`View details for ${zone.name}, priority number ${index + 1}`}
                   >
                     <strong>{index + 1}</strong>
                     <div>
@@ -513,7 +513,7 @@ export default function Home() {
         />
 
         <section className="panel wide">
-          <div className="tab-bar" role="tablist" aria-label="Detalle de la respuesta">
+          <div className="tab-bar" role="tablist" aria-label="Response details">
             {(Object.keys(tabLabels) as TabId[]).map((tabId) => (
               <button
                 key={tabId}
@@ -530,8 +530,8 @@ export default function Home() {
             ))}
             <span className="tab-hint">
               {troubled.length > 0
-                ? `${troubled.length} acción(es) esperan a una persona`
-                : `${criticalSignals.length} señal(es) críticas activas`}
+                ? `${troubled.length} action(s) need attention`
+                : `${criticalSignals.length} critical signal(s) active`}
             </span>
           </div>
 

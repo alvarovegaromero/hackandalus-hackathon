@@ -1,56 +1,56 @@
-name: Funcionalidad
-description: Propón algo nuevo para el sistema o la demo.
+name: Feature Request
+description: Propose something new for the system or the demo.
 title: "feat: "
 labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
-        Esto es un hackathon: prioriza lo que se pueda enseñar en la demo sobre
-        lo que quede bonito por dentro. Lee `CHALLENGE.md` antes de proponer.
+        This is a hackathon: prioritize what can be demonstrated in the demo over
+        what looks pretty under the hood. Read `CHALLENGE.md` before proposing.
 
   - type: textarea
-    id: problema
+    id: problem
     attributes:
-      label: Qué problema resuelve
-      description: El hueco que hay hoy, no la solución todavía.
+      label: What problem does this solve
+      description: The gap that exists today, not the solution yet.
     validations:
       required: true
 
   - type: textarea
-    id: propuesta
+    id: proposal
     attributes:
-      label: Propuesta
-      description: Qué construirías y cómo encaja con lo que ya existe.
+      label: Proposal
+      description: What you would build and how it fits into what already exists.
     validations:
       required: true
 
   - type: dropdown
-    id: criterio
+    id: criteria
     attributes:
-      label: Criterio del reto que refuerza
-      description: Ver `CHALLENGE.md` → *Evaluation*.
+      label: Challenge evaluation criterion reinforced
+      description: See `CHALLENGE.md` → *Evaluation*.
       multiple: true
       options:
-        - Decisión (decide sin datos completos)
-        - Prioridad (sabe qué va primero)
-        - Adaptación (replanifica al cambiar la situación)
-        - Coordinación (personas, información y recursos a la vez)
-        - Ejecución (actúa fuera del sistema, no solo propone)
-        - Control (se ve lo que hace y se puede intervenir)
-        - Creatividad
-        - Aprendizaje entre ejecuciones (bonus)
+        - Decision (decides without complete data)
+        - Priority (knows what comes first)
+        - Adaptation (replanning when the situation changes)
+        - Coordination (people, information, and resources simultaneously)
+        - Execution (acts outside the system, not just proposing)
+        - Control (actions are visible and can be intervened)
+        - Creativity
+        - Cross-execution learning (bonus)
     validations:
       required: true
 
   - type: textarea
-    id: modulos
+    id: modules
     attributes:
-      label: Módulos afectados
-      description: Qué ficheros de `lib/`, `app/` o `tests/` habría que tocar, y de quién son (ver cabecera `// PROPIETARIO:`).
+      label: Affected modules
+      description: Which files in `lib/`, `app/`, or `tests/` need to be modified, and who owns them (see `// PROPIETARIO:` header).
 
   - type: textarea
     id: demo
     attributes:
-      label: Cómo se enseña en la demo
-      description: Qué vería el jurado en pantalla. Si no se puede enseñar, probablemente no toca ahora.
+      label: How it is shown in the demo
+      description: What the jury would see on screen. If it cannot be demonstrated, it probably should not be done right now.

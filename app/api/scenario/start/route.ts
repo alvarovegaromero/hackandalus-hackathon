@@ -1,19 +1,19 @@
-// PROPIETARIO: agente del escenario que avanza solo.
-// Arranca (o reanuda) el guion que hace cambiar la crisis sola.
+// OWNER: self-advancing scenario agent.
+// Starts (or resumes) the script that drives the crisis autonomously.
 //
-// Cuerpo admitido, todo opcional:
+// Accepted body, all optional:
 //   { "scriptId": "flood-guadalquivir", "speed": 4, "restart": true }
 //
-//  - Sin cuerpo: arranca el guion actual, o lo REANUDA si estaba pausado.
-//  - restart: true fuerza empezar de cero.
-//  - Cambiar de scriptId implica empezar de cero con el guion nuevo.
-//  - speed se aplica en caliente: se puede pasar de 1x a 4x sin reiniciar.
+//  - Without body: starts current script, or RESUMES it if paused.
+//  - restart: true forces starting from scratch.
+//  - Changing scriptId implies starting from scratch with the new script.
+//  - speed applies on the fly: can switch from 1x to 4x without restarting.
 //
-// A diferencia de /api/demo/*, estas rutas NO llevan `autorizarRutaDemo`: un
-// escenario en movimiento es un requisito obligatorio del reto y esa funcion
-// desactiva por completo la ruta en produccion cuando no hay DEMO_API_TOKEN,
-// lo que dejaria la crisis congelada justo en el entorno de la demo. Si se
-// decide protegerlas, hay que dar antes el token a la interfaz.
+// Unlike /api/demo/*, these routes do NOT use `autorizarRutaDemo`: an advancing
+// scenario is a mandatory requirement of the challenge and that function
+// completely disables the route in production when DEMO_API_TOKEN is not set,
+// which would leave the crisis frozen in the demo environment. If decided to
+// protect them, the token must first be provided to the UI.
 
 import { z } from "zod";
 
@@ -36,7 +36,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-/** Cada cuanto empuja el guion el latido de servidor. */
+/** Heartbeat interval to advance the script. */
 const HEARTBEAT_MS = 5000;
 
 const scenarioStartSchema = z.strictObject({
@@ -52,10 +52,10 @@ export async function POST(request: Request) {
   const { scriptId, speed, restart } = parsed.data;
 
   if (scriptId !== undefined && !findScript(scriptId)) {
-    return apiError("referencia_desconocida", "Ese guion de escenario no existe.", 400, [
+    return apiError("referencia_desconocida", "Scenario script does not exist.", 400, [
       {
         campo: "scriptId",
-        mensaje: `Guiones disponibles: ${listScenarioScripts()
+        mensaje: `Available scripts: ${listScenarioScripts()
           .map((script) => script.id)
           .join(", ")}.`,
       },
@@ -69,12 +69,12 @@ export async function POST(request: Request) {
 
     configureScenario({ scriptId, speed, restart });
 
-    // Si ya esta corriendo y solo se pide cambiar la velocidad, no se reinicia
-    // el reloj: un reinicio accidental a mitad de demo se nota y no se perdona.
+    // If already running and only speed change was requested, clock is not
+    // reset: an accidental reset mid-demo is noticeable and unforgiving.
     const situacion = antes.running && !quiereEmpezarDeCero ? pollSituation() : startScenarioRun();
 
-    // El guion no puede depender de que alguien mire la pantalla: mientras
-    // corre, un unico intervalo lo empuja aunque nadie sondee.
+    // The script cannot depend on someone watching the screen: while
+    // running, a single interval drives it even if nobody polls.
     ensureHeartbeat(() => {
       tickScenario();
       return getSituation().scenario.running;
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
 
     return apiOk(situacion);
   } catch (error) {
-    return apiErrorFromThrown(error, "No se pudo arrancar el escenario");
+    return apiErrorFromThrown(error, "Could not start scenario");
   }
 }
 

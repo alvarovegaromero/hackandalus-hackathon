@@ -1,12 +1,12 @@
-// PROPIETARIO: agente de persistencia, historial, auditoria y aprendizaje.
+// OWNER: persistence, history, audit, and learning agent.
 //
-// Historial de planes y registro de auditoria. Aqui se responde a la pregunta
-// de supervision del reto: "¿esta claro que esta haciendo el sistema?".
+// Plan history and audit log. Answers the supervision question
+// from the challenge: "is it clear what the system is doing?".
 //
-// `diffPlans` traduce dos versiones del plan a una lista de cambios en
-// castellano llano. Los textos van directos a pantalla, asi que se escriben
-// para que un responsable de emergencias los entienda sin contexto tecnico:
-// "Sierra Morena adelanta a Sevilla Hub" y no "zone-north: 2 -> 1".
+// `diffPlans` translates two plan versions into a list of changes in
+// plain language. Text goes directly to the UI, so it is written
+// for an emergency manager to understand without technical context:
+// "Sierra Morena overtakes Seville Hub" rather than "zone-north: 2 -> 1".
 
 import { seedZones } from "./seed";
 import type {
@@ -26,11 +26,11 @@ import type {
 export const MAX_PLAN_HISTORY = 40;
 export const MAX_AUDIT_ENTRIES = 200;
 
-/** Cambios que se muestran como maximo; el resto sobra para decidir deprisa. */
+/** Maximum changes shown; the rest is excess for quick decision-making. */
 export const MAX_PLAN_CHANGES = 12;
 
 // ---------------------------------------------------------------------------
-// Vocabulario en castellano
+// Vocabulary
 // ---------------------------------------------------------------------------
 
 const zoneStatusLabel: Record<ZoneStatus, string> = {
@@ -40,7 +40,7 @@ const zoneStatusLabel: Record<ZoneStatus, string> = {
   critical: "crítica",
 };
 
-/** Gravedad relativa de cada estado, para saber si la zona empeora o mejora. */
+/** Relative severity of each status, to know whether the zone worsens or improves. */
 const zoneStatusRank: Record<ZoneStatus, number> = {
   stable: 0,
   watch: 1,
@@ -58,7 +58,7 @@ const channelLabel: Record<ActionChannel, string> = {
   slack: "Slack",
 };
 
-/** Orden de importancia con el que se recortan los cambios en pantalla. */
+/** Importance order used to trim changes displayed on screen. */
 const kindRank: Record<PlanChangeKind, number> = {
   integration: 0,
   "zone-status": 1,
@@ -69,7 +69,7 @@ const kindRank: Record<PlanChangeKind, number> = {
   "action-added": 6,
 };
 
-/** Une nombres en lenguaje natural: "A", "A y B", "A, B y C". */
+/** Joins names in natural language: "A", "A and B", "A, B and C". */
 function joinNames(names: string[]): string {
   if (names.length === 0) return "";
   if (names.length === 1) return names[0];
@@ -77,16 +77,16 @@ function joinNames(names: string[]): string {
 }
 
 // ---------------------------------------------------------------------------
-// Contexto opcional del diff
+// Optional diff context
 // ---------------------------------------------------------------------------
 
 /**
- * Un `Plan` solo conoce zonas por id y acciones por id. Con este contexto los
- * textos pasan de "zone-north" a "Sierra Morena" y se pueden detectar cambios
- * que no viven dentro del plan (estado de zona, recursos, integracion).
+ * A `Plan` only knows zones by ID and actions by ID. With this context,
+ * text moves from "zone-north" to "Sierra Morena" and can detect changes
+ * that do not live within the plan (zone status, resources, integration).
  *
- * Todo es opcional: sin contexto, `diffPlans` sigue funcionando y cae en los
- * nombres de zona de `seed.ts`.
+ * All optional: without context, `diffPlans` continues working and falls back
+ * to zone names in `seed.ts`.
  */
 export interface PlanDiffContext {
   zoneNames?: Record<string, string>;
@@ -94,7 +94,7 @@ export interface PlanDiffContext {
   nextZones?: Pick<CrisisZone, "id" | "name" | "status">[];
   previousResources?: Pick<Resource, "id" | "name" | "zoneId" | "status">[];
   nextResources?: Pick<Resource, "id" | "name" | "zoneId" | "status">[];
-  /** Catalogo de acciones para poder nombrarlas en vez de citar su id. */
+  /** Action catalogue to name actions rather than citing their IDs. */
   actions?: Pick<Action, "id" | "channel" | "target" | "objective" | "status">[];
   previousIntegration?: IntegrationState;
   nextIntegration?: IntegrationState;
@@ -132,7 +132,7 @@ function motive(plan: Plan): string {
 }
 
 // ---------------------------------------------------------------------------
-// Diferencias entre dos planes
+// Differences between two plans
 // ---------------------------------------------------------------------------
 
 function diffPriorities(previous: Plan, next: Plan, context: PlanDiffContext): PlanChange[] {
@@ -152,7 +152,7 @@ function diffPriorities(previous: Plan, next: Plan, context: PlanDiffContext): P
     const name = nameOf(priority.zoneId);
 
     if (before === undefined) {
-      // Zona que no estaba en el ranking anterior y ahora si.
+      // Zone that was not in previous ranking and is now present.
       changes.push({
         kind: "priority-up",
         label: `${name} entra en el ranking en el puesto ${index + 1}`,
@@ -171,7 +171,7 @@ function diffPriorities(previous: Plan, next: Plan, context: PlanDiffContext): P
         : `Su puntuación pasa de ${scoreBefore} a ${scoreNow}.`;
 
     if (before > index) {
-      // Sube: cuenta a quien ha adelantado, que es lo que se entiende de un vistazo.
+      // Moved up: describe who it overtook, which is understandable at a glance.
       const overtaken = previous.priorities
         .slice(index, before)
         .filter((candidate) => (nextRank.get(candidate.zoneId) ?? Number.MAX_SAFE_INTEGER) > index)
@@ -212,7 +212,7 @@ function diffActions(previous: Plan, next: Plan, context: PlanDiffContext): Plan
   const previousInvalid = new Set(previous.invalidatedActionIds);
   const nextInvalid = new Set(next.invalidatedActionIds);
 
-  // Acciones nuevas: estan abiertas ahora y no lo estaban antes.
+  // New actions: open now and were not open before.
   for (const actionId of next.proposedActionIds) {
     if (previousOpen.has(actionId) || nextInvalid.has(actionId)) continue;
     const described = describeAction(actionId, context);
@@ -223,7 +223,7 @@ function diffActions(previous: Plan, next: Plan, context: PlanDiffContext): Plan
     });
   }
 
-  // Acciones invalidadas explicitamente por la replanificacion.
+  // Actions explicitly invalidated by replanning.
   for (const actionId of next.invalidatedActionIds) {
     if (previousInvalid.has(actionId)) continue;
     const described = describeAction(actionId, context);
@@ -234,9 +234,9 @@ function diffActions(previous: Plan, next: Plan, context: PlanDiffContext): Plan
     });
   }
 
-  // Acciones que se cayeron del plan sin marcarse como invalidadas. Solo se
-  // reportan las que acabaron mal: una accion completada con exito es una buena
-  // noticia, no un cambio de plan.
+  // Actions that dropped from plan without being marked invalidated. Only
+  // report those that ended poorly: a successfully completed action is good
+  // news, not a plan change.
   for (const actionId of previous.proposedActionIds) {
     if (nextOpen.has(actionId) || nextInvalid.has(actionId)) continue;
     const action = context.actions?.find((candidate) => candidate.id === actionId);
@@ -361,10 +361,10 @@ function diffIntegration(context: PlanDiffContext): PlanChange[] {
 }
 
 /**
- * Calcula que cambio entre dos versiones del plan.
+ * Calculates what changed between two plan versions.
  *
- * El contexto es opcional para no romper a quien llama con dos argumentos;
- * cuanto mas contexto recibe, mas tipos de cambio puede detectar.
+ * Context is optional to avoid breaking callers with two arguments;
+ * the more context provided, the more change types it can detect.
  */
 export function diffPlans(
   previous: Plan | null,
@@ -381,7 +381,7 @@ export function diffPlans(
     ...diffResources(context),
   ];
 
-  // Orden estable por importancia: lo que primero mira un humano, arriba.
+  // Stable sort by importance: what a human looks at first goes to top.
   return changes
     .map((change, index) => ({ change, index }))
     .sort((a, b) => kindRank[a.change.kind] - kindRank[b.change.kind] || a.index - b.index)
@@ -390,10 +390,10 @@ export function diffPlans(
 }
 
 // ---------------------------------------------------------------------------
-// Historial y auditoria
+// History and audit
 // ---------------------------------------------------------------------------
 
-/** Guarda la version anterior del plan, recortando el historial. */
+/** Saves previous plan version, trimming history. */
 export function pushPlanHistory(history: Plan[], plan: Plan): Plan[] {
   return [plan, ...history].slice(0, MAX_PLAN_HISTORY);
 }
@@ -413,7 +413,7 @@ export function appendAudit(
   return [entry, ...audit].slice(0, MAX_AUDIT_ENTRIES);
 }
 
-/** Resumen de una tanda de cambios, para el titular de la replanificacion. */
+/** Summary of a batch of changes, for replanning headline. */
 export function summarizeChanges(changes: PlanChange[]): string {
   if (changes.length === 0) return "Sin diferencias respecto a la versión anterior.";
   if (changes.length === 1) return changes[0].label;

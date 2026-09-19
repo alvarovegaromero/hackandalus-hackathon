@@ -1,8 +1,8 @@
-// PROPIETARIO: agente del escenario que avanza solo.
-// Empuje manual del guion: aplica los beats que ya tocaban y devuelve la
-// situacion. La interfaz no necesita llamarla (sondear /api/situation ya hace
-// avanzar el guion), pero es util para el presentador, para pruebas y para un
-// cron externo si se despliega en un entorno sin procesos de larga vida.
+// OWNER: self-advancing scenario agent.
+// Manual script advancement: applies due beats and returns the situation.
+// The UI does not need to call this (polling /api/situation already advances
+// the script), but it is useful for the presenter, tests, and an external
+// cron if deployed in an environment without long-running processes.
 
 import { stopHeartbeat } from "@/lib/scenario";
 import { getSituation, pollSituation } from "@/lib/store";
@@ -12,22 +12,22 @@ export const dynamic = "force-dynamic";
 
 export async function POST() {
   try {
-    // No lee cuerpo a proposito: un tick no admite parametros.
+    // Intentionally does not read body: tick takes no parameters.
     const situacion = pollSituation();
-    // Si el guion ya termino, este es un buen sitio para recoger el latido.
+    // If script has ended, this is a good place to stop the heartbeat.
     if (!situacion.scenario.running) stopHeartbeat();
     return apiOk(situacion);
   } catch (error) {
-    return apiErrorFromThrown(error, "No se pudo avanzar el escenario");
+    return apiErrorFromThrown(error, "Could not advance scenario");
   }
 }
 
-/** Lectura sin efectos del estado del guion, comoda para depurar la demo. */
+/** Side-effect-free read of scenario state, convenient for demo debugging. */
 export async function GET() {
   try {
     return apiOk(getSituation().scenario);
   } catch (error) {
-    return apiErrorFromThrown(error, "No se pudo leer el estado del escenario");
+    return apiErrorFromThrown(error, "Could not read scenario state");
   }
 }
 

@@ -204,7 +204,7 @@ demo seeds `wildfire-sierra-bermeja`).
 - [ ] `src/app/api/signals/route.ts` — thin controller: `authorize` → body →
       ingest → response + status.
 - [ ] `README.md` — batch contract, run/area seed step, degraded mode.
-- [ ] `TASKS.md` — check off Fase 3 "persistir y deduplicar eventos".
+- [ ] `TASKS.md` — check off Phase 3 "persist and deduplicate events".
 
 Tests (Vitest — decisions & failure paths):
 
@@ -221,7 +221,7 @@ Tests (Vitest — decisions & failure paths):
 ## 4. Triage & incident handoff (brief)
 
 Ingest returns fast; the rest is separate modules (out of scope here, tracked in
-`TASKS.md` Fase 3):
+`TASKS.md` Phase 3):
 
 - **triage** scores the new signal and sets act / verify / discard. A discarded
   signal is excluded, not deleted (`data-model.md` 2.2).
@@ -230,7 +230,7 @@ Ingest returns fast; the rest is separate modules (out of scope here, tracked in
 - **planning** re-plans: plans are versioned, `one current per run`; a re-plan
   supersedes the previous. The demo-friendly shortcut for "the same problem
   changed" is **supersede** (mark the old plan `superseded`), not a long-running
-  workflow that waits — workflow `waits` are later (Fase 3).
+  workflow that waits — workflow `waits` are later (Phase 3).
 
 ---
 

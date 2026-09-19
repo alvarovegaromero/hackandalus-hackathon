@@ -1,32 +1,32 @@
-// PROPIETARIO: agente de asignacion de recursos.
-// Motor de asignacion. store.ts llama a estas funciones y no toma decisiones
-// de recursos por su cuenta.
+// OWNER: resource allocation agent.
+// Allocation engine. store.ts calls these functions and does not make
+// resource decisions on its own.
 //
-// La pregunta del reto es literal: "tienes tres ambulancias y cinco sitios
-// pidiendolas". Este modulo responde a esa pregunta con un criterio explicito,
-// puntuado y explicable, porque la decision se muestra al operador y tiene que
-// sostenerse delante de un jurado.
+// The challenge question is literal: "you have three ambulances and five sites
+// requesting them". This module answers that question with an explicit,
+// scored, and explainable criterion, because the decision is shown to the
+// operator and must hold up before a jury.
 //
-// Criterio de puntuacion (0..100), con los pesos declarados en PESOS:
-//   45  capacidad tecnica  -> lo que la accion necesita frente a Resource.capabilities
-//   25  proximidad         -> distancia entre la base del recurso y la zona del incidente
-//   15  suficiencia        -> Resource.capacity frente a la poblacion en riesgo de la zona
-//   10  disponibilidad     -> libre ahora, o en uso y habria que quitarselo a otra zona
-//    5  encaje de canal    -> si la accion sale por voz/mensajeria, ayuda tener comunicaciones
+// Scoring criteria (0..100), with weights declared in PESOS:
+//   45  technical capacity -> what the action needs vs Resource.capabilities
+//   25  proximity          -> distance between resource base and incident zone
+//   15  sufficiency        -> Resource.capacity vs population at risk in the zone
+//   10  availability       -> free now, or in use and would need to be taken from another zone
+//    5  channel fit        -> if the action uses voice/messaging, having communications helps
 //
-// Regla dura: un recurso sin ninguna capacidad util para la necesidad NO es
-// candidato, por cerca que este. Un recurso "unavailable" nunca es candidato.
+// Hard rule: a resource without any useful capability for the need is NOT a
+// candidate, regardless of proximity. An "unavailable" resource is never a candidate.
 
 import type { Action, ActionChannel, CrisisZone, Resource, ZoneStatus } from "./types";
 
 export interface AssignmentDecision {
   resourceId: string;
   reason: string;
-  /** Puntuacion 0..100 de la eleccion, para poder ordenar o mostrar confianza. */
+  /** Score 0..100 of the choice, for sorting or displaying confidence. */
   score?: number;
 }
 
-/** Pesos del criterio de asignacion. Suman 100. */
+/** Assignment criteria weights. Sum to 100. */
 export const PESOS = {
   capacidadTecnica: 45,
   proximidad: 25,
@@ -45,28 +45,28 @@ export interface CandidateFactors {
 
 export interface ResourceCandidate {
   resource: Resource;
-  /** false si no cubre ninguna de las necesidades de la accion. */
+  /** false if it does not cover any of the action's needs. */
   compatible: boolean;
-  /** Puntuacion 0..100. Los incompatibles y los no disponibles valen 0. */
+  /** Score 0..100. Incompatible and unavailable resources are 0. */
   score: number;
   factors: CandidateFactors;
-  /** Distancia en unidades del mapa, o null si el recurso no tiene base conocida. */
+  /** Distance in map units, or null if the resource has no known base. */
   distance: number | null;
-  /** Capacidades del recurso que encajan con la necesidad. */
+  /** Resource capabilities matching the need. */
   matched: string[];
-  /** Motivo de descarte, cuando corresponde. */
+  /** Rejection reason, when applicable. */
   rejection: string | null;
 }
 
 // ---------------------------------------------------------------------------
-// Taxonomia de necesidades
+// Needs taxonomy
 // ---------------------------------------------------------------------------
 
 /**
- * Traduce el texto de la accion (categoria de la senal u objetivo escrito a
- * mano) a las capacidades de `Resource.capabilities` que hacen falta. La
- * primera capacidad de cada grupo es la principal: cubrirla pesa mucho mas que
- * cubrir solo la secundaria.
+ * Maps the action text (signal category or handwritten objective)
+ * to the capabilities in `Resource.capabilities` that are needed. The
+ * first capability in each group is primary: covering it weighs much more than
+ * covering only the secondary one.
  */
 const TABLA_NECESIDADES: { claves: string[]; capacidades: string[] }[] = [
   {
@@ -100,19 +100,19 @@ const TABLA_NECESIDADES: { claves: string[]; capacidades: string[] }[] = [
     capacidades: ["alerta publica", "comunicaciones"],
   },
   {
-    // Ojo: aqui NO va "coordina". store.ts redacta todos los objetivos como
-    // "Coordinar respuesta de <categoria> en <zona>", asi que esa palabra
-    // aparece siempre y convertiria al Enlace 112 en comodin universal, capaz
-    // hasta de apagar un incendio. La necesidad real es la categoria.
+    // Note: "coordina" does NOT go here. store.ts writes all objectives as
+    // "Coordinar respuesta de <categoria> en <zona>", so that word
+    // always appears and would make 112 Enlace a universal wildcard, capable
+    // even of extinguishing a fire. The real need is the category.
     claves: ["mando", "enlace", "escasez", "resource-shortage", "integration", "112"],
     capacidades: ["coordinacion", "comunicaciones"],
   },
 ];
 
-/** Necesidad por defecto cuando el texto de la accion no encaja en la tabla. */
+/** Default need when action text does not match the table. */
 const NECESIDAD_POR_DEFECTO = ["coordinacion", "comunicaciones"];
 
-/** Capacidades cuyo dimensionamiento depende de cuanta gente hay en riesgo. */
+/** Capabilities whose sizing depends on how many people are at risk. */
 const CAPACIDADES_DIMENSIONADAS = new Set([
   "evacuacion",
   "transporte",
@@ -132,15 +132,15 @@ const PESO_ESTADO_ZONA: Record<ZoneStatus, number> = {
   critical: 45,
 };
 
-/** Estados de accion que siguen dependiendo del recurso asignado. */
+/** Action statuses that still depend on the assigned resource. */
 const ESTADOS_VIVOS = new Set(["pending", "approved", "running", "blocked", "stalled"]);
 
-/** Quita acentos y baja a minusculas para poder comparar texto libre. */
+/** Removes accents and converts to lowercase to compare free text. */
 function normalizar(texto: string) {
   return texto.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
-/** Devuelve las capacidades necesarias, la principal primero. */
+/** Returns the required capabilities, primary first. */
 export function necesidadesDeAccion(objective: string, channel?: ActionChannel): string[] {
   const texto = normalizar(objective ?? "");
   const encontradas: string[] = [];
@@ -155,14 +155,14 @@ export function necesidadesDeAccion(objective: string, channel?: ActionChannel):
 
   if (encontradas.length > 0) return encontradas;
 
-  // Sin pista en el texto: si la accion sale por un canal de contacto, lo que
-  // hace falta es alguien que coordine y avise, no un equipo de campo.
+  // Without hints in text: if the action goes through a contact channel,
+  // what is needed is someone to coordinate and notify, not a field team.
   void channel;
   return [...NECESIDAD_POR_DEFECTO];
 }
 
 // ---------------------------------------------------------------------------
-// Geografia y urgencia
+// Geography and urgency
 // ---------------------------------------------------------------------------
 
 function buscarZona(zones: CrisisZone[], zoneId: string | null | undefined) {
@@ -170,7 +170,7 @@ function buscarZona(zones: CrisisZone[], zoneId: string | null | undefined) {
   return zones.find((zone) => zone.id === zoneId) ?? null;
 }
 
-/** Distancia euclidea entre dos zonas del mapa, en unidades del tablero. */
+/** Euclidean distance between two zones on the map, in board units. */
 export function distanciaEntreZonas(a: CrisisZone, b: CrisisZone) {
   const dx = a.coordinates.x - b.coordinates.x;
   const dy = a.coordinates.y - b.coordinates.y;
@@ -178,9 +178,9 @@ export function distanciaEntreZonas(a: CrisisZone, b: CrisisZone) {
 }
 
 /**
- * Urgencia de una zona sin mirar las senales vivas: sirve para decidir a quien
- * se le quita un recurso y a quien se deja esperando. El motor de prioridad
- * tiene su propia puntuacion con eventos; aqui basta con el estado de la zona.
+ * Zone urgency without looking at live signals: used to decide who
+ * loses a resource and who is kept waiting. The priority engine
+ * has its own scoring with events; here zone status is sufficient.
  */
 export function urgenciaDeZona(zone: CrisisZone) {
   return (
@@ -192,7 +192,7 @@ export function urgenciaDeZona(zone: CrisisZone) {
 }
 
 // ---------------------------------------------------------------------------
-// Puntuacion de candidatos
+// Candidate scoring
 // ---------------------------------------------------------------------------
 
 function porcentaje(valor: number) {
@@ -204,10 +204,10 @@ function redondear(valor: number) {
 }
 
 /**
- * Puntua todos los recursos frente a una accion y los devuelve ordenados de
- * mejor a peor. Los incompatibles y los no disponibles se devuelven tambien,
- * con `rejection` explicando por que quedan fuera: la interfaz puede mostrar
- * "estaba mas cerca pero no sabe hacer esto".
+ * Scores all resources against an action and returns them sorted from
+ * best to worst. Incompatible and unavailable resources are also returned,
+ * with `rejection` explaining why they are excluded: the UI can show
+ * "was closer but cannot perform this task".
  */
 export function rankResourcesForAction(
   action: Pick<Action, "zoneId" | "objective" | "channel">,
@@ -219,7 +219,7 @@ export function rankResourcesForAction(
   const principal = necesidades[0];
   const esCanalDeContacto = CANALES_DE_CONTACTO.includes(action.channel);
 
-  // Cuanta capacidad hace falta: una unidad por cada 100 personas en riesgo.
+  // How much capacity is needed: one unit per 100 people at risk.
   const necesitaDimension = necesidades.some((necesidad) =>
     CAPACIDADES_DIMENSIONADAS.has(necesidad),
   );
@@ -228,32 +228,32 @@ export function rankResourcesForAction(
     : 1;
 
   const candidatos = resources.map<ResourceCandidate>((resource) => {
-    // Las capacidades se comparan sin acentos: los datos semilla se estan
-    // reescribiendo con tildes y "extincion" y "extinción" son la misma cosa.
+    // Capabilities are compared without accents: seed data is being
+    // rewritten with accents and "extincion" and "extinción" are the same thing.
     const capacidades = new Set(resource.capabilities.map(normalizar));
     const matched = necesidades.filter((necesidad) => capacidades.has(normalizar(necesidad)));
 
-    // Proximidad: desde donde esta desplegado, y si no, desde su base.
+    // Proximity: from where it is deployed, otherwise from its base.
     const zonaRecurso =
       buscarZona(zones, resource.zoneId) ?? buscarZona(zones, resource.homeZoneId);
     let distance: number | null = null;
     let proximidad: number;
     if (!zonaAccion || !zonaRecurso) {
-      // Recurso regional sin base fija (o zona desconocida): ni premio ni castigo.
+      // Regional resource without fixed base (or unknown zone): neither rewarded nor penalized.
       proximidad = 0.6;
     } else {
       distance = distanciaEntreZonas(zonaAccion, zonaRecurso);
       proximidad = Math.max(0, 1 - distance / 50);
     }
 
-    // Capacidad tecnica: cubrir la necesidad principal manda.
+    // Technical capability: covering the primary need takes precedence.
     const cubrePrincipal = capacidades.has(normalizar(principal));
     const capacidadTecnica =
       matched.length === 0
         ? 0
         : (cubrePrincipal ? 0.7 : 0) + 0.3 * (matched.length / necesidades.length);
 
-    // Suficiencia: solo se mide cuando la necesidad escala con la poblacion.
+    // Sufficiency: only measured when need scales with population.
     const suficiencia = necesitaDimension ? Math.min(1, resource.capacity / capacidadRequerida) : 1;
 
     const disponibilidad = resource.status === "available" ? 1 : 0;
@@ -303,7 +303,7 @@ export function rankResourcesForAction(
   return candidatos.sort((a, b) => b.score - a.score || a.resource.id.localeCompare(b.resource.id));
 }
 
-/** Texto en espanol que explica por que no hay recurso posible para una accion. */
+/** Spanish text explaining why no resource is possible for an action. */
 export function explainUnassignable(
   action: Pick<Action, "zoneId" | "objective" | "channel">,
   resources: Resource[],
@@ -349,13 +349,13 @@ export function explainUnassignable(
 }
 
 /**
- * Elige el mejor recurso disponible para una accion, o null si no hay ninguno
- * compatible. Tiene en cuenta capacidades frente a la necesidad, distancia,
- * capacidad frente a la poblacion en riesgo y estado.
+ * Selects the best available resource for an action, or null if none
+ * is compatible. Accounts for capabilities vs need, distance,
+ * capacity vs population at risk, and status.
  *
- * Solo se le quita el recurso a otra accion (recurso en estado "assigned")
- * cuando no queda ninguno libre y compatible, y ademas la zona de la nueva
- * accion es mas urgente que la zona donde el recurso esta trabajando ahora.
+ * A resource is only taken from another action (status "assigned")
+ * when no free and compatible resource remains, and the zone of the new
+ * action is more urgent than the zone where the resource is currently working.
  */
 export function selectResourceForAction(
   action: Pick<Action, "zoneId" | "objective" | "channel">,
@@ -382,7 +382,7 @@ export function selectResourceForAction(
     };
   }
 
-  // No queda nada libre: solo cabe reasignar si la nueva zona pesa mas.
+  // Nothing free remains: only reassign if the new zone has higher weight.
   const urgenciaNueva = zonaAccion ? urgenciaDeZona(zonaAccion) : 0;
   const expropiables = utiles.filter((candidato) => {
     const zonaActual = buscarZona(zones, candidato.resource.zoneId);
@@ -406,7 +406,7 @@ export function selectResourceForAction(
   };
 }
 
-/** Redacta el motivo en espanol que se muestra en la interfaz. */
+/** Drafts the explanation in Spanish shown in the interface. */
 function construirMotivo(
   elegido: ResourceCandidate,
   alternativa: ResourceCandidate | null,
@@ -443,7 +443,7 @@ function construirMotivo(
 
   let texto = `${partes.join(" ")}. Puntuación ${elegido.score}/100.`;
 
-  // Lo mas util para el operador: por que no fue el que tenia mas cerca.
+  // Most useful for the operator: why it wasn't the closest one.
   const masCercanoIncompatible = todos
     .filter(
       (candidato) =>
@@ -468,10 +468,10 @@ function construirMotivo(
 }
 
 // ---------------------------------------------------------------------------
-// Mutaciones de estado
+// State mutations
 // ---------------------------------------------------------------------------
 
-/** Marca el recurso como asignado a la accion. Muta el array recibido. */
+/** Marks the resource as assigned to the action. Mutates the received array. */
 export function assignResource(
   resources: Resource[],
   resourceId: string,
@@ -486,7 +486,7 @@ export function assignResource(
   return resource;
 }
 
-/** Libera el recurso ligado a una accion que termina. Muta el array recibido. */
+/** Releases the resource linked to an action that is ending. Mutates the received array. */
 export function releaseResource(resources: Resource[], actionId: string) {
   const resource = resources.find((candidate) => candidate.assignedActionId === actionId);
   if (!resource) return null;
@@ -497,7 +497,7 @@ export function releaseResource(resources: Resource[], actionId: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Adaptacion: un recurso se cae
+// Adaptation: a resource goes down
 // ---------------------------------------------------------------------------
 
 export interface Reassignment {
@@ -508,12 +508,12 @@ export interface Reassignment {
 }
 
 /**
- * Cuando un recurso cae, busca sustituto para las acciones que dependian de el.
- * Devuelve las reasignaciones aplicadas para que el plan pueda explicarlas.
+ * When a resource goes down, finds replacements for actions that depended on it.
+ * Returns the applied reassignments so the plan can explain them.
  *
- * Se atiende primero a la zona mas urgente: si solo hay un sustituto y dos
- * acciones huerfanas, la menos urgente se queda sin el, y se dice por que en
- * vez de fingir que hay recurso para todos.
+ * The most urgent zone is served first: if there is only one replacement and two
+ * orphaned actions, the less urgent one goes without it, explaining why
+ * instead of pretending there are enough resources for everyone.
  */
 export function reassignAffectedActions(
   actions: Action[],
@@ -541,7 +541,7 @@ export function reassignAffectedActions(
   const movimientos: Reassignment[] = [];
 
   for (const action of ordenadas) {
-    // El recurso caido y los ya comprometidos en esta misma tanda quedan fuera.
+    // The downed resource and those already committed in this batch are excluded.
     const disponibles = resources.filter((resource) => !reservados.has(resource.id));
     const decision = selectResourceForAction(
       { zoneId: action.zoneId, objective: action.objective, channel: action.channel },
@@ -576,7 +576,7 @@ export function reassignAffectedActions(
 }
 
 // ---------------------------------------------------------------------------
-// Conflicto: varias zonas piden el mismo recurso
+// Conflict: multiple zones request the same resource
 // ---------------------------------------------------------------------------
 
 export interface ResourceAllocation {
@@ -584,7 +584,7 @@ export interface ResourceAllocation {
   zoneId: string;
   resourceId: string;
   reason: string;
-  /** Urgencia de la zona que ha ganado el recurso. */
+  /** Urgency of the zone that won the resource. */
   urgency: number;
 }
 
@@ -592,7 +592,7 @@ export interface ResourceWaiting {
   actionId: string;
   zoneId: string;
   reason: string;
-  /** Accion que se quedo el recurso que esta pedia, o null si no habia ninguno capaz. */
+  /** Action that took the requested resource, or null if none capable. */
   blockedByActionId: string | null;
   urgency: number;
 }
@@ -600,17 +600,17 @@ export interface ResourceWaiting {
 export interface ConflictResolution {
   allocations: ResourceAllocation[];
   waiting: ResourceWaiting[];
-  /** Resumen en espanol para la interfaz. */
+  /** Summary in Spanish for the interface. */
   summary: string;
 }
 
 /**
- * Reparte los recursos libres entre las acciones abiertas cuando hay mas
- * demanda que oferta. Atiende primero a la zona mas urgente y explica, para
- * cada zona que se queda esperando, quien se llevo el recurso y por que.
+ * Distributes free resources among open actions when demand exceeds supply.
+ * Serves the most urgent zone first and explains, for each zone left waiting,
+ * who took the resource and why.
  *
- * Nadie la llama todavia: esta pensada para que store.ts la use al replanificar
- * y para que la interfaz muestre la cola de espera.
+ * Not called yet: designed for store.ts during replanning
+ * and for the UI to display the waiting queue.
  */
 export function resolveResourceConflicts(
   actions: Action[],
@@ -628,8 +628,8 @@ export function resolveResourceConflicts(
   });
 
   const idsAbiertas = new Set(abiertas.map((action) => action.id));
-  // Se reparte lo que esta libre mas lo que ya sostiene una de estas acciones:
-  // un recurso comprometido con una accion ajena no entra en el reparto.
+  // Distribute what is free plus what already sustains one of these actions:
+  // a resource committed to an unrelated action is excluded from distribution.
   const repartibles = resources.filter(
     (resource) =>
       resource.status === "available" ||
@@ -640,8 +640,8 @@ export function resolveResourceConflicts(
 
   const allocations: ResourceAllocation[] = [];
   const waiting: ResourceWaiting[] = [];
-  const tomados = new Map<string, string>(); // resourceId -> actionId que se lo quedo
-  const disputas = new Map<string, number>(); // resourceId -> cuantas acciones lo querian
+  const tomados = new Map<string, string>(); // resourceId -> actionId that claimed it
+  const disputas = new Map<string, number>(); // resourceId -> how many actions wanted it
 
   for (const action of ordenadas) {
     const zona = buscarZona(zones, action.zoneId);
@@ -652,8 +652,8 @@ export function resolveResourceConflicts(
       channel: action.channel,
     };
 
-    // Se anota que recurso querria esta accion si no hubiera competencia, para
-    // saber cual es el mas peleado aunque quien lo pida acabe esperando.
+    // Note which resource this action would want if there were no competition,
+    // to identify the most contested resource even if requester ends up waiting.
     const preferido = rankResourcesForAction(peticion, repartibles, zones).find(
       (candidato) => candidato.compatible && candidato.resource.status !== "unavailable",
     );
@@ -663,13 +663,13 @@ export function resolveResourceConflicts(
 
     const libres = repartibles.filter((resource) => {
       if (tomados.has(resource.id)) return false;
-      // Un recurso ya pegado a esta misma accion sigue siendo suyo.
+      // A resource already assigned to this same action remains its own.
       if (resource.status === "assigned" && resource.assignedActionId !== action.id) return false;
       return true;
     });
 
-    // Se fuerza el estado a libre para puntuar: en este reparto todo lo que
-    // queda en `libres` esta realmente disponible para esta accion.
+    // Force status to available for scoring: in this distribution everything
+    // remaining in `libres` is actually available for this action.
     const libresComoDisponibles = libres.map((resource) =>
       resource.status === "available" ? resource : { ...resource, status: "available" as const },
     );
@@ -688,7 +688,7 @@ export function resolveResourceConflicts(
       continue;
     }
 
-    // Se queda esperando: se busca quien tiene el recurso que esta accion queria.
+    // Left waiting: look up who holds the resource this action requested.
     const deseados = rankResourcesForAction(peticion, repartibles, zones).filter(
       (candidato) => candidato.compatible && candidato.resource.status !== "unavailable",
     );

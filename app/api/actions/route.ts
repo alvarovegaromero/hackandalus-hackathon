@@ -1,5 +1,5 @@
-// PROPIETARIO: agente de endurecimiento de la API y validacion de entrada.
-// Creacion manual de acciones por parte de un operador.
+// OWNER: API hardening and input validation agent.
+// Manual action creation by an operator.
 
 import { createAction } from "@/lib/store";
 import {
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     const action = createAction(parsed.data);
     return apiOk({ action }, 201);
   } catch (error) {
-    return apiErrorFromThrown(error, "No se pudo crear la acción");
+    return apiErrorFromThrown(error, "Could not create action");
   }
 }
 

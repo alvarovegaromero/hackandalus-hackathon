@@ -1,22 +1,22 @@
-// PROPIETARIO: agente de persistencia, historial, auditoria y aprendizaje.
+// OWNER: persistence, history, audit, and learning agent.
 //
-// Persistencia en ficheros JSON, sin dependencias nativas ni compilacion: en un
-// hackathon, una compilacion nativa fallida el dia de la demo es un desastre.
+// JSON file persistence, without native dependencies or compilation: in a
+// hackathon, a failed native build on demo day is a disaster.
 //
-// Tres garantias sostienen este modulo:
+// Three guarantees support this module:
 //
-//  1. Nunca lanza. Un fallo de disco no puede tumbar el centro de mando, asi
-//     que toda operacion devuelve un valor seguro (null, [], false) en vez de
-//     propagar la excepcion.
-//  2. Escritura atomica. Se escribe a un fichero temporal y se renombra, de
-//     modo que un corte a mitad no deja un JSON truncado que impida arrancar.
-//  3. Lo que se lee se valida. Un fichero viejo, truncado o de otra version del
-//     esquema se descarta entero y se arranca de cero, porque store.ts accede a
-//     `restored.plan.version` sin comprobarlo y un objeto incompleto reventaria
-//     la aplicacion al arrancar.
+//  1. Never throws. A disk failure must not crash the command center, so
+//     every operation returns a safe default (null, [], false) instead of
+//     propagating the exception.
+//  2. Atomic write. Writes to a temporary file and renames, ensuring
+//     an interruption midway does not leave truncated JSON preventing startup.
+//  3. Validate on read. An old, truncated, or mismatched schema version file
+//     is discarded entirely and starts fresh, because store.ts accesses
+//     `restored.plan.version` directly and an incomplete object would crash
+//     the app on startup.
 //
-// Ademas, nunca se escriben credenciales ni datos personales de contacto:
-// telefonos y correos se borran antes de tocar el disco (AGENTS.md).
+// Additionally, credentials and personal contact details are never written:
+// phone numbers and emails are redacted before touching disk (AGENTS.md).
 
 import fs from "node:fs";
 import path from "node:path";
@@ -24,14 +24,14 @@ import { seedContacts } from "./seed";
 import type { LearnedWeights, RunRecord, SituationState } from "./types";
 
 // ---------------------------------------------------------------------------
-// Configuracion
+// Configuration
 // ---------------------------------------------------------------------------
 
 export const DATA_DIR = ".data";
 
 /**
- * Version del esquema en disco. Subir este numero invalida automaticamente
- * todo lo guardado con el formato anterior: se descarta y se arranca limpio.
+ * Schema version on disk. Bumping this number automatically invalidates
+ * anything stored in the previous format: discarded and starts clean.
  */
 export const SCHEMA_VERSION = 1;
 
@@ -39,21 +39,21 @@ export const STATE_FILE = "state.json";
 export const RUNS_FILE = "runs.json";
 export const WEIGHTS_FILE = "weights.json";
 
-/** Ejecuciones guardadas como maximo; las mas antiguas se van cayendo. */
+/** Maximum saved runs; older ones are dropped. */
 export const MAX_RUNS = 50;
 
-/** Silencio necesario antes de volcar el estado a disco. */
+/** Required silence period before flushing state to disk. */
 export const SAVE_DEBOUNCE_MS = 500;
 
-/** Retardo maximo tolerado: aunque no pare de haber cambios, se vuelca. */
+/** Maximum tolerated delay: flushes even under continuous changes. */
 export const SAVE_MAX_DELAY_MS = 4000;
 
-/** true si la persistencia esta activada por configuracion. */
+/** true if persistence is enabled by configuration. */
 export function isPersistenceEnabled(): boolean {
   return process.env.CRISIS_PERSISTENCE === "on";
 }
 
-/** Directorio de datos. `CRISIS_DATA_DIR` lo redirige (lo usan los tests). */
+/** Data directory. `CRISIS_DATA_DIR` redirects it (used by tests). */
 export function resolveDataDir(): string {
   const override = process.env.CRISIS_DATA_DIR;
   if (override && override.trim()) return path.resolve(override.trim());
@@ -65,7 +65,7 @@ function filePath(name: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Diagnostico
+// Diagnostics
 // ---------------------------------------------------------------------------
 
 export type PersistenceIssue =
@@ -93,13 +93,13 @@ const diagnostics: Diagnostics = {
   skippedWrites: 0,
 };
 
-/** Para poder ensenar en la UI o en el informe por que no se restauro nada. */
+/** For displaying in UI or reports why nothing was restored. */
 export function getPersistenceDiagnostics(): Diagnostics {
   return { ...diagnostics };
 }
 
 // ---------------------------------------------------------------------------
-// Lectura y escritura atomica
+// Reading and atomic writing
 // ---------------------------------------------------------------------------
 
 interface Envelope<T> {
@@ -113,8 +113,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * Lee un sobre del disco. Devuelve null ante cualquier problema: fichero
- * ausente, ilegible, JSON invalido, esquema antiguo o contenido inesperado.
+ * Reads an envelope from disk. Returns null on any issue: missing file,
+ * unreadable, invalid JSON, old schema, or unexpected payload.
  */
 function readEnvelope<T>(name: string): T | null {
   let raw: string;
@@ -131,7 +131,7 @@ function readEnvelope<T>(name: string): T | null {
   try {
     parsed = JSON.parse(raw);
   } catch {
-    // Un JSON truncado por un corte a mitad de escritura cae aqui.
+    // Truncated JSON from an interrupted write falls here.
     diagnostics.lastLoadIssue = "invalid-json";
     diagnostics.lastLoadDetail = `${name} no es JSON valido`;
     return null;
@@ -161,9 +161,9 @@ function readEnvelope<T>(name: string): T | null {
 }
 
 /**
- * Escribe a un temporal y renombra. El renombrado es atomico dentro del mismo
- * sistema de ficheros, asi que el lector ve el fichero entero o el anterior,
- * nunca uno a medias.
+ * Writes to a temporary file and renames. Renaming is atomic within the same
+ * filesystem, so readers see either the whole file or the previous one,
+ * never a partial one.
  */
 function writeEnvelope(name: string, payload: unknown): boolean {
   const dir = resolveDataDir();
@@ -190,14 +190,14 @@ function writeEnvelope(name: string, payload: unknown): boolean {
     try {
       fs.rmSync(temporary, { force: true });
     } catch {
-      // Ni siquiera limpiar puede hacer fallar la demo.
+      // Not even cleanup can crash the demo.
     }
     return false;
   }
 }
 
 // ---------------------------------------------------------------------------
-// Saneado: fuera credenciales y datos de contacto
+// Sanitization: strip credentials and contact info
 // ---------------------------------------------------------------------------
 
 export const REDACTED_EMAIL = "[correo omitido]";
@@ -211,22 +211,22 @@ function digitsOf(text: string): string {
 }
 
 /**
- * Decide si un numero parece un telefono y no una fecha, un identificador o un
- * numero de version. Preferimos no redactar de mas: perder texto util en el
- * registro tambien estorba.
+ * Determines if a number looks like a phone and not a date, identifier, or
+ * version number. We avoid over-redacting: losing useful text in logs
+ * is also disruptive.
  */
 function looksLikePhone(match: string): boolean {
   const digits = digitsOf(match);
   if (digits.length < 9 || digits.length > 15) return false;
-  if (/^\d{4}-\d{2}-\d{2}/.test(match)) return false; // fecha ISO
+  if (/^\d{4}-\d{2}-\d{2}/.test(match)) return false; // ISO date
   if (match.trim().startsWith("+")) return true;
   const hasSeparator = /[\s().-]/.test(match);
   if (hasSeparator) return true;
-  // Sin separadores solo redactamos lo que encaja con un numero espanol.
+  // Without separators, only redact what matches a Spanish phone number.
   return digits.length === 9 && /^[6789]/.test(digits);
 }
 
-/** Borra correos y telefonos de un texto libre antes de escribirlo. */
+/** Strips emails and phone numbers from free text before writing. */
 export function redact(text: string): string {
   return text
     .replace(EMAIL_PATTERN, REDACTED_EMAIL)
@@ -238,8 +238,8 @@ function redactOptional<T extends string | null | undefined>(value: T): T {
 }
 
 /**
- * Copia del estado apta para el disco: sin telefonos, sin correos y con los
- * textos libres filtrados por si alguien pego un contacto en una descripcion.
+ * Copy of state suitable for disk: without phone numbers, without emails,
+ * and with free text filtered in case someone pasted contact info in descriptions.
  */
 export function sanitizeState(state: SituationState): SituationState {
   const copy = JSON.parse(JSON.stringify(state)) as SituationState;
@@ -297,9 +297,9 @@ export function sanitizeState(state: SituationState): SituationState {
 }
 
 /**
- * Devuelve a los contactos restaurados sus canales desde `seed.ts`. Los datos
- * de contacto viven en configuracion versionada, no en el fichero de estado,
- * asi que restaurar no puede resucitar un telefono que nunca guardamos.
+ * Restores contact channels from `seed.ts`. Contact details live in
+ * versioned configuration, not in state file, so restoring cannot
+ * resurrect a phone number never saved.
  */
 function rehydrateContactChannels(state: SituationState): SituationState {
   const bySeedId = new Map(seedContacts.map((contact) => [contact.id, contact]));
@@ -313,7 +313,7 @@ function rehydrateContactChannels(state: SituationState): SituationState {
 }
 
 // ---------------------------------------------------------------------------
-// Validacion de lo que viene del disco
+// Validation of disk data
 // ---------------------------------------------------------------------------
 
 function hasArrays(value: Record<string, unknown>, keys: string[]): boolean {
@@ -351,9 +351,9 @@ function hasMapCoordinates(zone: unknown): boolean {
 }
 
 /**
- * Comprueba que lo leido es un estado completo y utilizable. store.ts hace
- * `restored.plan.version + 1` nada mas arrancar, asi que aqui somos estrictos:
- * a la minima duda devolvemos null y la aplicacion arranca con el estado semilla.
+ * Verifies that read data is a complete and usable state. store.ts executes
+ * `restored.plan.version + 1` right on startup, so we are strict here:
+ * on any doubt return null and the application starts with seed state.
  */
 export function validateState(value: unknown): SituationState | null {
   if (!isRecord(value)) return null;
@@ -369,7 +369,7 @@ export function validateState(value: unknown): SituationState | null {
     "audit",
   ];
   if (!hasArrays(value, required)) return null;
-  // Estados guardados antes de que las zonas tuvieran lat/lng romperian el mapa.
+  // States saved before zones had lat/lng would break the map.
   if (!(value.zones as unknown[]).every((zone) => hasMapCoordinates(zone))) return null;
   if (!isValidPlan(value.plan)) return null;
   if (!(value.planHistory as unknown[]).every((plan) => isValidPlan(plan))) return null;
@@ -391,10 +391,10 @@ export function validateState(value: unknown): SituationState | null {
 }
 
 // ---------------------------------------------------------------------------
-// Estado
+// State
 // ---------------------------------------------------------------------------
 
-/** Carga el estado guardado, o null si no hay nada utilizable. */
+/** Loads saved state, or null if nothing usable. */
 export function loadState(): SituationState | null {
   if (!isPersistenceEnabled()) return null;
   try {
@@ -408,18 +408,18 @@ export function loadState(): SituationState | null {
     }
     return rehydrateContactChannels(validated);
   } catch (error) {
-    // Defensa extra: ni un fallo inesperado puede impedir arrancar.
+    // Extra defense: not even an unexpected failure can prevent startup.
     diagnostics.lastLoadIssue = "unreadable";
     diagnostics.lastLoadDetail = error instanceof Error ? error.message : String(error);
     return null;
   }
 }
 
-// --- Escritura diferida ------------------------------------------------------
-// saveState se llama en cada replanificacion. Escribir el estado entero cada vez
-// machaca el disco sin necesidad, asi que agrupamos: se vuelca tras un rato de
-// silencio, y como muy tarde a los SAVE_MAX_DELAY_MS. El ultimo estado nunca se
-// pierde porque siempre se guarda el pendiente mas reciente.
+// --- Deferred write ---------------------------------------------------------
+// saveState is called on every replan. Writing the entire state every time
+// pounds disk unnecessarily, so we batch: flushed after a quiet period,
+// and at most by SAVE_MAX_DELAY_MS. The latest state is never lost
+// because the most recent pending state is always saved.
 
 let pendingState: SituationState | null = null;
 let pendingTimer: ReturnType<typeof setTimeout> | null = null;
@@ -434,7 +434,7 @@ function installExitHook() {
       flushState();
     });
   } catch {
-    // Entornos sin `process.on` utilizable: se pierde el ultimo volcado, nada mas.
+    // Environments without usable `process.on`: only the last flush is lost.
   }
 }
 
@@ -444,7 +444,7 @@ function clearPendingTimer() {
   pendingTimer = null;
 }
 
-/** Vuelca ya lo que hubiera pendiente. Devuelve true si escribio algo. */
+/** Flushes any pending state immediately. Returns true if something was written. */
 export function flushState(): boolean {
   clearPendingTimer();
   const state = pendingState;
@@ -454,14 +454,14 @@ export function flushState(): boolean {
   return writeEnvelope(STATE_FILE, sanitizeState(state));
 }
 
-/** Descarta lo pendiente sin escribirlo (util al limpiar en los tests). */
+/** Discards pending state without writing (useful during test cleanup). */
 export function discardPendingState(): void {
   clearPendingTimer();
   pendingState = null;
   firstPendingAt = 0;
 }
 
-/** Guarda el estado. Nunca debe lanzar: un fallo de disco no puede tumbar la demo. */
+/** Saves state. Must never throw: disk failure must not crash demo. */
 export function saveState(state: SituationState): void {
   try {
     if (!isPersistenceEnabled()) {
@@ -474,7 +474,7 @@ export function saveState(state: SituationState): void {
     const now = Date.now();
     if (firstPendingAt === 0) firstPendingAt = now;
 
-    // Si llevamos demasiado tiempo acumulando, escribimos sin esperar mas.
+    // If accumulating for too long, write without waiting further.
     if (now - firstPendingAt >= SAVE_MAX_DELAY_MS) {
       flushState();
       return;
@@ -485,15 +485,15 @@ export function saveState(state: SituationState): void {
       pendingTimer = null;
       flushState();
     }, SAVE_DEBOUNCE_MS);
-    // Un volcado pendiente no debe mantener vivo el proceso ni colgar los tests.
+    // A pending flush must not keep the process alive or hang tests.
     pendingTimer?.unref?.();
   } catch {
-    // Por contrato, saveState no propaga nunca.
+    // By contract, saveState never propagates exceptions.
   }
 }
 
 // ---------------------------------------------------------------------------
-// Ejecuciones y pesos aprendidos
+// Runs and learned weights
 // ---------------------------------------------------------------------------
 
 function isValidRun(value: unknown): value is RunRecord {
@@ -511,20 +511,20 @@ function isValidRun(value: unknown): value is RunRecord {
   return Array.isArray(value.notes) && value.notes.every((note) => typeof note === "string");
 }
 
-/** Historial de ejecuciones anteriores, para el bonus de aprendizaje. */
+/** History of past runs, for learning bonus. */
 export function loadRuns(): RunRecord[] {
   if (!isPersistenceEnabled()) return [];
   try {
     const payload = readEnvelope<unknown>(RUNS_FILE);
     if (!Array.isArray(payload)) return [];
-    // Una entrada rota no invalida el resto del historial: se descarta ella sola.
+    // A broken entry does not invalidate remaining history: it is discarded alone.
     return payload.filter(isValidRun);
   } catch {
     return [];
   }
 }
 
-/** Anade o actualiza una ejecucion. Se reescribe por id, asi que es idempotente. */
+/** Adds or updates a run. Overwritten by id, so it is idempotent. */
 export function saveRun(run: RunRecord): void {
   try {
     if (!isPersistenceEnabled()) return;
@@ -534,7 +534,7 @@ export function saveRun(run: RunRecord): void {
     const next = [...existing, sanitized].slice(-MAX_RUNS);
     writeEnvelope(RUNS_FILE, next);
   } catch {
-    // Perder una ejecucion del historial no puede tumbar la demo.
+    // Losing a run from history cannot crash the demo.
   }
 }
 
@@ -562,11 +562,11 @@ export function saveWeights(weights: LearnedWeights): void {
     if (!isValidLearning(weights)) return;
     writeEnvelope(WEIGHTS_FILE, weights);
   } catch {
-    // Igual que arriba: el aprendizaje es un extra, no un punto de fallo.
+    // As above: learning is a bonus, not a single point of failure.
   }
 }
 
-/** Borra todo lo persistido. Solo para reinicios explicitos y para los tests. */
+/** Clears all persisted data. Only for explicit resets and tests. */
 export function clearPersistedData(): void {
   discardPendingState();
   try {
@@ -574,6 +574,6 @@ export function clearPersistedData(): void {
       fs.rmSync(filePath(name), { force: true });
     }
   } catch {
-    // Nada que hacer si el disco no colabora.
+    // Nothing to do if disk does not cooperate.
   }
 }

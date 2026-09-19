@@ -1,234 +1,233 @@
-# Guía de diseño del dashboard
+# Dashboard Design Guide
 
-Guía de referencia para construir la interfaz humana del sistema de gestión de crisis.
-Responde a los requisitos de `CHALLENGE.md`: ver en dos segundos qué pasa y qué ha cambiado, entender qué hace el sistema e intervenir.
-Es agnóstica del escenario: vale para incendio, inundación, apagón u otro, siempre que haya ubicaciones que pintar en un mapa.
+Reference guide for building the human interface of the crisis management system.
+Addresses the requirements in `CHALLENGE.md`: see in two seconds what is happening and what has changed, understand what the system is doing, and intervene.
+Scenario-agnostic: applies to wildfire, flood, blackout, or others, as long as there are locations to render on a map.
 
-## 1. Decisiones de partida
+## 1. Initial Decisions
 
-| Tema            | Decisión                                                                                            |
-| --------------- | --------------------------------------------------------------------------------------------------- |
-| Audiencia       | Un operador lo usa en portátil y el mismo layout se proyecta ante el jurado.                        |
-| Foco visual     | Mapa de situación en el centro.                                                                     |
-| Replanificación | Resaltado temporal de lo que cambia, con decaimiento en minutos y marcas en la línea temporal.      |
-| Intervención    | Aprobar o cancelar acciones, reordenar prioridades e inyectar eventos.                              |
-| Métricas        | Recursos libres/asignados, estado de acciones, personas afectadas/notificadas y evolución temporal. |
-| Tema            | Oscuro por defecto, claro como alternativa validada para proyectores que lavan los negros.          |
-| Señal/ruido     | Feed de entrada con los relevantes explicados y los descartados plegados.                           |
+| Topic        | Decision                                                                                   |
+| ------------ | ------------------------------------------------------------------------------------------ |
+| Audience     | An operator uses it on a laptop, and the same layout is projected before the jury.         |
+| Visual focus | Situation map in the center.                                                               |
+| Replanning   | Temporary highlighting of what changes, with decay over minutes and marks on the timeline. |
+| Intervention | Approve or cancel actions, reorder priorities, and inject events.                          |
+| Metrics      | Free/allocated resources, action status, affected/notified people, and temporal evolution. |
+| Theme        | Dark by default, light as a validated alternative for projectors that wash out blacks.     |
+| Signal/noise | Incoming feed with relevant items explained and dismissed items collapsed.                 |
 
-## 2. Principios
+## 2. Principles
 
-1. **Todo a la vista.** Nada crítico detrás de pestañas, modales o scroll a 1440×900.
-2. **Se lee de izquierda a derecha como el sistema:** entra información, se ve la situación, se decide y se actúa.
-3. **El color tiene un trabajo o no aparece.** Estado, identidad de recurso o nada; nunca decoración.
-4. **Nunca solo color.** Todo estado lleva icono y texto; todo recurso lleva forma e identidad textual.
-5. **Simulado no es real.** Cualquier acción simulada se distingue a primera vista de una ejecutada de verdad (lo exige `PROJECT.md`).
-6. **Lo que cambió se nota sin buscarlo** y se sigue notando unos minutos después.
-7. **Cada decisión del agente lleva su porqué** en una línea legible.
-8. **Tinta recesiva, datos protagonistas.** Rejillas y ejes en hairline, fondos neutros, marcas finas.
+1. **Everything in view.** Nothing critical behind tabs, modals, or scrolling at 1440×900.
+2. **Reads left-to-right like the system:** information enters, the situation is assessed, decisions are made, and actions are taken.
+3. **Color has a job or does not appear.** Status, resource identity, or nothing; never decoration.
+4. **Never color alone.** Every status includes an icon and text; every resource includes a shape and textual identity.
+5. **Simulated is not real.** Any simulated action is distinguishable at first glance from a live execution (mandated by `PROJECT.md`).
+6. **What changed is noticeable without searching** and remains noticeable several minutes later.
+7. **Every agent decision includes its rationale** in a legible single line.
+8. **Recessive ink, prominent data.** Hairline grids and axes, neutral backgrounds, fine tick marks.
 
 ## 3. Layout
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│ BARRA DE ESTADO: escenario · reloj · agente · integraciones ·     │
-│                  última replanificación · [+ Inyectar evento]     │
+│ STATUS BAR: scenario · clock · agent · integrations ·            │
+│             last replan · [+ Inject event]                       │
 ├──────────────────────────────────────────────────────────────────┤
-│ KPI: Afectados │ Notificados │ Confirmados │ Peticiones sin cubrir│
+│ KPI: Affected │ Notified │ Confirmed │ Unmet requests            │
 ├─────────────┬────────────────────────────────┬───────────────────┤
-│ ENTRADA     │                                │ PRIORIDADES       │
-│ relevantes  │            MAPA                │ 1. ... [✓] [✕] ↑↓ │
-│ + motivo    │    incidentes + recursos       │ 2. ... [✓] [✕] ↑↓ │
-│             │    + zona afectada             │ 3. ...            │
-│ ▸ 97 desc.  │                                │ ESTADO ACCIONES   │
+│ INCOMING    │                                │ PRIORITIES        │
+│ relevant    │              MAP               │ 1. ... [✓] [✕] ↑↓ │
+│ + reason    │     incidents + resources      │ 2. ... [✓] [✕] ↑↓ │
+│             │       + affected zone          │ 3. ...            │
+│ ▸ 97 dism.  │                                │ ACTION STATUS     │
 ├─────────────┴────────────────┬───────────────┴───────────────────┤
-│ RECURSOS libres / asignados  │ EVOLUCIÓN TEMPORAL + replanes      │
+│ RESOURCES free / assigned    │ TIMELINE EVOLUTION + replans      │
 └──────────────────────────────┴───────────────────────────────────┘
 ```
 
-- Rejilla CSS de tres columnas: `minmax(280px, 1fr) minmax(0, 2.2fr) minmax(320px, 1.2fr)`.
-- El mapa ocupa como mínimo el 45% del ancho y el 50% del alto útil.
-- Las columnas laterales hacen scroll interno; la página no hace scroll a 1440×900 o mayor.
-- Por debajo de 1280px de ancho, una sola columna en este orden: estado, KPI, prioridades, mapa, entrada, recursos, evolución.
-  Móvil no es objetivo; basta con que no se rompa.
-- Separación entre paneles de 16px; padding interno de panel de 16px; radio de panel y tarjetas de 16px (`rounded-2xl`), elementos de navegación en 8px y CTAs estilo pill (`rounded-full`).
-- **Sistema de diseño y blueprint visual:**
-  - **Tipografía:** fuente del sistema (SF Pro en Apple; Segoe UI o Roboto en el resto) con regular y medium, con letter-spacing de `-0.15px` para máxima legibilidad táctica.
-  - **Escala de fuentes:** 12px (metadatos/badges), 13px (cuerpo compacto/botones), 14px (texto estándar/subtítulos) y 24px (números clave/KPIs).
-  - **Jerarquía de neutros:** `#292929` (fondo de paneles secundarios y bordes oscuros), `#5D5D5D` (texto secundario/iconos neutros) y `#9E9E9E` (tinta atenuada y subtítulos).
-  - **Iconos:** 14px para navegación y botones (`Button`), 20px para cabeceras de tarjeta (`CardHeader`).
-  - **Primitivas UI (estilo shadcn):** `Button`, `Badge`, `Card` en `app/components/ui/` con `cn` (`clsx` + `tailwind-merge`).
+- Three-column CSS grid: `minmax(280px, 1fr) minmax(0, 2.2fr) minmax(320px, 1.2fr)`.
+- The map occupies at least 45% of width and 50% of usable height.
+- Side columns scroll internally; the page does not scroll at 1440×900 or higher.
+- Below 1280px width, a single column in this order: status, KPI, priorities, map, incoming, resources, evolution. Mobile is not a target; it just shouldn't break.
+- 16px panel gap; 16px panel inner padding; 16px panel and card border radius (`rounded-2xl`), navigation elements at 8px, and pill-style CTAs (`rounded-full`).
+- **Design system and visual blueprint:**
+  - **Typography:** system font (SF Pro on Apple; Segoe UI or Roboto elsewhere) with regular and medium weights, `-0.15px` letter-spacing for tactical legibility.
+  - **Type scale:** 12px (metadata/badges), 13px (compact body/buttons), 14px (standard text/subheadings), and 24px (key numbers/KPIs).
+  - **Neutral hierarchy:** `#292929` (secondary panel background and dark borders), `#5D5D5D` (secondary text/neutral icons), and `#9E9E9E` (muted ink and subtitles).
+  - **Icons:** 14px for navigation and buttons (`Button`), 20px for card headers (`CardHeader`).
+  - **UI primitives (shadcn style):** `Button`, `Badge`, `Card` in `app/components/ui/` with `cn` (`clsx` + `tailwind-merge`).
 
-## 4. Zonas
+## 4. Zones
 
-### 4.1 Barra de estado
+### 4.1 Status Bar
 
-Responde a "¿el sistema funciona y qué está haciendo?".
+Answers: "is the system working and what is it doing?"
 
-- Nombre del escenario y reloj de la simulación o real, con indicación explícita de cuál es.
-- Estado del agente: `Activo`, `Replanificando`, `En espera de aprobación`, cada uno con icono.
-- Salud de integraciones (HappyRobot y resto): `Conectada`, `Degradada`, `Caída`, con color de estado + icono + texto.
-  Si una integración cae, la barra lo dice aunque nadie mire otra zona.
-- Última replanificación: hora y causa en una línea, por ejemplo `12:20 · Replan por: carretera N-340 cortada`.
-- Botón `Inyectar evento` que abre un formulario con resumen, severidad, origen y ubicación.
-- Si hay datos simulados en pantalla, una etiqueta `DATOS SIMULADOS` permanente en la barra.
+- Scenario name and simulation vs. real clock, with explicit indication of which is active.
+- Agent status: `Active`, `Replanning`, `Awaiting approval`, each with an icon.
+- Integration health (HappyRobot and others): `Connected`, `Degraded`, `Down`, with status color + icon + text.
+  If an integration goes down, the status bar states it even if no one is looking elsewhere.
+- Last replan: timestamp and cause on one line, e.g. `12:20 · Replan due to: N-340 highway blocked`.
+- `Inject event` button opening a form with summary, severity, source, and location.
+- If simulated data is on screen, a permanent `SIMULATED DATA` badge on the bar.
 
-### 4.2 Fila de KPI
+### 4.2 KPI Row
 
-Cuatro stat tiles, no gráficos: aquí el número es el gráfico.
+Four stat tiles, not charts: here the number is the chart.
 
-| Tile                  | Valor                                 | Contexto                                                |
-| --------------------- | ------------------------------------- | ------------------------------------------------------- |
-| Afectados             | Personas afectadas estimadas          | Delta en los últimos 5 min (`+50 en 5 min`)             |
-| Notificados           | Personas avisadas                     | `de N afectados` y porcentaje                           |
-| Confirmados           | Personas que han confirmado recepción | `de N notificados`                                      |
-| Peticiones sin cubrir | Solicitudes de recurso sin asignar    | En estado crítico (icono + color) cuando es mayor que 0 |
+| Tile           | Value                             | Context                                               |
+| -------------- | --------------------------------- | ----------------------------------------------------- |
+| Affected       | Estimated affected individuals    | Delta in last 5 min (`+50 in 5 min`)                  |
+| Notified       | Warned / alerted individuals      | `out of N affected` and percentage                    |
+| Confirmed      | Individuals who confirmed receipt | `out of N notified`                                   |
+| Unmet requests | Unassigned resource requests      | In critical status (icon + color) when greater than 0 |
 
-- Valor en 40px peso 600 en portátil; etiqueta en 14px tinta secundaria encima.
-- El delta usa tinta de texto, no color de serie, con flecha como indicador de dirección.
-- Estimaciones marcadas con `≈` y la palabra `estimado`; el sistema nunca tiene todos los datos y debe decirlo.
-- Sin sparkline en los tiles: la evolución vive en su propio panel.
+- Value in 40px weight 600 on laptop; label in 14px secondary ink above.
+- Delta uses text ink, not series color, with arrow as direction indicator.
+- Estimates marked with `≈` and the word `estimated`; the system never has complete data and must state so.
+- No sparklines in tiles: evolution lives in its dedicated panel.
 
-### 4.3 Entrada (señal y ruido)
+### 4.3 Incoming (Signal and Noise)
 
-Responde a "qué información importa".
+Answers: "what information matters?"
 
-- Lista cronológica inversa de mensajes relevantes: hora, icono de origen (llamada, mensaje, sensor, operador, webhook), resumen de una línea y el motivo en tinta secundaria, por ejemplo `Motivo: sube prioridad de Barrio Norte`.
-- Los descartados se agrupan al final en `▸ 97 descartados`, desplegable, cada uno con su motivo corto (`duplicado`, `sin ubicación`, `no cambia nada`).
-- Al pasar el ratón o enfocar un mensaje, su incidente se resalta en el mapa y en prioridades.
-- Los eventos inyectados por el operador llevan la etiqueta `Operador`.
+- Reverse-chronological list of relevant messages: time, source icon (call, message, sensor, operator, webhook), one-line summary, and reason in secondary ink, e.g. `Reason: elevates Barrio Norte priority`.
+- Dismissed items grouped at the bottom under `▸ 97 dismissed`, expandable, each with a brief reason (`duplicate`, `no location`, `no state change`).
+- Hovering or focusing a message highlights its incident on the map and in priorities.
+- Events injected by the operator carry the `Operator` tag.
 
-### 4.4 Mapa de situación
+### 4.4 Situation Map
 
-Responde a "qué pasa y dónde".
+Answers: "what is happening and where?"
 
-- **Implementación técnica:** Renderizado mediante **React Leaflet** (`app/components/LeafletMap.tsx`) cargado dinámicamente (`next/dynamic` sin SSR) junto a un selector para alternar con el esquema regional SVG (`app/components/OperationsMap.tsx`).
-- **Capa base cartográfica:** **OpenStreetMap** (`https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png`), sin dependencia de API keys externas ni cuotas restrictivas.
-- **Foco operativo:** Centrado en **Sierra Bermeja / Serranía de Ronda** (`[36.525, -5.185]`), con foco térmico dinámico y radio de 2.2 km.
-- **Vías de comunicación críticas:** Trazado explícito de la **carretera A-397** (corte crítico) y ruta alternativa **MA-8301**.
-- **Incidentes:** marcador interactivo compacto mediante `L.divIcon` con rango de prioridad, nombre de zona, severidad e indicador de pulso en zonas críticas.
-- **Recursos:** marcadores con forma distinta a la de los incidentes (cuadrado o icono del tipo de recurso) y color categórico por tipo de recurso.
-  Máximo tres colores de recurso en el mapa (ver sección 5); a partir del cuarto tipo, se distinguen por icono en tinta neutra.
-- **Asignaciones:** línea de 2px del recurso al incidente, en tinta secundaria; discontinua solo si la acción es simulada o está pendiente de aprobación.
-- **Zona afectada:** un único polígono con contorno de 2px en estado crítico y relleno al 12% de opacidad.
-  Si hay previsión (avance del frente, crecida), contorno discontinuo y la etiqueta `previsto`.
-- **Carreteras o accesos cortados:** icono de corte y trazo en estado crítico, con etiqueta.
-- Etiquetas directas solo en los tres incidentes de mayor prioridad; el resto por tooltip.
-- Tooltip al pasar el ratón con nombre, severidad, recursos asignados, última actualización y prioridad actual.
-- Clic en un elemento del mapa selecciona su tarjeta en prioridades, y viceversa.
-- Leyenda compacta fija en una esquina: severidades, tipos de recurso y significado de trazo discontinuo.
+- **Technical implementation:** Rendered via **React Leaflet** (`app/components/LeafletMap.tsx`) loaded dynamically (`next/dynamic` without SSR) alongside a selector to toggle with the SVG regional diagram (`app/components/OperationsMap.tsx`).
+- **Cartographic base layer:** **OpenStreetMap** (`https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png`), without external API key dependencies or restrictive quotas.
+- **Operational focus:** Centered on **Sierra Bermeja / Serranía de Ronda** (`[36.525, -5.185]`), with dynamic thermal focus and 2.2 km radius.
+- **Critical transit routes:** Explicit tracing of the **A-397 road** (critical closure) and alternative route **MA-8301**.
+- **Incidents:** Compact interactive marker via `L.divIcon` with priority rank, zone name, severity, and pulse indicator on critical zones.
+- **Resources:** Markers with distinct shape from incidents (square or resource-type icon) and categorical color by resource type.
+  Maximum three resource colors on the map (see section 5); from the fourth type onward, distinguished by icon in neutral ink.
+- **Assignments:** 2px line from resource to incident, in secondary ink; dashed only if the action is simulated or pending approval.
+- **Affected zone:** Single polygon with 2px stroke in critical status and 12% opacity fill.
+  If forecasted (fire front advance, flood rise), dashed stroke and `forecasted` badge.
+- **Cut roads or blocked access:** Blocked icon and critical status stroke, with label.
+- Direct labels only on top 3 priority incidents; remainder via tooltip.
+- Hover tooltip with name, severity, assigned resources, last update, and current priority.
+- Clicking an element on the map selects its card in priorities, and vice versa.
+- Compact fixed legend in a corner: severities, resource types, and meaning of dashed strokes.
 
-### 4.5 Prioridades y acciones
+### 4.5 Priorities and Actions
 
-Responde a "qué va primero, por qué y qué se está haciendo".
+Answers: "what comes first, why, and what is being done?"
 
-Cada tarjeta de prioridad muestra:
+Each priority card displays:
 
-1. Rango (`1`, `2`, `3`) en grande.
-2. Severidad como badge con icono y texto.
-3. Título del incidente y zona.
-4. Porqué en una línea, redactado por el agente (`Hospital sin suministro; 2 de 3 ambulancias ya comprometidas`).
-5. Siguiente acción concreta, con canal y responsable (`Llamada a Protección Civil vía HappyRobot`).
-6. Estado de la acción (sección 5.3).
-7. Controles: `Aprobar`, `Cancelar`, `↑`, `↓`.
+1. Rank (`1`, `2`, `3`) in large text.
+2. Severity as a badge with icon and text.
+3. Incident title and zone.
+4. Rationale on one line, authored by the agent (`Hospital without power; 2 of 3 ambulances already committed`).
+5. Next concrete action, with channel and owner (`Call to Civil Protection via HappyRobot`).
+6. Action status (section 5.3).
+7. Controls: `Approve`, `Cancel`, `↑`, `↓`.
 
-Reglas:
+Rules:
 
-- Las acciones de alto impacto nacen en `Pendiente de aprobación` y muestran `Aprobar` como botón principal.
-- El resto se ejecutan solas y muestran solo `Cancelar` mientras es posible cancelarlas.
-- `Cancelar` y `Aprobar` sobre acciones externas piden confirmación en línea (no modal), con el texto de lo que se va a hacer.
-- Cuando el operador reordena, la tarjeta muestra `Fijado por operador` y el agente replanifica respetando esa posición.
-- Bajo la cola, una barra apilada horizontal única con el recuento de acciones por estado y leyenda con cifras.
+- High-impact actions originate in `Awaiting approval` and show `Approve` as the primary button.
+- The rest execute automatically and show only `Cancel` while cancellation remains possible.
+- `Cancel` and `Approve` on external actions require inline confirmation (no modal), stating what is about to happen.
+- When the operator reorders, the card shows `Pinned by operator` and the agent replans respecting that position.
+- Below the queue, a single horizontal stacked bar showing action counts by status with a legend and figures.
 
-### 4.6 Recursos
+### 4.6 Resources
 
-Responde a "dónde van los recursos".
+Answers: "where are resources going?"
 
-- Una fila por tipo de recurso con barra horizontal: tramo relleno = asignados, tramo con solo contorno = libres, sobre una pista de capacidad total.
-- Etiqueta directa a la derecha: `3 / 5 asignadas · 2 libres`.
-- Si hay peticiones sin cubrir para ese tipo, se añade a la derecha `⚠ 2 sin cubrir` en estado crítico con icono.
-  No se dibuja como tramo de la barra porque no es capacidad.
-- Barras ordenadas por escasez (menor proporción libre arriba), orden estable entre actualizaciones salvo cambio real.
-- El color de cada fila es el del tipo de recurso en el mapa: el color sigue a la entidad.
+- One row per resource type with horizontal bar: filled segment = assigned, outlined segment = available, against a total capacity track.
+- Direct label on the right: `3 / 5 assigned · 2 available`.
+- If there are unmet requests for that type, `⚠ 2 unmet` in critical status with icon is added to the right.
+  Not drawn as a bar segment because it is not capacity.
+- Bars sorted by scarcity (lowest available proportion at the top), stable order between updates unless real change occurs.
+- Each row's color matches the resource type on the map: color follows entity.
 
-### 4.7 Evolución temporal
+### 4.7 Temporal Evolution
 
-Responde a "cómo va esto y cuándo cambió el plan".
+Answers: "how is this progressing and when did the plan change?"
 
-- Small multiples apilados que comparten eje X (tiempo): `Incidentes abiertos` y `Recursos libres`.
-  Nunca doble eje Y.
-- Línea de 2px, un solo color por gráfico (tinta de serie 1), área sin relleno.
-- Cada replanificación es una línea vertical hairline que atraviesa ambos gráficos, con una etiqueta corta arriba (`Replan 3 · carretera cortada`).
-  Esto conserva el rastro de la adaptación cuando el resaltado temporal ya ha desaparecido.
-- Crosshair y tooltip con los valores de ambas series en ese instante.
-- Ventana por defecto: última hora o desde el inicio del escenario si es más corto.
+- Stacked small multiples sharing X axis (time): `Open incidents` and `Available resources`.
+  Never dual Y-axis.
+- 2px line, single color per chart (series 1 ink), un-filled area.
+- Each replan is a vertical hairline crossing both charts, with a short label on top (`Replan 3 · road blocked`).
+  Preserves adaptation history after temporary highlights fade.
+- Crosshair and tooltip with values of both series at that instant.
+- Default window: past hour or since scenario start if shorter.
 
 ## 5. Color
 
-Todos los valores vienen de la paleta de referencia de la skill `dataviz` y se han validado con su script.
-Se definen como variables CSS por rol en `:root` y se redefinen para oscuro; el código de componentes nunca usa hex directos.
+All values come from the reference palette of the `dataviz` skill and have been validated with its script.
+Defined as CSS variables by role in `:root` and redefined for dark mode; component code never uses direct hex values.
 
-### 5.1 Superficies y tinta
+### 5.1 Surfaces and Ink
 
-| Rol                              | Claro                 | Oscuro                   |
-| -------------------------------- | --------------------- | ------------------------ |
-| Plano de página                  | `#f9f9f7`             | `#0d0d0d`                |
-| Superficie de panel              | `#fcfcfb`             | `#1a1a19`                |
-| Tinta primaria                   | `#0b0b0b`             | `#ffffff`                |
-| Tinta secundaria                 | `#52514e`             | `#c3c2b7`                |
-| Tinta atenuada (ejes, metadatos) | `#898781`             | `#898781`                |
-| Rejilla                          | `#e1e0d9`             | `#2c2c2a`                |
-| Eje / línea base                 | `#c3c2b7`             | `#383835`                |
-| Borde hairline                   | `rgba(11,11,11,0.10)` | `rgba(255,255,255,0.10)` |
+| Role                       | Light                 | Dark                     |
+| -------------------------- | --------------------- | ------------------------ |
+| Page background            | `#f9f9f7`             | `#0d0d0d`                |
+| Panel surface              | `#fcfcfb`             | `#1a1a19`                |
+| Primary ink                | `#0b0b0b`             | `#ffffff`                |
+| Secondary ink              | `#52514e`             | `#c3c2b7`                |
+| Muted ink (axes, metadata) | `#898781`             | `#898781`                |
+| Grid                       | `#e1e0d9`             | `#2c2c2a`                |
+| Axis / baseline            | `#c3c2b7`             | `#383835`                |
+| Hairline border            | `rgba(11,11,11,0.10)` | `rgba(255,255,255,0.10)` |
 
-El texto siempre usa tinta, nunca el color de una serie o de un estado.
-El color de estado va en el icono, el punto o el borde junto al texto.
+Text always uses ink, never a series or status color.
+Status color is applied to the icon, dot, or border adjacent to text.
 
-### 5.2 Severidad (estado)
+### 5.2 Severity (Status)
 
-| Severidad  | Color                    | Icono sugerido    |
-| ---------- | ------------------------ | ----------------- |
-| `critical` | `#d03b3b`                | octógono con `!`  |
-| `high`     | `#ec835a`                | triángulo con `!` |
-| `medium`   | `#fab219`                | círculo con `!`   |
-| `low`      | tinta atenuada `#898781` | círculo con `i`   |
+| Severity   | Color               | Suggested icon    |
+| ---------- | ------------------- | ----------------- |
+| `critical` | `#d03b3b`           | octagon with `!`  |
+| `high`     | `#ec835a`           | triangle with `!` |
+| `medium`   | `#fab219`           | circle with `!`   |
+| `low`      | muted ink `#898781` | circle with `i`   |
 
-- Los colores de estado son fijos en claro y oscuro y no se usan para nada más.
-- `high` y `medium` están a ΔE 13,6 entre sí (por debajo del umbral de 15): sin icono y texto no se distinguen de forma fiable.
-  El icono y la etiqueta son obligatorios, también en el mapa.
-- En claro, `medium` y `high` tienen contraste inferior a 3:1 con la superficie; por eso el icono lleva borde de tinta primaria.
+- Status colors are fixed in light and dark mode and are not used for anything else.
+- `high` and `medium` have a ΔE of 13.6 from each other (below the threshold of 15): without icon and text they cannot be reliably distinguished.
+  Icon and label are mandatory, including on the map.
+- In light mode, `medium` and `high` have contrast below 3:1 with the surface; therefore the icon carries a border in primary ink.
 
-### 5.3 Estado de acciones
+### 5.3 Action Status
 
-| Estado                  | Tratamiento                                                     |
-| ----------------------- | --------------------------------------------------------------- |
-| Completada              | `#0ca30c` + check                                               |
-| En curso                | serie 1 (`#2a78d6` / `#3987e5`) + spinner estático o reloj      |
-| Pendiente de aprobación | `#fab219` + mano o candado                                      |
-| Fallida                 | `#d03b3b` + aspa, con el motivo del fallo visible               |
-| Cancelada               | tinta atenuada + tachado del título                             |
-| Simulada                | textura de líneas a 45° en tinta atenuada + etiqueta `SIMULADA` |
+| Status            | Treatment                                                  |
+| ----------------- | ---------------------------------------------------------- |
+| Completed         | `#0ca30c` + check                                          |
+| Running           | series 1 (`#2a78d6` / `#3987e5`) + static spinner or clock |
+| Awaiting approval | `#fab219` + hand or padlock                                |
+| Failed            | `#d03b3b` + cross, with visible failure reason             |
+| Cancelled         | muted ink + strikethrough title                            |
+| Simulated         | 45° line hatching in muted ink + `SIMULATED` badge         |
 
-Una acción no pasa a `Completada` hasta que el resultado de la integración lo confirma.
+An action does not transition to `Completed` until confirmed by integration result.
 
-### 5.4 Tipos de recurso (categórico)
+### 5.4 Resource Types (Categorical)
 
-| Slot           | Claro     | Oscuro    |
+| Slot           | Light     | Dark      |
 | -------------- | --------- | --------- |
-| 1 · azul       | `#2a78d6` | `#3987e5` |
-| 2 · naranja    | `#eb6834` | `#d95926` |
-| 3 · aguamarina | `#1baf7a` | `#199e70` |
+| 1 · blue       | `#2a78d6` | `#3987e5` |
+| 2 · orange     | `#eb6834` | `#d95926` |
+| 3 · aquamarine | `#1baf7a` | `#199e70` |
 
-- Resultado del validador en modo todos-los-pares (el mapa es disperso, todos los pares pueden coincidir):
-  claro, CVD peor ΔE 9,2 y visión normal peor ΔE 24,0; oscuro, CVD peor ΔE 9,4 y visión normal peor ΔE 20,9.
-- En claro, el aguamarina tiene contraste 2,74:1: obliga a etiqueta directa o icono, que ya exige el principio 4.
-- Asignación fija por tipo de recurso, definida una vez en código; filtrar o quitar un tipo nunca repinta los demás.
-- Más de tres tipos: los adicionales van en tinta neutra con icono propio, nunca con un color generado.
-- El naranja de recurso convive con el naranja de `high`: se distinguen por forma (recurso cuadrado o icono, incidente circular), nunca solo por color.
+- Palette validator output in all-pairs mode (map is sparse, any pair may coincide):
+  light, CVD worst ΔE 9.2 and normal vision worst ΔE 24.0; dark, CVD worst ΔE 9.4 and normal vision worst ΔE 20.9.
+- In light mode, aquamarine has a 2.74:1 contrast ratio: requires direct label or icon, as already mandated by principle 4.
+- Fixed assignment per resource type, defined once in code; filtering or removing a type never recolors others.
+- More than three types: additional types are styled in neutral ink with their own icon, never with a generated color.
+- The resource orange coexists with the `high` severity orange: distinguished by shape (square or icon for resource, circle for incident), never solely by color.
 
-### 5.5 Comando de validación
+### 5.5 Validation Command
 
-Cualquier cambio de paleta se valida antes de fusionarse, en ambos modos:
+Any palette change must be validated before merging, in both modes:
 
 ```bash
 node <dataviz-skill>/scripts/validate_palette.js "#2a78d6,#eb6834,#1baf7a" --mode light --pairs all
@@ -238,89 +237,89 @@ node <dataviz-skill>/scripts/validate_palette.js "#2a78d6,#eb6834,#1baf7a" --mod
 node <dataviz-skill>/scripts/validate_palette.js "#3987e5,#d95926,#199e70" --mode dark --pairs all
 ```
 
-## 6. Cambios y replanificación
+## 6. Changes and Replanning
 
-El operador debe ver qué ha cambiado sin buscarlo.
+The operator must see what changed without searching for it.
 
-- Todo elemento nuevo o modificado (mensaje, incidente, prioridad, acción, recurso) recibe una marca `Nuevo` o `Cambiado · hace 2 min`.
-- La marca es un anillo o borde izquierdo de 2px en tinta primaria más el texto; no usa colores de estado ni de serie.
-- La marca permanece 5 minutos y se atenúa en el último minuto; después desaparece.
-- En el mapa, el marcador cambiado emite como máximo tres pulsos al aparecer y luego conserva el anillo estático.
-- Las tarjetas de prioridad que cambian de posición se animan hasta su nueva posición en 300ms y muestran `↑ desde 4` o `↓ desde 1`.
-- Las acciones canceladas por una replanificación no desaparecen al instante: quedan tachadas con `Cancelada por replan` durante los 5 minutos de la marca.
-- Con `prefers-reduced-motion`, sin pulsos ni animaciones de posición; solo la marca estática.
-- La traza permanente de cada replanificación vive en la barra de estado (la última) y en la evolución temporal (todas).
+- Every new or modified element (message, incident, priority, action, resource) receives a badge: `New` or `Changed · 2 min ago`.
+- The badge is a 2px ring or left border in primary ink plus text; it does not use status or series colors.
+- The badge persists for 5 minutes and fades during the final minute before disappearing.
+- On the map, the modified marker pulses at most three times upon appearing, then retains the static ring.
+- Priority cards that change rank animate to their new position over 300ms and display `↑ from 4` or `↓ from 1`.
+- Actions cancelled by a replanning cycle do not disappear instantly: they remain struck-through with `Cancelled by replan` for the 5-minute badge window.
+- When `prefers-reduced-motion` is active, pulse animations and position transitions are disabled; only the static badge is shown.
+- The permanent trace of each replan lives in the status bar (latest) and in the temporal evolution panel (all).
 
-## 7. Tipografía y proyección
+## 7. Typography and Projection
 
-- Fuente del sistema: `system-ui, -apple-system, "Segoe UI", sans-serif`.
-- Escala en `rem` para que el zoom del navegador escale todo de forma uniforme.
-  Para proyectar basta con zoom al 125-150%; no hace falta un modo presentación aparte.
+- System font: `system-ui, -apple-system, "Segoe UI", sans-serif`.
+- Scaled in `rem` so browser zoom scales everything uniformly.
+  For projection, 125–150% zoom is sufficient; a separate presentation mode is unnecessary.
 
-| Uso                      | Tamaño                                 | Peso      |
-| ------------------------ | -------------------------------------- | --------- |
-| Valor KPI                | 2.5rem                                 | 600       |
-| Rango de prioridad       | 1.5rem                                 | 600       |
-| Título de panel          | 0.875rem, mayúsculas, espaciado 0.04em | 600       |
-| Texto de tarjeta         | 1rem                                   | 400 / 500 |
-| Metadatos, motivos, ejes | 0.8125rem                              | 400       |
+| Usage                   | Size                                       | Weight    |
+| ----------------------- | ------------------------------------------ | --------- |
+| KPI value               | 2.5rem                                     | 600       |
+| Priority rank           | 1.5rem                                     | 600       |
+| Panel title             | 0.875rem, uppercase, 0.04em letter-spacing | 600       |
+| Card text               | 1rem                                       | 400 / 500 |
+| Metadata, reasons, axes | 0.8125rem                                  | 400       |
 
-- Nada por debajo de 0.8125rem (13px).
-- Cifras alineadas en tablas y ejes con `font-variant-numeric: tabular-nums`; los KPI con cifras proporcionales.
-- Horas en formato 24h `HH:MM`; tiempos relativos (`hace 2 min`) solo para la marca de cambio.
-- Números con separador de miles del locale `es-ES`.
+- Nothing below 0.8125rem (13px).
+- Numbers aligned in tables and axes with `font-variant-numeric: tabular-nums`; KPIs with proportional numbers.
+- Time in 24h format `HH:MM`; relative times (`2 min ago`) only for change badges.
+- Numbers formatted with locale-appropriate thousands separators.
 
-## 8. Marcas y anatomía de gráficos
+## 8. Marks and Chart Anatomy
 
-- Barras de 12-16px de alto con extremo redondeado de 4px en el lado del dato, anclado a la base.
-- Hueco de 2px del color de superficie entre tramos de barras apiladas; sin bordes alrededor de las marcas.
-- Líneas de 2px; marcadores de al menos 8px.
-- Rejilla y ejes en hairline continuo, nunca discontinuo.
-  El trazo discontinuo queda reservado para lo previsto, lo pendiente y lo simulado.
-- Etiquetas directas selectivas: el último valor, el extremo o lo que importa; nunca un número en cada punto.
-- Leyenda siempre presente cuando hay dos o más series.
-- Los objetivos de hover y clic son mayores que la marca (mínimo 24×24px).
+- Bars 12–16px high with 4px rounded ends on the data side, anchored to the baseline.
+- 2px surface-color gap between stacked bar segments; no borders around marks.
+- 2px lines; markers at least 8px.
+- Grid and axes in continuous hairline, never dashed.
+  Dashed stroke is reserved for forecasted, pending, and simulated items.
+- Selective direct labels: the latest value, the extreme, or what matters; never a number at every point.
+- Legend always present when two or more series are displayed.
+- Hover and click hit targets larger than the mark (minimum 24×24px).
 
-## 9. Interacción e intervención
+## 9. Interaction and Intervention
 
-- Tooltip en todos los gráficos y en el mapa, en superficie de panel con tinta primaria.
-- Selección cruzada: seleccionar un incidente en entrada, mapa o prioridades lo resalta en las tres zonas.
-- Cada panel de datos ofrece `Ver como tabla` (recursos, evolución, estado de acciones) para accesibilidad y para cuando el color no basta.
-- Toda acción del operador queda registrada en la entrada con la etiqueta `Operador` y provoca una replanificación visible.
-- Los controles son botones nativos con foco visible; todo se puede operar con teclado.
-- Los errores de integración se muestran en la tarjeta afectada con el motivo y la opción `Reintentar`, que no duplica la acción si ya se ejecutó.
+- Tooltip on all charts and on the map, rendered on panel surface with primary ink.
+- Cross-selection: selecting an incident in incoming, map, or priorities highlights it across all three zones.
+- Each data panel offers `View as table` (resources, evolution, action status) for accessibility and when color alone is insufficient.
+- Every operator action is logged in incoming with the `Operator` badge and triggers a visible replanning cycle.
+- Controls are native buttons with visible focus rings; everything can be operated via keyboard.
+- Integration errors are displayed on the affected card with the reason and a `Retry` option, which will not duplicate the action if already executed.
 
-## 10. Accesibilidad
+## 10. Accessibility
 
-- Contraste de texto AA (4.5:1) en ambos temas.
-- Ningún significado solo por color: icono + texto para estados, forma + etiqueta para recursos.
-- Textura disponible para simulado y para `forced-colors`.
-- `prefers-reduced-motion` respetado (sección 6).
-- Regiones con `aria-live="polite"` para la barra de estado y la cola de prioridades, de modo que los cambios se anuncien sin interrumpir.
-- El tema oscuro es una selección propia de colores validada contra su superficie, no una inversión automática.
+- AA text contrast (4.5:1) in both themes.
+- No meaning conveyed solely by color: icon + text for statuses, shape + label for resources.
+- Textures available for simulated items and for `forced-colors`.
+- `prefers-reduced-motion` respected (section 6).
+- `aria-live="polite"` regions for the status bar and priority queue so changes are announced without interrupting.
+- Dark theme is a dedicated color selection validated against its surface, not an automated inversion.
 
-## 11. Anti-patrones a evitar
+## 11. Anti-patterns to Avoid
 
-- Doble eje Y en la evolución temporal.
-- Donut o gauge para recursos libres/asignados.
-- Colores generados para un cuarto tipo de recurso.
-- Color de estado usado como color de serie, o al revés.
-- Recolorear recursos al filtrar.
-- Rejillas gruesas, bloques grandes saturados o mapa base a todo color.
-- Números en cada punto o segmento.
-- Acciones simuladas con el mismo aspecto que las reales.
-- Replanificaciones que solo se notan si estabas mirando en ese segundo.
-- Información crítica oculta en pestañas o modales.
+- Dual Y-axis in temporal evolution.
+- Donut or gauge charts for free/assigned resources.
+- Generated colors for a fourth resource type.
+- Status color used as series color, or vice versa.
+- Recoloring resources upon filtering.
+- Heavy grids, large saturated blocks, or full-color base maps.
+- Numbers on every single point or segment.
+- Simulated actions styled identically to live ones.
+- Replanning cycles that can only be noticed if looking at that exact second.
+- Critical information hidden behind tabs or modals.
 
-## 12. Checklist de aceptación
+## 12. Acceptance Checklist
 
-- [ ] A 1440×900 todas las zonas son visibles sin scroll de página.
-- [ ] Proyectado al 125-150% de zoom, los KPI y el rango de prioridades se leen a 5 metros.
-- [ ] Al inyectar un evento, en menos de 5 segundos cambian mapa, prioridades y barra de estado, y todos los cambios llevan marca.
-- [ ] Cinco minutos después, la replanificación sigue visible en la evolución temporal.
-- [ ] Una integración caída se ve en la barra de estado y en la acción afectada.
-- [ ] Ninguna acción simulada puede confundirse con una ejecutada.
-- [ ] El validador de paleta pasa en claro y oscuro.
-- [ ] En escala de grises (simulación de acromatopsia) se siguen distinguiendo severidades, estados y tipos de recurso.
-- [ ] Todo se puede operar con teclado y el foco es siempre visible.
-- [ ] Ambos temas revisados con captura de pantalla antes de cerrar la tarea.
+- [ ] At 1440×900, all zones are visible without page scrolling.
+- [ ] Projected at 125–150% zoom, KPIs and priority ranks can be read from 5 meters away.
+- [ ] Upon injecting an event, the map, priorities, and status bar update in under 5 seconds, and all changes carry badges.
+- [ ] Five minutes later, the replanning cycle remains visible in temporal evolution.
+- [ ] A disconnected integration is visible in the status bar and on the affected action.
+- [ ] No simulated action can be mistaken for a live one.
+- [ ] Palette validator passes in both light and dark modes.
+- [ ] In grayscale (achromatopsia simulation), severities, statuses, and resource types remain distinguishable.
+- [ ] Everything can be operated via keyboard and focus is always visible.
+- [ ] Both themes reviewed via screenshot before closing the task.

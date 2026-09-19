@@ -1,4 +1,4 @@
-// PROPIETARIO: utilidades de interfaz y estilos.
+// OWNER: UI utilities and styles.
 
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";

@@ -1,7 +1,7 @@
-// PROPIETARIO: agente de integración HappyRobot, contactos y escalado.
+// OWNER: HappyRobot integration, contacts, and escalation agent.
 //
-// Cobertura de la frontera con el exterior. Todo con `fetch` simulado: estos
-// tests NUNCA deben provocar una llamada, un mensaje ni un correo reales.
+// Coverage of the external boundary. Everything with mocked `fetch`: these
+// tests must NEVER trigger a real call, message, or email.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as webhookPost } from "@/app/api/webhooks/happyrobot/route";
@@ -24,7 +24,7 @@ import { getSituation, resetSituation } from "@/lib/store";
 import type { Action, ActionChannel, Contact } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
-// Utilidades
+// Test utilities
 // ---------------------------------------------------------------------------
 
 function makeAction(overrides: Partial<Action> = {}): Action {
@@ -74,7 +74,7 @@ function jsonResponse(status: number, body: unknown) {
   });
 }
 
-/** Última petición vista por el `fetch` simulado. */
+/** Last request observed by mocked `fetch`. */
 function lastCall(mock: ReturnType<typeof vi.fn>) {
   return mock.mock.calls[mock.mock.calls.length - 1] as [string, RequestInit];
 }
@@ -87,7 +87,7 @@ beforeEach(() => {
   process.env.HAPPYROBOT_BASE_URL = "https://api.happyrobot.test";
   process.env.HAPPYROBOT_AGENT_ID = "agente-demo";
   process.env.HAPPYROBOT_WEBHOOK_SECRET = SECRET;
-  // Reintentos instantaneos: aquí se comprueba la politica, no el reloj.
+  // Instant retries: test checks policy, not clock.
   process.env.HAPPYROBOT_RETRY_BASE_MS = "1";
   process.env.HAPPYROBOT_MAX_ATTEMPTS = "3";
   process.env.HAPPYROBOT_TIMEOUT_MS = "8000";
@@ -104,11 +104,11 @@ afterEach(() => {
 });
 
 // ---------------------------------------------------------------------------
-// Adaptador: salvaguardas
+// Adapter: safeguards
 // ---------------------------------------------------------------------------
 
-describe("adaptador HappyRobot: salvaguardas", () => {
-  it("en modo mock no sale nada del proceso y queda etiquetado como simulado", async () => {
+describe("HappyRobot adapter: safeguards", () => {
+  it("in mock mode nothing leaves the process and is labeled as simulated", async () => {
     process.env.ACTION_EXECUTION_MODE = "mock";
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
@@ -122,7 +122,7 @@ describe("adaptador HappyRobot: salvaguardas", () => {
     expect(result.detail).toMatch(/simulad/i);
   });
 
-  it("falla de forma explicita si faltan credenciales, sin llamar a nadie", async () => {
+  it("fails explicitly when credentials are missing, without calling anyone", async () => {
     delete process.env.HAPPYROBOT_API_KEY;
     delete process.env.HAPPYROBOT_AGENT_ID;
     const fetchMock = vi.fn();
@@ -134,7 +134,7 @@ describe("adaptador HappyRobot: salvaguardas", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("degrada a simulacion si el contacto no esta aprobado para la demo", async () => {
+  it("downgrades to simulation if contact is not demo-safe", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
@@ -150,7 +150,7 @@ describe("adaptador HappyRobot: salvaguardas", () => {
     expect(result.detail).toContain("demoSafe");
   });
 
-  it("degrada a simulacion si el contacto aprobado no tiene telefono ni correo", async () => {
+  it("downgrades to simulation if approved contact has no phone or email", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
@@ -163,19 +163,19 @@ describe("adaptador HappyRobot: salvaguardas", () => {
     expect(result.simulated).toBe(true);
   });
 
-  it("degrada a simulacion cuando la accion no identifica ningun contacto", async () => {
+  it("downgrades to simulation when action does not identify any contact", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    // Sin contacto explicito se busca en el estado vivo; el id no existe, así
-    // que la salvaguarda impide cualquier salida al exterior.
+    // Without explicit contact it searches live state; ID does not exist, so
+    // safeguard prevents external dispatch.
     const result = await executeHappyRobotAction(makeAction({ contactId: "con-inexistente" }));
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(result.mode).toBe("mock");
   });
 
-  it("los contactos de seed no pueden recibir ejecucion real", () => {
+  it("seed contacts cannot receive live execution", () => {
     for (const contact of getSituation().contacts) {
       expect(canReceiveLiveAction(contact)).toBe(false);
     }
@@ -183,11 +183,11 @@ describe("adaptador HappyRobot: salvaguardas", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Adaptador: transporte
+// Adapter: transport
 // ---------------------------------------------------------------------------
 
-describe("adaptador HappyRobot: transporte", () => {
-  it("envia la accion con la clave de idempotencia de la propia accion", async () => {
+describe("HappyRobot adapter: transport", () => {
+  it("sends action with action's own idempotency key", async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { id: "hr-externo-1" }));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -211,9 +211,9 @@ describe("adaptador HappyRobot: transporte", () => {
     expect(result.externalActionId).toBe("hr-externo-1");
   });
 
-  it("no reintenta un 4xx", async () => {
-    // Cada intento necesita su propia Response: un cuerpo ya leido no se
-    // puede volver a leer, y eso enmascararia el código real.
+  it("does not retry a 4xx", async () => {
+    // Each attempt needs its own Response: an already consumed body cannot
+    // be read again, which would mask the real code.
     const fetchMock = vi
       .fn()
       .mockImplementation(() => jsonResponse(422, { error: "payload invalido" }));
@@ -227,7 +227,7 @@ describe("adaptador HappyRobot: transporte", () => {
     expect((error as HappyRobotError).status).toBe(422);
   });
 
-  it("reintenta un 5xx con backoff y acaba saliendo adelante", async () => {
+  it("retries a 5xx with backoff and eventually succeeds", async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(jsonResponse(503, { error: "no disponible" }))
@@ -239,15 +239,15 @@ describe("adaptador HappyRobot: transporte", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(result.externalActionId).toBe("hr-externo-2");
-    // Todos los reintentos internos comparten clave: HappyRobot puede
-    // deduplicarlos y el destinatario no recibe tres llamadas.
+    // All internal retries share key: HappyRobot can deduplicate them and
+    // recipient does not get three calls.
     const claves = fetchMock.mock.calls.map(
       (call) => (call[1] as RequestInit).headers as Record<string, string>,
     );
     expect(new Set(claves.map((header) => header["idempotency-key"])).size).toBe(1);
   });
 
-  it("agota los reintentos de 5xx y propaga el fallo del servicio", async () => {
+  it("exhausts 5xx retries and propagates service failure", async () => {
     const fetchMock = vi.fn().mockImplementation(() => jsonResponse(500, { error: "interno" }));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -257,7 +257,7 @@ describe("adaptador HappyRobot: transporte", () => {
     expect((error as HappyRobotError).kind).toBe("server-error");
   });
 
-  it("corta por tiempo de espera en vez de dejar el centro de mando colgado", async () => {
+  it("times out instead of leaving command center hanging", async () => {
     process.env.HAPPYROBOT_TIMEOUT_MS = "20";
     process.env.HAPPYROBOT_MAX_ATTEMPTS = "1";
     const fetchMock = vi.fn().mockImplementation(
@@ -278,7 +278,7 @@ describe("adaptador HappyRobot: transporte", () => {
     expect((error as HappyRobotError).message).toContain("tiempo de espera");
   });
 
-  it("distingue un fallo de red de un fallo del servicio", async () => {
+  it("distinguishes network failure from service failure", async () => {
     process.env.HAPPYROBOT_MAX_ATTEMPTS = "1";
     const fetchMock = vi.fn().mockRejectedValue(new TypeError("fetch failed"));
     vi.stubGlobal("fetch", fetchMock);
@@ -288,7 +288,7 @@ describe("adaptador HappyRobot: transporte", () => {
     expect((error as HappyRobotError).kind).toBe("network");
   });
 
-  it("no da por buena una respuesta ilegible", async () => {
+  it("rejects unreadable response", async () => {
     process.env.HAPPYROBOT_MAX_ATTEMPTS = "1";
     const fetchMock = vi
       .fn()
@@ -301,7 +301,7 @@ describe("adaptador HappyRobot: transporte", () => {
     expect((error as HappyRobotError).message).toContain("ilegible");
   });
 
-  it("la ruta, la autenticacion y la forma del cuerpo son configurables sin tocar codigo", async () => {
+  it("endpoint, authentication, and payload shape are configurable without code changes", async () => {
     process.env.HAPPYROBOT_ACTION_PATH = "/v2/workflows/{workflowId}/run";
     process.env.HAPPYROBOT_WORKFLOW_ID = "wf-crisis";
     process.env.HAPPYROBOT_AUTH_HEADER = "x-api-key";
@@ -328,7 +328,7 @@ describe("adaptador HappyRobot: transporte", () => {
     delete process.env.HAPPYROBOT_WORKFLOW_ID;
   });
 
-  it("adapta el mensaje al rol del destinatario", () => {
+  it("adapts briefing to recipient role", () => {
     const paraVoluntario = buildActionPayload(
       makeAction({ channel: "sms" }),
       makeContact({ role: "volunteer" }),
@@ -348,10 +348,10 @@ describe("adaptador HappyRobot: transporte", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Contactos
+// Contacts
 // ---------------------------------------------------------------------------
 
-describe("seleccion de contacto y canal", () => {
+describe("contact and channel selection", () => {
   const contactos: Contact[] = [
     makeContact({ id: "con-field", role: "field-coordinator", zoneId: "zone-north" }),
     makeContact({
@@ -375,19 +375,19 @@ describe("seleccion de contacto y canal", () => {
     makeContact({ id: "con-auth", role: "authority", zoneId: null, channels: ["email", "call"] }),
   ];
 
-  it("elige el rol adecuado para la categoria", () => {
+  it("selects appropriate role for category", () => {
     expect(selectContact(contactos, "zone-central", "triaje")?.id).toBe("con-med");
     expect(selectContact(contactos, "zone-north", "incendio")?.id).toBe("con-field");
     expect(selectContact(contactos, "zone-south", "refugio")?.id).toBe("con-vol");
   });
 
-  it("entiende categorias en ingles y con variantes", () => {
+  it("understands categories in English and variations", () => {
     expect(rolesForCategory("shelter-overflow")[0]).toBe("volunteer");
     expect(rolesForCategory("evacuation-support")[0]).toBe("field-coordinator");
     expect(rolesForCategory("categoria-desconocida")[0]).toBe("operations-lead");
   });
 
-  it("prefiere la zona afectada cuando hay varios candidatos del mismo rol", () => {
+  it("prefers affected zone when multiple candidates share same role", () => {
     const ampliado = [
       ...contactos,
       makeContact({ id: "con-field-sur", role: "field-coordinator", zoneId: "zone-south" }),
@@ -395,20 +395,20 @@ describe("seleccion de contacto y canal", () => {
     expect(selectContact(ampliado, "zone-south", "incendio")?.id).toBe("con-field-sur");
   });
 
-  it("llama a quien esta en campo y escribe a quien no debe ser interrumpido", () => {
+  it("calls field personnel and writes to those who should not be interrupted", () => {
     const campo = makeContact({ role: "field-coordinator", channels: ["call", "sms", "email"] });
     const voluntario = makeContact({ role: "volunteer", channels: ["sms", "whatsapp", "call"] });
     const autoridad = makeContact({ role: "authority", channels: ["email", "call"] });
 
     expect(selectChannel(campo, true)).toBe("call");
-    // A un vecino o voluntario se le manda un mensaje corto, no una llamada.
+    // A neighbor or volunteer receives a short text, not a phone call.
     expect(selectChannel(voluntario, true)).not.toBe("call");
     expect(selectChannel(autoridad, false)).toBe("email");
   });
 
-  it("tiene en cuenta la tasa de exito aprendida al elegir canal", () => {
-    // Entre dos canales comparables, lo aprendido decide. La urgencia sigue
-    // pesando más que el historial: un correo no sustituye a una llamada.
+  it("considers learned success rate when selecting channel", () => {
+    // Between two comparable channels, learned stats decide. Urgency still
+    // outweighs history: email never replaces a call.
     const contacto = makeContact({ role: "public-safety", channels: ["sms", "whatsapp"] });
     const canalSinAprendizaje = selectChannel(contacto, true);
     const canalConAprendizaje = selectChannel(contacto, true, {
@@ -426,7 +426,7 @@ describe("seleccion de contacto y canal", () => {
     expect(canalConAprendizaje).toBe("whatsapp");
   });
 
-  it("cada rol recibe un mensaje distinto", () => {
+  it("each role receives a distinct message", () => {
     const entrada = {
       objective: "Confirmar evacuacion.",
       zoneName: "Sierra Morena",
@@ -444,11 +444,11 @@ describe("seleccion de contacto y canal", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Escalado
+// Escalation
 // ---------------------------------------------------------------------------
 
-describe("cadena de escalado", () => {
-  it("construye una cadena multi-paso que termina en la autoridad", () => {
+describe("escalation chain", () => {
+  it("builds multi-step chain ending at authority", () => {
     const chain = buildEscalationChain({
       id: "chain-1",
       objective: "Evacuar el nucleo norte.",
@@ -476,7 +476,7 @@ describe("cadena de escalado", () => {
     }
   });
 
-  it("el primer escalon usa el canal mas directo y los siguientes esperan mas", () => {
+  it("first tier uses most direct channel and subsequent tiers wait longer", () => {
     const chain = buildEscalationChain({
       id: "chain-2",
       objective: "Confirmar estado de la ruta.",
@@ -496,7 +496,7 @@ describe("cadena de escalado", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Webhook de entrada
+// Inbound webhook
 // ---------------------------------------------------------------------------
 
 function webhookRequest(body: unknown, secret: string | null = SECRET) {
@@ -509,20 +509,20 @@ function webhookRequest(body: unknown, secret: string | null = SECRET) {
   });
 }
 
-describe("webhook de entrada de HappyRobot", () => {
-  it("rechaza un secreto invalido", async () => {
+describe("HappyRobot inbound webhook", () => {
+  it("rejects an invalid secret", async () => {
     const response = await webhookPost(
       webhookRequest({ status: "completed" }, "secreto-equivocado"),
     );
     expect(response.status).toBe(401);
   });
 
-  it("rechaza una peticion sin cabecera de secreto", async () => {
+  it("rejects a request without secret header", async () => {
     const response = await webhookPost(webhookRequest({ status: "completed" }, null));
     expect(response.status).toBe(401);
   });
 
-  it("se cierra por completo si no hay secreto configurado", async () => {
+  it("shuts down completely if no secret is configured", async () => {
     delete process.env.HAPPYROBOT_WEBHOOK_SECRET;
     const response = await webhookPost(webhookRequest({ status: "completed" }, "lo-que-sea"));
     const body = await response.json();
@@ -532,7 +532,7 @@ describe("webhook de entrada de HappyRobot", () => {
     expect(verifyWebhookSecret(webhookRequest({}, SECRET)).ok).toBe(false);
   });
 
-  it("actualiza el estado de la accion desde un callback valido", async () => {
+  it("updates action status from valid callback", async () => {
     const action = getSituation().actions[0];
     const response = await webhookPost(
       webhookRequest({
@@ -551,7 +551,7 @@ describe("webhook de entrada de HappyRobot", () => {
     expect(body.action.externalActionId).toBe("hr-callback-1");
   });
 
-  it("convierte la informacion nueva en senales y fuerza replanificacion", async () => {
+  it("converts new information into signals and forces replanning", async () => {
     const action = getSituation().actions[0];
     const versionPrevia = getSituation().plan.version;
 
@@ -582,7 +582,7 @@ describe("webhook de entrada de HappyRobot", () => {
     expect(situacion.plan.version).toBeGreaterThan(versionPrevia);
   });
 
-  it("un callback repetido no duplica senales ni vuelve a mover el estado", async () => {
+  it("repeated callback does not duplicate signals or re-advance state", async () => {
     const action = getSituation().actions[0];
     const payload = {
       deliveryId: "entrega-repetida-1",
@@ -612,7 +612,7 @@ describe("webhook de entrada de HappyRobot", () => {
     expect(getSituation().plan.version).toBe(versionTrasPrimera);
   });
 
-  it("acepta informacion nueva aunque la accion local ya no exista", async () => {
+  it("accepts new information even if local action no longer exists", async () => {
     const response = await webhookPost(
       webhookRequest({
         deliveryId: "entrega-huerfana-1",
@@ -634,7 +634,7 @@ describe("webhook de entrada de HappyRobot", () => {
     expect(body.notes.join(" ")).toContain("act-que-no-existe");
   });
 
-  it("rechaza un callback vacio y un estado desconocido", async () => {
+  it("rejects empty callback and unknown status", async () => {
     const vacio = await webhookPost(webhookRequest({ deliveryId: "entrega-vacia-1" }));
     expect(vacio.status).toBe(400);
 
@@ -644,7 +644,7 @@ describe("webhook de entrada de HappyRobot", () => {
     expect(desconocido.status).toBe(400);
   });
 
-  it("no acepta metodos distintos de POST", async () => {
+  it("rejects methods other than POST", async () => {
     const { GET } = await import("@/app/api/webhooks/happyrobot/route");
     const response = GET();
     expect(response.status).toBe(405);

@@ -1,11 +1,11 @@
-// PROPIETARIO: agente de integración HappyRobot, contactos y escalado.
-// Entrada de callbacks de HappyRobot. Ruta SEPARADA a propósito: aquí solo
-// entran llamadas externas, con secreto obligatorio. Las operaciones de la
-// interfaz (cancelar, reintentar) viven en /api/actions/[id]/status y no
-// pueden compartir esta puerta, porque exigirles secreto rompe la UI.
+// OWNER: HappyRobot integration, contacts, and escalation agent.
+// HappyRobot callback entry point. SEPARATE route by design: only external
+// calls enter here, with mandatory secret. UI operations (cancel, retry)
+// live in /api/actions/[id]/status and cannot share this gateway, because
+// requiring a secret from them breaks the UI.
 //
-// Este es el bucle que más puntua del reto: HappyRobot llama a alguien, lo que
-// esa persona cuenta entra como señal nueva y el plan se rehace solo.
+// This is the highest-scoring loop of the challenge: HappyRobot calls someone,
+// what that person reports enters as a new signal, and the plan rebuilds itself.
 
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
@@ -21,9 +21,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Cabeceras y forma de error alineadas con `lib/validation.ts` (`error` +
- * `code`), sin importarlo: esa capa válida cuerpos de la interfaz y aquí hace
- * falta el texto crudo del cuerpo para calcular la huella de idempotencia.
+ * Headers and error shape aligned with `lib/validation.ts` (`error` +
+ * `code`), without importing it: that layer validates UI bodies while here
+ * raw body text is needed to compute the idempotency hash.
  */
 const NO_CACHE = {
   "cache-control": "no-store, no-cache, must-revalidate",
@@ -38,11 +38,11 @@ function fail(code: string, error: string, status: number, extra: Record<string,
   return json({ error, code, ...extra }, status);
 }
 
-/** Esta ruta solo atiende callbacks: cualquier otro método se rechaza. */
+/** This route only handles callbacks: any other method is rejected. */
 const noPermitido = () =>
   NextResponse.json(
     {
-      error: "Método no permitido. Métodos válidos en esta ruta: POST.",
+      error: "Method not allowed. Valid methods on this route: POST.",
       code: "metodo_no_permitido",
     },
     { status: 405, headers: { ...NO_CACHE, allow: "POST" } },
@@ -54,7 +54,7 @@ export const PATCH = noPermitido;
 export const DELETE = noPermitido;
 
 // ---------------------------------------------------------------------------
-// Forma del callback (ver docs/happyDocumentation.md)
+// Callback shape (see docs/happyDocumentation.md)
 // ---------------------------------------------------------------------------
 
 interface NewInformationItem {
@@ -72,13 +72,13 @@ interface HappyRobotCallback {
   status?: string;
   summary?: string;
   error?: string;
-  /** Identificador de entrega, si HappyRobot lo envia. */
+  /** Delivery identifier, if sent by HappyRobot. */
   deliveryId?: string;
   eventId?: string;
   newInformation?: NewInformationItem[];
 }
 
-/** Estados externos -> estados locales. */
+/** External states -> local states. */
 const statusMap: Record<string, ActionStatus> = {
   completed: "succeeded",
   complete: "succeeded",
@@ -98,7 +98,7 @@ const severidades: Severity[] = ["low", "medium", "high", "critical"];
 const confianzas: Confidence[] = ["low", "medium", "high"];
 
 // ---------------------------------------------------------------------------
-// Idempotencia de entrada
+// Idempotency on ingestion
 // ---------------------------------------------------------------------------
 
 interface ProcessedDelivery {
@@ -111,7 +111,7 @@ declare global {
   var happyRobotDeliveries: Map<string, ProcessedDelivery> | undefined;
 }
 
-/** Ventana durante la que un callback repetido se considera el mismo. */
+/** Window during which a repeated callback is considered identical. */
 const DELIVERY_TTL_MS = 15 * 60 * 1000;
 const DELIVERY_MAX = 500;
 
@@ -145,9 +145,9 @@ function seenDelivery(key: string): ProcessedDelivery | null {
 }
 
 /**
- * Clave de entrega: la que mande HappyRobot si la manda, y si no una huella
- * del cuerpo. Dos callbacks identicos comparten huella, así que un reenvio no
- * duplica señales ni vuelve a mover el estado de la acción.
+ * Delivery key: the one sent by HappyRobot if present, otherwise a hash
+ * of the body. Two identical callbacks share a hash, so a resend does not
+ * duplicate signals or re-transition the action status.
  */
 function deliveryKey(request: Request, raw: string, payload: HappyRobotCallback): string {
   const cabecera =
@@ -158,30 +158,30 @@ function deliveryKey(request: Request, raw: string, payload: HappyRobotCallback)
 }
 
 // ---------------------------------------------------------------------------
-// Ruta
+// Route
 // ---------------------------------------------------------------------------
 
 export async function POST(request: Request) {
-  // 1. Secreto obligatorio. Sin variable configurada la ruta se cierra: un
-  //    webhook público sin secreto deja inyectar señales falsas en la crisis.
+  // 1. Mandatory secret. Without configured variable the route is closed: a
+  //    public webhook without a secret allows injecting false signals into the crisis.
   const verificacion = verifyWebhookSecret(request);
   if (!verificacion.ok) {
     const configurado = isWebhookSecretConfigured();
     return fail(
       configurado ? "no_autorizado" : "error_interno",
-      verificacion.reason ?? "Callback rechazado.",
+      verificacion.reason ?? "Callback rejected.",
       configurado ? 401 : 503,
       { expectedHeader: WEBHOOK_SECRET_HEADER },
     );
   }
 
-  // 2. Cuerpo.
+  // 2. Body.
   const raw = await request.text();
   let payload: HappyRobotCallback;
   try {
     payload = (raw.length > 0 ? JSON.parse(raw) : {}) as HappyRobotCallback;
   } catch {
-    return fail("json_invalido", "El cuerpo del callback no es JSON válido.", 400);
+    return fail("json_invalido", "Callback body is not valid JSON.", 400);
   }
 
   const actionRef = payload.localActionId ?? payload.externalActionId;
@@ -189,13 +189,13 @@ export async function POST(request: Request) {
   if (!payload.status && info.length === 0) {
     return fail(
       "cuerpo_invalido",
-      "El callback no trae ni estado ni información nueva: no hay nada que aplicar.",
+      "Callback contains neither status nor new information: nothing to apply.",
       400,
     );
   }
 
-  // 3. Idempotencia: el mismo callback repetido devuelve la misma respuesta
-  //    sin volver a tocar el estado.
+  // 3. Idempotency: the same repeated callback returns the same response
+  //    without touching state again.
   const key = deliveryKey(request, raw, payload);
   const previo = seenDelivery(key);
   if (previo) {
@@ -206,19 +206,18 @@ export async function POST(request: Request) {
   const notes: string[] = [];
   let status = 200;
 
-  // 4. Información nueva -> señales del sistema. Se ingesta antes de mover el
-  //    estado de la acción: aunque la acción ya no exista, lo que ha contado
-  //    la persona al teléfono sigue siendo valioso para replanificar.
+  // 4. New information -> system signals. Ingested before moving action
+  //    status: even if the action no longer exists, what the person on the
+  //    phone reported remains valuable for replanning.
   for (const item of info) {
     const payloadEvento: IncomingEventPayload = {
       source: "happyrobot",
-      title: item.type ? `Información nueva: ${item.type}` : "Información nueva desde HappyRobot",
-      description:
-        item.description ?? "Información recogida durante una interacción de HappyRobot.",
+      title: item.type ? `New information: ${item.type}` : "New information from HappyRobot",
+      description: item.description ?? "Information gathered during a HappyRobot interaction.",
       zoneId: item.zoneId,
       category: item.type ?? "coordinacion",
-      // Lo que cuenta alguien al teléfono llega con confianza alta pero sin
-      // verificar: entra como señal fuerte y sin confirmar salvo que lo digan.
+      // What someone reports on the phone arrives with high confidence but
+      // unverified: enters as a strong unconfirmed signal unless stated otherwise.
       severity: item.severity && severidades.includes(item.severity) ? item.severity : "high",
       confidence:
         item.confidence && confianzas.includes(item.confidence) ? item.confidence : "high",
@@ -227,16 +226,16 @@ export async function POST(request: Request) {
     const resultado = addEvent(payloadEvento, "happyrobot");
     ingestedEventIds.push(resultado.event.id);
     if (resultado.duplicate)
-      notes.push(`Señal fusionada con una equivalente: ${resultado.event.title}.`);
+      notes.push(`Signal merged with an equivalent one: ${resultado.event.title}.`);
   }
 
-  // 5. Estado de la acción.
+  // 5. Action status.
   let action = null;
   if (payload.status) {
     const mapeado = statusMap[payload.status.toLowerCase()];
     if (!mapeado) {
       const body = {
-        error: `Estado "${payload.status}" no reconocido.`,
+        error: `Unrecognized status "${payload.status}".`,
         code: "cuerpo_invalido",
         ingestedEventIds,
       };
@@ -244,7 +243,7 @@ export async function POST(request: Request) {
       return json(body, 400);
     }
     if (!actionRef) {
-      notes.push("El callback trae estado pero no identifica ninguna acción local.");
+      notes.push("Callback contains status but does not identify any local action.");
       status = 202;
     } else {
       try {
@@ -253,13 +252,13 @@ export async function POST(request: Request) {
           mapeado,
           payload.externalActionId,
           mapeado === "failed"
-            ? (payload.error ?? payload.summary ?? "HappyRobot marcó la acción como fallida.")
+            ? (payload.error ?? payload.summary ?? "HappyRobot marked the action as failed.")
             : undefined,
           "happyrobot",
         );
       } catch {
-        // La acción puede haberse reiniciado entre la llamada y el callback.
-        notes.push(`No existe ninguna acción local con referencia "${actionRef}".`);
+        // The action may have been reset between the call and the callback.
+        notes.push(`No local action exists with reference "${actionRef}".`);
         status = 202;
       }
     }

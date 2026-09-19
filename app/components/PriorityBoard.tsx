@@ -34,10 +34,10 @@ export default function PriorityBoard({
   );
 
   return (
-    <section className="panel priority-panel" aria-label="Prioridades">
+    <section className="panel priority-panel" aria-label="Priorities">
       <div className="panel-title">
-        <h2>Qué va primero</h2>
-        <span className="hint">Ranking en vivo</span>
+        <h2>Priority ranking</h2>
+        <span className="hint">Live ranking</span>
       </div>
       <ol className="priority-board">
         {plan.priorities.map((priority, index) => {
@@ -53,7 +53,7 @@ export default function PriorityBoard({
                   selectedZoneId === priority.zoneId ? "selected" : ""
                 }`}
                 onClick={() => onSelect(priority.zoneId)}
-                aria-label={`${zone.name}, puesto ${index + 1}, puntuación ${priority.score}. Abrir el detalle.`}
+                aria-label={`${zone.name}, rank ${index + 1}, score ${priority.score}. Open details.`}
               >
                 <strong>{index + 1}</strong>
                 <div>

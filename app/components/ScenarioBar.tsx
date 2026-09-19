@@ -38,12 +38,12 @@ export default function ScenarioBar({
   return (
     <section
       className={`scenario-bar ${scenario.running ? "running" : ""}`}
-      aria-label="Control del escenario"
+      aria-label="Scenario control"
     >
       <div className="scenario-head">
         <div className="scenario-id">
           <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-blueprint-mid">
-            Escenario
+            Scenario
           </span>
           <h2 className="text-[16px] font-bold text-blueprint-dark tracking-[-0.15px]">
             {scenario.name}
@@ -55,7 +55,7 @@ export default function ScenarioBar({
             <span className={scenario.running ? "dot live" : "dot"} aria-hidden="true" />
             <strong className="text-[13px]">{clockLabel(elapsedSeconds)}</strong>
             <small className="text-[11px] text-blueprint-light">
-              {scenario.running ? "en marcha" : "parado"}
+              {scenario.running ? "running" : "stopped"}
             </small>
           </div>
           <Button
@@ -63,23 +63,23 @@ export default function ScenarioBar({
             variant="pill"
             onClick={onStart}
             disabled={busy || scenario.running}
-            aria-label="Arrancar el escenario"
+            aria-label="Start scenario"
           >
-            <Play size={13} aria-hidden="true" /> Arrancar
+            <Play size={13} aria-hidden="true" /> Start
           </Button>
           <Button
             size="sm"
             variant="pillDestructive"
             onClick={onStop}
             disabled={busy || !scenario.running}
-            aria-label="Parar el escenario"
+            aria-label="Stop scenario"
           >
-            <Square size={13} aria-hidden="true" /> Parar
+            <Square size={13} aria-hidden="true" /> Stop
           </Button>
           <div
             className="speed-row flex items-center gap-1"
             role="group"
-            aria-label="Velocidad del guion"
+            aria-label="Scenario speed"
           >
             {speeds.map((speed) => (
               <Button
@@ -88,7 +88,7 @@ export default function ScenarioBar({
                 variant={runtime?.speed === speed ? "default" : "outline"}
                 className="h-7 px-2 text-[11px]"
                 aria-pressed={runtime?.speed === speed}
-                aria-label={`Poner el guion a velocidad ${speed}x`}
+                aria-label={`Set scenario speed to ${speed}x`}
                 disabled={busy}
                 onClick={() => onSpeed(speed)}
               >
@@ -105,7 +105,7 @@ export default function ScenarioBar({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(progress)}
-        aria-label="Avance del guion"
+        aria-label="Scenario progress"
       >
         <span style={{ width: `${progress}%` }} />
       </div>
@@ -113,11 +113,11 @@ export default function ScenarioBar({
       {world ? (
         <div
           className="world-strip flex flex-wrap gap-2 items-center"
-          aria-label="Estado del mundo simulado"
+          aria-label="Simulated world state"
         >
           <Badge variant="outline" className="flex items-center gap-1">
-            <Wind size={12} aria-hidden="true" /> Viento {world.windDirection} ·{" "}
-            {world.windSpeedKmh} km/h
+            <Wind size={12} aria-hidden="true" /> Wind {world.windDirection} · {world.windSpeedKmh}{" "}
+            km/h
           </Badge>
           <Badge
             variant={world.blockedRoads.length > 0 ? "warning" : "outline"}
@@ -125,29 +125,29 @@ export default function ScenarioBar({
           >
             <Zap size={12} aria-hidden="true" />{" "}
             {world.blockedRoads.length === 0
-              ? "Carreteras despejadas"
-              : `Cortada ${world.blockedRoads.join(", ")}`}
+              ? "Roads clear"
+              : `Closed ${world.blockedRoads.join(", ")}`}
           </Badge>
           <Badge
             variant={!world.smsOperational ? "critical" : "outline"}
             className="flex items-center gap-1"
           >
             <CircleDot size={12} aria-hidden="true" /> SMS{" "}
-            {world.smsOperational ? "operativo" : "caído"}
+            {world.smsOperational ? "operational" : "down"}
           </Badge>
           <Badge
             variant={!world.voiceOperational ? "critical" : "outline"}
             className="flex items-center gap-1"
           >
-            <CircleDot size={12} aria-hidden="true" /> Voz{" "}
-            {world.voiceOperational ? "operativa" : "caída"}
+            <CircleDot size={12} aria-hidden="true" /> Voice{" "}
+            {world.voiceOperational ? "operational" : "down"}
           </Badge>
           {nextBeat ? (
             <span className="next-beat text-[12px] text-blueprint-mid">
-              Siguiente cambio a los {clockLabel(nextBeat.atSeconds)}: {nextBeat.label}
+              Next update at {clockLabel(nextBeat.atSeconds)}: {nextBeat.label}
             </span>
           ) : (
-            <span className="next-beat text-[12px] text-blueprint-mid">Guion completado</span>
+            <span className="next-beat text-[12px] text-blueprint-mid">Scenario completed</span>
           )}
         </div>
       ) : null}
@@ -168,7 +168,7 @@ export default function ScenarioBar({
               </span>
               <span className="beat-label">{beat.label}</span>
               <span className="beat-state">
-                {fired ? "Disparado" : isNext ? "Siguiente" : "Pendiente"}
+                {fired ? "Triggered" : isNext ? "Next" : "Pending"}
               </span>
             </li>
           );

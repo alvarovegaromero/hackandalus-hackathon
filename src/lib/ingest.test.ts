@@ -9,7 +9,7 @@ const incidentId = "22222222-2222-4222-8222-222222222222";
 const event = (n: number): CrisisEvent => ({
   id: `11111111-1111-4111-8111-${String(n).padStart(12, "0")}`,
   incidentId,
-  summary: `Aviso ${n}`,
+  summary: `Alert ${n}`,
   severity: "high",
   source: "sensor",
 });

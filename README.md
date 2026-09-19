@@ -1,46 +1,45 @@
 # FARO
 
-Centro de mando agéntico para un incendio forestal en Sierra Bermeja (Málaga):
-nuestra propuesta para el reto de gestión de crisis de HappyRobot en HackSpain 2026. Un único proyecto Next.js desplegable en Vercel; el paquete npm se llama
-`butterfish`. La visión de producto, el escenario y el guion de demo están en
-[HackSpain 2026 · Source of Truth del proyecto.md](<HackSpain 2026 · Source of Truth del proyecto.md>)
-y el contexto de diseño (modelo de datos, inventario de funcionalidades,
-decisiones abiertas) en [thoughts/](thoughts/README.md).
+Agentic command center for a wildfire in Sierra Bermeja (Málaga):
+our submission for the HappyRobot crisis management challenge in HackSpain 2026. A single Next.js project deployable on Vercel; the npm package is named
+`butterfish`. The product vision, scenario, and demo script are in
+[HackSpain 2026 · Project Source of Truth.md](<HackSpain 2026 · Project Source of Truth.md>)
+and the design context (data model, feature inventory,
+open decisions) in [thoughts/](thoughts/README.md).
 
-**Estado.** El repositorio contiene dos piezas:
+**Status.** The repository contains two parts:
 
-- El **centro de mando** (`app/`, `lib/`, `tests/`): la vertical completa
-  portada desde `feat/crisis-command-center` más el gemelo digital. Es lo que
-  sirve `npm run dev`: panel del operador, API HTTP, guiones que hacen avanzar
-  la crisis solos, cola de acciones con aprobación humana, adaptador HappyRobot
-  y gemelo digital. El estado vive en memoria del servidor.
-- La **base de plataforma** (`src/`, `supabase/`): Next.js con Vercel Workflow,
-  AI SDK, clientes Supabase, ingesta por lotes con deduplicación y el motor de
-  escenarios de Sierra Bermeja. Sus rutas de `src/app` **no se sirven** mientras
-  exista `app/` en la raíz (Next prioriza `app/` sobre `src/app`); el workflow
-  y la ingesta solo se ejercitan desde los tests. Unificar ambas piezas es la
-  primera tarea de [TASKS.md](TASKS.md).
+- The **command center** (`app/`, `lib/`, `tests/`): the full vertical slice
+  ported from `feat/crisis-command-center` plus the digital twin. This is what
+  `npm run dev` serves: operator dashboard, HTTP API, self-advancing crisis
+  scenario scripts, action queue with human approval, HappyRobot adapter,
+  and digital twin. State lives in server memory.
+- The **platform base** (`src/`, `supabase/`): Next.js with Vercel Workflow,
+  AI SDK, Supabase clients, batch event ingestion with deduplication, and the
+  Sierra Bermeja scenario engine. Its routes under `src/app` **are not served**
+  while `app/` exists at the root (Next prioritizes `app/` over `src/app`); workflow
+  and ingestion are exercised only via tests. Unifying both parts is the
+  first item in [TASKS.md](TASKS.md).
 
-El escenario (incendio en Sierra Bermeja) y el nombre están decididos; la
-semilla y el guion por defecto del centro de mando todavía nombran Sierra
-Morena y su cambio está pendiente. El modelo de IA, las credenciales y las
-conexiones reales siguen abiertos: ver [TASKS.md](TASKS.md) y
-[thoughts/open-questions.md](thoughts/open-questions.md).
+The scenario (wildfire in Sierra Bermeja) and name are confirmed; the seed and
+default command center script still name Sierra Morena and updating this is tracked.
+AI model selection, credentials, and live connections remain open: see [TASKS.md](TASKS.md)
+and [thoughts/open-questions.md](thoughts/open-questions.md).
 
-Las convenciones de desarrollo y los permisos están en [PROJECT.md](PROJECT.md).
-`AGENTS.md` y `CLAUDE.md` apuntan allí para evitar reglas duplicadas. Para
-incorporarte al equipo, sigue [CONTRIBUTING.md](CONTRIBUTING.md). El repositorio
-incluye [skills compartidas](docs/agent-skills.md) para React/Next.js,
-Postgres/Supabase, accesibilidad y diseño visual. Para indexar el código tras
-`npm ci`, ejecuta `npm run index:build` y consulta el mapa con
-`npm run index:map`; su uso para navegar por el código es obligatorio
-([guía de Graft](docs/code-index.md)).
+Development conventions and permissions are in [PROJECT.md](PROJECT.md).
+`AGENTS.md` and `CLAUDE.md` point there to avoid duplicate rules. To join
+the team, follow [CONTRIBUTING.md](CONTRIBUTING.md). The repository
+includes [shared skills](docs/agent-skills.md) for React/Next.js,
+Postgres/Supabase, accessibility, and visual design. To index code after
+`npm ci`, run `npm run index:build` and view the map with
+`npm run index:map`; its use for code navigation is required
+([Graft guide](docs/code-index.md)).
 
-## Arranque local
+## Local Startup
 
-Requisitos: Node.js **22.21+ (22.x)** con el npm que incluye (**10.9+**);
-`.nvmrc` fija `22.21.0`. `package.json` fija `npm@11.6.1` en `packageManager`
-para quien use Corepack (`corepack enable`); no es obligatorio. Usamos npm y
+Prerequisites: Node.js **22.21+ (22.x)** with its bundled npm (**10.9+**);
+`.nvmrc` pins `22.21.0`. `package.json` pins `npm@11.6.1` in `packageManager`
+for Corepack users (`corepack enable`); it is optional. We use npm and
 `package-lock.json`.
 
 ```powershell
@@ -48,255 +47,251 @@ npm ci
 npm run dev
 ```
 
-Abre <http://localhost:3000>. No hace falta ninguna credencial: sin configurar
-nada, el sistema arranca en modo `mock` y nada sale hacia el exterior. El
-estado cuelga de `globalThis` para sobrevivir a las recargas en caliente y se
-pierde al reiniciar el servidor; `POST /api/demo/reset` vuelve a la situación
-inicial. Para una segunda instancia sin pelear por el directorio de build:
+Open <http://localhost:3000>. No credentials are required: without configuration,
+the system starts in `mock` mode and nothing is sent externally. State
+attaches to `globalThis` to survive hot reloads and resets when the server
+restarts; `POST /api/demo/reset` returns to initial state. For a second
+instance without build directory conflicts:
 `NEXT_DIST_DIR=.next-dev npm run dev -- -p 3001`.
 
-| Comando                             | Qué hace                                                        |
-| ----------------------------------- | --------------------------------------------------------------- |
-| `npm run dev`                       | Servidor de desarrollo en el puerto 3000.                       |
-| `npm run build` / `npm start`       | Build de producción y servidor que la sirve.                    |
-| `npm run lint`                      | ESLint sobre todo el repositorio.                               |
-| `npm run typecheck`                 | Tipos de rutas de Next y `tsc --noEmit`.                        |
-| `npm test`                          | Vitest, una pasada: `tests/`, `src/` y `scripts/`.              |
-| `npm run format` / `format:check`   | Prettier: aplica o solo comprueba.                              |
-| `npm run check`                     | Secretos, formato, lint, tipos, tests, build e índice de Graft. |
-| `npm run env:setup`                 | Crea `.env.local` desde `.env.example` si no existe.            |
-| `npm run index:build` / `index:map` | Construye y consulta el índice de Graft.                        |
+| Command                             | Description                                                      |
+| ----------------------------------- | ---------------------------------------------------------------- |
+| `npm run dev`                       | Development server on port 3000.                                 |
+| `npm run build` / `npm start`       | Production build and server.                                     |
+| `npm run lint`                      | ESLint across the entire repository.                             |
+| `npm run typecheck`                 | Next route types and `tsc --noEmit`.                             |
+| `npm test`                          | Single-pass Vitest: `tests/`, `src/`, and `scripts/`.            |
+| `npm run format` / `format:check`   | Prettier: format or check only.                                  |
+| `npm run check`                     | Secrets, formatting, lint, types, tests, build, and Graft index. |
+| `npm run env:setup`                 | Creates `.env.local` from `.env.example` if missing.             |
+| `npm run index:build` / `index:map` | Builds and queries the Graft code index.                         |
 
-`package.json` fija dos dependencias indirectas de Workflow mediante `overrides`
-(`nanoid` y `undici`) a versiones corregidas. Revisa si siguen siendo necesarias
-cuando actualices Workflow.
+`package.json` pins two indirect dependencies of Workflow via `overrides`
+(`nanoid` and `undici`) to patched versions. Check if these remain necessary
+when updating Workflow.
 
-## Formato y hooks locales
+## Formatting and Local Hooks
 
-`npm ci` instala los hooks de Husky mediante `prepare`. Necesitas Git y
-Node/npm en el PATH; en Windows, Git for Windows proporciona el intérprete.
+`npm ci` installs Husky hooks via `prepare`. Git and Node/npm must be on PATH;
+on Windows, Git for Windows provides the shell.
 
-- **Pre-commit:** bloquea commits en ramas protegidas y archivos privados como
-  `.env.local` o claves. `lint-staged` comprueba secretos, aplica Prettier y
-  ejecuta ESLint (sin avisos) sobre los archivos staged. Después ejecuta
-  TypeScript, los tests y `npm run index:verify`.
-- **Pre-push:** bloquea cualquier actualización de `main`, `master` y `develop`
-  y ejecuta `npm run check`, incluido el build.
+- **Pre-commit:** blocks commits on protected branches and private files like
+  `.env.local` or private keys. `lint-staged` checks secrets, applies Prettier,
+  and runs ESLint (warnings treated as errors) on staged files. Then it runs
+  TypeScript, tests, and `npm run index:verify`.
+- **Pre-push:** blocks updates to `main`, `master`, and `develop`, and runs
+  `npm run check`, including the full build.
 - **Before creating a PR:** use `npm run pr:create -- --title "..." --body-file <file>`.
   Its local `pr:check` prehook runs `npm run check` and blocks creation on
-  failure. Requires authenticated GitHub CLI (`gh`), a clean working tree and
+  failure. Requires authenticated GitHub CLI (`gh`), a clean working tree, and
   an already published feature branch; the command targets `main` and does not push.
 - **No CI:** GitHub Actions is removed and will not be used because the team has
   no Actions minutes. Validation is local. All contributors and agents must use
   the PR command; GitHub's UI and direct `gh pr create` bypass the local hook.
   Include check results and the tested OS in the PR.
 
-Compartimos UTF-8, finales LF, dos espacios, comillas dobles, punto y coma y
-comas finales mediante `.prettierrc.json`, `.editorconfig` y `.gitattributes`.
-Nombres: camelCase para variables y funciones, PascalCase para componentes y
-tipos, kebab-case para archivos de aplicación y UPPER_SNAKE_CASE para variables
-de entorno. Los mensajes de commit se escriben en inglés.
+We share UTF-8, LF endings, two spaces, double quotes, semicolons, and trailing
+commas via `.prettierrc.json`, `.editorconfig`, and `.gitattributes`.
+Naming: camelCase for variables and functions, PascalCase for components and
+types, kebab-case for application files, and UPPER_SNAKE_CASE for environment
+variables. Commit messages are written in English.
 
-Secretlint detecta formatos conocidos de credenciales y oculta los valores en la
-salida. Las plantillas `.env.example` también se analizan: solo valores vacíos o
-placeholders inocuos. Ningún detector reconoce todos los secretos.
+Secretlint detects known credential formats and masks values in output.
+`.env.example` templates are also scanned: only empty values or harmless placeholders
+are permitted. No scanner detects every secret.
 
-## Arquitectura
+## Architecture
 
-### Centro de mando (lo que se sirve)
+### Command Center (Served Application)
 
 ```
-      señales                    decisión                    ejecución
+      signals                    decision                    execution
   ┌───────────────┐        ┌───────────────────┐        ┌────────────────┐
   │ POST /events  │        │ priority.ts       │        │ happyrobot.ts  │
-  │ webhook       │ ─────► │ resources.ts      │ ─────► │  (único punto  │
-  │ demo/inject   │        │ contacts.ts       │        │   de salida)   │
+  │ webhook       │ ─────► │ resources.ts      │ ─────► │  (single exit  │
+  │ demo/inject   │        │ contacts.ts       │        │     point)     │
   │ scenario.ts   │        │ escalation.ts     │        └───────┬────────┘
   └───────────────┘        └─────────┬─────────┘                │
                                      │                          │ callback
                               ┌──────▼──────┐                   │
                               │  store.ts   │ ◄─────────────────┘
-                              │ estado +    │
-                              │ orquesta    │
+                              │ state +     │
+                              │ orchestrate │
                               └──────┬──────┘
                                      │
                         ┌────────────▼────────────┐
                         │ GET /api/situation      │
-                        │ panel (sondeo cada 4 s) │
-                        │ humano aprueba/cancela  │
+                        │ dashboard (polls 4s)    │
+                        │ human approves/cancels  │
                         └─────────────────────────┘
 ```
 
-`lib/store.ts` mantiene el estado y orquesta, pero no decide: cada decisión
-vive en un módulo con un propietario declarado en su primera línea
-(`// PROPIETARIO: …`). La prioridad la calcula una fórmula explicable, no un
-modelo de lenguaje.
+`lib/store.ts` maintains state and orchestrates, but does not make domain decisions: each
+decision lives in a specialized module declaring its owner in the first line
+(`// OWNER: …`). Priority is calculated by an explainable formula, not a language
+model.
 
-| Fichero                                                   | De qué responde                                                                      |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `lib/types.ts`                                            | Tipos compartidos; el contrato entre módulos.                                        |
-| `lib/store.ts`                                            | Estado de la crisis y orquestación del ciclo completo.                               |
-| `lib/validation.ts`                                       | Validación de cuerpos con Zod y forma única de error.                                |
-| `lib/priority.ts`, `lib/triage.ts`                        | Puntuación de zonas, triaje calibrado y construcción del plan.                       |
-| `lib/resources.ts`                                        | Elección, asignación y liberación de recursos.                                       |
-| `lib/contacts.ts`, `lib/escalation.ts`                    | A quién se avisa, por qué canal y cadenas de escalado.                               |
-| `lib/autonomy.ts`, `lib/assumptions.ts`                   | Autonomía graduada y supuestos vivos del plan.                                       |
-| `lib/digitalTwin.ts`                                      | Gemelo digital: mundo percibido desde señales y precisión contra la verdad simulada. |
-| `lib/happyrobot.ts`                                       | Adaptador a HappyRobot; lo único que habla con el exterior.                          |
-| `lib/scenario.ts`, `lib/seed.ts`                          | Guiones que hacen cambiar la crisis y situación inicial.                             |
-| `lib/history.ts`, `lib/learning.ts`, `lib/persistence.ts` | Historial y diff de planes, estadísticas aprendidas, guardado JSON opcional.         |
-| `app/page.tsx`, `app/components/`                         | El panel del operador.                                                               |
-| `app/api/`                                                | La superficie HTTP.                                                                  |
+| File                                                      | Responsibility                                                                 |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `lib/types.ts`                                            | Shared types; the contract between modules.                                    |
+| `lib/store.ts`                                            | Crisis state and lifecycle orchestration.                                      |
+| `lib/validation.ts`                                       | Body validation with Zod and uniform error formatting.                         |
+| `lib/priority.ts`, `lib/triage.ts`                        | Zone scoring, calibrated triage, and plan construction.                        |
+| `lib/resources.ts`                                        | Resource selection, assignment, and release.                                   |
+| `lib/contacts.ts`, `lib/escalation.ts`                    | Contact notification, channel selection, and escalation chains.                |
+| `lib/autonomy.ts`, `lib/assumptions.ts`                   | Graduated autonomy and live plan assumptions.                                  |
+| `lib/digitalTwin.ts`                                      | Digital twin: perceived world from signals vs simulated ground truth accuracy. |
+| `lib/happyrobot.ts`                                       | HappyRobot adapter; the single outbound communication point.                   |
+| `lib/scenario.ts`, `lib/seed.ts`                          | Scenario scripts driving crisis progression and initial state.                 |
+| `lib/history.ts`, `lib/learning.ts`, `lib/persistence.ts` | History and plan diffs, learned statistics, optional JSON storage.             |
+| `app/page.tsx`, `app/components/`                         | Operator dashboard.                                                            |
+| `app/api/`                                                | HTTP API surface.                                                              |
 
-El porqué de estas decisiones está en [docs/architecture.md](docs/architecture.md).
+The rationale behind these decisions is detailed in [docs/architecture.md](docs/architecture.md).
 
-### Base de plataforma (`src/`)
+### Platform Base (`src/`)
 
-| Ruta                                      | Responsabilidad                                                        |
+| Route                                     | Responsibility                                                         |
 | ----------------------------------------- | ---------------------------------------------------------------------- |
-| `src/app`, `src/components`               | Panel y endpoints del scaffolding (no servidos mientras exista `app/`) |
-| `src/lib/domain.ts`                       | Eventos y planes validados con Zod                                     |
-| `src/lib/ingest.ts`, `ingest-server.ts`   | Ingesta por lotes con deduplicación y guardado opcional en Supabase    |
-| `src/lib/scenario`, `src/lib/signals`     | Motor de escenarios de Sierra Bermeja y esquema de avisos              |
-| `src/lib/agents/coordinator.ts`           | Planificación estructurada con Vercel AI SDK                           |
-| `src/workflows/crisis.ts`                 | Workflow persistente de planificación                                  |
-| `src/lib/supabase`, `supabase/migrations` | Clientes, suscripción Realtime y esquema con RLS por defecto           |
+| `src/app`, `src/components`               | Scaffolding dashboard and endpoints (not served while `app/` exists)   |
+| `src/lib/domain.ts`                       | Zod-validated events and plans                                         |
+| `src/lib/ingest.ts`, `ingest-server.ts`   | Batch event ingestion with deduplication and optional Supabase storage |
+| `src/lib/scenario`, `src/lib/signals`     | Sierra Bermeja scenario engine and signal schemas                      |
+| `src/lib/agents/coordinator.ts`           | Structured planning with Vercel AI SDK                                 |
+| `src/workflows/crisis.ts`                 | Persistent crisis planning workflow                                    |
+| `src/lib/supabase`, `supabase/migrations` | Clients, Realtime subscription, and default-deny RLS schema            |
 
-El alias `@/` resuelve primero contra la raíz y después contra `src/`, tanto en
-TypeScript como en Vitest. El diseño de la ingesta está en
-[docs/input-architecture.md](docs/input-architecture.md) y el modelo de datos
-propuesto en [docs/data-model.md](docs/data-model.md).
+The `@/` alias resolves first against the root and second against `src/`, in both
+TypeScript and Vitest. Ingestion design is in
+[docs/input-architecture.md](docs/input-architecture.md) and the proposed data
+model in [docs/data-model.md](docs/data-model.md).
 
-## La demo
+## The Demo
 
-1. Arranca con `npm run dev` y abre el panel.
-2. Pon la crisis en marcha con `POST /api/scenario/start`. El guion suelta
-   acontecimientos solo: el frente avanza, el viento gira, una carretera se
-   corta, un recurso cae. Se puede acelerar (`{"speed": 4}`) y pausar
-   (`POST /api/scenario/stop`) sin perder el punto.
-3. Mira replanificar: cada señal sube la versión del plan y el panel enseña qué
-   ha cambiado respecto al anterior y por qué.
-4. Rompe algo a mano con los botones de la franja de demo (incidente nuevo,
-   carretera cortada, recurso caído, fallo de integración).
-5. Interviene: aprueba una acción de la cola (solo entonces se ejecuta),
-   cancela otra, reintenta una fallida, confirma o descarta una señal dudosa.
-6. Cierra el bucle simulando un callback con `POST /api/webhooks/happyrobot`:
-   la acción cambia de estado y lo que "ha contado" la persona entra como señal
-   nueva que vuelve a replanificar.
-7. Reinicia con `POST /api/demo/reset` antes del siguiente pase.
+1. Start with `npm run dev` and open the dashboard.
+2. Start the crisis scenario with `POST /api/scenario/start`. The script emits
+   events autonomously: the wildfire advances, wind shifts, a road is
+   blocked, a resource becomes unavailable. You can accelerate (`{"speed": 4}`) or pause
+   (`POST /api/scenario/stop`) without losing state.
+3. Watch dynamic replanning: every signal increments the plan version, and the dashboard highlights
+   what changed compared to the previous plan and why.
+4. Trigger chaos manually via demo buttons (new incident, blocked road, resource down, integration failure).
+5. Intervene: approve an action in the queue (only then does it execute), cancel another, retry a failed action, or confirm/discard an ambiguous signal.
+6. Close the loop by simulating a callback via `POST /api/webhooks/happyrobot`:
+   the action status updates and the information reported by the contact enters as a
+   new signal triggering replanning.
+7. Reset with `POST /api/demo/reset` before the next demonstration run.
 
-El guion por defecto es `wildfire-andalucia` y su semilla nombra Sierra Morena;
-renombrarlo a Sierra Bermeja está pendiente en [TASKS.md](TASKS.md).
+The default script is `wildfire-andalucia` and its seed names Sierra Morena;
+updating this to Sierra Bermeja is tracked in [TASKS.md](TASKS.md).
 
-## Superficie de API
+## API Surface
 
-Respuestas JSON sin caché. Los errores tienen siempre la forma
-`{ "error", "code", "detalles": [{ "campo", "mensaje" }] }` con códigos
-estables (`cuerpo_invalido`, `referencia_desconocida`, `no_encontrado`,
-`conflicto`, `no_autorizado`, `metodo_no_permitido`, `error_interno`). Un
-método no soportado responde `405` con la cabecera `Allow`.
+JSON responses without caching. Errors always follow the format
+`{ "error", "code", "detalles": [{ "campo", "mensaje" }] }` with stable
+codes (`cuerpo_invalido`, `referencia_desconocida`, `no_encontrado`,
+`conflicto`, `no_autorizado`, `metodo_no_permitido`, `error_interno`).
+Unsupported methods return `405` with the `Allow` header.
 
-| Endpoint                          | Cuerpo                                                                                      | Qué hace                                                                         |
-| --------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `GET /api/situation`              | —                                                                                           | Estado completo: señales, zonas, recursos, plan, historia                        |
-| `POST /api/events`                | `{ source?, title?, description?, zoneId?, category?, severity?, confidence?, confirmed? }` | Ingiere una señal y replanifica                                                  |
-| `POST /api/events/:id/mark`       | `{ confirmed }`                                                                             | Confirma o descarta una señal                                                    |
-| `POST /api/actions`               | `{ channel, target, objective, reason, zoneId, resourceId?, contactId? }`                   | Crea una acción pendiente de aprobación                                          |
-| `POST /api/actions/:id/approve`   | —                                                                                           | Aprobación humana; solo entonces se ejecuta                                      |
-| `POST /api/actions/:id/status`    | `{ operation?: "cancel" \| "retry", status?, externalActionId?, error? }`                   | Cancela, reintenta o actualiza el estado                                         |
-| `POST /api/webhooks/happyrobot`   | callback                                                                                    | Exige `x-happyrobot-secret`; `503` sin secreto configurado, `401` si no coincide |
-| `POST /api/scenario/start`        | `{ scriptId?, speed?, restart? }`                                                           | Arranca o reanuda el guion (`speed` entre 0.25 y 10)                             |
-| `POST /api/scenario/stop`         | —                                                                                           | Pausa conservando el tiempo consumido                                            |
-| `POST` / `GET /api/scenario/tick` | —                                                                                           | Empuje manual del guion / lectura sin efectos                                    |
-| `POST /api/demo/inject`           | `{ kind?: "incident" \| "resource-down" \| "route-blocked" \| "integration-failure" }`      | Inyecta una avería                                                               |
-| `POST /api/demo/reset`            | —                                                                                           | Vuelve al estado inicial                                                         |
+| Endpoint                          | Body                                                                                        | Description                                                              |
+| --------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `GET /api/situation`              | —                                                                                           | Complete state: signals, zones, resources, plan, history                 |
+| `POST /api/events`                | `{ source?, title?, description?, zoneId?, category?, severity?, confidence?, confirmed? }` | Ingests a signal and replans                                             |
+| `POST /api/events/:id/mark`       | `{ confirmed }`                                                                             | Confirms or discards a signal                                            |
+| `POST /api/actions`               | `{ channel, target, objective, reason, zoneId, resourceId?, contactId? }`                   | Creates a pending action awaiting approval                               |
+| `POST /api/actions/:id/approve`   | —                                                                                           | Human approval; only then does execution occur                           |
+| `POST /api/actions/:id/status`    | `{ operation?: "cancel" \| "retry", status?, externalActionId?, error? }`                   | Cancels, retries, or updates action status                               |
+| `POST /api/webhooks/happyrobot`   | callback                                                                                    | Requires `x-happyrobot-secret`; `503` if unconfigured, `401` on mismatch |
+| `POST /api/scenario/start`        | `{ scriptId?, speed?, restart? }`                                                           | Starts or resumes scenario script (`speed` between 0.25 and 10)          |
+| `POST /api/scenario/stop`         | —                                                                                           | Pauses scenario preserving elapsed time                                  |
+| `POST` / `GET /api/scenario/tick` | —                                                                                           | Manual scenario advancement / read-only status poll                      |
+| `POST /api/demo/inject`           | `{ kind?: "incident" \| "resource-down" \| "route-blocked" \| "integration-failure" }`      | Injects a simulated fault                                                |
+| `POST /api/demo/reset`            | —                                                                                           | Resets to initial baseline state                                         |
 
-Canales: `call`, `sms`, `email`, `ticket`, `webhook`, `whatsapp`, `slack`.
-Estados de acción: `pending`, `approved`, `running`, `succeeded`, `failed`,
-`blocked`, `cancelled`, `stalled`. Las rutas `/api/demo/*` se protegen con
-`DEMO_API_TOKEN` (cabecera `x-demo-token`, `Authorization: Bearer …` o
-`?token=`); sin token están abiertas en desarrollo y desactivadas en producción.
+Channels: `call`, `sms`, `email`, `ticket`, `webhook`, `whatsapp`, `slack`.
+Action statuses: `pending`, `approved`, `running`, `succeeded`, `failed`,
+`blocked`, `cancelled`, `stalled`. Routes under `/api/demo/*` are protected with
+`DEMO_API_TOKEN` (via `x-demo-token` header, `Authorization: Bearer …`, or
+`?token=`); without token they are open in development and disabled in production.
 
-## Variables de entorno
+## Environment Variables
 
-Todo va en `.env.local` (ignorado por Git); `npm run env:setup` lo crea desde
-`.env.example`, que tiene la lista completa comentada. Nunca subas claves al
-repositorio; consulta [CONTRIBUTING.md](CONTRIBUTING.md) para compartirlas.
+All variables live in `.env.local` (ignored by Git); `npm run env:setup` creates it
+from `.env.example`, which contains the fully documented list. Never commit credentials to the
+repository; see [CONTRIBUTING.md](CONTRIBUTING.md) for sharing guidance.
 
-| Variable                                                                                                                               | Para qué                                                                                                                                               |
-| -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ACTION_EXECUTION_MODE`                                                                                                                | `mock` (por defecto): nada sale del proceso. `happyrobot`: ejecución real.                                                                             |
-| `HAPPYROBOT_API_KEY`, `HAPPYROBOT_BASE_URL`, `HAPPYROBOT_AGENT_ID`, `HAPPYROBOT_WORKFLOW_ID`                                           | Credenciales para la ejecución real.                                                                                                                   |
-| `HAPPYROBOT_ACTION_PATH`, `_AUTH_HEADER`, `_AUTH_SCHEME`, `_IDEMPOTENCY_HEADER`, `_PAYLOAD_SHAPE`, `_RESPONSE_ID_PATH`, `_CHANNEL_MAP` | Contrato configurable, sin verificar contra la API real ([docs/happyDocumentation.md](docs/happyDocumentation.md)).                                    |
-| `HAPPYROBOT_TIMEOUT_MS`, `HAPPYROBOT_MAX_ATTEMPTS`, `HAPPYROBOT_RETRY_BASE_MS`                                                         | Timeout por intento, intentos (solo 5xx, red y timeout) y backoff.                                                                                     |
-| `HAPPYROBOT_WEBHOOK_SECRET`                                                                                                            | Secreto compartido del webhook de callbacks.                                                                                                           |
-| `DEMO_API_TOKEN`                                                                                                                       | Protege `/api/demo/*`.                                                                                                                                 |
-| `CRISIS_PERSISTENCE`                                                                                                                   | `on` guarda el estado en JSON bajo `.data/`. Apagado por defecto.                                                                                      |
-| `CRISIS_API_TOKEN`, `AI_GATEWAY_API_KEY`, `AI_MODEL`, `NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SECRET_KEY`, `SCENARIO_AGENT_ENABLED`        | Base de plataforma (`src/`): API de workflows, AI Gateway, Supabase y puente escenario→agente. Solo tienen efecto en tests hasta unificar los árboles. |
+| Variable                                                                                                                               | Purpose                                                                                                                               |
+| -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `ACTION_EXECUTION_MODE`                                                                                                                | `mock` (default): nothing leaves the local process. `happyrobot`: live execution.                                                     |
+| `HAPPYROBOT_API_KEY`, `HAPPYROBOT_BASE_URL`, `HAPPYROBOT_AGENT_ID`, `HAPPYROBOT_WORKFLOW_ID`                                           | Credentials for live execution.                                                                                                       |
+| `HAPPYROBOT_ACTION_PATH`, `_AUTH_HEADER`, `_AUTH_SCHEME`, `_IDEMPOTENCY_HEADER`, `_PAYLOAD_SHAPE`, `_RESPONSE_ID_PATH`, `_CHANNEL_MAP` | Configurable contract, unverified against live API ([docs/happyDocumentation.md](docs/happyDocumentation.md)).                        |
+| `HAPPYROBOT_TIMEOUT_MS`, `HAPPYROBOT_MAX_ATTEMPTS`, `HAPPYROBOT_RETRY_BASE_MS`                                                         | Per-attempt timeout, retry attempts (5xx, network, and timeout only), and backoff.                                                    |
+| `HAPPYROBOT_WEBHOOK_SECRET`                                                                                                            | Shared secret for callback webhook.                                                                                                   |
+| `DEMO_API_TOKEN`                                                                                                                       | Protects `/api/demo/*`.                                                                                                               |
+| `CRISIS_PERSISTENCE`                                                                                                                   | `on` persists state as JSON under `.data/`. Disabled by default.                                                                      |
+| `CRISIS_API_TOKEN`, `AI_GATEWAY_API_KEY`, `AI_MODEL`, `NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SECRET_KEY`, `SCENARIO_AGENT_ENABLED`        | Platform base (`src/`): workflows API, AI Gateway, Supabase, and scenario→agent bridge. Only active in tests until trees are unified. |
 
-Sin modelo ni clave, el coordinador de `src/` usa una decisión determinista
-marcada como `simulation`; con ambos valores usa AI SDK. Si falta uno, falla
-explícitamente.
+Without model or key, the coordinator under `src/` uses a deterministic decision
+marked as `simulation`; with both set, it uses AI SDK. If one is missing, it fails
+explicitly.
 
-## Ejecución real contra HappyRobot
+## Live Execution with HappyRobot
 
-Por defecto nada sale del sistema. Para que una acción llegue a una persona
-tienen que darse todas estas condiciones a la vez:
+By default, nothing leaves the system. For an action to reach a recipient,
+all of the following conditions must be met simultaneously:
 
 1. `ACTION_EXECUTION_MODE=happyrobot`.
-2. `HAPPYROBOT_API_KEY`, `HAPPYROBOT_BASE_URL` y `HAPPYROBOT_AGENT_ID`
-   presentes; si falta alguna, el adaptador falla nombrando las que faltan.
-3. El destinatario está marcado como apto para demo (`demoSafe`) y tiene
-   teléfono o correo. En la semilla actual ningún contacto lo está.
-4. Una persona ha aprobado esa acción concreta desde el panel.
+2. `HAPPYROBOT_API_KEY`, `HAPPYROBOT_BASE_URL`, and `HAPPYROBOT_AGENT_ID`
+   are present; if any is missing, the adapter fails listing the missing keys.
+3. The recipient is marked safe for demo (`demoSafe`) and has a phone or email.
+   In the initial seed, no contact is marked demoSafe.
+4. A human operator explicitly approved that specific action from the dashboard.
 
-Salvaguardas: si el destinatario no está aprobado, la acción se ejecuta en
-simulado y explica por qué; los identificadores externos simulados llevan el
-prefijo `mock-…` y el estado de integración cuenta por separado lo real y lo
-simulado; cada despacho lleva una clave de idempotencia `<acción>:<intento>` y
-el webhook recuerda las entregas ya procesadas durante 15 minutos; un 4xx no se
-reintenta; si HappyRobot no responde, la acción queda en `failed` y el sistema
-replanifica contando con ese fallo. Antes de lanzar nada real, lee
-[docs/security.md](docs/security.md) y pide aprobación explícita para las
-acciones concretas que vas a ejecutar.
+Safeguards: if the recipient is not approved, the action executes in mock
+mode and explains why; simulated external IDs carry the prefix `mock-…`
+and integration status tracks live vs mock actions separately; every dispatch
+includes an idempotency key `<action>:<attempt>` and the webhook remembers processed
+deliveries for 15 minutes; 4xx errors are not retried; if HappyRobot does not respond,
+the action transitions to `failed` and replanning accounts for that failure.
+Before executing live actions, read [docs/security.md](docs/security.md) and obtain
+explicit approval for the specific recipients and actions.
 
-## Supabase y Vercel
+## Supabase and Vercel
 
-La migración de `supabase/migrations` está preparada para aplicarla manualmente
-desde el SQL Editor de un proyecto de desarrollo; no se aplica automáticamente.
-Las tablas tienen RLS activado y no permiten acceso desde el navegador por
-defecto. Antes de conectar el panel hacen falta autenticación de operadores y
-políticas por incidente. El modelo completo está en
-[docs/data-model.md](docs/data-model.md).
+The migration in `supabase/migrations` is prepared for manual application
+via the SQL Editor of a development project; it is not applied automatically.
+Tables have RLS enabled and deny browser access by default. Before connecting
+the dashboard, operator authentication and per-incident policies are needed.
+The full model is documented in [docs/data-model.md](docs/data-model.md).
 
-Para desplegar, importa el repositorio en Vercel como proyecto Next.js con
-Node.js 22.x y `npm ci` / `npm run build`; `withWorkflow` está configurado en
-`next.config.ts`. Añade las variables necesarias en Vercel y despliega cuando el
-equipo lo autorice.
+To deploy, import the repository into Vercel as a Next.js project with
+Node.js 22.x and `npm ci` / `npm run build`; `withWorkflow` is configured in
+`next.config.ts`. Add required environment variables in Vercel and deploy when
+authorized by the team.
 
 ## Tests
 
-`npm test` ejecuta 16 archivos: `tests/` cubre el centro de mando (prioridad,
-recursos, triaje, autonomía, supuestos, persistencia, gemelo digital, rutas y
-callbacks del adaptador simulado), `src/` la ingesta y el motor de escenarios,
-y `scripts/hooks.test.ts` las guardas de los hooks. Los tests del centro de
-mando comparten proceso y llaman a `resetSituation()` en `beforeEach`.
+`npm test` runs 16 test suites: `tests/` covers the command center (priority,
+resources, triage, autonomy, assumptions, persistence, digital twin, routes,
+and simulated adapter callbacks), `src/` covers ingestion and the scenario engine,
+and `scripts/hooks.test.ts` covers hook guards. Command center tests share the
+process and call `resetSituation()` in `beforeEach`.
 
-## Documentación
+## Documentation
 
-| Documento                                                                              | Qué contiene                                                             |
-| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| [CHALLENGE.md](CHALLENGE.md)                                                           | El brief del reto y los criterios de puntuación.                         |
-| [PROJECT.md](PROJECT.md)                                                               | Convenciones, permisos y mapa del repositorio.                           |
-| [TASKS.md](TASKS.md)                                                                   | Lo hecho y lo pendiente, incluida la unificación de los árboles.         |
-| [docs/architecture.md](docs/architecture.md)                                           | Decisiones de diseño del centro de mando y lo que cuesta cada una.       |
-| [docs/security.md](docs/security.md)                                                   | Credenciales, secreto del webhook y destinatarios de demo.               |
-| [docs/happyDocumentation.md](docs/happyDocumentation.md)                               | Notas sobre HappyRobot y qué partes del contrato están sin verificar.    |
-| [docs/data-model.md](docs/data-model.md), [thoughts/](thoughts/README.md)              | Modelo de datos en Supabase, inventario de funcionalidades y decisiones. |
-| [docs/input-architecture.md](docs/input-architecture.md)                               | Ingesta de eventos por lotes.                                            |
-| [docs/dashboard-design-guide.md](docs/dashboard-design-guide.md)                       | Guía visual del panel.                                                   |
-| [docs/code-index.md](docs/code-index.md), [docs/agent-skills.md](docs/agent-skills.md) | Graft y skills compartidas para agentes.                                 |
+| Document                                                                               | Contents                                                      |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| [CHALLENGE.md](CHALLENGE.md)                                                           | Challenge brief and scoring criteria.                         |
+| [PROJECT.md](PROJECT.md)                                                               | Conventions, permissions, and repository map.                 |
+| [TASKS.md](TASKS.md)                                                                   | Completed and deferred work, including tree unification.      |
+| [docs/architecture.md](docs/architecture.md)                                           | Command center design decisions and trade-offs.               |
+| [docs/security.md](docs/security.md)                                                   | Credentials, webhook secret, and demo recipients.             |
+| [docs/happyDocumentation.md](docs/happyDocumentation.md)                               | HappyRobot notes and unverified API contract details.         |
+| [docs/data-model.md](docs/data-model.md), [thoughts/](thoughts/README.md)              | Supabase data model, feature inventory, and design decisions. |
+| [docs/input-architecture.md](docs/input-architecture.md)                               | Batch event ingestion architecture.                           |
+| [docs/dashboard-design-guide.md](docs/dashboard-design-guide.md)                       | Dashboard visual and design guide.                            |
+| [docs/code-index.md](docs/code-index.md), [docs/agent-skills.md](docs/agent-skills.md) | Graft code index and shared agent skills.                     |
 
-## Licencia
+## License
 
-MIT. Ver [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

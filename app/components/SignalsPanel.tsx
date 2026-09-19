@@ -7,9 +7,9 @@ import type { CrisisEvent, CrisisZone } from "@/lib/types";
 import { agoLabel, confidenceLabels, eventSourceLabels, severityLabels } from "./shared";
 
 const decisionLabels: Record<"act" | "verify" | "discard", string> = {
-  act: "Actuar ya",
-  verify: "Verificar antes",
-  discard: "Descartable",
+  act: "Act now",
+  verify: "Verify first",
+  discard: "Discardable",
 };
 
 interface Props {
@@ -24,9 +24,7 @@ interface Props {
 export default function SignalsPanel({ events, zones, busy, nowMs, freshIds, onMark }: Props) {
   return (
     <div className="timeline" role="log" aria-live="polite" aria-relevant="additions">
-      {events.length === 0 ? (
-        <p className="muted-note">Todavía no ha entrado ninguna señal.</p>
-      ) : null}
+      {events.length === 0 ? <p className="muted-note">No signals received yet.</p> : null}
       {events.map((event) => {
         const zone = zones.find((candidate) => candidate.id === event.zoneId);
         const fresh = freshIds.has(event.id);
@@ -40,7 +38,7 @@ export default function SignalsPanel({ events, zones, busy, nowMs, freshIds, onM
             <div>
               <h3>
                 {event.title}
-                {fresh ? <em className="flash-tag">Nueva</em> : null}
+                {fresh ? <em className="flash-tag">New</em> : null}
                 {event.occurrences > 1 ? <em className="count-tag">×{event.occurrences}</em> : null}
               </h3>
               <p>{event.description}</p>
@@ -57,10 +55,10 @@ export default function SignalsPanel({ events, zones, busy, nowMs, freshIds, onM
                   >
                     {decisionLabels[event.assessment.decision]}
                   </span>{" "}
-                  {event.assessment.rationale} (relevante{" "}
-                  {Math.round(event.assessment.pRelevant * 100)} %, veraz{" "}
-                  {Math.round(event.assessment.pTruthful * 100)} %, urgencia{" "}
-                  {Math.round(event.assessment.urgency * 100)} %)
+                  {event.assessment.rationale} (relevance{" "}
+                  {Math.round(event.assessment.pRelevant * 100)}%, veracity{" "}
+                  {Math.round(event.assessment.pTruthful * 100)}%, urgency{" "}
+                  {Math.round(event.assessment.urgency * 100)}%)
                 </p>
               ) : null}
               <span>
@@ -68,15 +66,15 @@ export default function SignalsPanel({ events, zones, busy, nowMs, freshIds, onM
                 {eventSourceLabels[event.source]} · {severityLabels[event.severity]} ·{" "}
                 {confidenceLabels[event.confidence]} ·{" "}
                 {event.confirmed === true
-                  ? "confirmada"
+                  ? "confirmed"
                   : event.confirmed === false
-                    ? "descartada"
-                    : "sin verificar"}
+                    ? "discarded"
+                    : "unverified"}
               </span>
             </div>
             <div className="event-actions">
               <button
-                aria-label={`Confirmar la señal: ${event.title}`}
+                aria-label={`Confirm signal: ${event.title}`}
                 onClick={() => onMark(event.id, true)}
                 disabled={busy !== null || event.confirmed === true}
               >
@@ -84,7 +82,7 @@ export default function SignalsPanel({ events, zones, busy, nowMs, freshIds, onM
               </button>
               <button
                 className="danger-light"
-                aria-label={`Descartar la señal: ${event.title}`}
+                aria-label={`Discard signal: ${event.title}`}
                 onClick={() => onMark(event.id, false)}
                 disabled={busy !== null || event.confirmed === false}
               >

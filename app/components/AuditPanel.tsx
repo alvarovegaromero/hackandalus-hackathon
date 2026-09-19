@@ -12,9 +12,9 @@ interface Props {
 }
 
 const lessonStatusLabels: Record<Lesson["status"], string> = {
-  proposed: "Pendiente de validar",
-  accepted: "Aceptada",
-  rejected: "Descartada",
+  proposed: "Pending validation",
+  accepted: "Accepted",
+  rejected: "Discarded",
 };
 
 export default function AuditPanel({ audit, lessons }: Props) {
@@ -24,7 +24,7 @@ export default function AuditPanel({ audit, lessons }: Props) {
     <>
       {pending.length > 0 ? (
         <section className="lessons-box">
-          <h3 className="section-head">Lecciones de ejecuciones anteriores ({pending.length})</h3>
+          <h3 className="section-head">Lessons from previous runs ({pending.length})</h3>
           <ul className="mini-list">
             {pending.map((lesson) => (
               <li key={lesson.id} className="mini-row">
@@ -41,14 +41,13 @@ export default function AuditPanel({ audit, lessons }: Props) {
             ))}
           </ul>
           <p className="muted-note">
-            Validar o descartar una lección todavía no tiene ruta en la API: aquí se muestran tal
-            como llegan.
+            Validating or discarding a lesson does not have an API route yet: displayed as received.
           </p>
         </section>
       ) : null}
 
       <div className="audit-list" role="log" aria-live="polite" aria-relevant="additions">
-        {audit.length === 0 ? <p className="muted-note">Todavía no hay nada registrado.</p> : null}
+        {audit.length === 0 ? <p className="muted-note">Nothing recorded yet.</p> : null}
         {audit.map((entry) => (
           <article key={entry.id} className={`audit-row actor-${entry.actor}`}>
             <span className="audit-time">{timeLabel(entry.at)}</span>

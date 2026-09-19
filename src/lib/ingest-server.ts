@@ -21,7 +21,7 @@ const persistInSupabase: PersistEvents = async (events) => {
   const db = createServerSupabase();
   const incidents = [...new Set(events.map((e) => e.incidentId))].map((id) => ({
     id,
-    title: `Incidente ${id.slice(0, 8)}`,
+    title: `Incident ${id.slice(0, 8)}`,
   }));
   const { error: incidentError } = await db
     .from("incidents")

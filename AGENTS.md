@@ -35,5 +35,5 @@ changing code, and report any fallback caused by failures or missing coverage.
 The repository holds two trees: the served command center at the root (`app/`,
 `lib/`, `tests/`) and the platform base under `src/` (Workflow, Supabase, batch
 ingestion), whose routes are not served while the root `app/` exists. Keep the
-module-owner line (`// PROPIETARIO: …`) in `lib/**` and keep the digital-twin
+module-owner line (`// OWNER: …`) in `lib/**` and keep the digital-twin
 docs and tests in sync. Unifying both trees is tracked in TASKS.md.

@@ -1,10 +1,10 @@
-// PROPIETARIO: agente de integración HappyRobot, contactos y escalado.
-// Cadenas de escalado: quién se avisa primero y qué pasa si no contesta.
+// OWNER: HappyRobot integration, contacts, and escalation agent.
+// Escalation chains: who is notified first and what happens if they don't answer.
 //
-// El reto exige "una cadena de acciones hacia un objetivo, no una acción
-// aislada": aquí se construye esa cadena. Primero el canal más directo con
-// quien está sobre el terreno, después un rol distinto, y al final la
-// autoridad. Cada escalón lleva escrito por qué existe.
+// The challenge requires "a chain of actions toward an objective, not an
+// isolated action": this module constructs that chain. First the most direct
+// channel with someone on the ground, then a different role, and finally the
+// authority. Each step explicitly states why it exists.
 
 import {
   briefingForRole,
@@ -27,27 +27,27 @@ export interface BuildChainInput {
   at: string;
 }
 
-/** Espera por defecto en cada escalón, en segundos. */
+/** Default wait time at each step, in seconds. */
 const WAIT_URGENT = 90;
 const WAIT_NORMAL = 180;
-/** Número máximo de escalones: más de cuatro no se ejecuta en una crisis real. */
+/** Maximum number of steps: more than four is unworkable in a real crisis. */
 const MAX_STEPS = 4;
 
 /**
- * Cuánto se espera a un escalón antes de pasar al siguiente. Un contacto poco
- * fiable no merece que la cadena se quede parada tanto tiempo.
+ * How long to wait on a step before moving to the next. An unreliable
+ * contact should not stall the chain for too long.
  */
 function waitFor(contact: Contact, urgent: boolean, order: number): number {
   const base = urgent ? WAIT_URGENT : WAIT_NORMAL;
   const fiabilidad = Math.min(1, Math.max(0, contact.responsiveness));
-  // Entre el 60% y el 100% de la espera base, y algo más en cada escalón.
+  // Between 60% and 100% of base wait, plus incremental time per step.
   const ajustado = Math.round(base * (0.6 + fiabilidad * 0.4)) + (order - 1) * 15;
   return Math.max(30, ajustado);
 }
 
 /**
- * Construye la cadena de escalado para un objetivo: primer contacto por el
- * canal más directo, y escalones sucesivos si no hay respuesta.
+ * Builds the escalation chain for an objective: first contact via most
+ * direct channel, and successive steps if there is no response.
  */
 export function buildEscalationChain(input: BuildChainInput): EscalationChain {
   const steps: EscalationStep[] = [];
@@ -57,8 +57,8 @@ export function buildEscalationChain(input: BuildChainInput): EscalationChain {
     if (steps.length >= MAX_STEPS) return;
     if (usados.includes(contact.id)) return;
     const order = steps.length + 1;
-    // El primer escalón busca respuesta inmediata; los siguientes ya asumen
-    // que el canal directo ha fallado y priorizan dejar constancia escrita.
+    // First step seeks immediate response; subsequent steps assume direct
+    // channel failed and prioritize written record.
     const urgenteEnEsteEscalon = input.urgent && order <= 2;
     const canal = selectChannelWithReason(contact, urgenteEnEsteEscalon, input.learning);
     const briefing = briefingForRole(contact.role, {
@@ -82,7 +82,7 @@ export function buildEscalationChain(input: BuildChainInput): EscalationChain {
     });
   };
 
-  // Escalón 1: quien está más cerca del problema, por el canal más directo.
+  // Step 1: closest to the problem, via most direct channel.
   const primero = selectContact(input.contacts, input.zoneId, input.category, input.learning);
   if (primero) {
     push(
@@ -91,8 +91,8 @@ export function buildEscalationChain(input: BuildChainInput): EscalationChain {
     );
   }
 
-  // Escalones intermedios: otros roles útiles para la misma categoría, para
-  // no insistir dos veces a la misma persona por el mismo motivo.
+  // Intermediate steps: other relevant roles for the same category, to avoid
+  // pinging the same person twice for the same reason.
   for (const role of rolesForCategory(input.category)) {
     if (steps.length >= MAX_STEPS - 1) break;
     const candidato = selectContactByRole(
@@ -109,7 +109,7 @@ export function buildEscalationChain(input: BuildChainInput): EscalationChain {
     );
   }
 
-  // Penúltimo recurso: la sala de coordinación, que puede reasignar medios.
+  // Penultimate resource: operations room, which can reallocate resources.
   if (steps.length < MAX_STEPS) {
     const operaciones = selectContactByRole(
       input.contacts,
@@ -123,7 +123,7 @@ export function buildEscalationChain(input: BuildChainInput): EscalationChain {
     }
   }
 
-  // Último escalón: la autoridad, siempre por escrito y con trazabilidad.
+  // Final step: authority, always in writing with audit traceability.
   const autoridad = selectContactByRole(input.contacts, null, "authority", input.learning, usados);
   if (autoridad) {
     if (steps.length >= MAX_STEPS) steps.pop();
@@ -145,12 +145,12 @@ export function buildEscalationChain(input: BuildChainInput): EscalationChain {
   };
 }
 
-/** Devuelve el siguiente escalón pendiente, o null si la cadena está agotada. */
+/** Returns the next pending step, or null if chain is exhausted. */
 export function nextStep(chain: EscalationChain): EscalationStep | null {
   return chain.steps[chain.currentStep] ?? null;
 }
 
-/** Avanza la cadena tras un intento fallido o sin respuesta. */
+/** Advances chain after a failed or timed-out attempt. */
 export function advanceChain(chain: EscalationChain, at: string): EscalationChain {
   chain.currentStep += 1;
   chain.status = chain.currentStep >= chain.steps.length ? "exhausted" : "active";
@@ -158,7 +158,7 @@ export function advanceChain(chain: EscalationChain, at: string): EscalationChai
   return chain;
 }
 
-/** Cierra la cadena porque alguien respondió. */
+/** Closes chain because someone responded. */
 export function satisfyChain(chain: EscalationChain, at: string): EscalationChain {
   chain.status = "satisfied";
   chain.updatedAt = at;
@@ -166,8 +166,8 @@ export function satisfyChain(chain: EscalationChain, at: string): EscalationChai
 }
 
 /**
- * true si el escalón actual ya agotó su espera y toca subir al siguiente.
- * Se calcula sobre updatedAt: cada avance reinicia el reloj del escalón.
+ * true if current step has exceeded wait time and it is time to escalate.
+ * Calculated against updatedAt: each advance resets step clock.
  */
 export function isStepOverdue(chain: EscalationChain, now: number): boolean {
   const step = nextStep(chain);
@@ -175,7 +175,7 @@ export function isStepOverdue(chain: EscalationChain, now: number): boolean {
   return now - new Date(chain.updatedAt).getTime() >= step.waitSeconds * 1000;
 }
 
-/** Resumen legible de la cadena para la interfaz y la auditoría. */
+/** Readable summary of chain for UI and audit logs. */
 export function describeChain(chain: EscalationChain, contacts: Contact[]): string {
   if (chain.steps.length === 0) return "Sin cadena de escalado.";
   return chain.steps

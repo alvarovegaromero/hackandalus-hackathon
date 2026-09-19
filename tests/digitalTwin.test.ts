@@ -1,3 +1,5 @@
+// OWNER: digital twin agent.
+
 import { describe, expect, it } from "vitest";
 import { buildDigitalTwin } from "@/lib/digitalTwin";
 import { seedWorld } from "@/lib/seed";
@@ -17,7 +19,7 @@ function senal(
     ...rest,
     id,
     source: "scenario",
-    title: "Señal de prueba",
+    title: "Test signal",
     zoneId: rest.zoneId ?? "zone-north",
     category,
     severity: "high",

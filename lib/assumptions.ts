@@ -1,34 +1,34 @@
-// PROPIETARIO: agente de supuestos vivos.
+// OWNER: live assumptions agent.
 //
-// Supuestos vivos: de qué depende el plan y cómo se entera el sistema de que
-// ha dejado de depender de algo que ya no es cierto.
+// Live assumptions: what the plan depends on and how the system detects
+// that it no longer depends on something that is no longer true.
 //
-// El reto pregunta literalmente cuándo hay que tirar el plan: "el viento
-// cambia y el plan de hace veinte minutos ya no se sostiene". Replanificar con
-// cada señal no responde a eso, porque un plan que se rehace siempre no sabe
-// nunca de qué dependía. Aquí cada plan declara sus dependencias y el mundo se
-// contrasta contra ellas:
+// The challenge literally asks when to scrap the plan: "the wind
+// changes and the twenty-minute-old plan no longer holds". Replanning on
+// every signal does not answer that, because a plan that is always remade
+// never knows what it depended on. Here each plan declares its dependencies
+// and the world is checked against them:
 //
-//   plan  ->  deriveAssumptions()  ->  supuestos que lo sostienen
-//   señal ->  applyEventToWorld()  ->  nuevo estado del mundo
-//   mundo ->  checkAssumptions()   ->  qué sigue en pie y qué se ha roto
-//   roto  ->  explainInvalidation() + consequencesOfBreak()
+//   plan   ->  deriveAssumptions()  ->  assumptions supporting it
+//   signal ->  applyEventToWorld()  ->  new world state
+//   world  ->  checkAssumptions()   ->  what still holds and what broke
+//   broken ->  explainInvalidation() + consequencesOfBreak()
 //
-// Cuatro reglas de diseño:
+// Four design rules:
 //
-//  1. Todo determinista y puro. Ni modelos de lenguaje ni aleatoriedad: la
-//     misma situación produce siempre los mismos supuestos y el mismo texto.
-//  2. Los supuestos salen de decisiones reales del plan, no de una plantilla.
-//     Si ningún medio cruza una carretera, no se declara nada sobre ella.
-//  3. Pocos y legibles. Como mucho seis, porque el operador tiene que leerlos
-//     en dos segundos, que es justo lo que pide el enunciado.
-//  4. Un supuesto roto se queda roto. No se vuelve a romper ni resucita solo:
-//     el único modo de volver a "ok" es que el plan siguiente lo redeclare.
+//  1. Completely deterministic and pure. No language models or randomness:
+//     the same situation always produces the same assumptions and text.
+//  2. Assumptions derive from real plan decisions, not a template.
+//     If no resource crosses a road, nothing is declared about it.
+//  3. Few and readable. At most six, because the operator must read them
+//     in two seconds, exactly as required by the challenge.
+//  4. A broken assumption stays broken. It doesn't re-break or self-resurrect:
+//     the only way to return to "ok" is for the next plan to redeclare it.
 //
-// Un supuesto que ya es falso cuando se deriva NO se declara: un plan no puede
-// apoyarse en algo que ya no se cumple. Y si el dato desaparece (deja de haber
-// información de camas), el supuesto pasa a "unknown", no a "ok": fingir que
-// se sostiene sería mentir al operador.
+// An assumption that is already false when derived is NOT declared: a plan cannot
+// rely on something that is not currently met. And if data disappears (e.g. no bed
+// information available), the assumption becomes "unknown", not "ok": pretending
+// it holds would lie to the operator.
 
 import type {
   Action,
@@ -43,21 +43,21 @@ import type {
 } from "./types";
 
 // ---------------------------------------------------------------------------
-// Parámetros
+// Parameters
 // ---------------------------------------------------------------------------
 
-/** Tope de supuestos por plan. Una lista larga no se lee en dos segundos. */
+/** Max assumptions per plan. A long list cannot be read in two seconds. */
 export const MAX_SUPUESTOS = 6;
-/** Como mucho dos rutas: las de las dos zonas más prioritarias. */
+/** At most two routes: those of the two highest priority zones. */
 const MAX_CARRETERAS = 2;
-/** Un hospital, el de la zona más prioritaria que evacúa heridos. */
+/** One hospital, from the highest priority zone evacuating wounded. */
 const MAX_HOSPITALES = 1;
-/** Voz y mensajería, si el plan las usa. */
+/** Voice and messaging, if the plan uses them. */
 const MAX_CANALES = 2;
-/** Camas libres por debajo de las cuales la evacuación sanitaria no cabe. */
+/** Free beds below which medical evacuation cannot fit. */
 export const UMBRAL_CAMAS = 10;
 
-/** Estados de acción que siguen esperando que el supuesto se cumpla. */
+/** Action statuses that still expect the assumption to hold. */
 const ESTADOS_VIVOS = new Set<ActionStatus>([
   "pending",
   "approved",
@@ -67,9 +67,9 @@ const ESTADOS_VIVOS = new Set<ActionStatus>([
 ]);
 
 /**
- * Carreteras que unen cada par de zonas. Un medio que sale de su base hacia
- * otra zona depende de la suya, y es ese cruce el que genera el supuesto.
- * La clave es el par ordenado alfabéticamente, así que la tabla es simétrica.
+ * Roads connecting each pair of zones. A resource departing from its base to
+ * another zone depends on its route, and that crossing generates the assumption.
+ * The key is the alphabetically sorted pair, making the table symmetric.
  */
 const CARRETERAS_ENTRE_ZONAS: Record<string, string> = {
   "zone-central|zone-east": "A-92",
@@ -84,7 +84,7 @@ const CARRETERAS_ENTRE_ZONAS: Record<string, string> = {
   "zone-north|zone-south": "A-397",
 };
 
-/** Vía principal de cada zona, para las señales de corte que no citan carretera. */
+/** Main road of each zone, for road-cut signals that do not cite a specific highway. */
 const CARRETERA_PRINCIPAL: Record<string, string> = {
   "zone-north": "A-397",
   "zone-central": "A-4",
@@ -93,7 +93,7 @@ const CARRETERA_PRINCIPAL: Record<string, string> = {
   "zone-islands": "A-381",
 };
 
-/** Hospital de referencia de cada zona para la evacuación sanitaria. */
+/** Designated reference hospital of each zone for medical evacuation. */
 const HOSPITAL_POR_ZONA: Record<string, string> = {
   "zone-north": "hospital-serrania",
   "zone-south": "hospital-costa-del-sol",
@@ -118,7 +118,7 @@ const NOMBRES_DE_VIENTO: Record<string, string> = {
   NW: "noroeste",
 };
 
-/** Palabras que delatan que una acción mueve heridos o evacúa población. */
+/** Keywords indicating that an action moves wounded or evacuates population. */
 const PALABRAS_SANITARIAS = [
   "evacua",
   "triaje",
@@ -130,10 +130,10 @@ const PALABRAS_SANITARIAS = [
 ];
 
 // ---------------------------------------------------------------------------
-// Utilidades
+// Utilities
 // ---------------------------------------------------------------------------
 
-/** Quita acentos y baja a minúsculas para poder comparar texto libre. */
+/** Removes accents and converts to lowercase to compare free text. */
 function normalizar(texto: string) {
   return (texto ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
@@ -148,7 +148,7 @@ function mayuscula(texto: string) {
   return texto.length > 0 ? `${texto[0].toUpperCase()}${texto.slice(1)}` : texto;
 }
 
-/** Carretera que une dos zonas, o null si no hay ruta conocida entre ellas. */
+/** Road connecting two zones, or null if no known route between them. */
 export function carreteraEntre(zonaA: string, zonaB: string): string | null {
   if (!zonaA || !zonaB || zonaA === zonaB) return null;
   const clave = [zonaA, zonaB].sort().join("|");
@@ -171,13 +171,13 @@ function esSanitaria(action: Action) {
 }
 
 // ---------------------------------------------------------------------------
-// Lectura de un supuesto
+// Reading an assumption
 //
-// `variable` y `condition` son el contrato legible con la UI, y a la vez lo
-// único que reciben `checkAssumptions`, `explainInvalidation` y
-// `consequencesOfBreak`. Por eso la condición se escribe con etiquetas fijas
-// ("destino: Sierra Morena (zone-north)"): se lee bien en pantalla y se puede
-// volver a interpretar sin guardar estado por fuera.
+// `variable` and `condition` are the readable contract with the UI, and at the
+// same time the only input received by `checkAssumptions`, `explainInvalidation`
+// and `consequencesOfBreak`. For this reason the condition is written with fixed
+// tags ("destino: Sierra Morena (zone-north)"): it reads well on screen and
+// can be re-interpreted without external state.
 // ---------------------------------------------------------------------------
 
 export type Interpretacion =
@@ -202,13 +202,13 @@ export type Interpretacion =
     }
   | { kind: "desconocido" };
 
-/** Lee una etiqueta con forma `clave: Nombre visible (identificador)`. */
+/** Reads a tag in the format `key: Display name (identifier)`. */
 function etiqueta(condition: string, clave: string) {
   const match = new RegExp(`${clave}:\\s*([^()·]+?)\\s*\\(([^)]+)\\)`).exec(condition ?? "");
   return match ? { nombre: match[1].trim(), id: match[2].trim() } : null;
 }
 
-/** Traduce un supuesto a la decisión concreta que sostiene. */
+/** Translates an assumption into the concrete decision it sustains. */
 export function interpretarSupuesto(assumption: Assumption): Interpretacion {
   const variable = assumption?.variable ?? "";
   const condition = assumption?.condition ?? "";
@@ -254,12 +254,12 @@ export function interpretarSupuesto(assumption: Assumption): Interpretacion {
 }
 
 // ---------------------------------------------------------------------------
-// Evaluación contra el mundo
+// Evaluation against the world
 // ---------------------------------------------------------------------------
 
 /**
- * Contrasta un supuesto con el estado del mundo. Sin dato no hay veredicto:
- * devuelve "unknown" en vez de dar por bueno lo que no se puede comprobar.
+ * Checks an assumption against world state. Without data there is no verdict:
+ * returns "unknown" instead of validating what cannot be verified.
  */
 export function evaluateAssumption(assumption: Assumption, world: WorldState): AssumptionStatus {
   const info = interpretarSupuesto(assumption);
@@ -297,7 +297,7 @@ export function evaluateAssumption(assumption: Assumption, world: WorldState): A
 }
 
 // ---------------------------------------------------------------------------
-// 1. Derivación: de qué depende este plan
+// 1. Derivation: what this plan depends on
 // ---------------------------------------------------------------------------
 
 function supuesto(
@@ -319,12 +319,12 @@ function supuesto(
 }
 
 /**
- * Declara de qué depende el plan actual, leyendo sus decisiones reales:
- * qué zona puso primero, qué medios movió y por dónde tienen que pasar, por
- * qué canal salen los avisos y hacia qué hospital se evacúa.
+ * Declares what the current plan depends on by reading its actual decisions:
+ * which zone was prioritized first, which resources moved and their routes,
+ * which channel alerts use, and which hospital receives evacuations.
  *
- * Los supuestos que ya son falsos contra el mundo de ahora no se declaran: un
- * plan nuevo no puede apoyarse en una carretera que ya está cortada.
+ * Assumptions that are already false against the current world are not declared:
+ * a new plan cannot rely on a road that is already blocked.
  */
 export function deriveAssumptions(
   plan: Plan,
@@ -349,8 +349,8 @@ export function deriveAssumptions(
   const camas: Assumption[] = [];
   const canales: Assumption[] = [];
 
-  // Viento: sostiene el orden de prioridades. Solo se declara si la zona que
-  // va primera está realmente en juego, no por rellenar.
+  // Wind: sustains priority ordering. Only declared if the top
+  // zone is actually in play, not just as filler.
   const zonaTop = zonaPorId.get(prioridades[0]?.zoneId ?? "");
   const direccion = (world?.windDirection ?? "").trim();
   const zonaTopEnJuego =
@@ -369,8 +369,8 @@ export function deriveAssumptions(
     );
   }
 
-  // Carreteras: cada medio que sale de su base hacia otra zona depende de la
-  // vía que las une. Sin cruce no hay supuesto.
+  // Roads: each resource departing from its base to another zone depends on
+  // the road connecting them. Without crossing, no assumption.
   const vistas = new Set<string>();
   for (const action of vivas) {
     if (!action.resourceId) continue;
@@ -395,8 +395,8 @@ export function deriveAssumptions(
     );
   }
 
-  // Camas: una evacuación sanitaria apunta a un hospital concreto y ese
-  // hospital tiene un límite.
+  // Beds: medical evacuation targets a specific hospital
+  // and that hospital has a capacity limit.
   const hospitalesVistos = new Set<string>();
   for (const action of vivas) {
     if (!esSanitaria(action)) continue;
@@ -416,7 +416,7 @@ export function deriveAssumptions(
     );
   }
 
-  // Canales: si el plan manda avisos por un canal, depende de ese canal.
+  // Channels: if the plan sends alerts via a channel, it depends on that channel.
   if (vivas.some((action) => action.channel === "sms" || action.channel === "whatsapp")) {
     canales.push(
       supuesto(
@@ -438,8 +438,8 @@ export function deriveAssumptions(
     );
   }
 
-  // Un plan no puede declarar como supuesto algo que ya es falso. Los que no
-  // se pueden comprobar sí se declaran, marcados como desconocidos.
+  // A plan cannot declare an assumption that is already false. Those that
+  // cannot be verified are declared, marked as unknown.
   const sostenible = (candidatos: Assumption[], tope: number) =>
     candidatos
       .map((candidato) => ({ ...candidato, status: evaluateAssumption(candidato, world) }))
@@ -455,29 +455,29 @@ export function deriveAssumptions(
 }
 
 // ---------------------------------------------------------------------------
-// 2. Comprobación: qué sigue en pie
+// 2. Checking: what still holds
 // ---------------------------------------------------------------------------
 
 export interface AssumptionCheck {
-  /** La lista completa, con el estado actualizado. Mismo orden que la entrada. */
+  /** Complete list, with updated status. Same order as input. */
   assumptions: Assumption[];
-  /** Los que se han roto justo ahora. Son los que invalidan el plan. */
+  /** Those broken just now. These invalidate the plan. */
   broken: Assumption[];
-  /** Los que ya estaban rotos antes: no se vuelven a romper ni se reanuncian. */
+  /** Those already broken before: not re-broken or re-announced. */
   alreadyBroken: Assumption[];
-  /** Los que han dejado de poder comprobarse. */
+  /** Those that can no longer be verified. */
   unknown: Assumption[];
-  /** true si algún estado ha cambiado en esta comprobación. */
+  /** true if any status changed in this check. */
   changed: boolean;
 }
 
 /**
- * Contrasta los supuestos con el mundo. Determinista y sin efectos
- * secundarios: no muta la entrada ni consulta el reloj.
+ * Checks assumptions against the world. Deterministic and side-effect free:
+ * does not mutate input or consult clock.
  *
- * Un supuesto roto se queda roto y conserva el evento que lo rompió, así que
- * una señal posterior no lo vuelve a anunciar ni lo resucita. Solo el plan
- * siguiente, al redeclarar sus supuestos, parte de cero.
+ * A broken assumption stays broken and preserves the event that broke it, so
+ * subsequent signals do not re-announce or resurrect it. Only the next
+ * plan, upon redeclaring its assumptions, starts fresh.
  */
 export function checkAssumptions(
   assumptions: Assumption[],
@@ -522,7 +522,7 @@ export function checkAssumptions(
 }
 
 // ---------------------------------------------------------------------------
-// 3. Del evento al mundo
+// 3. From event to world
 // ---------------------------------------------------------------------------
 
 const DIRECCIONES: [string, string][] = [
@@ -539,11 +539,10 @@ const DIRECCIONES: [string, string][] = [
   ["sur", "S"],
 ];
 
-/** Lee la dirección del viento del texto de la señal, o null si no la cita. */
+/** Reads wind direction from signal text, or null if not mentioned. */
 function direccionDeSenal(crudo: string, texto: string): string | null {
-  // Primero el código en mayúsculas ("el viento gira al SO"), que es
-  // inequívoco; después los nombres largos, del más largo al más corto para
-  // que "sureste" no se lea como "este".
+  // First the uppercase code ("wind turns SW"), which is unambiguous;
+  // then long names, from longest to shortest so "sureste" is not read as "este".
   const codigo = /\b(?:viento|frente|racha)[^.]{0,40}?\b(NE|NO|NW|SE|SO|SW|N|S|E|O|W)\b/.exec(
     crudo,
   );
@@ -562,7 +561,7 @@ function direccionDeSenal(crudo: string, texto: string): string | null {
   return null;
 }
 
-/** Carretera que cita la señal, o la vía principal de su zona. */
+/** Road mentioned in signal, or the main road of its zone. */
 function carreteraDeSenal(event: CrisisEvent, crudo: string): string | null {
   const citada = /\b((?:AP|CA|MA|SE|GR|AL|CO|A|N|H|J)-\d{1,4})\b/.exec(crudo);
   if (citada) return citada[1];
@@ -570,12 +569,12 @@ function carreteraDeSenal(event: CrisisEvent, crudo: string): string | null {
 }
 
 /**
- * Traduce una señal a un cambio del estado del mundo. Devuelve un mundo nuevo
- * y nunca muta el recibido; si la señal no afecta al mundo, devuelve el mismo
- * objeto, que es la forma barata de decir "aquí no ha pasado nada".
+ * Translates a signal into a world state change. Returns a new world
+ * and never mutates the received one; if the signal doesn't affect the world,
+ * returns the same object as an inexpensive way of saying "nothing happened here".
  *
- * La marca de tiempo del mundo es la de la señal, no la del reloj: así el
- * resultado es reproducible en pruebas y en una repetición de la demo.
+ * The world timestamp is that of the signal, not the clock: thus the
+ * result is reproducible in tests and demo replays.
  */
 export function applyEventToWorld(world: WorldState, event: CrisisEvent): WorldState {
   if (!world || !event) return world;
@@ -585,7 +584,7 @@ export function applyEventToWorld(world: WorldState, event: CrisisEvent): WorldS
   const texto = normalizar(crudo);
   const cuando = event.createdAt ?? world.updatedAt;
 
-  // --- Carreteras ---------------------------------------------------------
+  // --- Roads --------------------------------------------------------------
   const hablaDeVia = /carretera|ruta|via|acceso|route|road/.test(`${categoria} ${texto}`);
   const reabre = /reabiert|reabre|restablecid|despejad|reopen/.test(`${categoria} ${texto}`);
   const corta = /bloquead|cortad|corte|impracticable|blocked|derrumb/.test(`${categoria} ${texto}`);
@@ -614,7 +613,7 @@ export function applyEventToWorld(world: WorldState, event: CrisisEvent): WorldS
     };
   }
 
-  // --- Viento -------------------------------------------------------------
+  // --- Wind ---------------------------------------------------------------
   if (/viento|wind|racha/.test(`${categoria} ${texto}`)) {
     const direccion = direccionDeSenal(crudo, texto);
     const velocidad = /(\d{1,3})\s*km\/h/.exec(texto)?.[1];
@@ -632,7 +631,7 @@ export function applyEventToWorld(world: WorldState, event: CrisisEvent): WorldS
     return igual ? world : siguiente;
   }
 
-  // --- Canales de comunicación -------------------------------------------
+  // --- Communication channels ---------------------------------------------
   const hablaDeCanal = /integration|sms|mensajeri|telefoni|voz|llamad|cobertura|comms|telecom/.test(
     `${categoria} ${texto}`,
   );
@@ -648,14 +647,14 @@ export function applyEventToWorld(world: WorldState, event: CrisisEvent): WorldS
 
     const operativo = restablece;
     const esVoz = /voz|llamad|telefoni/.test(texto);
-    // Si la señal no dice el canal, se entiende que habla de la mensajería:
-    // es la integración que mueve los avisos masivos de la demo.
+    // If the signal does not specify the channel, assume messaging:
+    // it is the integration driving mass alerts in the demo.
     const campo = esVoz ? "voiceOperational" : "smsOperational";
     if (world[campo] === operativo) return world;
     return { ...world, [campo]: operativo, updatedAt: cuando };
   }
 
-  // --- Camas de hospital --------------------------------------------------
+  // --- Hospital beds ------------------------------------------------------
   if (/hospital|camas|beds|uci/.test(`${categoria} ${texto}`)) {
     const citado = /\b(hospital-[a-z0-9-]+)\b/.exec(normalizar(crudo))?.[1];
     const hospitalId = citado ?? HOSPITAL_POR_ZONA[event.zoneId];
@@ -663,8 +662,7 @@ export function applyEventToWorld(world: WorldState, event: CrisisEvent): WorldS
 
     const beds = { ...(world.hospitalBeds ?? {}) };
 
-    // El dato desaparece: el supuesto tiene que quedar en "desconocido", no
-    // darse por bueno.
+    // Data disappeared: assumption must become "unknown", not assumed valid.
     if (/sin datos|sin informacion|no hay datos|sin contacto|incomunicad/.test(texto)) {
       if (!(hospitalId in beds)) return world;
       delete beds[hospitalId];
@@ -682,22 +680,22 @@ export function applyEventToWorld(world: WorldState, event: CrisisEvent): WorldS
 }
 
 // ---------------------------------------------------------------------------
-// 4. Consecuencias de una rotura
+// 4. Consequences of a break
 // ---------------------------------------------------------------------------
 
 export interface AssumptionConsequence {
   actionId: string;
   objective: string;
   zoneId: string;
-  /** "invalidada": ya no se puede ejecutar así. "en-riesgo": puede cambiar de orden. */
+  /** "invalidada": cannot execute this way anymore. "en-riesgo": order may change. */
   effect: "invalidada" | "en-riesgo";
   reason: string;
 }
 
 /**
- * Qué acciones del plan dejan de tener sentido cuando cae un supuesto. Es la
- * mitad que el operador necesita para decidir: no basta con decir que el plan
- * ya no vale, hay que decir qué se cancela y por qué.
+ * Which plan actions no longer make sense when an assumption breaks. This is the
+ * critical piece the operator needs to decide: saying the plan is invalid
+ * is not enough; we must state what is cancelled and why.
  */
 export function consequencesOfBreak(
   assumption: Assumption,
@@ -707,8 +705,8 @@ export function consequencesOfBreak(
   const info = interpretarSupuesto(assumption);
   const propuestas = new Set(plan?.proposedActionIds ?? []);
   const vivas = (actions ?? []).filter((action) => ESTADOS_VIVOS.has(action.status));
-  // Si el plan enumera sus acciones, se respeta esa lista; si no, se miran
-  // todas las vivas para no dejar consecuencias sin contar.
+  // If the plan lists proposed actions, respect that list; otherwise check
+  // all live actions so no consequences are omitted.
   const candidatas =
     propuestas.size > 0 ? vivas.filter((action) => propuestas.has(action.id)) : vivas;
 
@@ -784,7 +782,7 @@ export function consequencesOfBreak(
 }
 
 // ---------------------------------------------------------------------------
-// 5. Explicación de la caída
+// 5. Invalidation explanation
 // ---------------------------------------------------------------------------
 
 interface Frases {
@@ -847,9 +845,9 @@ function frasesDeSupuesto(assumption: Assumption): Frases {
 }
 
 /**
- * El texto que se enseña cuando un plan cae. Se escribe como se lo contaría un
- * jefe de operaciones a otro: qué se daba por hecho, qué ha pasado y qué deja
- * de valer. Nada de identificadores ni de jerga de registro.
+ * The text shown when a plan fails. Written as one operations chief
+ * would explain to another: what was assumed, what happened, and what is
+ * no longer valid. No identifiers or log jargon.
  */
 export function explainInvalidation(brokenAssumptions: Assumption[], plan: Plan): string {
   const rotos = (brokenAssumptions ?? []).filter((assumption) => !!assumption);
@@ -878,21 +876,20 @@ export function explainInvalidation(brokenAssumptions: Assumption[], plan: Plan)
 }
 
 // ---------------------------------------------------------------------------
-// Orquestación para el store
+// Orchestration for store
 //
-// Un solo punto de entrada por si el store prefiere no encadenar las cuatro
-// llamadas a mano. No toca estado: recibe plan, mundo y acciones y devuelve el
-// plan marcado.
+// Single entry point in case the store prefers not to chain all four calls
+// manually. Pure: takes plan, world, and actions and returns marked plan.
 // ---------------------------------------------------------------------------
 
 export interface PlanAssumptionOutcome {
-  /** El plan con los supuestos actualizados, `valid` e `invalidatedReason`. */
+  /** Plan with updated assumptions, `valid` and `invalidatedReason`. */
   plan: Plan;
-  /** Los que se han roto justo ahora. Vacío si el plan sigue en pie. */
+  /** Those broken just now. Empty if plan still holds. */
   broken: Assumption[];
-  /** Acciones afectadas por las roturas, sin repetir. */
+  /** Actions affected by breaks, deduplicated. */
   consequences: AssumptionConsequence[];
-  /** true si esta comprobación es la que ha tumbado el plan. */
+  /** true if this check is the one that invalidated the plan. */
   invalidated: boolean;
 }
 

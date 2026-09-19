@@ -1,5 +1,5 @@
-// PROPIETARIO: agente de endurecimiento de la API y validacion de entrada.
-// Lectura viva del estado: es lo que sondea la interfaz cada 4 segundos.
+// OWNER: API hardening and input validation agent.
+// Live state read: polled by the UI every 4 seconds.
 
 import { pollSituation } from "@/lib/store";
 import { apiErrorFromThrown, apiOk, methodNotAllowed } from "@/lib/validation";
@@ -8,12 +8,12 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    // `pollSituation` (y no `getSituation`) porque el sondeo es lo que hace
-    // avanzar el escenario y barrer las acciones atascadas. Con `getSituation`
-    // el escenario nunca avanzaba y las acciones colgadas no se detectaban.
+    // `pollSituation` (and not `getSituation`) because polling is what
+    // advances the scenario and sweeps stalled actions. With `getSituation`
+    // the scenario never advanced and hung actions were never detected.
     return apiOk(pollSituation());
   } catch (error) {
-    return apiErrorFromThrown(error, "No se pudo leer la situación");
+    return apiErrorFromThrown(error, "Could not read situation");
   }
 }
 

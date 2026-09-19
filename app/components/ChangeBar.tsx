@@ -15,7 +15,7 @@ interface Props {
 
 const WINDOW_MS = 5 * 60 * 1000;
 
-/** Nivel de alerta de sala, con el vocabulario del 112. */
+/** Alert level in operations room. */
 function alertLevel(situation: SituationState) {
   const criticalZones = situation.zones.filter((zone) => zone.status === "critical").length;
   const activeZones = situation.zones.filter((zone) => zone.status === "active").length;
@@ -24,15 +24,15 @@ function alertLevel(situation: SituationState) {
   ).length;
 
   if (criticalZones > 0) {
-    return { level: 3, label: "Nivel 3 · Emergencia", tone: "critical" as const };
+    return { level: 3, label: "Level 3 · Emergency", tone: "critical" as const };
   }
   if (activeZones > 0 || criticalSignals >= 2) {
-    return { level: 2, label: "Nivel 2 · Situación operativa", tone: "active" as const };
+    return { level: 2, label: "Level 2 · Operational situation", tone: "active" as const };
   }
   if (situation.zones.some((zone) => zone.status === "watch")) {
-    return { level: 1, label: "Nivel 1 · Preemergencia", tone: "watch" as const };
+    return { level: 1, label: "Level 1 · Pre-emergency", tone: "watch" as const };
   }
-  return { level: 0, label: "Nivel 0 · Vigilancia", tone: "stable" as const };
+  return { level: 0, label: "Level 0 · Watch", tone: "stable" as const };
 }
 
 export default function ChangeBar({ situation, nowMs, planIsFresh }: Props) {
@@ -52,8 +52,7 @@ export default function ChangeBar({ situation, nowMs, planIsFresh }: Props) {
   }));
   const fromAudit = recentAudit.map((entry) => ({
     id: entry.id,
-    tag:
-      entry.actor === "operator" ? "Operador" : entry.actor === "scenario" ? "Terreno" : "Sistema",
+    tag: entry.actor === "operator" ? "Operator" : entry.actor === "scenario" ? "Field" : "System",
     text: entry.summary,
     at: entry.at,
   }));
@@ -62,28 +61,28 @@ export default function ChangeBar({ situation, nowMs, planIsFresh }: Props) {
   return (
     <section
       className={`change-bar tone-${alert.tone}`}
-      aria-label="Qué ha cambiado"
+      aria-label="What has changed"
       aria-live="polite"
     >
       <div className="alert-level">
-        <span className="eyebrow">Nivel de alerta</span>
+        <span className="eyebrow">Alert level</span>
         <strong>{alert.label}</strong>
         <small>
-          {situation.zones.filter((zone) => zone.status !== "stable").length} comarcas afectadas ·{" "}
+          {situation.zones.filter((zone) => zone.status !== "stable").length} zones affected ·{" "}
           {situation.zones
             .filter((zone) => zone.status === "active" || zone.status === "critical")
             .reduce((total, zone) => total + zone.populationAtRisk, 0)
-            .toLocaleString("es-ES")}{" "}
-          personas en riesgo
+            .toLocaleString("en-US")}{" "}
+          people at risk
         </small>
       </div>
 
       <div className="change-feed">
         <span className="eyebrow">
-          <Clock3 size={13} aria-hidden="true" /> Últimos 5 minutos
+          <Clock3 size={13} aria-hidden="true" /> Last 5 minutes
         </span>
         {changes.length === 0 ? (
-          <p className="muted-note">Sin novedades en los últimos cinco minutos.</p>
+          <p className="muted-note">No updates in the last 5 minutes.</p>
         ) : (
           <ul>
             {changes.map((change) => (
@@ -111,8 +110,8 @@ export default function ChangeBar({ situation, nowMs, planIsFresh }: Props) {
         </strong>
         <small>
           {planInvalid
-            ? "Un supuesto se ha roto: hay que rehacerlo"
-            : `Vigente · ${agoLabel(situation.plan.generatedAt, nowMs)}`}
+            ? "An assumption failed: replan needed"
+            : `Current · ${agoLabel(situation.plan.generatedAt, nowMs)}`}
         </small>
       </div>
     </section>
