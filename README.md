@@ -1,18 +1,25 @@
 # FARO
 
+Resource Dispatch: reserved missions can call HappyRobot and consume
+POST /api/dispatch/results to update state and replan. Apply migration 016 after
+015, configure approved contacts and publish the workflow callback.
+[Configuration, payload and demo steps](docs/resource-dispatch.md).
+The active coordinator runs inline in Next.js; no separate worker is required.
+
 Manual live subagent scenarios: npm run subagents:try (five calls, mock contacts and isolated persistence). See docs/subagent-execution.md.
 
-Subagent worker and Person A handoff: [execution contract](docs/subagent-execution.md). Run npm run subagents:work after applying migration 009; parent integration remains pending.
+The parent hands missions to inline execution; do not run a second worker for
+the same demo. See [the dispatch contract](docs/resource-dispatch.md).
 
 **Start POC work here:** [scope and P0–P5 work packages](docs/poc.md) →
 [module contracts v1](docs/poc-contracts.md) → [current tasks](TASKS.md).
 These are mandatory implementation references under [PROJECT.md](PROJECT.md).
 
 The backend implements [global coordinator state v2](docs/coordinator-state-contract.md):
-GET /api/state exposes the plan, priorities and ten individual ambulances. Run
-npm run dev alongside the app. Allocations persist in Supabase;
-release and reassignment are disabled. Frontend integration is assigned separately:
-[input/output examples and handoff](docs/coordinator-frontend-integration.md).
+GET /api/state exposes the plan, priorities, ten ambulances, ten Policía patrols
+and ten Guardia Civil patrols. Run npm run dev. Allocations persist in Supabase;
+general release and reassignment remain disabled. Dispatch rejection/unavailability
+invalidates the affected commitment without returning the unit to free stock.
 
 > **SKETCH:** The dashboard is an exploratory prototype with demo scenario data
 > and partially connected controls. It is not an approved product design or an
@@ -28,9 +35,10 @@ open decisions) in [thoughts/](thoughts/README.md).
 **Status.** The application is unified under `src/`. Next.js serves
 `src/app/`, with sketch UI components in `src/components/` and the active
 command-center backend in `src/lib/`. It includes the HTTP API, scripted
-scenarios, human-approved actions and the digital twin. Operational state lives
-in server memory with optional local JSON persistence. Authenticated HappyRobot
-inbound reports are durably stored in Supabase before synchronous interpretation.
+scenarios, legacy human-approved actions and the digital twin. The active
+coordinator, reservations, missions and dispatch results persist in Supabase.
+Legacy scenario/action state still uses memory with optional local JSON.
+Authenticated HappyRobot inbound reports persist before interpretation.
 
 Reusable AI SDK, Supabase, batch ingestion and Sierra Bermeja
 scenario modules also live under `src/`, but are not connected to the served

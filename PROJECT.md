@@ -1,9 +1,14 @@
 # PROJECT.md
 
+Resource Dispatch now connects persistent missions to HappyRobot and the existing
+coordinator. Apply migration 016; configure approved recipients and the workflow
+callback. See [the implemented contract](docs/resource-dispatch.md). This supersedes
+historical missing-callback/mock-only notes below; inline Next.js execution is current.
+
 Current implementation: [global coordinator state v2](docs/coordinator-state-contract.md) uses
-one refreshed prompt, a dedicated worker, event/five-second triggers and individual
-ambulance commitments. Apply the v2 migration and run npm run coordinator:work
-alongside the app. Release is disabled; the v1 sections below are historical.
+one refreshed prompt and inline Next.js processing after intake or mission results.
+Run npm run dev; do not start the historical standalone coordinator worker.
+The v1 resource sections below are historical. General release remains disabled.
 
 The v1 resource sections below are historical. Current GET /api/state returns v2;
 POST /api/agent/plan is retired (410), and POST /api/state/release is disabled (501).

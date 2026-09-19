@@ -1,5 +1,8 @@
 # Documentation map
 
+[Resource Dispatch](resource-dispatch.md): active mission → HappyRobot → callback
+→ operational state → existing coordinator, with migration 016 and demo setup.
+
 Subagent execution handoff (Person B): [contracts, tools and worker](subagent-execution.md).
 
 Current contract: [global coordinator state v2](coordinator-state-contract.md), with a [complete FE fixture](coordinator-state.example.json). Implemented with a dedicated coordinator worker; the Supabase v2 migration is applied. Resource release is disabled.

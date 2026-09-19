@@ -56,6 +56,7 @@ export default function AmbulanceCard({
             ["Total", inventory?.total],
             ["Assigned", inventory?.allocated],
             ["Available", inventory?.available],
+            ["Unavailable", inventory ? (inventory.unavailable ?? 0) : undefined],
           ].map(([label, count]) => (
             <div key={label}>
               <dt className="text-xs text-neutral-500">{label}</dt>
