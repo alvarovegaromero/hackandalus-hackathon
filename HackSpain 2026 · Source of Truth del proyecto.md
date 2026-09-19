@@ -462,14 +462,26 @@ Regla de oro: **cada cosa que construimos debe aparecer en la demo**. Si no sale
 | Si sobra tiempo | Steering en lenguaje natural; integración de tickets con herramientas externas; optimizador OR-Tools                                                                                                                                                                                                   |
 | Fuera           | Integraciones reales con 112/policía/ejército; datos reales de satélite; toda Andalucía                                                                                                                                                                                                                |
 
-**Roles (una persona puede cubrir varios)**
+**Roles del equipo (5 personas)**
 
-| Rol                   | Responsable de                                                            |
-| --------------------- | ------------------------------------------------------------------------- |
-| Orquestador / backend | Estado, log, reglas, ranking, reparto, supuestos, API para el dashboard   |
-| IA y HappyRobot       | Jev, prompts del planificador, workflows de voz y SMS, webhooks           |
-| Frontend              | Dashboard, mapa, feed en tiempo real, aprobaciones, botones de caos       |
-| Escenario y pitch     | JSON del escenario, generador de ruido, guion, vídeo de respaldo, ensayos |
+| Rol                         | Responsable     | Responsabilidad                                                                                                                                                                                                                    |
+| --------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| HappyRobot / automatización | Arribas         | Crear workflows, configurar agentes y prompts en HappyRobot, integrar llamadas y mensajes con el backend mediante webhooks y preparar pruebas con simulación explícita.                                                            |
+| Backend / datos             | Zuki            | Modelo de datos, estado, log, reglas, coordinador y planificador, prioridades, reparto de recursos, APIs y recepción de eventos de HappyRobot.                                                                                     |
+| Sidecar / integración       | Sifri           | Empezar apoyando backend y hacerse responsable de que el flujo completo funcione: integración, escenario de prueba, pruebas de punta a punta y preparación del despliegue. Apoyar frontend u otra área según el cuello de botella. |
+| Frontend / experiencia      | Álvaro (Málaga) | Dashboard, mapa, feed en tiempo real, aprobaciones y botones de caos; hacer visible qué hace el agente, sus resultados y cómo puede intervenir el operador.                                                                        |
+| Producto / demo             | Luisan          | Concretar el problema y la propuesta de valor, priorizar y proteger el alcance del MVP, decidir qué entra y qué queda fuera, y preparar el guion del escenario, pitch, vídeo de respaldo y ensayos.                                |
+
+Cada persona es responsable de su área, pero puede colaborar en las demás.
+Sifri tiene una misión propia de integración y se mueve según los bloqueos del
+equipo. Luisan evalúa nuevas ideas por su valor demostrable y evita ampliar el
+alcance sin necesidad.
+
+Primer hito compartido: un flujo mínimo **frontend → backend → HappyRobot →
+resultado visible en frontend**, con datos de prueba y simulaciones identificadas
+cuando sean necesarias. A partir de ahí se completa la vertical descrita en las
+fases siguientes. Las comunicaciones reales y el despliegue siguen las
+autorizaciones de PROJECT.md.
 
 **Fases de construcción** (orden, no horario: no se pasa a la siguiente sin cerrar la anterior)
 
