@@ -2,13 +2,20 @@
 
 Subagent execution handoff (Person B): [contracts, tools and worker](subagent-execution.md).
 
-Current contract: [global coordinator state v2](coordinator-state-contract.md), with a [complete FE fixture](coordinator-state.example.json). Implemented with a dedicated coordinator worker; the Supabase v2 migration is applied. Resource release is disabled.
+Current contract: [global coordinator state v2](coordinator-state-contract.md), with a [complete FE fixture](coordinator-state.example.json). Coordinator and mission execution run inside Next.js after intake; resource release is disabled. Older standalone-worker sections are historical.
 
 Start with [the project README](../README.md) for setup and
 [PROJECT.md](../PROJECT.md) for shared rules. [TASKS.md](../TASKS.md) tracks
 implementation status; [CHALLENGE.md](../CHALLENGE.md) defines the requirements.
 
 ## Current application
+
+The [public Vercel demo](https://faro-lovat-iota.vercel.app/dashboard) opens without
+login or code until **20 September 2026 at 23:02 CEST (Madrid)**. The
+[deployment guide](vercel-deployment.md) records the exact activation/expiry,
+production commit, automatic release evidence and remaining checks. UI, backend,
+Supabase state/mission reads and SSE access are verified; a fresh remote agent
+execution is still pending.
 
 The public landing lives at `/`, with same-tab access to `/dashboard`.
 Separate root layouts isolate their styles. See [landing integration](landing-integration.md)
@@ -18,8 +25,9 @@ for routing, imported assets and maintenance.
 controls; it does not define the approved product or target architecture.
 
 Next.js serves `src/app/`; `src/lib/` implements the command center and `tests/` covers
-it. The dashboard polls the HTTP API. State lives in memory, with optional local
-JSON persistence. Outbound communications default to mock mode.
+it. The dashboard polls durable coordinator state and missions in Supabase through
+the HTTP API and receives stored event/filter activity through SSE. Legacy scaffold
+state still uses memory or optional local JSON. Outbound communications remain simulated.
 
 | Document                                      | Purpose                                                                      |
 | --------------------------------------------- | ---------------------------------------------------------------------------- |

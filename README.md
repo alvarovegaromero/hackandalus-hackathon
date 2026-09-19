@@ -1,17 +1,25 @@
 # FARO
 
+[Public dashboard](https://faro-lovat-iota.vercel.app/dashboard): deployed on Vercel
+with backend and Supabase read access verified. No login or code until the demo
+window closes on **20 September 2026 at 23:02 CEST (Madrid)**. UI, state, mission
+reads and telemetry returned 200; a new remote model execution remains unverified.
+See [release status and exact expiry](docs/vercel-deployment.md).
+
 Manual live subagent scenarios: npm run subagents:try (five calls, mock contacts and isolated persistence). See docs/subagent-execution.md.
 
-Subagent worker and Person A handoff: [execution contract](docs/subagent-execution.md). Run npm run subagents:work after applying migration 009; parent integration remains pending.
+Coordinator and subagents run inside Next.js after intake and mission results;
+no separate worker is required for the dashboard. See the current inline integration
+in the [execution contract](docs/subagent-execution.md). Durable restart recovery remains pending.
 
 **Start POC work here:** [scope and P0–P5 work packages](docs/poc.md) →
 [module contracts v1](docs/poc-contracts.md) → [current tasks](TASKS.md).
 These are mandatory implementation references under [PROJECT.md](PROJECT.md).
 
 The backend implements [global coordinator state v2](docs/coordinator-state-contract.md):
-GET /api/state exposes the plan, priorities and ten individual ambulances. Run
-npm run dev alongside the app. Allocations persist in Supabase;
-release and reassignment are disabled. Frontend integration is assigned separately:
+GET /api/state exposes the plan, priorities, ambulances and patrol inventories.
+Run npm run dev locally. Allocations persist in Supabase and the dashboard polls
+this state; release and reassignment are disabled. Integration reference:
 [input/output examples and handoff](docs/coordinator-frontend-integration.md).
 
 > **SKETCH:** The dashboard is an exploratory prototype with demo scenario data
@@ -27,20 +35,21 @@ open decisions) in [thoughts/](thoughts/README.md).
 
 **Status.** The application is unified under `src/`. Next.js serves
 `src/app/`, with sketch UI components in `src/components/` and the active
-command-center backend in `src/lib/`. It includes the HTTP API, scripted
-scenarios, human-approved actions and the digital twin. Operational state lives
-in server memory with optional local JSON persistence. Authenticated HappyRobot
-inbound reports are durably stored in Supabase before synchronous interpretation.
+command-center backend in `src/lib/`. The active dashboard reads coordinator state,
+resource assignments and missions from Supabase through the HTTP API. Next.js
+processes persisted reports and runs agents after intake; telemetry streams stored
+receipts/filter results. Legacy scenario, action and digital-twin modules retain
+in-memory state and optional local JSON persistence.
 
-Reusable AI SDK, Supabase, batch ingestion and Sierra Bermeja
-scenario modules also live under `src/`, but are not connected to the served
-command-center flow. The obsolete scaffold UI and duplicate route files have
-been removed. Integrating these modules remains tracked in [TASKS.md](TASKS.md).
+AI SDK and Supabase are integrated into the coordinator and subagent flow.
+The obsolete scaffold UI and duplicate route files have been removed. Remaining
+integration and durability work is tracked in [TASKS.md](TASKS.md).
 
 The scenario (wildfire in Sierra Bermeja) and name are confirmed; the seed and
 default command center script still name Sierra Morena and updating this is tracked.
-AI model selection, credentials, and live connections remain open: see [TASKS.md](TASKS.md)
-and [thoughts/open-questions.md](thoughts/open-questions.md).
+Production provider/model credentials are configured; fresh remote model execution
+and real communications remain to be verified. See [TASKS.md](TASKS.md) and
+[deployment status](docs/vercel-deployment.md).
 
 Development conventions and permissions are in [PROJECT.md](PROJECT.md).
 `AGENTS.md` and `CLAUDE.md` point there to avoid duplicate rules. To join
@@ -350,8 +359,10 @@ explicit approval for the specific recipients and actions.
 
 The migration in `supabase/migrations` is prepared for manual application
 via the SQL Editor of a development project; it is not applied automatically.
-Tables have RLS enabled and deny browser access by default. Before connecting
-the dashboard, operator authentication and per-incident policies are needed.
+Tables have RLS enabled and deny direct browser access by default. The deployed
+Next.js backend reads Supabase server-side and permits public demo API access only
+during the configured window. Individual operator accounts and per-incident policies
+remain future work.
 The full model is documented in [docs/data-model.md](docs/data-model.md).
 
 Deploy as a Next.js project with Node.js 24.x and `npm ci` / `npm run build`.
@@ -359,8 +370,9 @@ Deploy as a Next.js project with Node.js 24.x and `npm ci` / `npm run build`.
 to `main`; release PRs promote `main` to `production`. No GitHub Actions is used.
 Follow [the deployment guide](docs/vercel-deployment.md) for environment setup,
 local checks, publishing authorization and remote-agent limitations. Deploying
-Next.js runs the integrated coordinator and missions after intake; durable recovery
-and hosted authentication still need verification.
+Next.js includes the integrated coordinator and missions after intake. Public
+HTTP access and Supabase reads are verified; durable recovery and a fresh remote
+model-backed run remain pending.
 
 `npm run dev` automatically runs `predev`; builds run `prebuild`. These hooks
 remove legacy Workflow-generated routes from `app/.well-known/` before Next.js
