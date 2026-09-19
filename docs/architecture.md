@@ -1,5 +1,10 @@
 # Architecture and Decisions
 
+For the proposed integrated architecture and contracts awaiting team validation,
+read [Architecture review](architecture-review.md) and [Contracts v0](contracts-v0.md).
+The decisions below describe the current sketch runtime; all-actions approval,
+in-memory state and browser-driven ticking are not the confirmed target design.
+
 > **SKETCH:** The dashboard is an exploratory prototype with demo scenario data
 > and partially connected controls. It is not an approved product design or an
 > operational emergency response system.

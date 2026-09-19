@@ -14,6 +14,10 @@
 
 - [ ] Targets `main` from a feature branch.
 - [ ] Follows `PROJECT.md`; commit messages are in English.
+- [ ] Read `docs/poc.md`, `docs/poc-contracts.md` and `TASKS.md`; identified the
+      affected P0–P5 package or explained why this change is outside the POC.
+- [ ] Boundary changes update canonical contracts and shared fixtures, preserve
+      input/SSE compatibility or document migration, and update task status.
 - [ ] Created with `npm run pr:create`; its local `pr:check` validation passed (no GitHub Actions CI).
 - [ ] Check results and tested OS are documented above.
 - [ ] Used Graft for code navigation and passed `npm run index:verify`; documented any unavailable or unindexed results.

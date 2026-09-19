@@ -1,5 +1,9 @@
 # FARO
 
+**Start POC work here:** [scope and P0–P5 work packages](docs/poc.md) →
+[module contracts v1](docs/poc-contracts.md) → [current tasks](TASKS.md).
+These are mandatory implementation references under [PROJECT.md](PROJECT.md).
+
 > **SKETCH:** The dashboard is an exploratory prototype with demo scenario data
 > and partially connected controls. It is not an approved product design or an
 > operational emergency response system.
@@ -37,6 +41,10 @@ Postgres/Supabase, accessibility, and visual design. To index code after
 ([Graft guide](docs/code-index.md)).
 
 ## Local Startup
+
+The agreed initial delivery is documented in [Initial POC](docs/poc.md), with
+P0–P5 work packages, dependencies and demo acceptance. Follow that scope before
+the broader architecture proposals; progress is tracked in [TASKS.md](TASKS.md).
 
 Prerequisites: Node.js **22.21+ (22.x)** with its bundled npm (**10.9+**);
 `.nvmrc` pins `22.21.0`. `package.json` pins `npm@11.6.1` in `packageManager`
@@ -282,6 +290,11 @@ and `scripts/hooks.test.ts` covers hook guards. Command center tests share the
 process and call `resetSituation()` in `beforeEach`.
 
 ## Documentation
+
+For the initial implementation, follow [POC scope](docs/poc.md) and
+[module contracts v1](docs/poc-contracts.md). The broader
+[architecture review](docs/architecture-review.md) and [contracts v0](docs/contracts-v0.md)
+remain proposals for later product work and do not add POC prerequisites.
 
 | Document                                                                               | Contents                                                      |
 | -------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
