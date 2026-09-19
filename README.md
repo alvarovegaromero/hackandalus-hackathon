@@ -224,9 +224,10 @@ for the distinction between current behavior and proposals.
    what changed compared to the previous plan and why.
 4. Trigger chaos manually via demo buttons (new incident, blocked road, resource down, integration failure).
 5. Intervene: approve an action in the queue (only then does it execute), cancel another, retry a failed action, or confirm/discard an ambiguous signal.
-6. Close the loop by simulating a callback via `POST /api/webhooks/happyrobot`:
-   the action status updates and the information reported by the contact enters as a
-   new signal triggering replanning.
+6. Close the loop by simulating a callback via `POST /api/webhooks/happyrobot`
+   (a `dispatch_result`, a `public_alert_result` or the generic shape): the action
+   status updates and what the responder said enters as a new signal triggering
+   replanning. HappyRobot inbound reports enter through `POST /api/signals`.
 7. Reset with `POST /api/demo/reset` before the next demonstration run.
 
 The default script is `wildfire-andalucia` and its seed names Sierra Morena;
@@ -244,14 +245,14 @@ Unsupported methods return `405` with the `Allow` header.
 | Endpoint                          | Body                                                                                             | Description                                                                |
 | --------------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
 | `GET /api/situation`              | —                                                                                                | Complete operational state: events, zones, resources, plan, history        |
-| `POST /api/signals`               | HappyRobot `normalized_report`                                                                   | Durably stores a Signal, interprets an Event, and replans                  |
 | `POST /api/events`                | `{ id?, source?, title?, description?, zoneId?, category?, severity?, confidence?, confirmed? }` | 202: accepts in memory, publishes telemetry and updates the command center |
 | `GET /api/telemetry`              | —                                                                                                | Read-only SSE; recent history and cursor reconnection                      |
 | `POST /api/events/:id/mark`       | `{ confirmed }`                                                                                  | Confirms or discards a signal                                              |
 | `POST /api/actions`               | `{ channel, target, objective, reason, zoneId, resourceId?, contactId? }`                        | Creates a pending action awaiting approval                                 |
 | `POST /api/actions/:id/approve`   | —                                                                                                | Human approval; only then does execution occur                             |
 | `POST /api/actions/:id/status`    | `{ operation?: "cancel" \| "retry", status?, externalActionId?, error? }`                        | Cancels, retries, or updates action status                                 |
-| `POST /api/webhooks/happyrobot`   | callback                                                                                         | Requires `x-happyrobot-secret`; `503` if unconfigured, `401` on mismatch   |
+| `POST /api/signals`               | HappyRobot `normalized_report`                                                                   | Durably stores a Signal, interprets an Event, and replans                  |
+| `POST /api/webhooks/happyrobot`   | `dispatch_result`, `public_alert_result` or generic callback                                     | Requires `x-happyrobot-secret`; `503` if unconfigured, `401` on mismatch   |
 | `POST /api/scenario/start`        | `{ scriptId?, speed?, restart? }`                                                                | Starts or resumes scenario script (`speed` between 0.25 and 10)            |
 | `POST /api/scenario/stop`         | —                                                                                                | Pauses scenario preserving elapsed time                                    |
 | `POST` / `GET /api/scenario/tick` | —                                                                                                | Manual scenario advancement / read-only status poll                        |
@@ -270,17 +271,18 @@ All variables live in `.env.local` (ignored by Git); `npm run env:setup` creates
 from `.env.example`, which contains the fully documented list. Never commit credentials to the
 repository; see [CONTRIBUTING.md](CONTRIBUTING.md) for sharing guidance.
 
-| Variable                                                                                                                               | Purpose                                                                                                                                    |
-| -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ACTION_EXECUTION_MODE`                                                                                                                | `mock` (default): nothing leaves the local process. `happyrobot`: live execution.                                                          |
-| `HAPPYROBOT_API_KEY`, `HAPPYROBOT_BASE_URL`, `HAPPYROBOT_AGENT_ID`, `HAPPYROBOT_WORKFLOW_ID`                                           | Credentials for live execution.                                                                                                            |
-| `HAPPYROBOT_ACTION_PATH`, `_AUTH_HEADER`, `_AUTH_SCHEME`, `_IDEMPOTENCY_HEADER`, `_PAYLOAD_SHAPE`, `_RESPONSE_ID_PATH`, `_CHANNEL_MAP` | Configurable contract, unverified against live API ([docs/happyDocumentation.md](docs/happyDocumentation.md)).                             |
-| `HAPPYROBOT_TIMEOUT_MS`, `HAPPYROBOT_MAX_ATTEMPTS`, `HAPPYROBOT_RETRY_BASE_MS`                                                         | Per-attempt timeout, retry attempts (5xx, network, and timeout only), and backoff.                                                         |
-| `HAPPYROBOT_WEBHOOK_SECRET`                                                                                                            | Shared `x-happyrobot-secret` for inbound Signal intake and callback webhook.                                                               |
-| `DEMO_API_TOKEN`                                                                                                                       | Protects `/api/demo/*`.                                                                                                                    |
-| `CRISIS_PERSISTENCE`                                                                                                                   | `on` persists state as JSON under `.data/`. Disabled by default.                                                                           |
-| `CRISIS_API_TOKEN`, `AI_GATEWAY_API_KEY`, `AI_MODEL`, `NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SECRET_KEY`, `SCENARIO_AGENT_ENABLED`        | Platform base (`src/`): workflows API, AI Gateway, Supabase, and scenario→agent bridge. Only active in tests until trees are unified.      |
-| `SUPABASE_DIRECT_DB_URL`, `SUPABASE_POOLER_DB_URL`                                                                                     | Server-side Supabase CLI connection URIs for migrations. Encode special characters in passwords; never expose or use them in browser code. |
+| Variable                                                                                                                                                 | Purpose                                                                                                                                    |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ACTION_EXECUTION_MODE`                                                                                                                                  | `mock` (default): nothing leaves the local process. `happyrobot`: live execution.                                                          |
+| `HAPPYROBOT_API_KEY`, `HAPPYROBOT_BASE_URL`, `HAPPYROBOT_ENVIRONMENT`                                                                                    | API key, cluster (`platform.eu.happyrobot.ai/api/v2` for our workspace) and run environment (`development` by default).                    |
+| `HAPPYROBOT_DISPATCH_WORKFLOW_ID`, `HAPPYROBOT_PUBLIC_ALERT_WORKFLOW_ID`, `HAPPYROBOT_WORKFLOW_ID`, `HAPPYROBOT_CHANNEL_WORKFLOWS`, `CRISIS_INCIDENT_ID` | FARO workflows triggered per channel (`call=dispatch,sms=public-alert`, generic fallback) and the incident id sent with each run.          |
+| `HAPPYROBOT_RUNS_PATH`, `_AUTH_HEADER`, `_AUTH_SCHEME`, `_IDEMPOTENCY_HEADER`, `_RESPONSE_ID_PATH`                                                       | Adapter knobs; defaults follow the public SDK contract ([docs/happyDocumentation.md](docs/happyDocumentation.md)).                         |
+| `HAPPYROBOT_TIMEOUT_MS`, `HAPPYROBOT_MAX_ATTEMPTS`, `HAPPYROBOT_RETRY_BASE_MS`                                                                           | Per-attempt timeout, retry attempts (5xx, network, and timeout only), and backoff.                                                         |
+| `HAPPYROBOT_WEBHOOK_SECRET`                                                                                                                              | Shared `x-happyrobot-secret` for inbound Signal intake and callback webhook.                                                               |
+| `DEMO_API_TOKEN`                                                                                                                                         | Protects `/api/demo/*`.                                                                                                                    |
+| `CRISIS_PERSISTENCE`                                                                                                                                     | `on` persists state as JSON under `.data/`. Disabled by default.                                                                           |
+| `CRISIS_API_TOKEN`, `AI_GATEWAY_API_KEY`, `AI_MODEL`, `NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SECRET_KEY`, `SCENARIO_AGENT_ENABLED`                          | Platform base (`src/`): workflows API, AI Gateway, Supabase, and scenario→agent bridge. Only active in tests until trees are unified.      |
+| `SUPABASE_DIRECT_DB_URL`, `SUPABASE_POOLER_DB_URL`                                                                                                       | Server-side Supabase CLI connection URIs for migrations. Encode special characters in passwords; never expose or use them in browser code. |
 
 Without model or key, the coordinator under `src/` uses a deterministic decision
 marked as `simulation`; with both set, it uses AI SDK. If one is missing, it fails
@@ -292,8 +294,10 @@ By default, nothing leaves the system. For an action to reach a recipient,
 all of the following conditions must be met simultaneously:
 
 1. `ACTION_EXECUTION_MODE=happyrobot`.
-2. `HAPPYROBOT_API_KEY`, `HAPPYROBOT_BASE_URL`, and `HAPPYROBOT_AGENT_ID`
-   are present; if any is missing, the adapter fails listing the missing keys.
+2. `HAPPYROBOT_API_KEY`, `HAPPYROBOT_BASE_URL` and a workflow id for the action's
+   channel (or the generic `HAPPYROBOT_WORKFLOW_ID`) are present; otherwise the
+   adapter fails listing what is missing. Runs go to `HAPPYROBOT_ENVIRONMENT`
+   (`development` unless changed).
 3. The recipient is marked safe for demo (`demoSafe`) and has a phone or email.
    In the initial seed, no contact is marked demoSafe.
 4. A human operator explicitly approved that specific action from the dashboard.
@@ -347,7 +351,7 @@ remain proposals for later product work and do not add POC prerequisites.
 | [TASKS.md](TASKS.md)                                                                   | Completed and deferred work, including tree unification.      |
 | [docs/architecture.md](docs/architecture.md)                                           | Command center design decisions and trade-offs.               |
 | [docs/security.md](docs/security.md)                                                   | Credentials, webhook secret, and demo recipients.             |
-| [docs/happyDocumentation.md](docs/happyDocumentation.md)                               | HappyRobot notes and unverified API contract details.         |
+| [docs/happyDocumentation.md](docs/happyDocumentation.md)                               | HappyRobot contract, FARO workflows, callbacks and mocking.   |
 | [docs/data-model.md](docs/data-model.md), [thoughts/](thoughts/README.md)              | Supabase data model, feature inventory, and design decisions. |
 | [docs/input-architecture.md](docs/input-architecture.md)                               | Batch event ingestion architecture.                           |
 | [docs/dashboard-design-guide.md](docs/dashboard-design-guide.md)                       | Dashboard visual and design guide.                            |

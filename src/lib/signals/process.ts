@@ -1,6 +1,7 @@
 // OWNER: source-independent signal processing seam.
 
 import { buildDedupeKey } from "@/lib/priority";
+import { publishAcceptedEvent } from "@/lib/event-pipeline";
 import { addCrisisEvent, getSituation } from "@/lib/store";
 import type { Confidence, CrisisEvent, CrisisZone, Severity } from "@/lib/types";
 import type { HappyRobotNormalizedReport } from "./happyrobot";
@@ -148,11 +149,26 @@ export function interpretHappyRobotSignal(
 export interface ProcessSignalDependencies {
   getZones: () => CrisisZone[];
   ingestEvent: (event: CrisisEvent) => { event: CrisisEvent; duplicate: boolean };
+  publishEvent: (event: CrisisEvent) => void;
 }
 
 const defaultDependencies: ProcessSignalDependencies = {
   getZones: () => getSituation().zones,
   ingestEvent: (event) => addCrisisEvent(event, "happyrobot"),
+  publishEvent: (event) =>
+    publishAcceptedEvent(
+      {
+        source: event.source,
+        title: event.title,
+        description: event.description,
+        zoneId: event.zoneId,
+        category: event.category,
+        severity: event.severity,
+        confidence: event.confidence,
+        confirmed: event.confirmed,
+      },
+      event.id,
+    ),
 };
 
 export function processSignal(
@@ -163,5 +179,6 @@ export function processSignal(
     throw new Error(`Unsupported signal source: ${signal.source}`);
   const interpreted = interpretHappyRobotSignal(signal, dependencies.getZones());
   const result = dependencies.ingestEvent(interpreted);
+  dependencies.publishEvent(interpreted);
   return { event: result.event, eventDuplicate: result.duplicate };
 }

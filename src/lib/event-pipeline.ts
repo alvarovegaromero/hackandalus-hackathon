@@ -35,8 +35,7 @@ function state(): PipelineState {
 
 export class EventConflict extends Error {}
 
-/** One boundary for all HTTP producers. No asynchronous work depends on SSE. */
-export function acceptIncomingEvent(payload: IncomingEventPayload, id: string = randomUUID()) {
+function rememberEvent(payload: IncomingEventPayload, id: string) {
   const current = state();
   const fingerprint = JSON.stringify(
     Object.fromEntries(Object.entries(payload).sort(([a], [b]) => a.localeCompare(b))),
@@ -45,36 +44,60 @@ export function acceptIncomingEvent(payload: IncomingEventPayload, id: string = 
   if (previous) {
     if (previous.fingerprint !== fingerprint)
       throw new EventConflict("Event ID already has different content");
-    return {
-      eventId: id,
-      duplicate: true,
-      status: "awaiting_filtering" as const,
-      storage: "memory" as const,
-    };
+    return { current, duplicate: true };
   }
 
-  // TODO: save in Supabase. Persist the event, processing handoff and telemetry
-  // atomically before acknowledging acceptance; replace this process-local store.
   current.events.set(id, { payload: structuredClone(payload), fingerprint });
   while (current.events.size > EVENT_LIMIT)
     current.events.delete(current.events.keys().next().value!);
-  const publish = (type: TelemetryRecord["type"], data: Record<string, unknown>) => {
-    current.records.push({
-      id: `${current.epoch}:${++current.sequence}`,
-      eventId: id,
-      type,
-      at: new Date().toISOString(),
-      payload: structuredClone(data),
-    });
-  };
-  publish("event.accepted", { ...payload, storage: "memory" });
+  return { current, duplicate: false };
+}
+
+function publish(
+  current: PipelineState,
+  eventId: string,
+  type: TelemetryRecord["type"],
+  payload: Record<string, unknown>,
+) {
+  current.records.push({
+    id: `${current.epoch}:${++current.sequence}`,
+    eventId,
+    type,
+    at: new Date().toISOString(),
+    payload: structuredClone(payload),
+  });
+  current.records = current.records.slice(-TELEMETRY_LIMIT);
+}
+
+/**
+ * Publishes the existing event.accepted contract exactly once per stable Event ID.
+ * Internal producers use this after their own durable processing has succeeded.
+ */
+export function publishAcceptedEvent(payload: IncomingEventPayload, id: string = randomUUID()) {
+  const remembered = rememberEvent(payload, id);
+  if (remembered.duplicate) return { eventId: id, duplicate: true, storage: "memory" as const };
+
+  publish(remembered.current, id, "event.accepted", { ...payload, storage: "memory" });
+  return { eventId: id, duplicate: false, storage: "memory" as const };
+}
+
+/** One boundary for all HTTP producers. No asynchronous work depends on SSE. */
+export function acceptIncomingEvent(payload: IncomingEventPayload, id: string = randomUUID()) {
+  const accepted = publishAcceptedEvent(payload, id);
+  if (accepted.duplicate) {
+    return {
+      ...accepted,
+      status: "awaiting_filtering" as const,
+    };
+  }
+
+  const current = state();
   // TODO: dispatch to the filtering module; its output feeds triage, then LLM.
   // Pending means no filtering/triage/LLM execution has been claimed or started.
-  publish("filtering.pending", {
+  publish(current, id, "filtering.pending", {
     status: "awaiting_filtering",
     reason: "Filtering module not connected",
   });
-  current.records = current.records.slice(-TELEMETRY_LIMIT);
   console.info(
     JSON.stringify({
       type: "event.accepted",
@@ -84,10 +107,8 @@ export function acceptIncomingEvent(payload: IncomingEventPayload, id: string = 
     }),
   );
   return {
-    eventId: id,
-    duplicate: false,
+    ...accepted,
     status: "awaiting_filtering" as const,
-    storage: "memory" as const,
   };
 }
 
