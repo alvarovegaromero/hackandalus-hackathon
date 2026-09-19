@@ -32,7 +32,7 @@ probado llamadas a modelos ni comunicaciones reales.
 - [x] PROJECT.md como fuente de verdad, referenciada por AGENTS.md y CLAUDE.md.
 - [x] Bloqueo local de commits y pushes a ramas protegidas.
 - [x] Documentar nomenclatura y comandos de formato y verificación.
-- [x] Unificar ramas y PR hacia main, con merge final del propietario.
+- [x] Unificar ramas y PR hacia main; los agentes pueden hacer merge por indicación explícita del usuario.
 - [x] Guía CONTRIBUTING.md, plantilla de PR y configuración compartida de editor.
 - [x] Referencias a PROJECT.md desde Codex/AGENTS, Claude, Cursor y otros agentes.
 
