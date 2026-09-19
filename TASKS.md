@@ -229,7 +229,11 @@ are in the source document.
 - [x] Digital twin, initial release: `src/lib/digitalTwin.ts` reconstructs perceived world from signals and measures accuracy against simulated ground truth; displayed in `src/components/DigitalTwinPanel.tsx`.
 - [ ] Digital twin, second release: simulate variants (wind, road cuts, resource loss) on state clones, compare alternative outcomes, and present recommendations before acting.
 - [ ] Test resource constraints, failures, and human oversight.
-- [ ] Configure and deploy to Vercel upon authorization.
+- [x] Publish the UI manually to Vercel: https://faro-lovat-iota.vercel.app/dashboard (2026-09-19). Landing, dashboard and map HTTP checks passed; `/api/state` remains 503.
+- [ ] Configure remote application credentials, database access and agent execution before claiming a working hosted agent demo.
+- [x] Prepare manual Vercel build settings, disable Git auto-deployments and document environment prerequisites and agent hosting limits in `docs/vercel-deployment.md`.
+- [ ] Add durable remote scheduling for coordinator recovery and subagent execution; web deployment alone does not run the subagent worker.
+- [ ] Connect dashboard session authentication to `/api/state` before the remote demo; the current browser request lacks the token required in production.
 
 ## Vertical HTTP → backend → SSE
 

@@ -353,9 +353,11 @@ Tables have RLS enabled and deny browser access by default. Before connecting
 the dashboard, operator authentication and per-incident policies are needed.
 The full model is documented in [docs/data-model.md](docs/data-model.md).
 
-To deploy, import the repository into Vercel as a Next.js project with
-Node.js 24.x and `npm ci` / `npm run build`. Add required environment variables in Vercel and deploy when
-authorized by the team.
+Deploy manually as a Next.js project with Node.js 24.x and `npm ci` /
+`npm run build`. `vercel.json` disables Git auto-deployments; no CI is used.
+Follow [the deployment guide](docs/vercel-deployment.md) for environment setup,
+local checks, publishing authorization and remote-agent limitations. Deploying
+Next.js does not start the standalone subagent worker or complete parent integration.
 
 `npm run dev` automatically runs `predev`; builds run `prebuild`. These hooks
 remove legacy Workflow-generated routes from `app/.well-known/` before Next.js

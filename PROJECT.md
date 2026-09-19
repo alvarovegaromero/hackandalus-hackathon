@@ -245,6 +245,9 @@ invoke live communications without authorization for the specific action.
 Commit only empty/harmless templates. Share actual development credentials through
 a team password manager or expiring private link, never GitHub files/issues/PRs.
 Deployment secrets belong in Vercel environment settings, separated by environment.
+Manual deployment settings live in `vercel.json`; Git auto-deployments are disabled.
+Follow [the deployment guide](docs/vercel-deployment.md) for release steps and the
+current coordinator/subagent hosting limits.
 GitHub Actions Secrets are only for Actions jobs, not a team credential download.
 Never put secret values in `NEXT_PUBLIC_*` variables. Revoke/rotate exposed keys;
 removing them from the latest file alone does not undo disclosure.
