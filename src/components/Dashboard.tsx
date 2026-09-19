@@ -20,7 +20,21 @@ const LeafletMap = dynamic(() => import("@/components/LeafletMap"), {
   loading: () => <MapSkeleton />,
 });
 
-export default function Dashboard({ demoControlsEnabled }: { demoControlsEnabled: boolean }) {
+export default function Dashboard({
+  demoControlsEnabled,
+  expiresAt,
+}: {
+  demoControlsEnabled: boolean;
+  expiresAt?: number;
+}) {
+  useEffect(() => {
+    if (!expiresAt) return;
+    const timer = window.setTimeout(
+      () => window.location.reload(),
+      Math.max(0, expiresAt - Date.now()),
+    );
+    return () => window.clearTimeout(timer);
+  }, [expiresAt]);
   const [situation, setSituation] = useState<{ zones: CrisisZone[] } | null>(null);
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

@@ -238,7 +238,7 @@ are in the source document.
 - [x] Connect GitHub and its repository-scoped Vercel App, link the repository and set Production branch tracking to `production`. Initial Git deployment `dpl_819DFD5UHZqkLsr82dSUcvQhcaMQ` is READY at `a8f697d`; landing, dashboard and map return 200, protected state/subagents return 401 without authentication.
 - [ ] Verify automatic deployment on the next release merge; the first Git deployment was started through Vercel's Create Deployment UI.
 - [ ] Add durable remote scheduling for coordinator recovery and subagent execution; web deployment alone does not run the subagent worker.
-- [x] Implement shared-code demo access without accounts: signed twenty-six-hour cookie for dashboard reads and same-origin mock reset/fixture controls. Configure `DEMO_ACCESS_CODE` and deploy before remote verification.
+- [x] Implement a fixed 26-hour public demo window without accounts, codes or cookies: dashboard reads and same-origin mock reset/fixture controls expire from `DEMO_PUBLIC_STARTED_AT`. Activate and deploy before remote verification.
 
 ## Vertical HTTP → backend → SSE
 

@@ -468,15 +468,16 @@ Graft remains the required tool for navigating this repository.
   editing the same files concurrently without coordination. A choice of tool
   never grants permission to push, merge, deploy or execute live communications.
 
-### Shared-code hosted demo
+### Public hosted demo window
 
-The owner selected account-free demo access. Production `/dashboard` uses a
-shared-code dialog backed by server-only `DEMO_ACCESS_CODE`, `CRISIS_API_TOKEN`
-and `ACTION_EXECUTION_MODE=mock`. A signed twenty-six-hour HttpOnly cookie authorizes
-dashboard reads and same-origin reset/fixture controls; it does not authorize
-general intake or live-action APIs. Landing stays public and development remains
-open. See [deployment configuration](docs/vercel-deployment.md). Individual operator
-accounts and roles remain deferred. Never put server credentials in client code.
+The owner selected public demo access without login, code or cookies. Production
+`/dashboard` opens for one fixed 26-hour window from server-only
+`DEMO_PUBLIC_STARTED_AT` in canonical UTC ISO format, with `ACTION_EXECUTION_MODE=mock`.
+Dashboard reads and same-origin reset/fixture controls are public within that window;
+general intake and live-action APIs retain their credentials. Expiry is checked at
+runtime and cannot be extended by visiting or refreshing. Landing stays public and
+development remains open. See [deployment configuration](docs/vercel-deployment.md).
+Individual accounts and roles remain deferred. Never put server credentials in client code.
 
 ## Implementation and verification
 

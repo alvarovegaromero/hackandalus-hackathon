@@ -126,11 +126,12 @@ descriptions, free text—is **untrusted content**.
 
 Stated explicitly so no assumptions are made:
 
-- **No individual user accounts.** The hosted dashboard uses a server-verified shared
-  demo code and a signed twenty-six-hour HttpOnly session. It grants coordinator/mission/
-  telemetry reads and same-origin reset/fixture controls only, in mock action mode.
+- **No individual user accounts.** The hosted dashboard is publicly accessible
+  for one fixed 26-hour window from `DEMO_PUBLIC_STARTED_AT`, without codes or cookies.
+  It grants coordinator/mission/telemetry reads and same-origin reset/fixture controls
+  only, in mock action mode. Expiry is enforced by server time on requests and SSE delivery.
   General intake, legacy protected actions and webhooks keep their own credentials.
-  All code holders share the same simulated run; this is not per-user authorization.
+  All visitors share the same simulated run; this is not per-user authorization.
 - **No role-based access control (RBAC).** Operator and administrator are the same entity.
 - **No rate limiting** on any route.
 - **No encryption at rest.** When `CRISIS_PERSISTENCE=on` is enabled, state—including

@@ -9,7 +9,7 @@ import { authorizeDemoControl } from "@/lib/demo-access";
 export const runtime = "nodejs";
 export const maxDuration = 180;
 
-/** Local or session-authorized fixture control; never expose server credentials. */
+/** Local or time-limited public fixture control; never expose server credentials. */
 export async function POST(request: Request) {
   const denied = authorizeDemoControl(request);
   if (denied) return denied;
