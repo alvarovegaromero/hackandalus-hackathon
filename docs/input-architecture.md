@@ -1,303 +1,79 @@
-# Event ingestion — how signals enter FARO
+# Event ingestion: how signals enter FARO
 
-How external input enters the FARO command center: the **ingest** path that turns
-calls, SMS, sensors, HappyRobot callbacks and scenario beats into `signals`,
-deduplicates them, and hands them to triage and incident merging. Written so a
-teammate can build it.
+The confirmed [report input contract](input-contract.md) defines the public
+payload, normalized triage input, synchronous receipt and asynchronous processing,
+and the migration from the existing code. Read it before implementing intake.
 
-**Sources of truth (read first):**
+## Pipeline
 
-- `thoughts/data-model.md` — authoritative schema (`runs`, `signals`,
-  `incidents`, `webhook_deliveries`, `actions`, …) and the Zod contracts. This
-  guide sits on top of it and does **not** redefine tables; if the two disagree,
-  the data model wins.
-- `thoughts/open-questions.md` — the ingestion-related decisions still open
-  (schema split, dedupe details, how call results arrive). Flagged in §7.
-- `PROJECT.md` (conventions, self-updating-docs rule) and `CHALLENGE.md`.
-
-**Scope.** Milestone A is a **synchronous** ingest endpoint that accepts **many
-signals in one request** and processes them **concurrently**. Milestone B is the
-**Realtime** fan-out to the dashboard (§5). Both are on the confirmed stack
-(Supabase Postgres + Realtime) — no broker, no queue, no worker process.
-
-> **Current code vs target.** The migrated scaffolding still uses the old names
-> (`events` table, `crisisEventSchema`, `incidents` as the crisis container, and
-> `POST /api/events`). The confirmed model renames them: input rows are
-> **`signals`**, the crisis container is **`runs`**, `incidents` becomes
-> **sub-incidents**, `events` is reserved for the append-only `domain_events`
-> log, and the ingest contract is **`incomingSignalSchema`**. This guide targets
-> the confirmed model; building it depends on the schema landing (open-questions
-> phase 1 · Contracts). A mapping table is in §8.
-
-**Implemented today (interim, on the scaffolding names).** A first cut of
-Milestone A runs on the old names and will move to the target model above:
-
-- `POST /api/events` (`src/app/api/events/route.ts`, bearer `CRISIS_API_TOKEN`)
-  accepts one event, an array or `{ events }` (max 50) and returns
-  `accepted` / `duplicates` / `rejected` / `errors` per index; `?wait=1` adds
-  each run's result.
-- `src/lib/ingest.ts` (pure, unit-tested) validates, dedups by `event.id` within
-  the batch and across requests, and starts one workflow per new event with
-  bounded concurrency. `src/lib/ingest-server.ts` persists to Supabase `events`
-  (creating the `incidents` row on demand) or, without Supabase, dedups in
-  process memory only.
-- `POST /api/scenario/signals` is the demo bridge: the dashboard's scenario
-  panel sends simulated signals, mapped by `src/lib/signals/to-event.ts` to
-  events with stable ids and fixed `medium` severity. Open in development; in
-  production it answers `503` unless `SCENARIO_AGENT_ENABLED=true`.
-
-Gap to the target: `dedupe_key` windows and `occurrences`, `signals` / `runs`
-tables, `incomingSignalSchema` and `POST /api/signals` (§3, §8).
-
----
-
-## 1. Where ingestion sits (the pipeline)
-
-Ingestion is one stage, not the whole loop. Per the module map in
-`data-model.md` §3, three different modules touch a new signal in sequence:
-
-```
-producer ──▶ [ingest] ──▶ [triage] ──▶ [incidents] ──▶ planning ──▶ execution
-             writes         scores       merges into
-             signals,       p_*,         one incident
-             webhook_       decision      (signals.incident_id)
-             deliveries
+```text
+report / channel adapter
+  -> validate context and payload
+  -> deduplicate delivery, persist original, start durable Workflow
+  -> acknowledge receipt
+  -> normalize and extract claims
+  -> triage
+  -> correlate incidents
+  -> plan and execute
 ```
 
-- **ingest** — validate, deduplicate, persist the `signals` row, append a
-  `domain_events` record of type `signal.received`. It does **not** score or
-  assign an incident.
-- **triage** — sets `p_relevant / p_truthful / urgency / fused_confidence` and
-  `triage_decision` (act / verify / discard).
-- **incidents** — fuses coherent signals into a single `incident` and sets
-  `signals.incident_id`.
+The reporter supplies text and optional location only. The server supplies
+identity, crisis context and provenance. Normalization preserves the original
+and produces a common envelope; triage assesses relevance, urgency and confidence.
+A claimed or inferred fact is not confirmed evidence.
 
-Everything hangs off a `run` (one per managed crisis; multi-tenant by `run_id`).
-A signal always carries the `runId` it belongs to.
+The HTTP request waits for persistence and confirmed scheduling, not model
+interpretation or triage. Batches have bounded concurrency and per-item outcomes.
+Supabase Realtime, when connected, delivers later state changes to the dashboard;
+it does not replace durable Workflow execution. No separate broker or worker is
+part of the confirmed stack.
 
----
+## Implemented today
 
-## 2. "One problem, not many" — the four layers
+Two application trees coexist. Next.js serves root `app/` and ignores `src/app/`.
 
-The user-visible goal is that one real-world problem shows up as **one** thing,
-not N. The confirmed model already provides four distinct layers; they use
-different keys and must not be conflated.
+| Path                                    | Current behavior                                                                                                                                       |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `app/api/events/route.ts`               | Active single-event endpoint using `lib/validation.ts`. Calls `addEvent` synchronously; responds 201 for new events or 200 for duplicates.             |
+| `lib/store.ts`                          | In-memory state, optional local persistence, five-minute duplicate lookup, occurrence increments and synchronous replanning.                           |
+| `src/app/api/events/route.ts`           | Unserved batch endpoint, bearer `CRISIS_API_TOKEN`, single event / array / `{ events }`, maximum 50.                                                   |
+| `src/lib/ingest.ts`                     | Validation, event-ID deduplication and bounded workflow starts; reports accepted, duplicates, rejected and errors.                                     |
+| `src/lib/ingest-server.ts`              | Supabase persistence when configured, otherwise process-local deduplication; `?wait=1` waits for workflow results.                                     |
+| `src/app/api/scenario/signals/route.ts` | Unserved demo bridge; validates simulator signals and calls batch ingestion with waiting enabled. Production requires `SCENARIO_AGENT_ENABLED=true`.   |
+| `src/lib/signals/to-event.ts`           | Simulator adapter: `signalToReport` emits the `NormalizedReport` envelope plus the original signal; legacy `signalToEvent` (same ID) feeds the bridge. |
 
-| Layer                               | Question                                      | Mechanism (data-model.md)                                                                                                                                                              | Where            |
-| ----------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
-| 1. Same **message**                 | "Did I already receive this exact report?"    | `dedupe_key` + `occurrences` + time window; a repeat increments `occurrences` instead of inserting, and `merged_into_id` points a late duplicate at the original (§5.6, principle 2.5) | ingest           |
-| 2. Same **problem**                 | "Is this the same real-world incident?"       | `incidents` groups coherent signals; `signals.incident_id` — "a signal belongs to at most one incident" (§5.7)                                                                         | incidents        |
-| 3. Inbound **callback** re-delivery | "Did HappyRobot already deliver this result?" | `webhook_deliveries` unique `(provider, delivery_id)`, or `body_sha256` when there is no id (§5.11)                                                                                    | ingest/execution |
-| 4. Outbound **action** retry        | "Did I already fire this external action?"    | `actions.idempotency_key = "<action_id>:<attempt>"` — adapter retry reuses the key, operator retry gets a new one (principle 2.5)                                                      | execution        |
+Luis's batch implementation is reusable orchestration, but is not the served
+endpoint or the final report schema. The exact adaptation plan is in
+[input-contract.md](input-contract.md#compatibility-with-luiss-work).
 
-**Deduplication (layer 1) answers "same message"; correlation (layer 2) answers
-"same problem".** They are different keys. Dedup alone would still let two
-distinct reports of one fire become two problems — it is the `incidents` module
-grouping signals that keeps one problem as one.
+## Four different identity problems
 
-**Triage keys off the incident, not the raw signal.** Prioritization and
-resource allocation operate on the incident's consolidated state (its `gravity`,
-`people_exposed`, `minutes_to_impact`, `fused_confidence` — the G·N·V·t·C of the
-priority formula), not on each signal in isolation. So three reports about the
-Los Pinares front feed one incident whose priority rises, not three competing
-items.
+| Concern                                   | Boundary                                                                       |
+| ----------------------------------------- | ------------------------------------------------------------------------------ |
+| Re-delivery of the same report            | Intake deduplication; preserve signal identity and avoid duplicate processing. |
+| Different reports about the same incident | Incident correlation after triage; retain distinct evidence.                   |
+| Re-delivery of a HappyRobot callback      | Provider delivery identity at the callback boundary.                           |
+| Retry of an outbound action               | Execution idempotency key; distinct from signal deduplication.                 |
 
----
+Do not merge reports solely because they share a category or area. Fallback
+deduplication and its window remain open. An atomic occurrence update and
+recovery after persistence succeeds but scheduling fails must be resolved during
+implementation. A stored report alone is not proof of scheduled work.
 
-## 3. Milestone A — synchronous, batched, concurrent ingest
+## Delivery milestones
 
-### 3.1 Endpoint contract
+1. **Contract and normalization:** the decision is fixed in
+   [input-contract.md](input-contract.md); the envelope schema and scenario
+   adapter exist, the public validator and other adapters are next.
+2. **Durable ingestion:** reconcile the target data model, migrate the workflow
+   input and expose the route under root `app/`. Preserve existing callers until
+   migrated. Do not describe in-memory acceptance as durable.
+3. **Dashboard updates:** connect Supabase Realtime with operator authentication
+   and appropriate read policies. This does not change the producer payload.
 
-`POST /api/signals` accepts **one signal, a bare array, or `{ "signals": [...] }`**
-(normalize to an array). Body items follow `incomingSignalSchema`
-(`data-model.md` §6): `runId`, `source`, `title`, `body`, `category`, `severity`,
-optional `channel`, `externalRef`, `areaSlug`, `reportedConfidence`, `location`,
-`occurredAt`, `raw`. Note what the caller does **not** send: no `id` (generated),
-no `dedupe_key` (computed by ingest), no `incidentId` (assigned later by the
-incidents module).
-
-Response — HTTP `202` (durable async execution):
-
-```jsonc
-{
-  "accepted": [{ "index": 0, "id": "…signal-uuid…" }], // new signal row
-  "merged": [{ "index": 1, "id": "…original-uuid…", "occurrences": 2 }], // dedup layer 1
-  "rejected": [{ "index": 2, "issues": [/* zod issues */] }],
-}
-```
-
-Status codes: `202` if ≥1 accepted or merged; `400` if the body is unparseable,
-empty, or every item is rejected; `413` over `MAX_BATCH`; `401 / 503` for auth
-(reuse `authorize` from `src/lib/api-auth.ts`). Optional `?wait=1` awaits triage
-for the demo and returns `200` with each signal's decision — never the default.
-
-### 3.2 Pipeline (per request)
-
-```
-1. authorize()
-2. parse body → signals[]                (single | array | { signals: [] })
-3. per-item validate incomingSignalSchema → valid[] + rejected[]
-4. for each valid signal (concurrently, bounded):
-     a. compute dedupe_key (§3.4)
-     b. within the run's dedup window for that key?
-          YES → UPDATE occurrences = occurrences + 1  → "merged"
-          NO  → INSERT signals row                     → "accepted"
-     c. append domain_events(type = "signal.received")
-     d. enqueue triage for accepted (new) signals only
-5. respond { accepted, merged, rejected }
-```
-
-Only **accepted** (genuinely new) signals continue to triage. **Merged** repeats
-do not re-trigger triage or spawn work — that is layer 1 doing its job.
-
-### 3.3 Concurrency ("many at once")
-
-- Validate the whole batch with a plain `.map` (cheap).
-- Fan out the persist/triage-enqueue with `Promise.allSettled` so **one failing
-  item does not sink the others**; each becomes its own `accepted` / `merged` /
-  `rejected` / `error` entry.
-- Bound it: `MAX_BATCH` (e.g. 50 → `413` beyond) and `MAX_CONCURRENT` (e.g. 10)
-  with a tiny hand-rolled limiter — no dependency. Order is not guaranteed;
-  downstream keys by id/dedupe_key, not arrival order.
-
-### 3.4 dedupe_key derivation (decision — see §7)
-
-`dedupe_key` is computed server-side and stored not-null (`signals_dedupe_idx`
-is `(run_id, dedupe_key, received_at desc)`). Proposed rules:
-
-- **Has `externalRef`** (HappyRobot call id, SMS/message id) → `"{source}:{externalRef}"`.
-  Exact, cheap, correct for machine sources.
-- **No external ref** (a neighbor's free report) → a natural key such as
-  `"{source}:{category}:{areaSlug}"`, deduped only **within a time window** so
-  that a genuinely new report an hour later is not swallowed.
-
-The **window length** and whether the increment must be atomic (a DB function /
-partial unique index vs read-then-update) are open — flag, don't guess. Within a
-single batch, dedupe in memory first so two identical items in one request
-collapse before hitting the DB.
-
-### 3.5 Persistence & degraded mode
-
-Ingest writes `signals` (and, for inbound callbacks, `webhook_deliveries`) via
-the service-role client (`src/lib/supabase/server.ts`), which bypasses RLS.
-If Supabase is unconfigured, `createServerSupabase()` throws — decide explicitly:
-return `503`, or (recommended for the credential-free demo) skip persistence,
-run triage in-memory, and log a warning. Every signal needs an existing `run`
-(and, if `areaSlug` is given, a matching `area`); seed the run/areas first (the
-demo seeds `wildfire-sierra-bermeja`).
-
-### 3.6 Validation & errors
-
-- Keep `.strict()` on `incomingSignalSchema`; reject unknown fields loudly.
-- Never let one bad item 500 the request — map failures to `rejected` (validation)
-  or `error` (persist) with the item `index`.
-- Do not report a signal `accepted` until its insert resolves (`PROJECT.md`:
-  don't claim success the result doesn't support).
-
-### 3.7 Implementation checklist
-
-- [ ] `src/lib/domain/signal.ts` — `incomingSignalSchema` + a batch helper
-      (single | array | `{ signals }` → `IncomingSignal[]`).
-- [ ] `src/lib/ingest.ts` _(new)_ — pure: normalize → validate → dedupe(compute
-      key, window) → persist → `{ accepted, merged, rejected }`. Framework-free,
-      unit-testable.
-- [ ] `src/app/api/signals/route.ts` — thin controller: `authorize` → body →
-      ingest → response + status.
-- [ ] `README.md` — batch contract, run/area seed step, degraded mode.
-- [ ] `TASKS.md` — check off Phase 3 "persist and deduplicate events".
-
-Tests (Vitest — decisions & failure paths):
-
-- [ ] mixed batch → correct `accepted` / `merged` / `rejected` split.
-- [ ] same `dedupe_key` twice in one batch → one accepted, one merged.
-- [ ] repeat within window across two requests → `occurrences` increments, **no
-      new triage** (mock the dedup lookup to hit).
-- [ ] repeat outside the window → new accepted signal.
-- [ ] one persist rejects → that item `error`, others still succeed.
-- [ ] batch > `MAX_BATCH` → `413`; empty / all-invalid → `400`.
-
----
-
-## 4. Triage & incident handoff (brief)
-
-Ingest returns fast; the rest is separate modules (out of scope here, tracked in
-`TASKS.md` Phase 3):
-
-- **triage** scores the new signal and sets act / verify / discard. A discarded
-  signal is excluded, not deleted (`data-model.md` 2.2).
-- **incidents** merges the signal into an existing incident or opens a new one —
-  this is layer 2, "one problem = one incident".
-- **planning** re-plans: plans are versioned, `one current per run`; a re-plan
-  supersedes the previous. The demo-friendly shortcut for "the same problem
-  changed" is **supersede** (mark the old plan `superseded`), not a long-running
-  workflow that waits — workflow `waits` are later (Phase 3).
-
----
-
-## 5. Milestone B — Realtime fan-out (target)
-
-Confirmed stack includes Supabase Realtime, so the dashboard reacts live instead
-of polling. Publish `signals`, `incidents`, and `plans` changes; the operator
-panel subscribes per `run`/`incident` (the `subscribeToIncident` helper in
-`src/lib/supabase/browser.ts` is the seed of this — widen it to carry the row and
-key it by `run_id`). Realtime respects RLS, so a read policy scoped to the
-operator (deny-by-default today) must land first — gated on operator auth
-(open-questions "Real time to the panel"). No broker/queue/worker; ingest is
-unchanged — Realtime only adds consumers on top of the same writes.
-
----
-
-## 6. Demo script (FARO · Sierra Bermeja)
-
-Seed a `run` (`scenario_id = wildfire-sierra-bermeja`) with its areas
-(Estepona, Jubrique, Genalguacil, Benahavís, Los Pinares) and vulnerable sites
-(care home 45, rural school, campsite 120). Then drive the confirmed beats and
-show each layer:
-
-| #   | Input                                                                | Expected                                                                           | Shows                                     |
-| --- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------- |
-| 1   | Signal: smoke on the Los Pinares north front (`sensor`, `high`)      | New signal → new incident, priority set                                            | Normal intake + layer 2 (incident opened) |
-| 2   | The **same** report again (neighbor call, same `externalRef`/window) | `occurrences` → 2, **no** new incident, no new triage                              | **Layer 1** (same message)                |
-| 3   | A second, distinct report on the same front (different signal)       | Merged into the **same** incident; priority rises                                  | **Layer 2** (same problem, not a new one) |
-| 4   | Chaos beat **wind shift** (`world_change`)                           | Assumption `wind.direction = …` breaks → **re-plan** (new current plan supersedes) | Changing scenario → replan                |
-| 5   | Chaos beat **A-397 cut**                                             | Assumption `roads.A-397 = open` breaks → route/assignment changes                  | Assumption invalidation                   |
-| 6   | Chaos beat **SMS channel down**                                      | Channel fallback SMS → WhatsApp/voice                                              | Execution resilience                      |
-| 7   | HappyRobot call result **re-delivered** (same `delivery_id`)         | `webhook_deliveries` dedup → moves nothing                                         | **Layer 3** (callback idempotency)        |
-| 8   | Retry an outbound `notify` action                                    | Sent **once** (same `idempotency_key`)                                             | **Layer 4** (action idempotency)          |
-
-Steps 1–3 as one batch also demonstrate §3 concurrency and the
-`accepted` / `merged` partition.
-
----
-
-## 7. Open decisions (see `thoughts/open-questions.md`)
-
-Do not invent these; they gate the build:
-
-- **Schema split** ground-truth vs perceived state, and adding `infrastructure` /
-  `intelligence_tasks` (phase 1 · Contracts). The ingest target tables depend on
-  it.
-- **`dedupe_key` derivation and window length**, and whether the `occurrences`
-  increment is atomic (DB function / partial index) — not yet specified.
-- **How HappyRobot call results arrive** (webhook vs executions API vs both) —
-  shapes `webhook_deliveries` use and the workflow wait step.
-- **Triage outcomes**: three (act/verify/discard) vs the proposed five — widens
-  the enum and the triage step, downstream of ingest.
-
----
-
-## 8. Current-code → target mapping
-
-| Scaffolding (in code today)                   | Confirmed target (`data-model.md`)                            |
-| --------------------------------------------- | ------------------------------------------------------------- |
-| `events` table                                | `signals`                                                     |
-| `incidents` (crisis container)                | `runs`                                                        |
-| —                                             | `incidents` (sub-incidents)                                   |
-| `events` (name)                               | reserved for `domain_events` (append-only log)                |
-| `crisisEventSchema` (`id/incidentId/summary`) | `incomingSignalSchema` (`runId/source/title/body/category/…`) |
-| dedup by `event.id` (PK)                      | `dedupe_key` + `occurrences` + window                         |
-| `POST /api/events`                            | `POST /api/signals`                                           |
-| `actions.idempotency_key`                     | unchanged, `"<action_id>:<attempt>"`                          |
-
-Ship A first (real, testable, backwards-compatible with the durable `202`
-execution); B adds live fan-out without touching the producer.
+The [data-model proposal](../thoughts/data-model.md) still needs reconciliation
+for unassessed reports. Its former public `incomingSignalSchema` has been
+superseded by the simple report contract; no database migration is implied here.
+Other open decisions include HappyRobot's actual callback contract, the triage
+outcome enum and operator authentication. See
+[open questions](../thoughts/open-questions.md) and [TASKS.md](../TASKS.md).

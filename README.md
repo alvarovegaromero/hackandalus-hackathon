@@ -292,6 +292,16 @@ process and call `resetSituation()` in `beforeEach`.
 | [docs/dashboard-design-guide.md](docs/dashboard-design-guide.md)                       | Dashboard visual and design guide.                            |
 | [docs/code-index.md](docs/code-index.md), [docs/agent-skills.md](docs/agent-skills.md) | Graft code index and shared agent skills.                     |
 
+## Planned report intake
+
+The [confirmed input contract](docs/input-contract.md) accepts text and optional
+GPS or textual location, distinguishes reporter from incident location, and
+normalizes all channels before triage. The server supplies crisis identity and
+provenance. Receipt waits for persistence and durable scheduling; interpretation
+runs asynchronously. This contract is not implemented yet; the current API and
+route-tree limitations above still apply. Luis's scenario engine and batch
+orchestration are retained through adapter migration.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

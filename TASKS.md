@@ -103,6 +103,19 @@ are in the source document.
 
 - [ ] Extend digital twin as sandbox testing environment to compare alternatives prior to live action execution (see Phase 3 & 4).
 
+## Report intake contract — confirmed, implementation pending
+
+- [x] Fix the simple payload and normalization boundary in
+      [docs/input-contract.md](docs/input-contract.md): text, optional location,
+      trusted metadata, synchronous receipt and asynchronous interpretation.
+- [x] Identify compatibility work for Luis's scenario bridge and batch ingestion.
+- [x] Envelope schema (`lib/report.ts`) and scenario adapter (`signalToReport`),
+      preserving scenario evidence and retry IDs.
+- [ ] Public report validator and remaining channel adapters.
+- [ ] Reconcile persistence and scheduling recovery, migrate the workflow consumer,
+      and expose intake in root `app/` as part of route-tree consolidation.
+- [ ] Add a reporting form with optional GPS, incident pin or textual location.
+
 ## References
 
 - [README.md](README.md): installation, commands, and current limitations.
@@ -113,4 +126,7 @@ are in the source document.
 - [CHALLENGE.md](CHALLENGE.md): original challenge brief.
 - [docs/architecture.md](docs/architecture.md) & [docs/security.md](docs/security.md):
   command center design decisions and security rules.
-- [docs/input-architecture.md](docs/input-architecture.md): event ingestion architecture and implementation guide (Milestone A synchronous with concurrent batch processing; Milestone B async/topic deferred). Start with Milestone A for Phase 3 ingestion tasks.
+- [docs/input-architecture.md](docs/input-architecture.md): current ingestion,
+  route-tree limitations, and migration milestones.
+- [docs/input-contract.md](docs/input-contract.md): confirmed report payload and
+  normalization contract; envelope and scenario adapter implemented.
