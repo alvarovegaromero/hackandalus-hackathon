@@ -22,16 +22,12 @@ The product vision, scenario, demo script and build phases live in
 holds the data model proposal, the inventory of features built on the
 `feat/crisis-command-center` branch, and the open decisions.
 
-Status: two trees live in one Next.js project. The served application is the
-command center at the repository root (`app/`, `lib/`, `tests/`): operator panel,
+Status: the codebase is unified under the standard Next.js `src/` directory
+(`src/app/`, `src/components/`, `src/lib/`, and `tests/`): operator panel,
 HTTP API, self-advancing scenario scripts, action queue with human approval,
 HappyRobot adapter (contract unverified, `mock` mode by default) and the digital
-twin. The platform base under `src/` (Vercel Workflow, AI SDK coordinator,
-Supabase clients/schema, batch ingestion, Sierra Bermeja scenario engine) is
-exercised only by its tests: Next.js ignores `src/app` while a root `app/`
-exists. Unifying both trees is the first item in TASKS.md. Persistence is
-in-memory (optional JSON under `.data/`); Supabase, operator authentication and
-live HappyRobot communications are not connected. The seed and default script
+twin. Persistence is in-memory (optional JSON under `.data/`); Supabase, operator
+authentication and live HappyRobot communications are not connected. The seed and default script
 still name Sierra Morena; the confirmed scenario is Sierra Bermeja (see
 `thoughts/open-questions.md`, "Confirmed, do not reopen"). Model selection,
 credentials and live integrations remain open; do not resolve them with
@@ -51,8 +47,8 @@ invented values. Track follow-up work in TASKS.md.
 ## Repository map
 
 - `CHALLENGE.md`: authoritative challenge requirements and scoring criteria.
-- `HackSpain 2026 · Source of Truth del proyecto.md`: product vision, scenario,
-  demo script, build phases and risks (in Spanish).
+- `HackSpain 2026 · Project Source of Truth.md`: product vision, scenario,
+  demo script, build phases and risks.
 - `thoughts/`: design context: data model proposal, feature inventory to port,
   open and confirmed decisions.
 - `TASKS.md`: completed scaffolding checklist and deferred implementation tasks.
@@ -69,18 +65,16 @@ invented values. Track follow-up work in TASKS.md.
 - `.vscode`: shared formatting settings and recommended editor extensions.
 - `.gitignore`: local credentials, personal agent settings, and generated caches.
 
-- `app/`, `lib/`, `tests/`: the served command center. `app/` holds the operator
-  panel, HTTP API, shadcn/ui-inspired primitives (`app/components/ui/`), and the
-  tactical React Leaflet map (`app/components/LeafletMap.tsx`) with OpenStreetMap;
-  each `lib/` module states its owner in a `// OWNER:` line; `tests/` is its
+- `src/app/`, `src/components/`, `src/lib/`, `tests/`: the served command center. `src/app/` holds the operator
+  panel, HTTP API; `src/components/` holds shadcn/ui-inspired primitives (`src/components/ui/`) and the
+  tactical React Leaflet map (`src/components/LeafletMap.tsx`) with OpenStreetMap;
+  each `src/lib/` module states its owner in a `// OWNER:` line; `tests/` is its
   Vitest suite.
-- `src/app`, `src/components`: platform-base endpoints and dashboard (not served
-  while the root `app/` exists; covered by tests).
 - `src/lib/domain.ts`: shared Zod schemas and domain types.
 - `src/lib/scenario`, `src/lib/signals`: scenario engine, signal model and the
   scenario adapter to the shared triage envelope (plus the legacy
   signal-to-event bridge used by the demo).
-- `lib/report.ts`: `NormalizedReport`, the envelope every channel adapter emits
+- `src/lib/report.ts`: `NormalizedReport`, the envelope every channel adapter emits
   before triage (see `docs/input-contract.md`).
 - `src/lib/ingest.ts`, `src/lib/ingest-server.ts`: batch event ingestion
   (validation, dedup, persistence, workflow start).
