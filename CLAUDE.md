@@ -2,6 +2,9 @@
 
 @PROJECT.md
 
+Use docs/architecture.md for the current prototype runtime and docs/README.md
+for the documentation index.
+
 Follow PROJECT.md's release policy: feature PRs target `main`, release PRs go
 from `main` to `production`, and Vercel deploys `production` automatically.
 GitHub Actions remains disabled. Local validation and PR creation use

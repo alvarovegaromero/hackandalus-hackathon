@@ -119,7 +119,6 @@ upload local credential files or put secrets in `NEXT_PUBLIC_*` variables.
 | Purpose                               | Variables                                                                         |
 | ------------------------------------- | --------------------------------------------------------------------------------- |
 | Coordinator database                  | `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY`                                 |
-| Browser Supabase client, if used      | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`                                            |
 | Jev relevance filtering               | `TYPESAFE_API_KEY`; optional Jev settings in `.env.example`                       |
 | AI Gateway model                      | `AI_PROVIDER=gateway`, `AI_MODEL`, `AI_GATEWAY_API_KEY`                           |
 | Alternative existing OpenCode adapter | `AI_PROVIDER=opencode-go` or `opencode-zen`, `OPENCODE_MODEL`, `OPENCODE_API_KEY` |

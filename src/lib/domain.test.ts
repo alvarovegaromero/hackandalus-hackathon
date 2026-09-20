@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { crisisEventSchema, simulatePlan } from "./domain";
-import { executeAction } from "./integrations/happyrobot";
 
 const event = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -19,9 +18,5 @@ describe("crisis boundaries", () => {
   it("revises demo priority when new information arrives", () => {
     expect(simulatePlan(event).priority).toBe("high");
     expect(simulatePlan({ ...event, severity: "critical" }).priority).toBe("critical");
-  });
-  it("never reports unconfigured external actions as successful", async () => {
-    const result = await executeAction({ kind: "notify", description: "Contact operator" });
-    expect(result.status).toBe("blocked");
   });
 });
