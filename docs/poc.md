@@ -199,6 +199,4 @@ when selecting the first operation. Workflow-specific fields and live execution
 remain to be validated; do not repeat the old adapter's invented defaults.
 
 Existing reusable modules and current limitations are documented in
-[PROJECT.md](../PROJECT.md) and [the documentation map](README.md). The broader
-[architecture review](architecture-review.md) and [contracts draft](contracts-v0.md)
-are reference material for later work, not additional POC acceptance gates.
+[PROJECT.md](../PROJECT.md) and [the documentation map](README.md). See [the current architecture](architecture.md) for the integrated runtime.

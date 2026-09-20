@@ -1,4 +1,4 @@
-# Contributing to Butterfish
+# Contributing to FARO
 
 Read [PROJECT.md](PROJECT.md) for shared conventions and permissions,
 [README.md](README.md) for setup and [TASKS.md](TASKS.md) for current work.

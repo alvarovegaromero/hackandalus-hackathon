@@ -40,13 +40,12 @@ Code, JSON identifiers and the remaining UI labels stay in English; proper geogr
 and 112 Andalucía remain as proper nouns.
 The product vision, scenario, demo script and build phases live in
 `HackSpain 2026 · Project Source of Truth.md` at the repository root; `thoughts/`
-holds the inventory of features built on the
-`feat/crisis-command-center` branch and the open decisions. The canonical data
+holds confirmed product decisions. The canonical data
 model proposal is in `docs/data-model.md`.
 
-Dashboard status: **SKETCH**. The served UI is an exploratory prototype, not an
-approved product design or an operational emergency response system. The visible prototype banner was removed at the team's request. Some controls are not
-connected; the sketch must not be treated as the target architecture.
+Dashboard status: functional hackathon prototype, used for the hosted demo.
+Preserve the working interface and runtime. See docs/architecture.md for the
+current integration and TASKS.md for remaining work.
 
 The public landing is `/`; the operator panel is `/dashboard`. Separate root
 layouts in `src/app/(marketing)/` and `src/app/(console)/` isolate their global
@@ -94,7 +93,7 @@ coding agent must read these documents in order:
 
 These are implementation references, not optional background. The POC scope and
 v1 module contracts take precedence over the broader architecture review and
-contracts-v0 draft for the first delivery. The existing input/SSE wire contracts
+earlier contract drafts for the first delivery. The existing input/SSE wire contracts
 remain authoritative at their boundaries; do not silently redefine them.
 The product vision remains the long-term direction, and CHALLENGE.md defines
 submission requirements. Documentation of a contract is not proof of implementation.
@@ -130,8 +129,7 @@ module-specific docs or use the sketch as the target architecture.
 - `CHALLENGE.md`: authoritative challenge requirements and scoring criteria.
 - `HackSpain 2026 · Project Source of Truth.md`: product vision, scenario,
   demo script, build phases and risks.
-- `thoughts/`: design context: historical feature inventory to port,
-  open and confirmed decisions.
+- `thoughts/`: confirmed product decisions.
 - `TASKS.md`: completed scaffolding checklist and deferred implementation tasks.
 - `PROJECT.md`: authoritative project context and shared development instructions.
 - `AGENTS.md`: entry point directing all coding agents to this file.
@@ -167,16 +165,13 @@ module-specific docs or use the sketch as the target architecture.
   unlimited availability. See `docs/triage.md`; intake/persistence wiring is pending.
 - `src/lib/ingest.ts`: reusable batch validation and deduplication with injected
   persistence and processing callbacks; not connected to the served API.
-- `src/lib/agents`: legacy AI SDK coordinator and P4 `planReport` for the P3
+- `src/lib/agents`: P4 `planReport` for the P3
   handoff (model configured through environment). See `docs/agent-planning.md`;
   planning returns proposals and audit messages for P0 to persist, without dispatch.
-- `src/lib/supabase`: server/browser clients and Realtime subscription helper.
-- `src/lib/integrations`: HappyRobot boundary, explicitly blocked until implemented.
+- `src/lib/supabase`: server-side Supabase client.
 - `supabase/migrations`: initial PostgreSQL schema with deny-by-default RLS.
 - `docs/README.md`: documentation index and implementation status.
-- `docs/architecture-review.md`: current/target diagrams, confirmed boundaries and
-  proposed decisions awaiting team validation. `docs/contracts-v0.md` starts the
-  integration contract review; it is not yet a frozen or implemented API.
+- `docs/architecture.md`: current runtime and compatibility boundaries.
 - `docs/`: design and implementation guides. `docs/architecture.md` explains the
   command-center decisions, `docs/security.md` its credential and demo-recipient
   rules, `docs/happyDocumentation.md` the HappyRobot contract and workflow payloads,

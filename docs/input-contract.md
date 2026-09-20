@@ -13,9 +13,8 @@ that a reporter supply `title`, `body`, `category`, `severity`, or confidence.
 The envelope schema (`src/lib/report.ts`) and the scenario adapter are implemented;
 public validation, intake and the route are not yet exposed by the running application.
 
-The [architecture review](architecture-review.md) and [contracts v0](contracts-v0.md)
-propose scheduling recovery and retry identity for team validation. Those drafts
-do not change the confirmed payload below.
+See [the current architecture](architecture.md) for implemented intake and
+processing boundaries. The public reporting experience below remains a proposal.
 
 ## Reporter experience
 
