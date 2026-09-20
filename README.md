@@ -3,6 +3,8 @@
 An agentic command center for a changing wildfire in Sierra Bermeja (Málaga),
 built for the HappyRobot challenge at HackSpain 2026.
 
+**Try the deployed project: [faro-lovat-iota.vercel.app](https://faro-lovat-iota.vercel.app)**
+
 FARO filters incoming reports, prioritizes incidents, assigns available resources
 and coordinates response missions. The dashboard brings together the map, incoming
 evidence, the current plan and mission outcomes. New reports and HappyRobot
@@ -27,6 +29,24 @@ Hosted dashboard access follows the configured demo window. See
 The project is a functional hackathon prototype. Mock communications are simulated;
 live dispatch requires configured workflows and approved recipients. Drill lessons
 remain in the training workspace and do not change the live coordinator.
+
+## A quick tour for reviewers
+
+1. Open the [landing](https://faro-lovat-iota.vercel.app) for the product overview,
+   then enter the [operations dashboard](https://faro-lovat-iota.vercel.app/dashboard).
+2. Inspect incoming reports and their relevance decisions. The map and priority
+   queue connect the evidence to the affected locations.
+3. Follow the coordinator's current plan and available resources. Missions show
+   how the response is delegated and what each communication returns.
+4. As new reports or dispatch outcomes arrive, watch priorities, plans and missions
+   change. The coordinator uses persisted evidence and resource constraints to replan.
+5. Explore [wildfire drills](https://faro-lovat-iota.vercel.app/dashboard/drills)
+   for local rehearsals and reviewed lessons, separate from live operations.
+
+The key loop is **report → relevance → impact → plan → mission → outcome → replan**.
+Jev filters relevance, the AI SDK powers coordination, Supabase preserves state,
+and HappyRobot handles configured real-world communications. Next.js serves the
+interface and backend on Vercel.
 
 ## Run locally
 
