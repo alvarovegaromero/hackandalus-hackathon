@@ -1,18 +1,41 @@
-# FARO
+<p align="center">
+  <a href="https://faro-lovat-iota.vercel.app">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="public/brand/faro-logo-horizontal-on-dark.svg">
+      <img src="public/brand/faro-logo-horizontal-on-light.svg" alt="FARO" width="240">
+    </picture>
+  </a>
+</p>
+
+# FARO · AI crisis coordination
 
 An agentic command center for a changing wildfire in Sierra Bermeja (Málaga),
 built for the HappyRobot challenge at HackSpain 2026.
 
-**Try the deployed project: [faro-lovat-iota.vercel.app](https://faro-lovat-iota.vercel.app)**
+<p align="center">
+  <strong><a href="https://faro-lovat-iota.vercel.app">Explore FARO</a></strong>
+  &nbsp;·&nbsp;
+  <strong><a href="https://faro-lovat-iota.vercel.app/dashboard">Open dashboard</a></strong>
+  &nbsp;·&nbsp;
+  <strong><a href="https://faro-lovat-iota.vercel.app/dashboard/drills">Try wildfire drills</a></strong>
+</p>
+
+[![FARO dashboard showing incident priorities, deployed resources, the Sierra Bermeja map and coordinator missions](docs/images/faro-dashboard.png)](https://faro-lovat-iota.vercel.app/dashboard)
+
+_The deployed dashboard with a simulated wildfire scenario. Click the image to explore it._
 
 FARO filters incoming reports, prioritizes incidents, assigns available resources
 and coordinates response missions. The dashboard brings together the map, incoming
 evidence, the current plan and mission outcomes. New reports and HappyRobot
 callbacks feed the coordinator so it can revise its response.
 
-[Open FARO](https://faro-lovat-iota.vercel.app) ·
-[Dashboard](https://faro-lovat-iota.vercel.app/dashboard) ·
-[Challenge](CHALLENGE.md)
+## Try it on Vercel
+
+| Experience                                                                    | Open the application                                                                               |
+| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| **Product overview** — discover the idea and response loop                    | [faro-lovat-iota.vercel.app](https://faro-lovat-iota.vercel.app)                                   |
+| **Operations dashboard** — follow reports, priorities, resources and missions | [faro-lovat-iota.vercel.app/dashboard](https://faro-lovat-iota.vercel.app/dashboard)               |
+| **Wildfire drills** — rehearse scenarios and review lessons                   | [faro-lovat-iota.vercel.app/dashboard/drills](https://faro-lovat-iota.vercel.app/dashboard/drills) |
 
 Hosted dashboard access follows the configured demo window. See
 [deployment and access](docs/vercel-deployment.md) for details.
@@ -25,6 +48,10 @@ Hosted dashboard access follows the configured demo window. See
   with authenticated callbacks that update missions and trigger replanning.
 - **Wildfire drills** at `/dashboard/drills`: isolated 3D rehearsals, a local
   notebook and reviewed lessons reused in matching exercises.
+
+[![FARO wildfire training scene with homes, a care centre, a closed road and an assembly area](public/media/faro-drills-poster.jpg)](https://faro-lovat-iota.vercel.app/dashboard/drills)
+
+_Rehearse a changing wildfire in the isolated training workspace._
 
 The project is a functional hackathon prototype. Mock communications are simulated;
 live dispatch requires configured workflows and approved recipients. Drill lessons
