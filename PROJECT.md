@@ -35,9 +35,12 @@ changes while the system runs. See `CHALLENGE.md` for the full brief and
 scoring criteria.
 
 Product: FARO, an agentic command center for a wildfire in Sierra Bermeja
-(Málaga), operated by the 112 Andalucía control room. Model-generated operator content is in Spanish (Spain), per the team decision.
+(Málaga), operated by the 112 Andalucía control room. Model-generated operator content
+is in English (post-hackathon decision; supersedes the earlier Spanish-output decision),
+via the shared `ENGLISH_OUTPUT` policy in `src/lib/agents/language.ts`.
 Code, JSON identifiers and the remaining UI labels stay in English; proper geographic and agency names such as Sierra Bermeja
-and 112 Andalucía remain as proper nouns.
+and 112 Andalucía remain as proper nouns. Incoming citizen reports may still arrive in
+Spanish and are summarized into English by the agents.
 The product vision, scenario, demo script and build phases live in
 `HackSpain 2026 · Project Source of Truth.md` at the repository root; `thoughts/`
 holds confirmed product decisions. The canonical data
