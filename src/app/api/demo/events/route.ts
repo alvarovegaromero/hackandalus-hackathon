@@ -25,7 +25,9 @@ export async function POST(request: Request) {
         console.warn("Demo event sequence stopped: run changed or enqueue failed.");
         break;
       }
-      if (index < events.length - 1) await setTimeout(3000);
+      // Faster injection leaves more of the serverless budget for the final
+      // coordinator cycles, so the last accepted reports still get ranked.
+      if (index < events.length - 1) await setTimeout(1000);
     }
     await Promise.allSettled(processing);
   });
