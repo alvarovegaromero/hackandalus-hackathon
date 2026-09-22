@@ -1,4 +1,4 @@
-import { SPANISH_OUTPUT } from "./language";
+import { ENGLISH_OUTPUT } from "./language";
 // OWNER: P4 report planning and explicit decision audit, without action dispatch.
 import "server-only";
 import { randomUUID } from "node:crypto";
@@ -85,7 +85,7 @@ export async function planReport(
   try {
     const agent = new ToolLoopAgent({
       model: selected.model,
-      instructions: `${SPANISH_OUTPUT}
+      instructions: `${ENGLISH_OUTPUT}
 ${TRIAGE_PLANNER_INSTRUCTIONS}
 Return a decision, a concise objective, and one to ten ordered plan steps for human review.
 Coordinate a large-scale catastrophe affecting populations, zones and infrastructure.
