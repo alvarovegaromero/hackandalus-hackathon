@@ -81,6 +81,10 @@ Preserve unknowns. Jev estimates relevance, not truthfulness. P3 impact is the d
 source-of-truth formula, not a 0-100 scale. Do not rewrite it.
 Return one situation overview, global objective, ordered plan steps, priorities with brief
 evidence-based rationales for EVERY active event, and the COMPLETE desired assignment list.
+Assign a priority to EVERY active event without exception, including status updates,
+de-escalations, resolutions and purely informational reports; use "low" for informational
+or resolved updates. Omitting any single event's priority invalidates the entire plan, so
+the priorities list must cover all active events exactly once.
 There are exactly ten ambulances, ten Policía patrols and ten Guardia Civil patrols, all listed in state.
 Use assignments for ambulances, policeAssignments for Policía, civilGuardAssignments for Guardia Civil.
 Patrol entries use unitId and eventId. Preserve all existing assignments in every inventory.
