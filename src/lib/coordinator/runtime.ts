@@ -130,7 +130,31 @@ export async function proposeCoordinatorState(
     maxRetries: 0,
     abortSignal: AbortSignal.timeout(30_000),
   });
-  return validateCoordinatorProposal(state, result.output);
+  return validateCoordinatorProposal(state, completePriorities(state, result.output));
+}
+
+/**
+ * The commit requires a priority for every active event. If the model omits one (common
+ * once there are many status-update reports), fill it deterministically so a single
+ * omission does not discard the whole plan: keep the event's existing priority, or default
+ * an unranked event to "low". Priorities are deduped and restricted to active events.
+ */
+function completePriorities(state: CoordinatorState, output: unknown) {
+  const proposal = coordinatorProposalSchema.parse(output);
+  const active = new Set(state.events.map((event) => event.eventId));
+  const priorities = new Map<string, (typeof proposal.priorities)[number]>();
+  for (const entry of proposal.priorities) {
+    if (active.has(entry.eventId)) priorities.set(entry.eventId, entry);
+  }
+  for (const event of state.events) {
+    if (priorities.has(event.eventId)) continue;
+    priorities.set(event.eventId, {
+      eventId: event.eventId,
+      priority: event.priority ?? "low",
+      rationale: event.rationale ?? "Informational update; held at low priority pending review.",
+    });
+  }
+  return { ...proposal, priorities: [...priorities.values()] };
 }
 
 /** Filtering is independent of the model lease and never waits for a plan. */
