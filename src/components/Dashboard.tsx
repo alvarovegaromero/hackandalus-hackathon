@@ -7,7 +7,6 @@
 import { FaroIcon, FaroWordmark } from "@/components/landing/logo";
 import { MapSkeleton } from "@/components/Skeleton";
 import dynamic from "next/dynamic";
-import ConsoleNav from "@/components/console-nav";
 import { useEffect, useMemo, useState } from "react";
 import { TriangleAlert } from "lucide-react";
 import type { CrisisZone } from "@/lib/types";
@@ -67,6 +66,7 @@ export default function Dashboard({
   };
   const selectEvent = (id: string) => setSelectedEventId((current) => (current === id ? null : id));
   const [startingDemo, setStartingDemo] = useState(false);
+  const [settling, setSettling] = useState(false);
   const [demoMessage, setDemoMessage] = useState<string | null>(null);
 
   const reports = useMemo(() => foldReports(telemetry.records), [telemetry.records]);
@@ -97,6 +97,27 @@ export default function Dashboard({
       setDemoMessage(caught instanceof Error ? caught.message : "Could not start demo events.");
     } finally {
       setStartingDemo(false);
+    }
+  };
+
+  // Runs coordinator cycles without re-injecting, so a run's last reports get ranked.
+  const finishPlanning = async () => {
+    if (settling) return;
+    setSettling(true);
+    setDemoMessage(null);
+    try {
+      const response = await fetch("/api/demo/settle", { method: "POST" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "Could not finish planning.");
+      setDemoMessage(
+        result.unranked > 0
+          ? `${result.unranked} still unranked — click again.`
+          : "All incidents ranked.",
+      );
+    } catch (caught) {
+      setDemoMessage(caught instanceof Error ? caught.message : "Could not finish planning.");
+    } finally {
+      setSettling(false);
     }
   };
 
@@ -180,6 +201,17 @@ export default function Dashboard({
               >
                 {readOnly ? "Reset disabled" : startingDemo ? "Starting…" : "Reset & run events"}
               </button>
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={finishPlanning}
+                  disabled={settling || startingDemo}
+                  title="Rank any remaining accepted reports without re-injecting"
+                  className="rounded-full border border-focus/40 px-3 py-1 font-medium text-focus transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {settling ? "Finishing…" : "Finish planning"}
+                </button>
+              )}
             </>
           )}
         </div>

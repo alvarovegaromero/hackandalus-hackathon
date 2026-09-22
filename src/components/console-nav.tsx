@@ -1,11 +1,11 @@
 import Link from "next/link";
 
 const TABS = [
-  { id: "live", href: "/dashboard", label: "Live operations" },
+  { id: "live", href: "/dashboard", label: "Command center" },
   { id: "drills", href: "/dashboard/drills", label: "Drills" },
 ] as const;
 
-// Switches between the live console and the training simulator.
+// Switches between the command center and the training simulator.
 export default function ConsoleNav({ current }: { current: (typeof TABS)[number]["id"] }) {
   return (
     <nav aria-label="Console" className="console-nav">
