@@ -1,7 +1,7 @@
 [
   {
-    "title": "Vecino: humo sobre la pista forestal",
-    "description": "Veo una columna fina de humo ladera arriba, desde la pista forestal de Sierra Bermeja. Todavía no veo llamas.",
+    "title": "Neighbor: smoke over the forest track",
+    "description": "I see a thin column of smoke up the slope, from the Sierra Bermeja forest track. I can't see flames yet.",
     "source": "public",
     "category": "smoke",
     "severity": "medium",
@@ -11,13 +11,13 @@
     "location": {
       "latitude": 36.517,
       "longitude": -5.146,
-      "description": "Ejercicio ficticio de incendio forestal en Sierra Bermeja",
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "reporter"
     }
   },
   {
-    "title": "¡Hola, buenos días!",
-    "description": "Solo quería saludar. ¡Que tengáis un buen día!",
+    "title": "Hello, good morning!",
+    "description": "Just wanted to say hi. Have a great day!",
     "source": "public",
     "confidence": "low",
     "confirmed": false
@@ -39,15 +39,15 @@
     }
   },
   {
-    "title": "Oferta especial: compra zapatillas hoy",
-    "description": "Visita nuestra tienda y consigue un descuento en zapatillas.",
+    "title": "Special offer: buy sneakers today",
+    "description": "Visit our shop and get a discount on sneakers.",
     "source": "public",
     "confidence": "low",
     "confirmed": false
   },
   {
-    "title": "Senderista: llamas bajo los pinos",
-    "description": "Desde la curva veo llamas debajo de los pinos, junto a la misma columna de humo. Somos dos y estamos bajando por la pista.",
+    "title": "Hiker: flames under the pines",
+    "description": "From the bend I can see flames beneath the pines, next to the same smoke column. There are two of us and we are heading down the track.",
     "source": "public",
     "category": "fire",
     "severity": "high",
@@ -57,13 +57,13 @@
     "location": {
       "latitude": 36.521,
       "longitude": -5.143,
-      "description": "Ejercicio ficticio de incendio forestal en Sierra Bermeja",
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "reporter"
     }
   },
   {
-    "title": "Patrulla: incendio forestal confirmado",
-    "description": "Aviso de la patrulla del ejercicio: hay vegetación ardiendo junto a la pista forestal. Confirmamos los avisos anteriores de humo.",
+    "title": "Patrol: forest fire confirmed",
+    "description": "Report from the exercise patrol: vegetation is burning beside the forest track. We confirm the earlier smoke reports.",
     "source": "operator",
     "category": "fire",
     "severity": "high",
@@ -73,20 +73,20 @@
     "location": {
       "latitude": 36.52,
       "longitude": -5.14,
-      "description": "Ejercicio ficticio de incendio forestal en Sierra Bermeja",
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "incident"
     }
   },
   {
-    "title": "Receta de pizza",
-    "description": "¿Me podéis pasar una receta para hacer masa de pizza casera?",
+    "title": "Pizza recipe",
+    "description": "Can you share a recipe for homemade pizza dough?",
     "source": "public",
     "confidence": "low",
     "confirmed": false
   },
   {
-    "title": "Retén: llegada al punto de acceso",
-    "description": "La dotación informa de su llegada al acceso sur de este incendio y está evaluando la entrada.",
+    "title": "Fire crew: arrival at the access point",
+    "description": "The crew reports arriving at the south access of this fire and is assessing entry.",
     "source": "operator",
     "category": "operations",
     "severity": "medium",
@@ -96,13 +96,13 @@
     "location": {
       "latitude": 36.515,
       "longitude": -5.143,
-      "description": "Ejercicio ficticio de incendio forestal en Sierra Bermeja",
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "incident"
     }
   },
   {
-    "title": "Música para el fin de semana",
-    "description": "Recomiéndame canciones de jazz para mi lista del fin de semana.",
+    "title": "Weekend music",
+    "description": "Recommend some jazz tracks for my weekend playlist.",
     "source": "public",
     "confidence": "low",
     "confirmed": false
@@ -124,8 +124,8 @@
     }
   },
   {
-    "title": "Vecino: el humo entra en las viviendas",
-    "description": "El humo del incendio forestal está entrando en nuestro grupo de casas, al este de la pista. Hemos cerrado las ventanas.",
+    "title": "Neighbor: smoke is entering the homes",
+    "description": "Smoke from the forest fire is entering our cluster of houses, east of the track. We have closed the windows.",
     "source": "public",
     "category": "smoke",
     "severity": "high",
@@ -135,13 +135,13 @@
     "location": {
       "latitude": 36.517,
       "longitude": -5.132,
-      "description": "Ejercicio ficticio de incendio forestal en Sierra Bermeja",
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "reporter"
     }
   },
   {
-    "title": "¿Cuál es tu película favorita?",
-    "description": "Esta noche quiero ver una comedia.",
+    "title": "What is your favorite movie?",
+    "description": "I want to watch a comedy tonight.",
     "source": "public",
     "confidence": "low",
     "confirmed": false
@@ -163,15 +163,15 @@
     }
   },
   {
-    "title": "Gana un móvil gratis",
-    "description": "Participa en nuestro sorteo y suscríbete al boletín de promociones.",
+    "title": "Win a free phone",
+    "description": "Enter our giveaway and subscribe to the promotions newsletter.",
     "source": "public",
     "confidence": "low",
     "confirmed": false
   },
   {
-    "title": "Retén: el flanco este avanza más rápido",
-    "description": "La dotación informa de que el mismo incendio avanza más rápido por su flanco este tras el cambio de viento.",
+    "title": "Fire crew: east flank advancing faster",
+    "description": "The crew reports that the same fire is advancing faster along its east flank after the wind shift.",
     "source": "operator",
     "category": "fire",
     "severity": "critical",
@@ -181,13 +181,13 @@
     "location": {
       "latitude": 36.521,
       "longitude": -5.136,
-      "description": "Ejercicio ficticio de incendio forestal en Sierra Bermeja",
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "incident"
     }
   },
   {
-    "title": "Vecino: dos personas necesitan transporte",
-    "description": "En nuestra casa, cerca de la pista del este, hay dos adultos que no pueden salir sin ayuda. Uno utiliza silla de ruedas. El humo es cada vez más denso.",
+    "title": "Neighbor: two people need transport",
+    "description": "In our house, near the east track, there are two adults who cannot get out without help. One uses a wheelchair. The smoke is getting thicker.",
     "source": "public",
     "category": "medical",
     "severity": "high",
@@ -197,20 +197,20 @@
     "location": {
       "latitude": 36.5175,
       "longitude": -5.131,
-      "description": "Ejercicio ficticio de incendio forestal en Sierra Bermeja",
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "reporter"
     }
   },
   {
-    "title": "Charla de fútbol",
-    "description": "¿Quién es tu futbolista favorito de todos los tiempos?",
+    "title": "Football chat",
+    "description": "Who is your favorite footballer of all time?",
     "source": "public",
     "confidence": "low",
     "confirmed": false
   },
   {
-    "title": "Patrulla: acceso este cortado por el fuego",
-    "description": "La patrulla informa de llamas que atraviesan la pista de acceso este. Los equipos deben revisar el acceso a las viviendas cercanas.",
+    "title": "Patrol: east access cut off by fire",
+    "description": "The patrol reports flames crossing the east access track. Teams should check access to the nearby homes.",
     "source": "operator",
     "category": "road-blocked",
     "severity": "critical",
@@ -220,13 +220,13 @@
     "location": {
       "latitude": 36.518,
       "longitude": -5.135,
-      "description": "Ejercicio ficticio de incendio forestal en Sierra Bermeja",
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "incident"
     }
   },
   {
-    "title": "Senderista: grupo esperando en un claro",
-    "description": "Somos cuatro en el claro al norte del incendio. El humo ha cortado el camino por el que hemos llegado. Necesitamos instrucciones.",
+    "title": "Hiker: group waiting in a clearing",
+    "description": "There are four of us in the clearing north of the fire. Smoke has cut off the path we came in by. We need instructions.",
     "source": "public",
     "category": "evacuation",
     "severity": "high",
@@ -236,13 +236,13 @@
     "location": {
       "latitude": 36.524,
       "longitude": -5.135,
-      "description": "Ejercicio ficticio de incendio forestal en Sierra Bermeja",
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "reporter"
     }
   },
   {
-    "title": "Cuéntame un chiste",
-    "description": "Cuéntame un chiste de un gato y un teclado.",
+    "title": "Tell me a joke",
+    "description": "Tell me a joke about a cat and a keyboard.",
     "source": "public",
     "confidence": "low",
     "confirmed": false
@@ -264,8 +264,8 @@
     }
   },
   {
-    "title": "Retén: foco secundario junto a las viviendas",
-    "description": "La dotación informa de que las pavesas del incendio principal han prendido vegetación seca al oeste del mismo grupo de casas.",
+    "title": "Fire crew: secondary flare-up next to the homes",
+    "description": "The crew reports that embers from the main fire have ignited dry vegetation west of the same cluster of houses.",
     "source": "operator",
     "category": "fire",
     "severity": "critical",
@@ -275,20 +275,20 @@
     "location": {
       "latitude": 36.519,
       "longitude": -5.132,
-      "description": "Ejercicio ficticio de incendio forestal en Sierra Bermeja",
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "incident"
     }
   },
   {
-    "title": "Suscripción con descuento",
-    "description": "Suscríbete hoy y consigue un 50 % de descuento en nuestro servicio de películas.",
+    "title": "Discounted subscription",
+    "description": "Subscribe today and get 50% off our movie streaming service.",
     "source": "public",
     "confidence": "low",
     "confirmed": false
   },
   {
-    "title": "Vecino: dificultad para respirar",
-    "description": "Actualización desde la casa con dos adultos esperando transporte: uno empieza a tener dificultad para respirar por el humo. Los dos seguimos aquí.",
+    "title": "Neighbor: difficulty breathing",
+    "description": "Update from the house with two adults waiting for transport: one is starting to have difficulty breathing from the smoke. We are both still here.",
     "source": "public",
     "category": "medical",
     "severity": "critical",
@@ -298,13 +298,13 @@
     "location": {
       "latitude": 36.5175,
       "longitude": -5.131,
-      "description": "Ejercicio ficticio de incendio forestal en Sierra Bermeja",
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "reporter"
     }
   },
   {
-    "title": "Patrulla: el acceso sur sigue libre",
-    "description": "La patrulla ha revisado la pista del sur. Sigue libre y llega a las viviendas sin atravesar el tramo este bloqueado.",
+    "title": "Patrol: south access still clear",
+    "description": "The patrol has checked the south track. It is still clear and reaches the homes without crossing the blocked east section.",
     "source": "operator",
     "category": "road-open",
     "severity": "high",
@@ -314,20 +314,20 @@
     "location": {
       "latitude": 36.514,
       "longitude": -5.137,
-      "description": "Ejercicio ficticio de incendio forestal en Sierra Bermeja",
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "incident"
     }
   },
   {
-    "title": "Texto sin sentido",
+    "title": "Nonsense text",
     "description": "asdf qwerty zxcv blablabla",
     "source": "public",
     "confidence": "low",
     "confirmed": false
   },
   {
-    "title": "Equipos de emergencia: evacuación asistida en marcha",
-    "description": "Actualización del ejercicio: están ayudando a salir a los dos adultos de la vivienda por la pista sur. La valoración médica está pendiente.",
+    "title": "Emergency teams: assisted evacuation underway",
+    "description": "Exercise update: they are helping the two adults out of the house via the south track. Medical assessment is pending.",
     "source": "operator",
     "category": "evacuation",
     "severity": "high",
@@ -337,13 +337,13 @@
     "location": {
       "latitude": 36.516,
       "longitude": -5.132,
-      "description": "Ejercicio ficticio de incendio forestal en Sierra Bermeja",
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "incident"
     }
   },
   {
-    "title": "Patrulla: los senderistas llegan al punto de encuentro",
-    "description": "La patrulla confirma que los cuatro senderistas del claro norte han llegado al punto de encuentro del sur.",
+    "title": "Patrol: hikers reach the meeting point",
+    "description": "The patrol confirms that the four hikers from the north clearing have reached the south meeting point.",
     "source": "operator",
     "category": "evacuation",
     "severity": "medium",
@@ -353,20 +353,20 @@
     "location": {
       "latitude": 36.514,
       "longitude": -5.142,
-      "description": "Ejercicio ficticio de incendio forestal en Sierra Bermeja",
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "incident"
     }
   },
   {
-    "title": "Felicitación de cumpleaños",
-    "description": "¡Feliz cumpleaños, Álex! Espero que disfrutes de la tarta.",
+    "title": "Birthday wishes",
+    "description": "Happy birthday, Alex! Hope you enjoy the cake.",
     "source": "public",
     "confidence": "low",
     "confirmed": false
   },
   {
-    "title": "Retén: viviendas protegidas, incendio todavía activo",
-    "description": "El foco secundario junto a las viviendas está contenido. El incendio forestal principal sigue activo y las dotaciones vigilan el flanco este.",
+    "title": "Fire crew: homes protected, fire still active",
+    "description": "The secondary flare-up next to the homes is contained. The main forest fire is still active and crews are watching the east flank.",
     "source": "operator",
     "category": "operations",
     "severity": "medium",
@@ -376,13 +376,13 @@
     "location": {
       "latitude": 36.519,
       "longitude": -5.132,
-      "description": "Ejercicio ficticio de incendio forestal en Sierra Bermeja",
+      "description": "Sierra Bermeja fictional wildfire exercise",
       "reference": "incident"
     }
   },
   {
-    "title": "Traduce una frase",
-    "description": "¿Cómo se dice buenas tardes en italiano?",
+    "title": "Translate a phrase",
+    "description": "How do you say good afternoon in Italian?",
     "source": "public",
     "confidence": "low",
     "confirmed": false
