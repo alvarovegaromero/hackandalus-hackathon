@@ -31,6 +31,20 @@ Production was deployed from Git branch `production` on 2026-09-19 to project `f
 - Do not refresh the activation timestamp during ordinary releases: redeployment
   with the same value does not extend access.
 
+### Post-hackathon read-only showcase
+
+To keep the dashboard publicly viewable after the demo, enable showcase mode instead
+of the timed window: in Vercel production set `DEMO_SHOWCASE=true` and leave
+`DEMO_PUBLIC_STARTED_AT` empty.
+
+In showcase mode the dashboard reads stay public and show the last run live from
+Supabase, exactly as during the window: `/api/state`, `/api/subagents` and
+`/api/telemetry` remain open (`authorizeDashboardRead` allows same-origin reads),
+`/api/map` stays static seed geography. There is no countdown. The reset/run button
+renders disabled, and every mutation route (`/api/demo/*`, `/api/scenario/*`) stays
+closed because `DEMO_PUBLIC_STARTED_AT` is unset, so the run cannot be changed and the
+dashboard is frozen on it. Keep the Supabase project active for the data to load.
+
 ### Verified behavior and remaining checks
 
 Unauthenticated remote checks after this release returned 200 for `/`, `/dashboard`,
@@ -119,12 +133,12 @@ upload local credential files or put secrets in `NEXT_PUBLIC_*` variables.
 | Purpose                               | Variables                                                                         |
 | ------------------------------------- | --------------------------------------------------------------------------------- |
 | Coordinator database                  | `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY`                                 |
-| Browser Supabase client, if used      | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`                                            |
 | Jev relevance filtering               | `TYPESAFE_API_KEY`; optional Jev settings in `.env.example`                       |
 | AI Gateway model                      | `AI_PROVIDER=gateway`, `AI_MODEL`, `AI_GATEWAY_API_KEY`                           |
 | Alternative existing OpenCode adapter | `AI_PROVIDER=opencode-go` or `opencode-zen`, `OPENCODE_MODEL`, `OPENCODE_API_KEY` |
 | Protected APIs                        | `CRISIS_API_TOKEN`, `DEMO_API_TOKEN` as required by the selected routes           |
 | Public demo window                    | `DEMO_PUBLIC_STARTED_AT` (canonical UTC ISO timestamp); mock or happyrobot mode   |
+| Post-hackathon showcase               | `DEMO_SHOWCASE=true` with `DEMO_PUBLIC_STARTED_AT` empty; live reads, reset off   |
 | Inbound HappyRobot reports/callbacks  | `HAPPYROBOT_WEBHOOK_SECRET`                                                       |
 | Initial simulated actions             | `ACTION_EXECUTION_MODE=mock`                                                      |
 

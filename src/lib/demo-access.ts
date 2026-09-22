@@ -3,6 +3,15 @@ import "server-only";
 
 export const DEMO_PUBLIC_DURATION_MS = 26 * 60 * 60 * 1000;
 
+/**
+ * Read-only showcase after the hackathon: the dashboard renders a frozen snapshot
+ * of the last run with no controls and no Supabase dependency. Independent of the
+ * timed public window; mutations stay closed because DEMO_PUBLIC_STARTED_AT is unset.
+ */
+export function isDemoShowcase(): boolean {
+  return process.env.DEMO_SHOWCASE === "true";
+}
+
 /** A single fixed window shared by every visitor and server instance. */
 export function publicDemoExpiresAt(): number | undefined {
   if (!["mock", "happyrobot"].includes(process.env.ACTION_EXECUTION_MODE ?? "")) return;
