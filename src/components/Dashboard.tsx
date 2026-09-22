@@ -7,7 +7,6 @@
 import { FaroIcon, FaroWordmark } from "@/components/landing/logo";
 import { MapSkeleton } from "@/components/Skeleton";
 import dynamic from "next/dynamic";
-import ConsoleNav from "@/components/console-nav";
 import { useEffect, useMemo, useState } from "react";
 import { TriangleAlert } from "lucide-react";
 import type { CrisisZone } from "@/lib/types";
