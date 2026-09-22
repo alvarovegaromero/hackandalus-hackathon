@@ -146,8 +146,14 @@ export default function Dashboard({
             </span>
           ) : null}
           <span className="glass flex items-center gap-2 rounded-full px-3 py-1">
-            <span className="live-dot" data-state={live ? "live" : "down"} aria-hidden="true" />
-            <span className="text-ink">{live ? "Live" : telemetry.status}</span>
+            <span
+              className="live-dot"
+              data-state={readOnly ? "down" : live ? "live" : "down"}
+              aria-hidden="true"
+            />
+            <span className="text-ink">
+              {readOnly ? "Archived run" : live ? "Live" : telemetry.status}
+            </span>
             {coordinator.state && (
               <span className="tabular-nums">
                 · updated{" "}
