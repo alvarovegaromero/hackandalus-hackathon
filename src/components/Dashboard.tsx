@@ -152,11 +152,11 @@ export default function Dashboard({
               aria-hidden="true"
             />
             <span className="text-ink">
-              {readOnly ? "Archived run" : live ? "Live" : telemetry.status}
+              {readOnly ? "Archived execution result" : live ? "Live" : telemetry.status}
             </span>
             {coordinator.state && (
               <span className="tabular-nums">
-                · updated{" "}
+                · {readOnly ? "recorded" : "updated"}{" "}
                 <time dateTime={coordinator.state.updatedAt}>
                   {clock(coordinator.state.updatedAt)}
                 </time>
