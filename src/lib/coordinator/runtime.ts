@@ -81,6 +81,10 @@ Preserve unknowns. Jev estimates relevance, not truthfulness. P3 impact is the d
 source-of-truth formula, not a 0-100 scale. Do not rewrite it.
 Return one situation overview, global objective, ordered plan steps, priorities with brief
 evidence-based rationales for EVERY active event, and the COMPLETE desired assignment list.
+Assign a priority to EVERY active event without exception, including status updates,
+de-escalations, resolutions and purely informational reports; use "low" for informational
+or resolved updates. Omitting any single event's priority invalidates the entire plan, so
+the priorities list must cover all active events exactly once.
 There are exactly ten ambulances, ten Policía patrols and ten Guardia Civil patrols, all listed in state.
 Use assignments for ambulances, policeAssignments for Policía, civilGuardAssignments for Guardia Civil.
 Patrol entries use unitId and eventId. Preserve all existing assignments in every inventory.
@@ -126,7 +130,31 @@ export async function proposeCoordinatorState(
     maxRetries: 0,
     abortSignal: AbortSignal.timeout(30_000),
   });
-  return validateCoordinatorProposal(state, result.output);
+  return validateCoordinatorProposal(state, completePriorities(state, result.output));
+}
+
+/**
+ * The commit requires a priority for every active event. If the model omits one (common
+ * once there are many status-update reports), fill it deterministically so a single
+ * omission does not discard the whole plan: keep the event's existing priority, or default
+ * an unranked event to "low". Priorities are deduped and restricted to active events.
+ */
+function completePriorities(state: CoordinatorState, output: unknown) {
+  const proposal = coordinatorProposalSchema.parse(output);
+  const active = new Set(state.events.map((event) => event.eventId));
+  const priorities = new Map<string, (typeof proposal.priorities)[number]>();
+  for (const entry of proposal.priorities) {
+    if (active.has(entry.eventId)) priorities.set(entry.eventId, entry);
+  }
+  for (const event of state.events) {
+    if (priorities.has(event.eventId)) continue;
+    priorities.set(event.eventId, {
+      eventId: event.eventId,
+      priority: event.priority ?? "low",
+      rationale: event.rationale ?? "Informational update; held at low priority pending review.",
+    });
+  }
+  return { ...proposal, priorities: [...priorities.values()] };
 }
 
 /** Filtering is independent of the model lease and never waits for a plan. */
