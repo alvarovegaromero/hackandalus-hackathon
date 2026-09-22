@@ -12,6 +12,9 @@
 An agentic command center for a changing wildfire in Sierra Bermeja (Málaga),
 built for the HappyRobot challenge at HackSpain 2026.
 
+**[Watch the FARO presentation on YouTube](https://youtube.com/shorts/K02rfw4a7FA)**
+— an 81-second introduction to the project and its capabilities, in English.
+
 <p align="center">
   <strong><a href="https://faro-lovat-iota.vercel.app">Explore FARO</a></strong>
   &nbsp;·&nbsp;
