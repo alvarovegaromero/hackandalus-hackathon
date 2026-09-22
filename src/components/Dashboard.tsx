@@ -37,9 +37,12 @@ const LeafletMap = dynamic(() => import("@/components/LeafletMap"), {
 export default function Dashboard({
   demoControlsEnabled,
   expiresAt,
+  readOnly = false,
 }: {
   demoControlsEnabled: boolean;
   expiresAt?: number;
+  /** Post-hackathon showcase: last run stays visible but the reset is blocked. */
+  readOnly?: boolean;
 }) {
   useEffect(() => {
     if (!expiresAt) return;
@@ -164,11 +167,12 @@ export default function Dashboard({
               <span role="status">{demoMessage}</span>
               <button
                 type="button"
-                onClick={restartEvents}
-                disabled={startingDemo}
-                className="rounded-full bg-focus px-3 py-1 font-medium text-bg transition-opacity hover:opacity-90 disabled:opacity-50"
+                onClick={readOnly ? undefined : restartEvents}
+                disabled={readOnly || startingDemo}
+                title={readOnly ? "Archived run — reset is disabled" : undefined}
+                className="rounded-full bg-focus px-3 py-1 font-medium text-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {startingDemo ? "Starting…" : "Reset & run events"}
+                {readOnly ? "Reset disabled" : startingDemo ? "Starting…" : "Reset & run events"}
               </button>
             </>
           )}
