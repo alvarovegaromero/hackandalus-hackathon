@@ -1,4 +1,4 @@
-// OWNER: time-limited public demo access.
+// OWNER: archived showcase and time-limited public demo access.
 import "server-only";
 
 export const DEMO_PUBLIC_DURATION_MS = 26 * 60 * 60 * 1000;
@@ -6,10 +6,11 @@ export const DEMO_PUBLIC_DURATION_MS = 26 * 60 * 60 * 1000;
 /**
  * Read-only showcase after the hackathon: the dashboard renders a frozen snapshot
  * of the last run with no controls and no Supabase dependency. Independent of the
- * timed public window; mutations stay closed because DEMO_PUBLIC_STARTED_AT is unset.
+ * timed public window. The archive is the default, including without configuration;
+ * DEMO_SHOWCASE=false explicitly opts back into the connected runtime.
  */
 export function isDemoShowcase(): boolean {
-  return process.env.DEMO_SHOWCASE === "true";
+  return process.env.DEMO_SHOWCASE !== "false";
 }
 
 /** A single fixed window shared by every visitor and server instance. */
@@ -40,6 +41,8 @@ export function requireSameOrigin(request: Request): Response | undefined {
 export function authorizeDemoControl(request: Request): Response | undefined {
   const denied = requireSameOrigin(request);
   if (denied) return denied;
+  if (isDemoShowcase())
+    return Response.json({ error: "Archived run controls are disabled." }, { status: 403 });
   if (process.env.ACTION_EXECUTION_MODE === "happyrobot") {
     return Response.json({ error: "Demo controls are disabled in live mode." }, { status: 403 });
   }

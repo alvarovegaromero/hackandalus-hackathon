@@ -14,7 +14,11 @@ export function useTelemetry() {
     // EventSource reconnects on its own and resends the last event ID.
     const source = new EventSource("/api/telemetry");
     source.onopen = () => setStatus("Loading…");
-    source.addEventListener("ready", () => setStatus("Live"));
+    source.addEventListener("ready", (message) => {
+      const { archived } = JSON.parse((message as MessageEvent).data);
+      setStatus(archived ? "Archived" : "Live");
+      if (archived) source.close();
+    });
     source.addEventListener("unavailable", () => setStatus("Unavailable · retrying…"));
     source.onerror = () => setStatus("Reconnecting…");
     source.onmessage = (message) => {

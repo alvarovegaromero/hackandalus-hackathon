@@ -21,8 +21,7 @@ export function authorizePipeline(request: Request): Response | undefined {
 
 /** Local dashboard reads may use the browser's same-origin context, never a client token. */
 export function authorizeDashboardRead(request: Request): Response | undefined {
-  // Post-hackathon showcase keeps reads public (last run stays visible); mutations
-  // remain closed because DEMO_PUBLIC_STARTED_AT is unset.
+  // Showcase exposes bundled archive reads; demo controls are blocked separately.
   if (isDemoShowcase()) return;
   if (publicDemoExpiresAt()) return;
   if (
