@@ -1,9 +1,13 @@
 # Preserving the archived dashboard
 
-`DEMO_SHOWCASE=true` makes the dashboard's four read endpoints use the committed
+The dashboard's four read endpoints default to the committed
 `src/lib/demo/showcase-snapshot.json`. Supabase can be removed after this version
 has been released and verified on the public domain. It is an archived simulation,
 not a running emergency service or a fresh agent execution.
+
+No environment variable is required for the archive. Missing, empty or `true`
+`DEMO_SHOWCASE` values all select it; only the explicit value `false` restores
+the connected runtime for development or a separate live deployment.
 
 ## Captured example
 
@@ -40,15 +44,15 @@ literal without updating the coordinator read contract and its consumers.
 
 ## Local verification
 
-Use Node 24 and run `npm run check`. Start the built app with `DEMO_SHOWCASE=true`
+Use Node 24 and run `npm run check`. Start the built app without `DEMO_SHOWCASE`
 and no Supabase or AI provider credentials, then inspect `/dashboard`, `/api/state`,
 `/api/subagents`, `/api/map` and `/api/telemetry`. Confirm the report counts, revision
 and three completed missions match the capture. Confirm telemetry sends the archive
 ready marker and finishes, and a same-origin reset request returns 403.
 
 Verified locally on 2026-10-12 with Node 24.21.0: `npm run check` passed, and
-the production build served all four read endpoints without Supabase or AI
-credentials. Orca's browser showed the captured counts, revision 64, three
+the production build served all four read endpoints without `DEMO_SHOWCASE`,
+Supabase or AI credentials. Orca's browser showed the captured counts, revision 64, three
 completed missions and `Archived` telemetry status. The stream contained 96
 records, finished successfully and was requested only once; reset returned 403.
 The build reported three dynamic filesystem tracing warnings in the existing

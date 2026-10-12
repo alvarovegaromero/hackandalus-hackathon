@@ -17,7 +17,8 @@ development chronology is available in Git.
 - [x] Local wildfire rehearsals, reviewed lessons and offline evaluation.
 - [x] Vercel delivery through the production branch and a configured public demo window.
 - [x] Preserve the public simulated dashboard run as a bundled read-only snapshot;
-      showcase reads no longer need Supabase. Production publication remains a release step.
+      showcase is the default and reads no longer need Supabase or configuration.
+      Production publication remains a release step.
 - [x] Remove unused prototype helpers and superseded architecture/porting drafts;
       simplify the reviewer-facing README and documentation index.
 

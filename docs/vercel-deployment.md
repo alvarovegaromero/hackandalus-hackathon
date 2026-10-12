@@ -33,9 +33,10 @@ Production was deployed from Git branch `production` on 2026-09-19 to project `f
 
 ### Post-hackathon read-only showcase
 
-To keep the dashboard publicly viewable after the demo, enable showcase mode instead
-of the timed window: in Vercel production set `DEMO_SHOWCASE=true` and leave
-`DEMO_PUBLIC_STARTED_AT` empty.
+The dashboard defaults to the archived showcase instead of the timed window.
+No variable or database is required. `DEMO_SHOWCASE=true` may be kept explicitly;
+only `DEMO_SHOWCASE=false` intentionally restores the connected runtime.
+Leave `DEMO_PUBLIC_STARTED_AT` empty for the archive.
 
 In showcase mode `/api/state`, `/api/subagents`, `/api/telemetry` and `/api/map`
 serve the bundled public simulation in `src/lib/demo/showcase-snapshot.json`.
@@ -146,7 +147,7 @@ upload local credential files or put secrets in `NEXT_PUBLIC_*` variables.
 | Alternative existing OpenCode adapter | `AI_PROVIDER=opencode-go` or `opencode-zen`, `OPENCODE_MODEL`, `OPENCODE_API_KEY` |
 | Protected APIs                        | `CRISIS_API_TOKEN`, `DEMO_API_TOKEN` as required by the selected routes           |
 | Public demo window                    | `DEMO_PUBLIC_STARTED_AT` (canonical UTC ISO timestamp); mock or happyrobot mode   |
-| Post-hackathon showcase               | `DEMO_SHOWCASE=true`; bundled archived reads, reset off, no database needed       |
+| Post-hackathon showcase               | Default; bundled archived reads, reset off, no database needed                    |
 | Inbound HappyRobot reports/callbacks  | `HAPPYROBOT_WEBHOOK_SECRET`                                                       |
 | Initial simulated actions             | `ACTION_EXECUTION_MODE=mock`                                                      |
 
