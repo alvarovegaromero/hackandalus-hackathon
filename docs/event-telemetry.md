@@ -73,6 +73,19 @@ should read `/api/situation` separately.
 
 ## SSE contract
 
+### Archived showcase
+
+With `DEMO_SHOWCASE=true`, `GET /api/telemetry` replays the immutable bundled
+simulation instead of querying Supabase. It preserves the existing default-message
+record shape and IDs, starts with `reset`, then ends with a named `ready` frame
+whose data is `{"archived":true}`. The frontend closes its EventSource on that
+frame and shows `Archived`, avoiding automatic reconnection to a finite replay.
+Ordinary live streams still send `ready` with `{}` and use the existing behavior
+below. The archive's original `storage` values remain provenance metadata.
+See [snapshot preservation](showcase-snapshot.md).
+
+### Live stream
+
 `GET /api/telemetry` is read-only: subscribing never starts processing or ticks
 a scenario. Every default-message frame has `id:` and JSON `data:` with
 `id`, `eventId`, `type`, `at`, and `payload`. IDs use a random process epoch plus

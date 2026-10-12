@@ -12,6 +12,9 @@
 An agentic command center for a changing wildfire in Sierra Bermeja (Málaga),
 built for the HappyRobot challenge at HackSpain 2026.
 
+**[Watch the FARO presentation on YouTube](https://youtube.com/shorts/K02rfw4a7FA)**
+— an 81-second introduction to the project and its capabilities, in English.
+
 <p align="center">
   <strong><a href="https://faro-lovat-iota.vercel.app">Explore FARO</a></strong>
   &nbsp;·&nbsp;
@@ -22,7 +25,7 @@ built for the HappyRobot challenge at HackSpain 2026.
 
 [![FARO dashboard showing incident priorities, deployed resources, the Sierra Bermeja map and coordinator missions](docs/images/faro-dashboard.png)](https://faro-lovat-iota.vercel.app/dashboard)
 
-_The deployed dashboard with a simulated wildfire scenario. Click the image to explore it._
+_The archived Sierra Bermeja simulation: 32 reports, 20 relevant incidents and three completed missions. Click the image to explore the snapshot; no live calls are made._
 
 FARO filters incoming reports, prioritizes incidents, assigns available resources
 and coordinates response missions. The dashboard brings together the map, incoming
@@ -37,12 +40,16 @@ callbacks feed the coordinator so it can revise its response.
 | **Operations dashboard** — follow reports, priorities, resources and missions | [faro-lovat-iota.vercel.app/dashboard](https://faro-lovat-iota.vercel.app/dashboard)               |
 | **Wildfire drills** — rehearse scenarios and review lessons                   | [faro-lovat-iota.vercel.app/dashboard/drills](https://faro-lovat-iota.vercel.app/dashboard/drills) |
 
-Hosted dashboard access follows the configured demo window. See
-[deployment and access](docs/vercel-deployment.md) for details.
+The dashboard defaults to a bundled simulation snapshot, even without configuration,
+so the example remains viewable even after its Supabase project is removed.
+Live runs require the explicit opt-in `DEMO_SHOWCASE=false`, a configured demo
+window and database. See
+[deployment and access](docs/vercel-deployment.md) and
+[snapshot preservation](docs/showcase-snapshot.md) for details.
 
 ## What to explore
 
-- **Live operations** at `/dashboard`: report filtering, incident priorities,
+- **Archived operations** at `/dashboard`: report filtering, incident priorities,
   resource availability, a tactical map and coordinator/subagent activity.
 - **HappyRobot integration**: inbound reports and outbound resource dispatch,
   with authenticated callbacks that update missions and trigger replanning.
@@ -65,8 +72,8 @@ remain in the training workspace and do not change the live coordinator.
    queue connect the evidence to the affected locations.
 3. Follow the coordinator's current plan and available resources. Missions show
    how the response is delegated and what each communication returns.
-4. As new reports or dispatch outcomes arrive, watch priorities, plans and missions
-   change. The coordinator uses persisted evidence and resource constraints to replan.
+4. Inspect the archived response plan and completed mission outcomes. During a live
+   run, new reports and dispatch outcomes update priorities, plans and missions.
 5. Explore [wildfire drills](https://faro-lovat-iota.vercel.app/dashboard/drills)
    for local rehearsals and reviewed lessons, separate from live operations.
 
@@ -81,14 +88,16 @@ Use **Node.js 24.x** and npm. The repository uses `package-lock.json`.
 
 ```sh
 npm ci
-npm run env:setup
 npm run dev
 ```
 
 Open http://localhost:3000 or http://localhost:3000/dashboard.
 
-Configure `.env.local` using [.env.example](.env.example):
+The landing, archived dashboard and local drills need no backend credentials.
+To restore connected operations, run `npm run env:setup` and configure `.env.local`
+using [.env.example](.env.example):
 
+- Set `DEMO_SHOWCASE=false` to explicitly enable the connected dashboard.
 - Supabase URL and server secret for persistent coordinator state and missions.
 - Jev credentials for relevance filtering.
 - A supported AI provider and model for planning and subagents.
@@ -96,8 +105,7 @@ Configure `.env.local` using [.env.example](.env.example):
   still use the configured provider.
 - For live HappyRobot dispatch, follow [Resource Dispatch](docs/resource-dispatch.md).
 
-The landing and local drills can be explored without backend credentials. The
-connected operations dashboard needs Supabase and model configuration. Apply the
+The connected operations dashboard needs Supabase and model configuration. Apply the
 repository's migrations in order to a new database; coordinate changes to any
 shared database separately.
 

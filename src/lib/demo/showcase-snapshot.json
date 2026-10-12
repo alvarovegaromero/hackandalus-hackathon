@@ -1,0 +1,2064 @@
+{
+  "capturedAt": "2026-10-12T20:00:15.489Z",
+  "source": "https://faro-lovat-iota.vercel.app/dashboard",
+  "state": {
+    "schemaVersion": 2,
+    "stateId": "9f1b54ad-c22e-49f7-a2a5-3a5486e549ea",
+    "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+    "revision": 64,
+    "updatedAt": "2026-09-22T11:10:55.657Z",
+    "generatedAt": "2026-10-12T20:00:12.782Z",
+    "storage": "supabase",
+    "executionMode": "simulation",
+    "pollAfterMs": 3000,
+    "situationOverview": "A confirmed wildfire is accelerating eastward toward occupied homes, with smoke exposure, blocked east access, and active medical and evacuation needs. Four hikers reached the south meeting point, while two exposed hikers and two adults—including a wheelchair user and a person with breathing difficulty—still require verified safety and support.",
+    "plan": {
+      "objective": "Protect exposed people, sustain assisted evacuation, and preserve safe access while monitoring wildfire spread.",
+      "steps": [
+        "Verify the status and medical condition of exposed people and confirm safe evacuation completion.",
+        "Maintain supported evacuation for the adults and coordinate assessment of breathing difficulty and wheelchair needs.",
+        "Keep east access controlled and verify continued safety of the south alternative route.",
+        "Monitor the east flank, homes, smoke, wind, and unresolved access or medical risks.",
+        "Reassess all unknown occupancy, casualty, route, and fire-spread details without inference."
+      ]
+    },
+    "events": [
+      {
+        "eventId": "1c8d5d3a-1f11-4313-9a24-24c7cf390f93",
+        "summary": "Weather station: gusts reach 45 km/h\nSimulated station SB-W1 now reports gusts of 45 km/h from the west. The eastward wind direction persists.\nwind\nzone-east",
+        "status": "active",
+        "priority": "high",
+        "rationale": "45 km/h west-to-east gusts can accelerate spread and carry smoke and embers toward homes."
+      },
+      {
+        "eventId": "1e3af502-c607-4741-ab42-76457d7aa735",
+        "summary": "Fire crew: arrival at the access point\nThe crew reports arriving at the south access of this fire and is assessing entry.\noperations\nzone-east",
+        "status": "active",
+        "priority": "high",
+        "rationale": "Fire crews reached south access, but entry remains under assessment during an active wildfire."
+      },
+      {
+        "eventId": "25639c7d-cf78-4d62-8893-f6472db09239",
+        "summary": "Weather station: wind turning eastward\nSimulated station SB-W1 reports wind now blowing from west to east at 30 km/h, toward the houses.\nwind\nzone-east",
+        "status": "active",
+        "priority": "high",
+        "rationale": "Wind is blowing toward houses, increasing fire, smoke, and ember exposure."
+      },
+      {
+        "eventId": "25647c62-ba27-4942-a3ff-9f465d88c28e",
+        "summary": "Patrol: forest fire confirmed\nReport from the exercise patrol: vegetation is burning beside the forest track. We confirm the earlier smoke reports.\nfire\nzone-east",
+        "status": "active",
+        "priority": "critical",
+        "rationale": "Patrol confirmation establishes active vegetation burning beside the forest track."
+      },
+      {
+        "eventId": "61f44056-c687-45d6-b725-fa105f7fbf6f",
+        "summary": "Fire crew: homes protected, fire still active\nThe secondary flare-up next to the homes is contained. The main forest fire is still active and crews are watching the east flank.\noperations\nzone-east",
+        "status": "active",
+        "priority": "high",
+        "rationale": "The flare-up is contained, but the main fire remains active on the east flank."
+      },
+      {
+        "eventId": "6c4796c2-6447-4785-acfb-1cea9e559055",
+        "summary": "Sensor SB-02: smoke levels falling\nSimulated detector SB-02 reports PM2.5 falling from 260 to 120 micrograms/m3. This reading alone does not confirm the fire is extinguished.\nsmoke\nzone-east",
+        "status": "active",
+        "priority": "low",
+        "rationale": "Smoke levels are falling, but this does not confirm fire extinguishment."
+      },
+      {
+        "eventId": "727d3c06-8a76-4421-8ad8-7f797ee739af",
+        "summary": "Hiker: flames under the pines\nFrom the bend I can see flames beneath the pines, next to the same smoke column. There are two of us and we are heading down the track.\nfire\nzone-east",
+        "status": "active",
+        "priority": "critical",
+        "rationale": "Two hikers report nearby flames and remain exposed while descending the track."
+      },
+      {
+        "eventId": "75528218-cb4b-4160-abc0-0340be5f4ca4",
+        "summary": "Hiker: group waiting in a clearing\nThere are four of us in the clearing north of the fire. Smoke has cut off the path we came in by. We need instructions.\nevacuation\nzone-east",
+        "status": "active",
+        "priority": "critical",
+        "rationale": "Four people reported isolation after smoke cut off their original route and need evacuation support."
+      },
+      {
+        "eventId": "7a023514-cbff-4b2d-9741-976db1b33433",
+        "summary": "Fire crew: secondary flare-up next to the homes\nThe crew reports that embers from the main fire have ignited dry vegetation west of the same cluster of houses.\nfire\nzone-east",
+        "status": "active",
+        "priority": "critical",
+        "rationale": "Embers ignited dry vegetation beside homes, creating a direct threat to occupants and structures."
+      },
+      {
+        "eventId": "7d65b969-5fec-4252-a430-dd7232e2d2d9",
+        "summary": "Neighbor: difficulty breathing\nUpdate from the house with two adults waiting for transport: one is starting to have difficulty breathing from the smoke. We are both still here.\nmedical\nzone-east",
+        "status": "active",
+        "priority": "critical",
+        "rationale": "One adult has smoke-related breathing difficulty while both adults remain at the house."
+      },
+      {
+        "eventId": "860b74a9-5dd7-49ad-a3a8-5339240dda5e",
+        "summary": "Fire crew: east flank advancing faster\nThe crew reports that the same fire is advancing faster along its east flank after the wind shift.\nfire\nzone-east",
+        "status": "active",
+        "priority": "critical",
+        "rationale": "The east flank is advancing faster after a wind shift toward occupied homes."
+      },
+      {
+        "eventId": "8a77d60a-7c4b-4073-8375-c625310dd288",
+        "summary": "Patrol: hikers reach the meeting point\nThe patrol confirms that the four hikers from the north clearing have reached the south meeting point.\nevacuation\nzone-east",
+        "status": "active",
+        "priority": "low",
+        "rationale": "The four hikers reached the south meeting point; this is a positive status update requiring confirmation."
+      },
+      {
+        "eventId": "9aa3c27d-540a-415f-8c56-0500d4ee8506",
+        "summary": "Sensor SB-02: smoke spreading east\nSimulated detector SB-02 reports PM2.5 rising to 260 micrograms/m3 east of the confirmed ignition.\nsmoke\nzone-east",
+        "status": "active",
+        "priority": "high",
+        "rationale": "Rising PM2.5 east of the ignition corroborates smoke movement toward occupied areas."
+      },
+      {
+        "eventId": "9fbeebe1-951d-4f1a-b1df-751eb5dfb8b6",
+        "summary": "Emergency teams: assisted evacuation underway\nExercise update: they are helping the two adults out of the house via the south track. Medical assessment is pending.\nevacuation\nzone-east",
+        "status": "active",
+        "priority": "high",
+        "rationale": "Assisted evacuation is underway, but medical assessment and safe disposition remain pending."
+      },
+      {
+        "eventId": "b0bf89ec-0a71-446e-89ed-0da7ec9fc7b9",
+        "summary": "Neighbor: smoke is entering the homes\nSmoke from the forest fire is entering our cluster of houses, east of the track. We have closed the windows.\nsmoke\nzone-east",
+        "status": "active",
+        "priority": "high",
+        "rationale": "Smoke is entering homes, confirming exposure of residents in the east cluster."
+      },
+      {
+        "eventId": "c2d30873-bd5d-4a9e-aa28-e459eceb4c76",
+        "summary": "Patrol: east access cut off by fire\nThe patrol reports flames crossing the east access track. Teams should check access to the nearby homes.\nroad-blocked\nzone-east",
+        "status": "active",
+        "priority": "critical",
+        "rationale": "Flames crossed the east access track, threatening evacuation and responder access to homes."
+      },
+      {
+        "eventId": "c4fadf0d-e367-4882-893e-6eaadf257f7c",
+        "summary": "Neighbor: two people need transport\nIn our house, near the east track, there are two adults who cannot get out without help. One uses a wheelchair. The smoke is getting thicker.\nmedical\nzone-east",
+        "status": "active",
+        "priority": "critical",
+        "rationale": "Two adults cannot leave without help, one uses a wheelchair, and worsening smoke requires immediate support."
+      },
+      {
+        "eventId": "df3098bd-204a-4cdd-a38f-6fa2b0deef2e",
+        "summary": "Patrol: south access still clear\nThe patrol has checked the south track. It is still clear and reaches the homes without crossing the blocked east section.\nroad-open\nzone-east",
+        "status": "active",
+        "priority": "low",
+        "rationale": "The south track remains clear and provides a confirmed alternative access update."
+      },
+      {
+        "eventId": "ecf8be18-da4e-48cd-822a-2a6b6256e3dd",
+        "summary": "Neighbor: smoke over the forest track\nI see a thin column of smoke up the slope, from the Sierra Bermeja forest track. I can't see flames yet.\nsmoke\nzone-east",
+        "status": "active",
+        "priority": "high",
+        "rationale": "The initial smoke report is corroborated by sensors, patrol, and flame reports."
+      },
+      {
+        "eventId": "eef0569c-8aa0-4048-ab8b-e8cda32c8c46",
+        "summary": "Sensor SB-01: smoke threshold exceeded\nSimulated smoke detector SB-01 reports PM2.5 at 180 micrograms/m3 near the forest track.\nsmoke\nzone-east",
+        "status": "active",
+        "priority": "high",
+        "rationale": "PM2.5 of 180 near the track supports a significant smoke hazard alongside confirmed fire."
+      }
+    ],
+    "police": {
+      "total": 10,
+      "available": 3,
+      "allocated": 7,
+      "units": [
+        {
+          "id": "police-1",
+          "status": "assigned",
+          "eventId": "25647c62-ba27-4942-a3ff-9f465d88c28e"
+        },
+        { "id": "police-10", "status": "available", "eventId": null },
+        {
+          "id": "police-2",
+          "status": "assigned",
+          "eventId": "c2d30873-bd5d-4a9e-aa28-e459eceb4c76"
+        },
+        {
+          "id": "police-3",
+          "status": "assigned",
+          "eventId": "7a023514-cbff-4b2d-9741-976db1b33433"
+        },
+        {
+          "id": "police-4",
+          "status": "assigned",
+          "eventId": "df3098bd-204a-4cdd-a38f-6fa2b0deef2e"
+        },
+        {
+          "id": "police-5",
+          "status": "assigned",
+          "eventId": "9fbeebe1-951d-4f1a-b1df-751eb5dfb8b6"
+        },
+        {
+          "id": "police-6",
+          "status": "assigned",
+          "eventId": "75528218-cb4b-4160-abc0-0340be5f4ca4"
+        },
+        {
+          "id": "police-7",
+          "status": "assigned",
+          "eventId": "7d65b969-5fec-4252-a430-dd7232e2d2d9"
+        },
+        { "id": "police-8", "status": "available", "eventId": null },
+        { "id": "police-9", "status": "available", "eventId": null }
+      ]
+    },
+    "civilGuard": {
+      "total": 10,
+      "available": 3,
+      "allocated": 7,
+      "units": [
+        {
+          "id": "civil-guard-1",
+          "status": "assigned",
+          "eventId": "ecf8be18-da4e-48cd-822a-2a6b6256e3dd"
+        },
+        { "id": "civil-guard-10", "status": "available", "eventId": null },
+        {
+          "id": "civil-guard-2",
+          "status": "assigned",
+          "eventId": "75528218-cb4b-4160-abc0-0340be5f4ca4"
+        },
+        {
+          "id": "civil-guard-3",
+          "status": "assigned",
+          "eventId": "860b74a9-5dd7-49ad-a3a8-5339240dda5e"
+        },
+        {
+          "id": "civil-guard-4",
+          "status": "assigned",
+          "eventId": "727d3c06-8a76-4421-8ad8-7f797ee739af"
+        },
+        {
+          "id": "civil-guard-5",
+          "status": "assigned",
+          "eventId": "c2d30873-bd5d-4a9e-aa28-e459eceb4c76"
+        },
+        {
+          "id": "civil-guard-6",
+          "status": "assigned",
+          "eventId": "7a023514-cbff-4b2d-9741-976db1b33433"
+        },
+        {
+          "id": "civil-guard-7",
+          "status": "assigned",
+          "eventId": "860b74a9-5dd7-49ad-a3a8-5339240dda5e"
+        },
+        { "id": "civil-guard-8", "status": "available", "eventId": null },
+        { "id": "civil-guard-9", "status": "available", "eventId": null }
+      ]
+    },
+    "ambulances": {
+      "total": 10,
+      "available": 6,
+      "allocated": 4,
+      "units": [
+        {
+          "id": "ambulance-1",
+          "status": "assigned",
+          "eventId": "c4fadf0d-e367-4882-893e-6eaadf257f7c"
+        },
+        {
+          "id": "ambulance-2",
+          "status": "assigned",
+          "eventId": "7d65b969-5fec-4252-a430-dd7232e2d2d9"
+        },
+        {
+          "id": "ambulance-3",
+          "status": "assigned",
+          "eventId": "9fbeebe1-951d-4f1a-b1df-751eb5dfb8b6"
+        },
+        {
+          "id": "ambulance-4",
+          "status": "assigned",
+          "eventId": "727d3c06-8a76-4421-8ad8-7f797ee739af"
+        },
+        { "id": "ambulance-5", "status": "available", "eventId": null },
+        { "id": "ambulance-6", "status": "available", "eventId": null },
+        { "id": "ambulance-7", "status": "available", "eventId": null },
+        { "id": "ambulance-8", "status": "available", "eventId": null },
+        { "id": "ambulance-9", "status": "available", "eventId": null },
+        { "id": "ambulance-10", "status": "available", "eventId": null }
+      ]
+    }
+  },
+  "map": {
+    "zones": [
+      {
+        "id": "zone-north",
+        "name": "Sierra Morena",
+        "status": "watch",
+        "populationAtRisk": 1200,
+        "riskScore": 42,
+        "needs": ["wildfire assessment"],
+        "coordinates": { "x": 39, "y": 32, "lat": 36.565, "lng": -5.215 },
+        "lastUpdatedAt": "2026-10-12T19:56:30.429Z"
+      },
+      {
+        "id": "zone-central",
+        "name": "Sevilla Hub",
+        "status": "active",
+        "populationAtRisk": 3100,
+        "riskScore": 68,
+        "needs": ["public alert", "medical triage"],
+        "coordinates": { "x": 32, "y": 52, "lat": 36.544, "lng": -5.234 },
+        "lastUpdatedAt": "2026-10-12T19:56:30.429Z"
+      },
+      {
+        "id": "zone-east",
+        "name": "Granada y Almería",
+        "status": "stable",
+        "populationAtRisk": 900,
+        "riskScore": 24,
+        "needs": ["route surveillance"],
+        "coordinates": { "x": 72, "y": 55, "lat": 36.512, "lng": -5.187 },
+        "lastUpdatedAt": "2026-10-12T19:56:30.429Z"
+      },
+      {
+        "id": "zone-south",
+        "name": "Costa del Sol",
+        "status": "watch",
+        "populationAtRisk": 1750,
+        "riskScore": 35,
+        "needs": ["shelter capacity"],
+        "coordinates": { "x": 54, "y": 76, "lat": 36.427, "lng": -5.145 },
+        "lastUpdatedAt": "2026-10-12T19:56:30.429Z"
+      },
+      {
+        "id": "zone-islands",
+        "name": "Cádiz y Estrecho",
+        "status": "stable",
+        "populationAtRisk": 640,
+        "riskScore": 18,
+        "needs": ["logistics link"],
+        "coordinates": { "x": 22, "y": 71, "lat": 36.444, "lng": -5.273 },
+        "lastUpdatedAt": "2026-10-12T19:56:30.429Z"
+      }
+    ]
+  },
+  "missions": {
+    "schemaVersion": 1,
+    "executionMode": "simulation",
+    "pollAfterMs": 3000,
+    "missions": [
+      {
+        "mission_id": "75b55b45-1c56-49d9-9813-2da11524f2a8",
+        "input": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "context": {
+            "priority": "high",
+            "incidentSummary": "Neighbor: smoke over the forest track\nI see a thin column of smoke up the slope, from the Sierra Bermeja forest track. I can't see flames yet.\nsmoke\nzone-east"
+          },
+          "eventId": "ecf8be18-da4e-48cd-822a-2a6b6256e3dd",
+          "eventIds": ["ecf8be18-da4e-48cd-822a-2a6b6256e3dd"],
+          "revision": 1,
+          "missionId": "75b55b45-1c56-49d9-9813-2da11524f2a8",
+          "objective": "Verify Sierra Bermeja smoke",
+          "allowedTools": ["contactService", "getContactResult"],
+          "instructions": "Locate and characterize the reported smoke on the Sierra Bermeja forest track. Check track access and an alternative route, and report flames, spread, exposed people, threatened homes, and any medical needs. Do not infer unconfirmed details.",
+          "assignedResourceIds": ["civil-guard-1"]
+        },
+        "status": "completed",
+        "attempts": 1,
+        "result": {
+          "status": "completed",
+          "summary": "Emergency coordination request acknowledged to verify the Sierra Bermeja smoke, access routes, hazards, exposed people, homes, and medical needs; field conditions remain unverified.",
+          "updateId": "0b1f52cc-f152-47d4-a7a3-ec9611092ef5",
+          "missionId": "75b55b45-1c56-49d9-9813-2da11524f2a8",
+          "executionMode": "simulation",
+          "missionRevision": 1,
+          "resourceRequest": null,
+          "needsParentDecision": false,
+          "realActionsExecuted": false,
+          "externalOperationIds": ["c61223ec-b656-4172-a3d5-9bdc165f3060"]
+        },
+        "operations": [
+          {
+            "status": "acknowledged",
+            "message": "Mission 75b55b45-1c56-49d9-9813-2da11524f2a8: verify reported thin smoke column over the Sierra Bermeja forest track (zone-east). Please assess and report smoke location/character, flames, spread, track access, an alternative route, exposed people, threatened homes, and any medical needs. Do not infer unconfirmed details; field conditions are not yet verified.",
+            "service": "emergency_coordination",
+            "provider": "happyrobot_mock",
+            "operationId": "c61223ec-b656-4172-a3d5-9bdc165f3060",
+            "realActionsExecuted": false
+          }
+        ],
+        "created_at": "2026-09-22T11:08:47.472986+00:00",
+        "updated_at": "2026-09-22T11:08:53.965505+00:00"
+      },
+      {
+        "mission_id": "c5e4519a-6d02-45c1-bc66-b33f7dc501ae",
+        "input": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "context": {
+            "priority": "critical",
+            "incidentSummary": "Hiker: flames under the pines\nFrom the bend I can see flames beneath the pines, next to the same smoke column. There are two of us and we are heading down the track.\nfire\nzone-east\nHiker: group waiting in a clearing\nThere are four of us in the clearing north of the fire. Smoke has cut off the path we came in by. We need instructions.\nevacuation\nzone-east\nFire crew: secondary flare-up next to the homes\nThe crew reports that embers from the main fire have ignited dry vegetation west of the same cluster of houses.\nfire\nzone-east\nFire crew: east flank advancing faster\nThe crew reports that the same fire is advancing faster along its east flank after the wind shift.\nfire\nzone-east\nNeighbor: smoke is entering the homes\nSmoke from the forest fire is entering our cluster of houses, east of the track. We have closed the windows.\nsmoke\nzone-east\nPatrol: east access cut off by fire\nThe patrol reports flames crossing the east access track. Teams should check access to the nearby homes.\nroad-blocked\nzone-east\nNeighbor: two people need transport\nIn our house, near the east track, there are two adults who cannot get out without help. One uses a wheelchair. The smoke is getting thicker.\nmedical\nzone-east"
+          },
+          "eventId": "727d3c06-8a76-4421-8ad8-7f797ee739af",
+          "eventIds": [
+            "727d3c06-8a76-4421-8ad8-7f797ee739af",
+            "75528218-cb4b-4160-abc0-0340be5f4ca4",
+            "7a023514-cbff-4b2d-9741-976db1b33433",
+            "860b74a9-5dd7-49ad-a3a8-5339240dda5e",
+            "b0bf89ec-0a71-446e-89ed-0da7ec9fc7b9",
+            "c2d30873-bd5d-4a9e-aa28-e459eceb4c76",
+            "c4fadf0d-e367-4882-893e-6eaadf257f7c"
+          ],
+          "revision": 1,
+          "missionId": "c5e4519a-6d02-45c1-bc66-b33f7dc501ae",
+          "objective": "Protect exposed people and homes",
+          "allowedTools": ["contactService", "getContactResult"],
+          "instructions": "Coordinate verification and assisted evacuation for the two hikers, four people in the clearing, and two adults near the east track, including the wheelchair user. Check home occupancy, threatened structures, safe access, alternative routes, fire spread, and medical needs. Report unknowns without inference.",
+          "assignedResourceIds": ["ambulance-1", "police-2", "civil-guard-2"]
+        },
+        "status": "completed",
+        "attempts": 1,
+        "result": {
+          "status": "completed",
+          "summary": "Emergency and medical coordination requests were acknowledged for verification, assisted evacuation, and medical assessment; field actions remain unverified.",
+          "updateId": "ff97885a-a274-4a87-a754-f8dfc8627e0c",
+          "missionId": "c5e4519a-6d02-45c1-bc66-b33f7dc501ae",
+          "executionMode": "simulation",
+          "missionRevision": 1,
+          "resourceRequest": null,
+          "needsParentDecision": false,
+          "realActionsExecuted": false,
+          "externalOperationIds": [
+            "e0f6668e-7c1d-4660-a239-e1a6252d12f3",
+            "bc7de55c-4499-461f-bf1c-f0cdf9065545"
+          ]
+        },
+        "operations": [
+          {
+            "status": "acknowledged",
+            "message": "Critical fire incident in zone-east: coordinate medical assessment and assisted evacuation for two adults near the east track who cannot exit without help; one uses a wheelchair and smoke is worsening. Also assess medical needs among two hikers and four people isolated in a clearing. Verify safe access and report unknowns without inference.",
+            "service": "medical_coordination",
+            "provider": "happyrobot_mock",
+            "operationId": "e0f6668e-7c1d-4660-a239-e1a6252d12f3",
+            "realActionsExecuted": false
+          },
+          {
+            "status": "acknowledged",
+            "message": "Critical fire incident in zone-east: coordinate verification and assisted evacuation for two hikers descending near flames under the pines, four people isolated in a clearing north of the fire, and two adults near the east track including one wheelchair user. Verify home occupancy, threatened structures, safe access and alternative routes, fire spread, and evacuation instructions. Report unknowns without inference; east access is reported cut off and smoke is entering homes.",
+            "service": "emergency_coordination",
+            "provider": "happyrobot_mock",
+            "operationId": "bc7de55c-4499-461f-bf1c-f0cdf9065545",
+            "realActionsExecuted": false
+          }
+        ],
+        "created_at": "2026-09-22T11:09:28.915348+00:00",
+        "updated_at": "2026-09-22T11:09:36.40135+00:00"
+      },
+      {
+        "mission_id": "b310407f-0556-4e0f-94fb-a489f019948e",
+        "input": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "context": {
+            "priority": "high",
+            "incidentSummary": "Weather station: gusts reach 45 km/h\nSimulated station SB-W1 now reports gusts of 45 km/h from the west. The eastward wind direction persists.\nwind\nzone-east\nFire crew: arrival at the access point\nThe crew reports arriving at the south access of this fire and is assessing entry.\noperations\nzone-east\nWeather station: wind turning eastward\nSimulated station SB-W1 reports wind now blowing from west to east at 30 km/h, toward the houses.\nwind\nzone-east\nFire crew: homes protected, fire still active\nThe secondary flare-up next to the homes is contained. The main forest fire is still active and crews are watching the east flank.\noperations\nzone-east\nNeighbor: difficulty breathing\nUpdate from the house with two adults waiting for transport: one is starting to have difficulty breathing from the smoke. We are both still here.\nmedical\nzone-east\nEmergency teams: assisted evacuation underway\nExercise update: they are helping the two adults out of the house via the south track. Medical assessment is pending.\nevacuation\nzone-east\nNeighbor: smoke is entering the homes\nSmoke from the forest fire is entering our cluster of houses, east of the track. We have closed the windows.\nsmoke\nzone-east\nPatrol: east access cut off by fire\nThe patrol reports flames crossing the east access track. Teams should check access to the nearby homes.\nroad-blocked\nzone-east\nNeighbor: two people need transport\nIn our house, near the east track, there are two adults who cannot get out without help. One uses a wheelchair. The smoke is getting thicker.\nmedical\nzone-east\nPatrol: south access still clear\nThe patrol has checked the south track. It is still clear and reaches the homes without crossing the blocked east section.\nroad-open\nzone-east"
+          },
+          "eventId": "1c8d5d3a-1f11-4313-9a24-24c7cf390f93",
+          "eventIds": [
+            "1c8d5d3a-1f11-4313-9a24-24c7cf390f93",
+            "1e3af502-c607-4741-ab42-76457d7aa735",
+            "25639c7d-cf78-4d62-8893-f6472db09239",
+            "61f44056-c687-45d6-b725-fa105f7fbf6f",
+            "7d65b969-5fec-4252-a430-dd7232e2d2d9",
+            "9fbeebe1-951d-4f1a-b1df-751eb5dfb8b6",
+            "b0bf89ec-0a71-446e-89ed-0da7ec9fc7b9",
+            "c2d30873-bd5d-4a9e-aa28-e459eceb4c76",
+            "c4fadf0d-e367-4882-893e-6eaadf257f7c",
+            "df3098bd-204a-4cdd-a38f-6fa2b0deef2e"
+          ],
+          "revision": 1,
+          "missionId": "b310407f-0556-4e0f-94fb-a489f019948e",
+          "objective": "Reassess evacuation and access",
+          "allowedTools": ["contactService", "getContactResult"],
+          "instructions": "Verify the two adults' evacuation progress, breathing condition, wheelchair transport need, home occupancy, smoke exposure, east-flank spread, blocked east access, and south-track safety. Report field conditions and unresolved needs without inference.",
+          "assignedResourceIds": [
+            "ambulance-1",
+            "ambulance-2",
+            "ambulance-3",
+            "police-2",
+            "police-4",
+            "police-5",
+            "civil-guard-5"
+          ]
+        },
+        "status": "completed",
+        "attempts": 1,
+        "result": {
+          "status": "completed",
+          "summary": "Medical and emergency coordination requests were acknowledged for reassessment; field verification and real-world dispatch remain unconfirmed.",
+          "updateId": "5c1aa6ca-68ab-41e3-a091-bd849d513841",
+          "missionId": "b310407f-0556-4e0f-94fb-a489f019948e",
+          "executionMode": "simulation",
+          "missionRevision": 1,
+          "resourceRequest": null,
+          "needsParentDecision": false,
+          "realActionsExecuted": false,
+          "externalOperationIds": [
+            "6c276038-a2a1-4e2d-8058-44b58a221835",
+            "acd95993-bb7b-4f49-b9fe-e46e5333f087"
+          ]
+        },
+        "operations": [
+          {
+            "status": "acknowledged",
+            "message": "Reassess two adults near the east track: verify evacuation progress, breathing condition and smoke exposure, wheelchair transport need, and home occupancy. Report field conditions and unresolved medical or transport needs without inference. South track was reported clear; east access was reported blocked by fire.",
+            "service": "medical_coordination",
+            "provider": "happyrobot_mock",
+            "operationId": "6c276038-a2a1-4e2d-8058-44b58a221835",
+            "realActionsExecuted": false
+          },
+          {
+            "status": "acknowledged",
+            "message": "Reassess evacuation and access: verify the two adults' progress, home occupancy, east-flank fire spread, blocked east access, and south-track safety. Confirm field conditions and unresolved access or evacuation needs without inference; do not infer beyond observations.",
+            "service": "emergency_coordination",
+            "provider": "happyrobot_mock",
+            "operationId": "acd95993-bb7b-4f49-b9fe-e46e5333f087",
+            "realActionsExecuted": false
+          }
+        ],
+        "created_at": "2026-09-22T11:10:23.628962+00:00",
+        "updated_at": "2026-09-22T11:10:30.124552+00:00"
+      }
+    ],
+    "activity": []
+  },
+  "telemetry": [
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:1",
+      "eventId": "ecf8be18-da4e-48cd-822a-2a6b6256e3dd",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:08:35.887417+00:00",
+      "payload": {
+        "title": "Neighbor: smoke over the forest track",
+        "description": "Neighbor: smoke over the forest track\nI see a thin column of smoke up the slope, from the Sierra Bermeja forest track. I can't see flames yet.\nsmoke\nzone-east",
+        "source": "public",
+        "location": {
+          "latitude": 36.517,
+          "longitude": -5.146,
+          "reference": "reporter",
+          "description": "Sierra Bermeja fictional wildfire exercise"
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:2",
+      "eventId": "ecf8be18-da4e-48cd-822a-2a6b6256e3dd",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:08:35.887417+00:00",
+      "payload": { "title": "Neighbor: smoke over the forest track" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:3",
+      "eventId": "ecf8be18-da4e-48cd-822a-2a6b6256e3dd",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:08:35.887417+00:00",
+      "payload": {
+        "title": "Neighbor: smoke over the forest track",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "ecf8be18-da4e-48cd-822a-2a6b6256e3dd",
+          "failure": null,
+          "summary": "Relevance 0.97 from jev-1.13.0; policy classifies the report as relevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "relevant",
+          "evidence": [{ "id": "ecf8be18-da4e-48cd-822a-2a6b6256e3dd" }],
+          "decidedAt": "2026-09-22T11:08:36.774Z",
+          "executionId": "dec1e88c-65cf-4216-bb8f-343a454c443c",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "2b96028c-23f1-8641-a236-3bfa28dc8dfa",
+          "relevanceProbability": 0.97
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:4",
+      "eventId": "0a0f6f9e-c5ff-40ab-8277-c0189d5f8329",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:08:37.395566+00:00",
+      "payload": {
+        "title": "Hello, good morning!",
+        "description": "Hello, good morning!\nJust wanted to say hi. Have a great day!",
+        "source": "public",
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:5",
+      "eventId": "0a0f6f9e-c5ff-40ab-8277-c0189d5f8329",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:08:37.395566+00:00",
+      "payload": { "title": "Hello, good morning!" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:6",
+      "eventId": "0a0f6f9e-c5ff-40ab-8277-c0189d5f8329",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:08:37.395566+00:00",
+      "payload": {
+        "title": "Hello, good morning!",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "0a0f6f9e-c5ff-40ab-8277-c0189d5f8329",
+          "failure": null,
+          "summary": "Relevance 0.01 from jev-1.13.0; policy classifies the report as irrelevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "irrelevant",
+          "evidence": [{ "id": "0a0f6f9e-c5ff-40ab-8277-c0189d5f8329" }],
+          "decidedAt": "2026-09-22T11:08:38.077Z",
+          "executionId": "72c14912-ea2f-478c-939e-3880a700f919",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "7ef7a7d7-33d8-8c4f-b728-b80d2c3d8241",
+          "relevanceProbability": 0.01
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:7",
+      "eventId": "eef0569c-8aa0-4048-ab8b-e8cda32c8c46",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:08:38.665359+00:00",
+      "payload": {
+        "title": "Sensor SB-01: smoke threshold exceeded",
+        "description": "Sensor SB-01: smoke threshold exceeded\nSimulated smoke detector SB-01 reports PM2.5 at 180 micrograms/m3 near the forest track.\nsmoke\nzone-east",
+        "source": "sensor",
+        "location": {
+          "latitude": 36.52,
+          "longitude": -5.141,
+          "reference": "incident",
+          "description": "Sierra Bermeja fictional wildfire exercise"
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:8",
+      "eventId": "eef0569c-8aa0-4048-ab8b-e8cda32c8c46",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:08:38.665359+00:00",
+      "payload": { "title": "Sensor SB-01: smoke threshold exceeded" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:9",
+      "eventId": "eef0569c-8aa0-4048-ab8b-e8cda32c8c46",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:08:38.665359+00:00",
+      "payload": {
+        "title": "Sensor SB-01: smoke threshold exceeded",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "eef0569c-8aa0-4048-ab8b-e8cda32c8c46",
+          "failure": null,
+          "summary": "Relevance 0.96 from jev-1.13.0; policy classifies the report as relevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "relevant",
+          "evidence": [{ "id": "eef0569c-8aa0-4048-ab8b-e8cda32c8c46" }],
+          "decidedAt": "2026-09-22T11:08:39.148Z",
+          "executionId": "743e8090-6441-4b58-8708-948a7642b40d",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "ac3db7f7-de1a-8ebb-9faa-c2625c8c4924",
+          "relevanceProbability": 0.96
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:10",
+      "eventId": "9af6735d-896b-4bfd-99a5-ce083bcb981b",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:08:39.934907+00:00",
+      "payload": {
+        "title": "Special offer: buy sneakers today",
+        "description": "Special offer: buy sneakers today\nVisit our shop and get a discount on sneakers.",
+        "source": "public",
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:11",
+      "eventId": "9af6735d-896b-4bfd-99a5-ce083bcb981b",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:08:39.934907+00:00",
+      "payload": { "title": "Special offer: buy sneakers today" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:12",
+      "eventId": "9af6735d-896b-4bfd-99a5-ce083bcb981b",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:08:39.934907+00:00",
+      "payload": {
+        "title": "Special offer: buy sneakers today",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "9af6735d-896b-4bfd-99a5-ce083bcb981b",
+          "failure": null,
+          "summary": "Relevance 0.01 from jev-1.13.0; policy classifies the report as irrelevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "irrelevant",
+          "evidence": [{ "id": "9af6735d-896b-4bfd-99a5-ce083bcb981b" }],
+          "decidedAt": "2026-09-22T11:08:40.410Z",
+          "executionId": "cc281d07-b2d9-44ec-bbb6-33cbf37b7ecc",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "3b35f3c7-5a32-8bc6-931e-ca1a408b3ffb",
+          "relevanceProbability": 0.01
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:13",
+      "eventId": "727d3c06-8a76-4421-8ad8-7f797ee739af",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:08:41.198032+00:00",
+      "payload": {
+        "title": "Hiker: flames under the pines",
+        "description": "Hiker: flames under the pines\nFrom the bend I can see flames beneath the pines, next to the same smoke column. There are two of us and we are heading down the track.\nfire\nzone-east",
+        "source": "public",
+        "location": {
+          "latitude": 36.521,
+          "longitude": -5.143,
+          "reference": "reporter",
+          "description": "Sierra Bermeja fictional wildfire exercise"
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:14",
+      "eventId": "727d3c06-8a76-4421-8ad8-7f797ee739af",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:08:41.198032+00:00",
+      "payload": { "title": "Hiker: flames under the pines" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:15",
+      "eventId": "727d3c06-8a76-4421-8ad8-7f797ee739af",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:08:41.198032+00:00",
+      "payload": {
+        "title": "Hiker: flames under the pines",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "727d3c06-8a76-4421-8ad8-7f797ee739af",
+          "failure": null,
+          "summary": "Relevance 0.97 from jev-1.13.0; policy classifies the report as relevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "relevant",
+          "evidence": [{ "id": "727d3c06-8a76-4421-8ad8-7f797ee739af" }],
+          "decidedAt": "2026-09-22T11:08:41.645Z",
+          "executionId": "0f99c899-b446-4123-bb6a-5ecc7dd171b8",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "e063b590-16e3-8c4b-afe9-dbbff93e495c",
+          "relevanceProbability": 0.97
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:16",
+      "eventId": "25647c62-ba27-4942-a3ff-9f465d88c28e",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:08:42.659745+00:00",
+      "payload": {
+        "title": "Patrol: forest fire confirmed",
+        "description": "Patrol: forest fire confirmed\nReport from the exercise patrol: vegetation is burning beside the forest track. We confirm the earlier smoke reports.\nfire\nzone-east",
+        "source": "operator",
+        "location": {
+          "latitude": 36.52,
+          "longitude": -5.14,
+          "reference": "incident",
+          "description": "Sierra Bermeja fictional wildfire exercise"
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:17",
+      "eventId": "25647c62-ba27-4942-a3ff-9f465d88c28e",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:08:42.659745+00:00",
+      "payload": { "title": "Patrol: forest fire confirmed" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:18",
+      "eventId": "25647c62-ba27-4942-a3ff-9f465d88c28e",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:08:42.659745+00:00",
+      "payload": {
+        "title": "Patrol: forest fire confirmed",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "25647c62-ba27-4942-a3ff-9f465d88c28e",
+          "failure": null,
+          "summary": "Relevance 0.97 from jev-1.13.0; policy classifies the report as relevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "relevant",
+          "evidence": [{ "id": "25647c62-ba27-4942-a3ff-9f465d88c28e" }],
+          "decidedAt": "2026-09-22T11:08:43.170Z",
+          "executionId": "8924d55a-76f2-430f-b6d4-5d502408103c",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "37f64070-a4ee-89fb-b876-4719096f98b1",
+          "relevanceProbability": 0.97
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:19",
+      "eventId": "4bbd4446-c86a-4629-8687-e6008ae1a669",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:08:43.92703+00:00",
+      "payload": {
+        "title": "Pizza recipe",
+        "description": "Pizza recipe\nCan you share a recipe for homemade pizza dough?",
+        "source": "public",
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:20",
+      "eventId": "4bbd4446-c86a-4629-8687-e6008ae1a669",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:08:43.92703+00:00",
+      "payload": { "title": "Pizza recipe" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:21",
+      "eventId": "4bbd4446-c86a-4629-8687-e6008ae1a669",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:08:43.92703+00:00",
+      "payload": {
+        "title": "Pizza recipe",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "4bbd4446-c86a-4629-8687-e6008ae1a669",
+          "failure": null,
+          "summary": "Relevance 0.01 from jev-1.13.0; policy classifies the report as irrelevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "irrelevant",
+          "evidence": [{ "id": "4bbd4446-c86a-4629-8687-e6008ae1a669" }],
+          "decidedAt": "2026-09-22T11:08:44.575Z",
+          "executionId": "b5df8780-9899-48eb-beb6-3f6b48c02420",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "9f37f75f-3cd3-8b56-80b5-1f9e626eb346",
+          "relevanceProbability": 0.01
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:22",
+      "eventId": "1e3af502-c607-4741-ab42-76457d7aa735",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:08:45.20652+00:00",
+      "payload": {
+        "title": "Fire crew: arrival at the access point",
+        "description": "Fire crew: arrival at the access point\nThe crew reports arriving at the south access of this fire and is assessing entry.\noperations\nzone-east",
+        "source": "operator",
+        "location": {
+          "latitude": 36.515,
+          "longitude": -5.143,
+          "reference": "incident",
+          "description": "Sierra Bermeja fictional wildfire exercise"
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:23",
+      "eventId": "1e3af502-c607-4741-ab42-76457d7aa735",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:08:45.20652+00:00",
+      "payload": { "title": "Fire crew: arrival at the access point" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:24",
+      "eventId": "1e3af502-c607-4741-ab42-76457d7aa735",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:08:45.20652+00:00",
+      "payload": {
+        "title": "Fire crew: arrival at the access point",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "1e3af502-c607-4741-ab42-76457d7aa735",
+          "failure": null,
+          "summary": "Relevance 0.95 from jev-1.13.0; policy classifies the report as relevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "relevant",
+          "evidence": [{ "id": "1e3af502-c607-4741-ab42-76457d7aa735" }],
+          "decidedAt": "2026-09-22T11:08:45.690Z",
+          "executionId": "6c1fbb17-838f-41b1-9ab7-1521735eca9c",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "a69e5a4d-3c4f-88d1-af3f-e9a11d49628d",
+          "relevanceProbability": 0.95
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:25",
+      "eventId": "3dabea90-e0cf-480c-83fa-8c513f2a07ac",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:08:46.471841+00:00",
+      "payload": {
+        "title": "Weekend music",
+        "description": "Weekend music\nRecommend some jazz tracks for my weekend playlist.",
+        "source": "public",
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:26",
+      "eventId": "3dabea90-e0cf-480c-83fa-8c513f2a07ac",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:08:46.471841+00:00",
+      "payload": { "title": "Weekend music" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:27",
+      "eventId": "3dabea90-e0cf-480c-83fa-8c513f2a07ac",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:08:46.471841+00:00",
+      "payload": {
+        "title": "Weekend music",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "3dabea90-e0cf-480c-83fa-8c513f2a07ac",
+          "failure": null,
+          "summary": "Relevance 0.01 from jev-1.13.0; policy classifies the report as irrelevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "irrelevant",
+          "evidence": [{ "id": "3dabea90-e0cf-480c-83fa-8c513f2a07ac" }],
+          "decidedAt": "2026-09-22T11:08:46.953Z",
+          "executionId": "b8f597c5-8836-4023-9f32-e741d0a305b2",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "767a1808-fd66-8784-96b0-187385c2df2f",
+          "relevanceProbability": 0.01
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:28",
+      "eventId": "9aa3c27d-540a-415f-8c56-0500d4ee8506",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:08:47.759024+00:00",
+      "payload": {
+        "title": "Sensor SB-02: smoke spreading east",
+        "description": "Sensor SB-02: smoke spreading east\nSimulated detector SB-02 reports PM2.5 rising to 260 micrograms/m3 east of the confirmed ignition.\nsmoke\nzone-east",
+        "source": "sensor",
+        "location": {
+          "latitude": 36.52,
+          "longitude": -5.134,
+          "reference": "incident",
+          "description": "Sierra Bermeja fictional wildfire exercise"
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:29",
+      "eventId": "9aa3c27d-540a-415f-8c56-0500d4ee8506",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:08:47.759024+00:00",
+      "payload": { "title": "Sensor SB-02: smoke spreading east" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:30",
+      "eventId": "9aa3c27d-540a-415f-8c56-0500d4ee8506",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:08:47.759024+00:00",
+      "payload": {
+        "title": "Sensor SB-02: smoke spreading east",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "9aa3c27d-540a-415f-8c56-0500d4ee8506",
+          "failure": null,
+          "summary": "Relevance 0.97 from jev-1.13.0; policy classifies the report as relevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "relevant",
+          "evidence": [{ "id": "9aa3c27d-540a-415f-8c56-0500d4ee8506" }],
+          "decidedAt": "2026-09-22T11:08:48.255Z",
+          "executionId": "7b1b4126-0c33-4cc7-aed4-c20f60e4c1eb",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "5df7d2d7-ad5e-86fa-b27d-d8feafad4460",
+          "relevanceProbability": 0.97
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:31",
+      "eventId": "b0bf89ec-0a71-446e-89ed-0da7ec9fc7b9",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:08:49.024812+00:00",
+      "payload": {
+        "title": "Neighbor: smoke is entering the homes",
+        "description": "Neighbor: smoke is entering the homes\nSmoke from the forest fire is entering our cluster of houses, east of the track. We have closed the windows.\nsmoke\nzone-east",
+        "source": "public",
+        "location": {
+          "latitude": 36.517,
+          "longitude": -5.132,
+          "reference": "reporter",
+          "description": "Sierra Bermeja fictional wildfire exercise"
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:32",
+      "eventId": "b0bf89ec-0a71-446e-89ed-0da7ec9fc7b9",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:08:49.024812+00:00",
+      "payload": { "title": "Neighbor: smoke is entering the homes" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:33",
+      "eventId": "b0bf89ec-0a71-446e-89ed-0da7ec9fc7b9",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:08:49.024812+00:00",
+      "payload": {
+        "title": "Neighbor: smoke is entering the homes",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "b0bf89ec-0a71-446e-89ed-0da7ec9fc7b9",
+          "failure": null,
+          "summary": "Relevance 0.97 from jev-1.13.0; policy classifies the report as relevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "relevant",
+          "evidence": [{ "id": "b0bf89ec-0a71-446e-89ed-0da7ec9fc7b9" }],
+          "decidedAt": "2026-09-22T11:08:49.543Z",
+          "executionId": "2f762c18-5618-47af-9820-7de0d5ee9ec6",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "c23bece9-b60f-80b1-9ee2-580f7fb157f2",
+          "relevanceProbability": 0.97
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:34",
+      "eventId": "9f8b9d5d-9903-47f3-a203-9a95e367cac3",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:08:50.289151+00:00",
+      "payload": {
+        "title": "What is your favorite movie?",
+        "description": "What is your favorite movie?\nI want to watch a comedy tonight.",
+        "source": "public",
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:35",
+      "eventId": "9f8b9d5d-9903-47f3-a203-9a95e367cac3",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:08:50.289151+00:00",
+      "payload": { "title": "What is your favorite movie?" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:36",
+      "eventId": "9f8b9d5d-9903-47f3-a203-9a95e367cac3",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:08:50.289151+00:00",
+      "payload": {
+        "title": "What is your favorite movie?",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "9f8b9d5d-9903-47f3-a203-9a95e367cac3",
+          "failure": null,
+          "summary": "Relevance 0.01 from jev-1.13.0; policy classifies the report as irrelevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "irrelevant",
+          "evidence": [{ "id": "9f8b9d5d-9903-47f3-a203-9a95e367cac3" }],
+          "decidedAt": "2026-09-22T11:08:51.035Z",
+          "executionId": "b31a1459-66fe-4d81-98a2-60ac560541ec",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "fa41e267-2dad-88ea-bf4e-aebfa860f5be",
+          "relevanceProbability": 0.01
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:37",
+      "eventId": "25639c7d-cf78-4d62-8893-f6472db09239",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:08:51.747512+00:00",
+      "payload": {
+        "title": "Weather station: wind turning eastward",
+        "description": "Weather station: wind turning eastward\nSimulated station SB-W1 reports wind now blowing from west to east at 30 km/h, toward the houses.\nwind\nzone-east",
+        "source": "sensor",
+        "location": {
+          "latitude": 36.522,
+          "longitude": -5.139,
+          "reference": "incident",
+          "description": "Sierra Bermeja fictional wildfire exercise"
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:38",
+      "eventId": "25639c7d-cf78-4d62-8893-f6472db09239",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:08:51.747512+00:00",
+      "payload": { "title": "Weather station: wind turning eastward" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:39",
+      "eventId": "25639c7d-cf78-4d62-8893-f6472db09239",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:08:51.747512+00:00",
+      "payload": {
+        "title": "Weather station: wind turning eastward",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "25639c7d-cf78-4d62-8893-f6472db09239",
+          "failure": null,
+          "summary": "Relevance 0.92 from jev-1.13.0; policy classifies the report as relevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "relevant",
+          "evidence": [{ "id": "25639c7d-cf78-4d62-8893-f6472db09239" }],
+          "decidedAt": "2026-09-22T11:08:52.454Z",
+          "executionId": "1feb5851-44e2-4c23-a2fa-0aa71de1804e",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "e1b2ab8b-761e-8a80-bff8-7e849430b0da",
+          "relevanceProbability": 0.92
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:40",
+      "eventId": "f3fb4444-8d49-4706-9733-a0d0af00fb5b",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:08:53.033725+00:00",
+      "payload": {
+        "title": "Win a free phone",
+        "description": "Win a free phone\nEnter our giveaway and subscribe to the promotions newsletter.",
+        "source": "public",
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:41",
+      "eventId": "f3fb4444-8d49-4706-9733-a0d0af00fb5b",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:08:53.033725+00:00",
+      "payload": { "title": "Win a free phone" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:42",
+      "eventId": "f3fb4444-8d49-4706-9733-a0d0af00fb5b",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:08:53.033725+00:00",
+      "payload": {
+        "title": "Win a free phone",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "f3fb4444-8d49-4706-9733-a0d0af00fb5b",
+          "failure": null,
+          "summary": "Relevance 0.02 from jev-1.13.0; policy classifies the report as irrelevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "irrelevant",
+          "evidence": [{ "id": "f3fb4444-8d49-4706-9733-a0d0af00fb5b" }],
+          "decidedAt": "2026-09-22T11:08:53.517Z",
+          "executionId": "96c0ee85-99c8-4d47-8ab9-4819c28aacab",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "d1a5aa47-66ed-86ea-a9b1-6ab4d839f563",
+          "relevanceProbability": 0.02
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:43",
+      "eventId": "860b74a9-5dd7-49ad-a3a8-5339240dda5e",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:08:54.51723+00:00",
+      "payload": {
+        "title": "Fire crew: east flank advancing faster",
+        "description": "Fire crew: east flank advancing faster\nThe crew reports that the same fire is advancing faster along its east flank after the wind shift.\nfire\nzone-east",
+        "source": "operator",
+        "location": {
+          "latitude": 36.521,
+          "longitude": -5.136,
+          "reference": "incident",
+          "description": "Sierra Bermeja fictional wildfire exercise"
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:44",
+      "eventId": "860b74a9-5dd7-49ad-a3a8-5339240dda5e",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:08:54.51723+00:00",
+      "payload": { "title": "Fire crew: east flank advancing faster" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:45",
+      "eventId": "860b74a9-5dd7-49ad-a3a8-5339240dda5e",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:08:54.51723+00:00",
+      "payload": {
+        "title": "Fire crew: east flank advancing faster",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "860b74a9-5dd7-49ad-a3a8-5339240dda5e",
+          "failure": null,
+          "summary": "Relevance 0.97 from jev-1.13.0; policy classifies the report as relevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "relevant",
+          "evidence": [{ "id": "860b74a9-5dd7-49ad-a3a8-5339240dda5e" }],
+          "decidedAt": "2026-09-22T11:08:54.980Z",
+          "executionId": "3cfd3532-fdbb-41a5-bab2-e21a471af569",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "63333971-8d11-8f35-ba7b-d590dfcb2187",
+          "relevanceProbability": 0.97
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:46",
+      "eventId": "c4fadf0d-e367-4882-893e-6eaadf257f7c",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:08:55.780296+00:00",
+      "payload": {
+        "title": "Neighbor: two people need transport",
+        "description": "Neighbor: two people need transport\nIn our house, near the east track, there are two adults who cannot get out without help. One uses a wheelchair. The smoke is getting thicker.\nmedical\nzone-east",
+        "source": "public",
+        "location": {
+          "latitude": 36.5175,
+          "longitude": -5.131,
+          "reference": "reporter",
+          "description": "Sierra Bermeja fictional wildfire exercise"
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:47",
+      "eventId": "c4fadf0d-e367-4882-893e-6eaadf257f7c",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:08:55.780296+00:00",
+      "payload": { "title": "Neighbor: two people need transport" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:48",
+      "eventId": "c4fadf0d-e367-4882-893e-6eaadf257f7c",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:08:55.780296+00:00",
+      "payload": {
+        "title": "Neighbor: two people need transport",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "c4fadf0d-e367-4882-893e-6eaadf257f7c",
+          "failure": null,
+          "summary": "Relevance 0.98 from jev-1.13.0; policy classifies the report as relevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "relevant",
+          "evidence": [{ "id": "c4fadf0d-e367-4882-893e-6eaadf257f7c" }],
+          "decidedAt": "2026-09-22T11:08:56.265Z",
+          "executionId": "5cfe48db-bfbf-427c-8de6-ef7b9fec4bd0",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "b5f0706d-b868-8307-b5c5-23939254788b",
+          "relevanceProbability": 0.98
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:49",
+      "eventId": "5aedf015-2afb-495e-9416-2067048567e8",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:08:57.052739+00:00",
+      "payload": {
+        "title": "Football chat",
+        "description": "Football chat\nWho is your favorite footballer of all time?",
+        "source": "public",
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:50",
+      "eventId": "5aedf015-2afb-495e-9416-2067048567e8",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:08:57.052739+00:00",
+      "payload": { "title": "Football chat" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:51",
+      "eventId": "5aedf015-2afb-495e-9416-2067048567e8",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:08:57.052739+00:00",
+      "payload": {
+        "title": "Football chat",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "5aedf015-2afb-495e-9416-2067048567e8",
+          "failure": null,
+          "summary": "Relevance 0.01 from jev-1.13.0; policy classifies the report as irrelevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "irrelevant",
+          "evidence": [{ "id": "5aedf015-2afb-495e-9416-2067048567e8" }],
+          "decidedAt": "2026-09-22T11:08:57.555Z",
+          "executionId": "a49b3c07-e711-4389-a9a0-cebca8c0b5d4",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "10a2b1d0-516c-82eb-8666-85226ffd92a0",
+          "relevanceProbability": 0.01
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:52",
+      "eventId": "c2d30873-bd5d-4a9e-aa28-e459eceb4c76",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:08:58.324697+00:00",
+      "payload": {
+        "title": "Patrol: east access cut off by fire",
+        "description": "Patrol: east access cut off by fire\nThe patrol reports flames crossing the east access track. Teams should check access to the nearby homes.\nroad-blocked\nzone-east",
+        "source": "operator",
+        "location": {
+          "latitude": 36.518,
+          "longitude": -5.135,
+          "reference": "incident",
+          "description": "Sierra Bermeja fictional wildfire exercise"
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:53",
+      "eventId": "c2d30873-bd5d-4a9e-aa28-e459eceb4c76",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:08:58.324697+00:00",
+      "payload": { "title": "Patrol: east access cut off by fire" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:54",
+      "eventId": "c2d30873-bd5d-4a9e-aa28-e459eceb4c76",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:08:58.324697+00:00",
+      "payload": {
+        "title": "Patrol: east access cut off by fire",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "c2d30873-bd5d-4a9e-aa28-e459eceb4c76",
+          "failure": null,
+          "summary": "Relevance 0.98 from jev-1.13.0; policy classifies the report as relevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "relevant",
+          "evidence": [{ "id": "c2d30873-bd5d-4a9e-aa28-e459eceb4c76" }],
+          "decidedAt": "2026-09-22T11:08:58.804Z",
+          "executionId": "aada51ed-b971-48a6-b4aa-75312b4f2013",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "64aa6d9f-ee85-86d7-bf1d-3758c37b93f4",
+          "relevanceProbability": 0.98
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:55",
+      "eventId": "75528218-cb4b-4160-abc0-0340be5f4ca4",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:08:59.587829+00:00",
+      "payload": {
+        "title": "Hiker: group waiting in a clearing",
+        "description": "Hiker: group waiting in a clearing\nThere are four of us in the clearing north of the fire. Smoke has cut off the path we came in by. We need instructions.\nevacuation\nzone-east",
+        "source": "public",
+        "location": {
+          "latitude": 36.524,
+          "longitude": -5.135,
+          "reference": "reporter",
+          "description": "Sierra Bermeja fictional wildfire exercise"
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:56",
+      "eventId": "75528218-cb4b-4160-abc0-0340be5f4ca4",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:08:59.587829+00:00",
+      "payload": { "title": "Hiker: group waiting in a clearing" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:57",
+      "eventId": "75528218-cb4b-4160-abc0-0340be5f4ca4",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:08:59.587829+00:00",
+      "payload": {
+        "title": "Hiker: group waiting in a clearing",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "75528218-cb4b-4160-abc0-0340be5f4ca4",
+          "failure": null,
+          "summary": "Relevance 0.98 from jev-1.13.0; policy classifies the report as relevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "relevant",
+          "evidence": [{ "id": "75528218-cb4b-4160-abc0-0340be5f4ca4" }],
+          "decidedAt": "2026-09-22T11:09:00.051Z",
+          "executionId": "ffc4cc4b-c07b-4b95-bc7f-163396f971c1",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "56380689-8ea6-8e28-8246-cfe0a713001d",
+          "relevanceProbability": 0.98
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:58",
+      "eventId": "0a590c2f-167e-4ac1-a42d-38113f21bb63",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:09:00.87771+00:00",
+      "payload": {
+        "title": "Tell me a joke",
+        "description": "Tell me a joke\nTell me a joke about a cat and a keyboard.",
+        "source": "public",
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:59",
+      "eventId": "0a590c2f-167e-4ac1-a42d-38113f21bb63",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:09:00.87771+00:00",
+      "payload": { "title": "Tell me a joke" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:60",
+      "eventId": "0a590c2f-167e-4ac1-a42d-38113f21bb63",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:09:00.87771+00:00",
+      "payload": {
+        "title": "Tell me a joke",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "0a590c2f-167e-4ac1-a42d-38113f21bb63",
+          "failure": null,
+          "summary": "Relevance 0.01 from jev-1.13.0; policy classifies the report as irrelevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "irrelevant",
+          "evidence": [{ "id": "0a590c2f-167e-4ac1-a42d-38113f21bb63" }],
+          "decidedAt": "2026-09-22T11:09:01.381Z",
+          "executionId": "881545c2-c9d4-4dd0-bfef-7de1aefecc18",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "a1781f6f-b734-8001-bac3-cae832baa0f0",
+          "relevanceProbability": 0.01
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:61",
+      "eventId": "1c8d5d3a-1f11-4313-9a24-24c7cf390f93",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:09:02.155587+00:00",
+      "payload": {
+        "title": "Weather station: gusts reach 45 km/h",
+        "description": "Weather station: gusts reach 45 km/h\nSimulated station SB-W1 now reports gusts of 45 km/h from the west. The eastward wind direction persists.\nwind\nzone-east",
+        "source": "sensor",
+        "location": {
+          "latitude": 36.522,
+          "longitude": -5.139,
+          "reference": "incident",
+          "description": "Sierra Bermeja fictional wildfire exercise"
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:62",
+      "eventId": "1c8d5d3a-1f11-4313-9a24-24c7cf390f93",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:09:02.155587+00:00",
+      "payload": { "title": "Weather station: gusts reach 45 km/h" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:63",
+      "eventId": "1c8d5d3a-1f11-4313-9a24-24c7cf390f93",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:09:02.155587+00:00",
+      "payload": {
+        "title": "Weather station: gusts reach 45 km/h",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "1c8d5d3a-1f11-4313-9a24-24c7cf390f93",
+          "failure": null,
+          "summary": "Relevance 0.88 from jev-1.13.0; policy classifies the report as relevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "relevant",
+          "evidence": [{ "id": "1c8d5d3a-1f11-4313-9a24-24c7cf390f93" }],
+          "decidedAt": "2026-09-22T11:09:02.636Z",
+          "executionId": "a7215ee0-7755-44ea-8e8a-fb34d9a5aa97",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "07358654-e920-87ac-88ff-a343d670b28b",
+          "relevanceProbability": 0.88
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:64",
+      "eventId": "7a023514-cbff-4b2d-9741-976db1b33433",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:09:03.423463+00:00",
+      "payload": {
+        "title": "Fire crew: secondary flare-up next to the homes",
+        "description": "Fire crew: secondary flare-up next to the homes\nThe crew reports that embers from the main fire have ignited dry vegetation west of the same cluster of houses.\nfire\nzone-east",
+        "source": "operator",
+        "location": {
+          "latitude": 36.519,
+          "longitude": -5.132,
+          "reference": "incident",
+          "description": "Sierra Bermeja fictional wildfire exercise"
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:65",
+      "eventId": "7a023514-cbff-4b2d-9741-976db1b33433",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:09:03.423463+00:00",
+      "payload": { "title": "Fire crew: secondary flare-up next to the homes" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:66",
+      "eventId": "7a023514-cbff-4b2d-9741-976db1b33433",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:09:03.423463+00:00",
+      "payload": {
+        "title": "Fire crew: secondary flare-up next to the homes",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "7a023514-cbff-4b2d-9741-976db1b33433",
+          "failure": null,
+          "summary": "Relevance 0.98 from jev-1.13.0; policy classifies the report as relevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "relevant",
+          "evidence": [{ "id": "7a023514-cbff-4b2d-9741-976db1b33433" }],
+          "decidedAt": "2026-09-22T11:09:03.927Z",
+          "executionId": "8030af27-71da-402e-ad61-f70537040d91",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "2ff2415c-1e99-88c5-a824-84e92852d8f0",
+          "relevanceProbability": 0.98
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:67",
+      "eventId": "02db4d0e-d05d-4d18-b0df-b3138a8fda3c",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:09:04.701117+00:00",
+      "payload": {
+        "title": "Discounted subscription",
+        "description": "Discounted subscription\nSubscribe today and get 50% off our movie streaming service.",
+        "source": "public",
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:68",
+      "eventId": "02db4d0e-d05d-4d18-b0df-b3138a8fda3c",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:09:04.701117+00:00",
+      "payload": { "title": "Discounted subscription" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:69",
+      "eventId": "02db4d0e-d05d-4d18-b0df-b3138a8fda3c",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:09:04.701117+00:00",
+      "payload": {
+        "title": "Discounted subscription",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "02db4d0e-d05d-4d18-b0df-b3138a8fda3c",
+          "failure": null,
+          "summary": "Relevance 0.01 from jev-1.13.0; policy classifies the report as irrelevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "irrelevant",
+          "evidence": [{ "id": "02db4d0e-d05d-4d18-b0df-b3138a8fda3c" }],
+          "decidedAt": "2026-09-22T11:09:05.206Z",
+          "executionId": "eeb29c20-f7d6-4c4d-ac90-259ca2086103",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "020a8496-6a7f-84b6-8d8a-4a25caf76a75",
+          "relevanceProbability": 0.01
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:70",
+      "eventId": "7d65b969-5fec-4252-a430-dd7232e2d2d9",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:09:05.962219+00:00",
+      "payload": {
+        "title": "Neighbor: difficulty breathing",
+        "description": "Neighbor: difficulty breathing\nUpdate from the house with two adults waiting for transport: one is starting to have difficulty breathing from the smoke. We are both still here.\nmedical\nzone-east",
+        "source": "public",
+        "location": {
+          "latitude": 36.5175,
+          "longitude": -5.131,
+          "reference": "reporter",
+          "description": "Sierra Bermeja fictional wildfire exercise"
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:71",
+      "eventId": "7d65b969-5fec-4252-a430-dd7232e2d2d9",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:09:05.962219+00:00",
+      "payload": { "title": "Neighbor: difficulty breathing" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:72",
+      "eventId": "7d65b969-5fec-4252-a430-dd7232e2d2d9",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:09:05.962219+00:00",
+      "payload": {
+        "title": "Neighbor: difficulty breathing",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "7d65b969-5fec-4252-a430-dd7232e2d2d9",
+          "failure": null,
+          "summary": "Relevance 0.98 from jev-1.13.0; policy classifies the report as relevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "relevant",
+          "evidence": [{ "id": "7d65b969-5fec-4252-a430-dd7232e2d2d9" }],
+          "decidedAt": "2026-09-22T11:09:06.468Z",
+          "executionId": "b01d6c58-3dcb-43a1-9c83-89016d270979",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "33f39581-28f5-8d6b-ae8f-177168bc6151",
+          "relevanceProbability": 0.98
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:73",
+      "eventId": "df3098bd-204a-4cdd-a38f-6fa2b0deef2e",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:09:07.246359+00:00",
+      "payload": {
+        "title": "Patrol: south access still clear",
+        "description": "Patrol: south access still clear\nThe patrol has checked the south track. It is still clear and reaches the homes without crossing the blocked east section.\nroad-open\nzone-east",
+        "source": "operator",
+        "location": {
+          "latitude": 36.514,
+          "longitude": -5.137,
+          "reference": "incident",
+          "description": "Sierra Bermeja fictional wildfire exercise"
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:74",
+      "eventId": "df3098bd-204a-4cdd-a38f-6fa2b0deef2e",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:09:07.246359+00:00",
+      "payload": { "title": "Patrol: south access still clear" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:75",
+      "eventId": "df3098bd-204a-4cdd-a38f-6fa2b0deef2e",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:09:07.246359+00:00",
+      "payload": {
+        "title": "Patrol: south access still clear",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "df3098bd-204a-4cdd-a38f-6fa2b0deef2e",
+          "failure": null,
+          "summary": "Relevance 0.94 from jev-1.13.0; policy classifies the report as relevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "relevant",
+          "evidence": [{ "id": "df3098bd-204a-4cdd-a38f-6fa2b0deef2e" }],
+          "decidedAt": "2026-09-22T11:09:07.899Z",
+          "executionId": "ac143ceb-9787-4b60-a018-507ae57d6e28",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "7f73712a-6100-86c8-bcbf-bfa68974fb3c",
+          "relevanceProbability": 0.94
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:76",
+      "eventId": "0d1b11b9-4644-403d-be63-a50901274670",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:09:08.519952+00:00",
+      "payload": {
+        "title": "Nonsense text",
+        "description": "Nonsense text\nasdf qwerty zxcv blablabla",
+        "source": "public",
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:77",
+      "eventId": "0d1b11b9-4644-403d-be63-a50901274670",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:09:08.519952+00:00",
+      "payload": { "title": "Nonsense text" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:78",
+      "eventId": "0d1b11b9-4644-403d-be63-a50901274670",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:09:08.519952+00:00",
+      "payload": {
+        "title": "Nonsense text",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "0d1b11b9-4644-403d-be63-a50901274670",
+          "failure": null,
+          "summary": "Relevance 0.02 from jev-1.13.0; policy classifies the report as irrelevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "irrelevant",
+          "evidence": [{ "id": "0d1b11b9-4644-403d-be63-a50901274670" }],
+          "decidedAt": "2026-09-22T11:09:09.000Z",
+          "executionId": "f87a9115-948f-4619-a47f-efaf8f78bd6c",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "876cb378-7c24-8007-aaff-1fade56a67e0",
+          "relevanceProbability": 0.02
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:79",
+      "eventId": "9fbeebe1-951d-4f1a-b1df-751eb5dfb8b6",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:09:09.78875+00:00",
+      "payload": {
+        "title": "Emergency teams: assisted evacuation underway",
+        "description": "Emergency teams: assisted evacuation underway\nExercise update: they are helping the two adults out of the house via the south track. Medical assessment is pending.\nevacuation\nzone-east",
+        "source": "operator",
+        "location": {
+          "latitude": 36.516,
+          "longitude": -5.132,
+          "reference": "incident",
+          "description": "Sierra Bermeja fictional wildfire exercise"
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:80",
+      "eventId": "9fbeebe1-951d-4f1a-b1df-751eb5dfb8b6",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:09:09.78875+00:00",
+      "payload": { "title": "Emergency teams: assisted evacuation underway" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:81",
+      "eventId": "9fbeebe1-951d-4f1a-b1df-751eb5dfb8b6",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:09:09.78875+00:00",
+      "payload": {
+        "title": "Emergency teams: assisted evacuation underway",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "9fbeebe1-951d-4f1a-b1df-751eb5dfb8b6",
+          "failure": null,
+          "summary": "Relevance 0.97 from jev-1.13.0; policy classifies the report as relevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "relevant",
+          "evidence": [{ "id": "9fbeebe1-951d-4f1a-b1df-751eb5dfb8b6" }],
+          "decidedAt": "2026-09-22T11:09:10.262Z",
+          "executionId": "4b15e1e6-5c53-40d2-b4d7-51df3959e037",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "6d0506f8-e0fe-8477-ad60-40590b0258a1",
+          "relevanceProbability": 0.97
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:82",
+      "eventId": "8a77d60a-7c4b-4073-8375-c625310dd288",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:09:11.086297+00:00",
+      "payload": {
+        "title": "Patrol: hikers reach the meeting point",
+        "description": "Patrol: hikers reach the meeting point\nThe patrol confirms that the four hikers from the north clearing have reached the south meeting point.\nevacuation\nzone-east",
+        "source": "operator",
+        "location": {
+          "latitude": 36.514,
+          "longitude": -5.142,
+          "reference": "incident",
+          "description": "Sierra Bermeja fictional wildfire exercise"
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:83",
+      "eventId": "8a77d60a-7c4b-4073-8375-c625310dd288",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:09:11.086297+00:00",
+      "payload": { "title": "Patrol: hikers reach the meeting point" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:84",
+      "eventId": "8a77d60a-7c4b-4073-8375-c625310dd288",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:09:11.086297+00:00",
+      "payload": {
+        "title": "Patrol: hikers reach the meeting point",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "8a77d60a-7c4b-4073-8375-c625310dd288",
+          "failure": null,
+          "summary": "Relevance 0.94 from jev-1.13.0; policy classifies the report as relevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "relevant",
+          "evidence": [{ "id": "8a77d60a-7c4b-4073-8375-c625310dd288" }],
+          "decidedAt": "2026-09-22T11:09:11.573Z",
+          "executionId": "98df1380-817c-470b-ae56-841b399ab52a",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "79bc6082-fcca-8e03-a21a-7e85394eec40",
+          "relevanceProbability": 0.94
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:85",
+      "eventId": "a567a4e3-2346-44a5-b516-f4736b3b7caf",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:09:12.355189+00:00",
+      "payload": {
+        "title": "Birthday wishes",
+        "description": "Birthday wishes\nHappy birthday, Alex! Hope you enjoy the cake.",
+        "source": "public",
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:86",
+      "eventId": "a567a4e3-2346-44a5-b516-f4736b3b7caf",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:09:12.355189+00:00",
+      "payload": { "title": "Birthday wishes" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:87",
+      "eventId": "a567a4e3-2346-44a5-b516-f4736b3b7caf",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:09:12.355189+00:00",
+      "payload": {
+        "title": "Birthday wishes",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "a567a4e3-2346-44a5-b516-f4736b3b7caf",
+          "failure": null,
+          "summary": "Relevance 0.01 from jev-1.13.0; policy classifies the report as irrelevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "irrelevant",
+          "evidence": [{ "id": "a567a4e3-2346-44a5-b516-f4736b3b7caf" }],
+          "decidedAt": "2026-09-22T11:09:12.896Z",
+          "executionId": "b1c9bc0a-1d11-412f-bb3e-78e28772973d",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "ace64b5d-604b-8e1b-ad63-4f64f30d973a",
+          "relevanceProbability": 0.01
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:88",
+      "eventId": "61f44056-c687-45d6-b725-fa105f7fbf6f",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:09:13.639258+00:00",
+      "payload": {
+        "title": "Fire crew: homes protected, fire still active",
+        "description": "Fire crew: homes protected, fire still active\nThe secondary flare-up next to the homes is contained. The main forest fire is still active and crews are watching the east flank.\noperations\nzone-east",
+        "source": "operator",
+        "location": {
+          "latitude": 36.519,
+          "longitude": -5.132,
+          "reference": "incident",
+          "description": "Sierra Bermeja fictional wildfire exercise"
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:89",
+      "eventId": "61f44056-c687-45d6-b725-fa105f7fbf6f",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:09:13.639258+00:00",
+      "payload": { "title": "Fire crew: homes protected, fire still active" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:90",
+      "eventId": "61f44056-c687-45d6-b725-fa105f7fbf6f",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:09:13.639258+00:00",
+      "payload": {
+        "title": "Fire crew: homes protected, fire still active",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "61f44056-c687-45d6-b725-fa105f7fbf6f",
+          "failure": null,
+          "summary": "Relevance 0.97 from jev-1.13.0; policy classifies the report as relevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "relevant",
+          "evidence": [{ "id": "61f44056-c687-45d6-b725-fa105f7fbf6f" }],
+          "decidedAt": "2026-09-22T11:09:14.111Z",
+          "executionId": "c334aad3-c9a1-4744-9a62-39862e193b33",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "30059d2a-7dd3-8bde-a4eb-0603f771bec3",
+          "relevanceProbability": 0.97
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:91",
+      "eventId": "2d8ec373-eefe-44ad-96a8-9b0b47b200a7",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:09:14.901854+00:00",
+      "payload": {
+        "title": "Translate a phrase",
+        "description": "Translate a phrase\nHow do you say good afternoon in Italian?",
+        "source": "public",
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:92",
+      "eventId": "2d8ec373-eefe-44ad-96a8-9b0b47b200a7",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:09:14.901854+00:00",
+      "payload": { "title": "Translate a phrase" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:93",
+      "eventId": "2d8ec373-eefe-44ad-96a8-9b0b47b200a7",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:09:14.901854+00:00",
+      "payload": {
+        "title": "Translate a phrase",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "2d8ec373-eefe-44ad-96a8-9b0b47b200a7",
+          "failure": null,
+          "summary": "Relevance 0.01 from jev-1.13.0; policy classifies the report as irrelevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "irrelevant",
+          "evidence": [{ "id": "2d8ec373-eefe-44ad-96a8-9b0b47b200a7" }],
+          "decidedAt": "2026-09-22T11:09:15.455Z",
+          "executionId": "0c32c95e-5850-45b2-b075-1ba0ab86bc16",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "88dbc91d-4a26-88ce-9864-2cbf8c7d176d",
+          "relevanceProbability": 0.01
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:94",
+      "eventId": "6c4796c2-6447-4785-acfb-1cea9e559055",
+      "type": "event.accepted",
+      "at": "2026-09-22T11:09:16.188148+00:00",
+      "payload": {
+        "title": "Sensor SB-02: smoke levels falling",
+        "description": "Sensor SB-02: smoke levels falling\nSimulated detector SB-02 reports PM2.5 falling from 260 to 120 micrograms/m3. This reading alone does not confirm the fire is extinguished.\nsmoke\nzone-east",
+        "source": "sensor",
+        "location": {
+          "latitude": 36.52,
+          "longitude": -5.134,
+          "reference": "incident",
+          "description": "Sierra Bermeja fictional wildfire exercise"
+        },
+        "storage": "supabase"
+      }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:95",
+      "eventId": "6c4796c2-6447-4785-acfb-1cea9e559055",
+      "type": "filtering.pending",
+      "at": "2026-09-22T11:09:16.188148+00:00",
+      "payload": { "title": "Sensor SB-02: smoke levels falling" }
+    },
+    {
+      "id": "1edd360c-1e68-49fe-9d7a-bfcc1873d278:96",
+      "eventId": "6c4796c2-6447-4785-acfb-1cea9e559055",
+      "type": "filtering.completed",
+      "at": "2026-09-22T11:09:16.188148+00:00",
+      "payload": {
+        "title": "Sensor SB-02: smoke levels falling",
+        "result": {
+          "runId": "1edd360c-1e68-49fe-9d7a-bfcc1873d278",
+          "status": "completed",
+          "eventId": "6c4796c2-6447-4785-acfb-1cea9e559055",
+          "failure": null,
+          "summary": "Relevance 0.96 from jev-1.13.0; policy classifies the report as relevant (discard <= 0.2, relevant >= 0.8; uncertain reports also continue).",
+          "decision": "relevant",
+          "evidence": [{ "id": "6c4796c2-6447-4785-acfb-1cea9e559055" }],
+          "decidedAt": "2026-09-22T11:09:16.669Z",
+          "executionId": "81103157-e60e-4950-a836-81b9cf6bdf9d",
+          "policyVersion": "crisis-relevance-v1/forward-uncertain-v1/jev-latest/discard<=0.2/relevant>=0.8",
+          "schemaVersion": 1,
+          "filterDecisionId": "29957a8e-43c9-8d7f-b6e6-adfd505eb161",
+          "relevanceProbability": 0.96
+        },
+        "storage": "supabase"
+      }
+    }
+  ]
+}
