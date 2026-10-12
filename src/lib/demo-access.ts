@@ -40,6 +40,8 @@ export function requireSameOrigin(request: Request): Response | undefined {
 export function authorizeDemoControl(request: Request): Response | undefined {
   const denied = requireSameOrigin(request);
   if (denied) return denied;
+  if (isDemoShowcase())
+    return Response.json({ error: "Archived run controls are disabled." }, { status: 403 });
   if (process.env.ACTION_EXECUTION_MODE === "happyrobot") {
     return Response.json({ error: "Demo controls are disabled in live mode." }, { status: 403 });
   }

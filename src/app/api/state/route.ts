@@ -1,5 +1,7 @@
 import { authorizeDashboardRead } from "@/lib/pipeline-auth";
 import { readCoordinatorState } from "@/lib/coordinator/runtime";
+import { isDemoShowcase } from "@/lib/demo-access";
+import { showcaseSnapshot } from "@/lib/demo/showcase";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +16,8 @@ export async function GET(request: Request) {
       { status: denied.status, headers: { "Cache-Control": "no-store" } },
     );
   try {
+    if (isDemoShowcase())
+      return Response.json(showcaseSnapshot.state, { headers: { "Cache-Control": "no-store" } });
     return Response.json(await readCoordinatorState(), {
       headers: { "Cache-Control": "no-store" },
     });

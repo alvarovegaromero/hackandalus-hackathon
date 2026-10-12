@@ -27,6 +27,14 @@ here; update project information and shared rules here instead of duplicating th
 CHALLENGE.md remains authoritative for challenge requirements; TASKS.md tracks
 milestones and deferred work; README.md is the developer quick start.
 
+Post-hackathon showcase: `DEMO_SHOWCASE=true` serves a bundled public simulation
+snapshot for the dashboard state, missions, telemetry and map. These reads do not
+connect to Supabase. Demo/reset controls are blocked even in development or
+with a leftover timed activation. Live intake and authenticated integrations still
+require the normal database and provider configuration. See
+[snapshot preservation](docs/showcase-snapshot.md) and the release guide; source
+implementation is not proof of production publication.
+
 ## Project
 
 HackSpain 2026 submission for the HappyRobot challenge: build an agentic

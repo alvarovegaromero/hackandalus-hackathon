@@ -40,8 +40,11 @@ callbacks feed the coordinator so it can revise its response.
 | **Operations dashboard** — follow reports, priorities, resources and missions | [faro-lovat-iota.vercel.app/dashboard](https://faro-lovat-iota.vercel.app/dashboard)               |
 | **Wildfire drills** — rehearse scenarios and review lessons                   | [faro-lovat-iota.vercel.app/dashboard/drills](https://faro-lovat-iota.vercel.app/dashboard/drills) |
 
-Hosted dashboard access follows the configured demo window. See
-[deployment and access](docs/vercel-deployment.md) for details.
+The archived dashboard uses a bundled simulation snapshot when `DEMO_SHOWCASE=true`,
+so the example remains viewable even after its Supabase project is removed.
+Live runs use the configured demo window and database. See
+[deployment and access](docs/vercel-deployment.md) and
+[snapshot preservation](docs/showcase-snapshot.md) for details.
 
 ## What to explore
 
@@ -68,8 +71,8 @@ remain in the training workspace and do not change the live coordinator.
    queue connect the evidence to the affected locations.
 3. Follow the coordinator's current plan and available resources. Missions show
    how the response is delegated and what each communication returns.
-4. As new reports or dispatch outcomes arrive, watch priorities, plans and missions
-   change. The coordinator uses persisted evidence and resource constraints to replan.
+4. Inspect the archived response plan and completed mission outcomes. During a live
+   run, new reports and dispatch outcomes update priorities, plans and missions.
 5. Explore [wildfire drills](https://faro-lovat-iota.vercel.app/dashboard/drills)
    for local rehearsals and reviewed lessons, separate from live operations.
 

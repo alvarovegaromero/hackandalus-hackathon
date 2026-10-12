@@ -2,6 +2,8 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { readCoordinatorState } from "@/lib/coordinator/runtime";
 import { authorizeDashboardRead } from "@/lib/pipeline-auth";
 import type { TelemetryRecord } from "@/lib/event-pipeline";
+import { isDemoShowcase } from "@/lib/demo-access";
+import { showcaseTelemetry } from "@/lib/demo/showcase";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,6 +13,7 @@ const encoder = new TextEncoder();
 export async function GET(request: Request) {
   const denied = authorizeDashboardRead(request);
   if (denied) return denied;
+  if (isDemoShowcase()) return showcaseTelemetry();
   let timer: ReturnType<typeof setTimeout> | undefined;
   let stopped = false;
   let close: (() => void) | undefined;

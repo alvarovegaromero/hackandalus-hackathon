@@ -37,13 +37,21 @@ To keep the dashboard publicly viewable after the demo, enable showcase mode ins
 of the timed window: in Vercel production set `DEMO_SHOWCASE=true` and leave
 `DEMO_PUBLIC_STARTED_AT` empty.
 
-In showcase mode the dashboard reads stay public and show the last run live from
-Supabase, exactly as during the window: `/api/state`, `/api/subagents` and
-`/api/telemetry` remain open (`authorizeDashboardRead` allows same-origin reads),
-`/api/map` stays static seed geography. There is no countdown. The reset/run button
-renders disabled, and every mutation route (`/api/demo/*`, `/api/scenario/*`) stays
-closed because `DEMO_PUBLIC_STARTED_AT` is unset, so the run cannot be changed and the
-dashboard is frozen on it. Keep the Supabase project active for the data to load.
+In showcase mode `/api/state`, `/api/subagents`, `/api/telemetry` and `/api/map`
+serve the bundled public simulation in `src/lib/demo/showcase-snapshot.json`.
+The dashboard no longer depends on Supabase, provider credentials or a running
+coordinator to show this example. Telemetry replays once and closes; the viewer
+does not reconnect to the archived stream. State and mission polling reads the
+same immutable bundled data. The `storage: supabase` field records the original
+run's storage provenance, not a current database connection.
+
+There is no countdown, and reset/run controls remain disabled. Showcase mode
+takes precedence over development access or a leftover public activation; demo
+control requests return 403 while it is enabled. This does not
+disable separately authenticated integrations or turn the live runtime into a
+static application. See [snapshot preservation](showcase-snapshot.md) for the
+captured run and verification procedure. The changed behavior only reaches the
+hosted site after the normal release into `production`.
 
 ### Verified behavior and remaining checks
 
@@ -138,7 +146,7 @@ upload local credential files or put secrets in `NEXT_PUBLIC_*` variables.
 | Alternative existing OpenCode adapter | `AI_PROVIDER=opencode-go` or `opencode-zen`, `OPENCODE_MODEL`, `OPENCODE_API_KEY` |
 | Protected APIs                        | `CRISIS_API_TOKEN`, `DEMO_API_TOKEN` as required by the selected routes           |
 | Public demo window                    | `DEMO_PUBLIC_STARTED_AT` (canonical UTC ISO timestamp); mock or happyrobot mode   |
-| Post-hackathon showcase               | `DEMO_SHOWCASE=true` with `DEMO_PUBLIC_STARTED_AT` empty; live reads, reset off   |
+| Post-hackathon showcase               | `DEMO_SHOWCASE=true`; bundled archived reads, reset off, no database needed       |
 | Inbound HappyRobot reports/callbacks  | `HAPPYROBOT_WEBHOOK_SECRET`                                                       |
 | Initial simulated actions             | `ACTION_EXECUTION_MODE=mock`                                                      |
 
