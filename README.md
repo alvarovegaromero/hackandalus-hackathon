@@ -25,7 +25,7 @@ built for the HappyRobot challenge at HackSpain 2026.
 
 [![FARO dashboard showing incident priorities, deployed resources, the Sierra Bermeja map and coordinator missions](docs/images/faro-dashboard.png)](https://faro-lovat-iota.vercel.app/dashboard)
 
-_The deployed dashboard with a simulated wildfire scenario. Click the image to explore it._
+_The archived Sierra Bermeja simulation: 32 reports, 20 relevant incidents and three completed missions. Click the image to explore the snapshot; no live calls are made._
 
 FARO filters incoming reports, prioritizes incidents, assigns available resources
 and coordinates response missions. The dashboard brings together the map, incoming
